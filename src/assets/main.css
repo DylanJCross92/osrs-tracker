@@ -426,6 +426,12 @@ button:focus-visible {
   font-size: 0.85rem;
   line-height: 1.45;
 }
+.advice-eta {
+  display: block;
+  margin-top: 4px;
+  color: var(--gold-bright);
+  font-weight: 600;
+}
 .table-toggle {
   margin-top: 8px;
 }

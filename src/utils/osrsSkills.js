@@ -98,6 +98,20 @@ export function levelForSkill(snapshot, skill) {
   return snapshot.skills?.[skill]?.level ?? 1
 }
 
+const xpForLevelCache = [0, 0]
+/** Total xp required to reach a given level (1-99), via the game's own formula. */
+export function xpForLevel(level) {
+  if (xpForLevelCache[level] != null) return xpForLevelCache[level]
+  let points = 0
+  let xp = 0
+  for (let lvl = 1; lvl < level; lvl++) {
+    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
+    xp = Math.floor(points / 4)
+    if (xpForLevelCache[lvl + 1] == null) xpForLevelCache[lvl + 1] = xp
+  }
+  return xp
+}
+
 export function rankForSkill(snapshot, skill) {
   if (skill === 'Overall') return snapshot.overallRank
   return snapshot.skills?.[skill]?.rank ?? null

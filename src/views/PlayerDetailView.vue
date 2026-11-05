@@ -129,11 +129,24 @@
       <h3>Training {{ selectedSkill }} at level {{ selectedSkillLevel }}</h3>
       <div class="advice-row">
         <span class="advice-label">⚡ Fastest</span>
-        <span class="advice-text">{{ trainingAdvice.fastest }}</span>
+        <span class="advice-text">
+          {{ trainingAdvice.fastest }}
+          <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
+            ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} to reach level
+            {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString() }} xp to go).
+          </span>
+          <span v-else class="advice-eta">You're already at the max level (99)!</span>
+        </span>
       </div>
       <div class="advice-row">
         <span class="advice-label">💰 Best money maker</span>
-        <span class="advice-text">{{ trainingAdvice.money || 'No reliable money-making method at this level — this is a pure xp (and gp) investment.' }}</span>
+        <span class="advice-text">
+          <template v-if="trainingAdvice.money">{{ trainingAdvice.money }}</template>
+          <template v-else-if="trainingAdvice.moneyUnlocksAt">
+            No reliable money-making method yet — that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
+          </template>
+          <template v-else>No reliable money-making method for this skill — it's a pure xp (and gp) investment.</template>
+        </span>
       </div>
     </div>
   </template>
@@ -215,7 +228,10 @@ watch(playerId, load)
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
 
 const selectedSkillLevel = computed(() => (latest.value ? levelForSkill(latest.value, selectedSkill.value) : 1))
-const trainingAdvice = computed(() => getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value))
+const selectedSkillXp = computed(() => (latest.value ? xpForSkill(latest.value, selectedSkill.value) : 0))
+const trainingAdvice = computed(() =>
+  getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value, selectedSkillXp.value),
+)
 
 // Per-skill xp/level/rank gained in the trailing 24h — computed once per
 // snapshot load rather than re-walking history on every row's render.
