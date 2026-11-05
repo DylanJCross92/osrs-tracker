@@ -248,6 +248,26 @@ button:focus-visible {
 .detail-header .last-synced {
   margin-top: 4px;
 }
+.checking-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  color: var(--gold);
+}
+.spinner {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border-strong);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .detail-actions {
   display: flex;
   gap: 10px;

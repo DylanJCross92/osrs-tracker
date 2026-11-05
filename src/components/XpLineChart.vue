@@ -1,9 +1,8 @@
 <template>
-  <div class="xp-chart">
+  <div class="xp-chart" ref="containerRef">
     <svg
       ref="svgRef"
       :viewBox="`0 0 ${W} ${H}`"
-      preserveAspectRatio="none"
       class="xp-chart-svg"
       tabindex="0"
       role="img"
@@ -66,7 +65,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { formatXp } from '@/utils/osrsSkills'
 
 // points: [{ x: <ms timestamp>, y: <xp> }, ...] sorted ascending by x.
@@ -75,7 +74,12 @@ const props = defineProps({
   ariaLabel: { type: String, default: 'XP over time' },
 })
 
-const W = 760
+// W tracks the container's actual rendered width (via ResizeObserver) so the
+// viewBox always matches the SVG's real pixel size 1:1. Without this, a
+// fixed viewBox width stretched to fit a narrower container (with no
+// preserveAspectRatio to stop it) would scale text non-uniformly and
+// squish it horizontally.
+const W = ref(760)
 const H = 300
 const padL = 54
 const padT = 28
@@ -83,7 +87,19 @@ const padR = 16
 const padB = 24
 
 const svgRef = ref(null)
+const containerRef = ref(null)
 const hoverIndex = ref(null)
+let resizeObserver = null
+
+onMounted(() => {
+  if (!containerRef.value) return
+  resizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width
+    if (width > 0) W.value = width
+  })
+  resizeObserver.observe(containerRef.value)
+})
+onUnmounted(() => resizeObserver?.disconnect())
 
 const points = computed(() => props.points)
 const lastPoint = computed(() => points.value[points.value.length - 1] ?? null)
@@ -102,8 +118,8 @@ const maxY = computed(() => rawMaxY.value + yPad.value)
 
 function xScale(x) {
   const span = maxX.value - minX.value
-  if (span <= 0) return (padL + (W - padR)) / 2
-  return padL + ((x - minX.value) / span) * (W - padL - padR)
+  if (span <= 0) return (padL + (W.value - padR)) / 2
+  return padL + ((x - minX.value) / span) * (W.value - padL - padR)
 }
 function yScale(y) {
   const span = maxY.value - minY.value
@@ -141,7 +157,7 @@ const hoverPoint = computed(() => (hoverIndex.value == null ? null : points.valu
 
 const tooltipStyle = computed(() => {
   if (!hoverPoint.value) return {}
-  const leftPct = (xScale(hoverPoint.value.x) / W) * 100
+  const leftPct = (xScale(hoverPoint.value.x) / W.value) * 100
   const topPct = (yScale(hoverPoint.value.y) / H) * 100
   // Flip the tooltip to the left half of the chart once the point is past
   // the midline, so it never runs off the right edge.
@@ -170,9 +186,9 @@ function nearestIndexForX(targetX) {
 function onPointerMove(e) {
   const rect = svgRef.value?.getBoundingClientRect()
   if (!rect || !points.value.length) return
-  const vbX = ((e.clientX - rect.left) / rect.width) * W
+  const vbX = ((e.clientX - rect.left) / rect.width) * W.value
   const span = maxX.value - minX.value
-  const targetX = span > 0 ? minX.value + ((vbX - padL) / (W - padL - padR)) * span : minX.value
+  const targetX = span > 0 ? minX.value + ((vbX - padL) / (W.value - padL - padR)) * span : minX.value
   hoverIndex.value = nearestIndexForX(targetX)
 }
 function clearHover() {

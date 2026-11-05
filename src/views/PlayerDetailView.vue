@@ -3,7 +3,12 @@
     <div>
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
       <h2 class="detail-name">{{ player?.displayName || playerId }}</h2>
-      <p v-if="latest" class="last-synced">Last updated {{ formatRelative(latest.capturedAt) }}</p>
+      <p v-if="latest" class="last-synced">
+        Last updated {{ formatRelative(latest.capturedAt) }}
+        <span v-if="checkingForUpdates" class="checking-indicator">
+          <span class="spinner" /> Checking for updates…
+        </span>
+      </p>
     </div>
     <div class="detail-actions">
       <button class="btn btn-ghost" :disabled="refreshing" @click="refresh">
@@ -161,16 +166,13 @@ const player = computed(() => store.players.find((p) => p.id === playerId.value)
 const snapshots = ref([])
 const loading = ref(true)
 const refreshing = ref(false)
+const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')
 
 async function load() {
   loading.value = true
   if (!store.loaded) await store.loadPlayers()
-  // Check for updates whenever this page loads, rather than only on the
-  // 6-hourly scheduler or a manual refresh. Non-fatal — still show
-  // whatever history is already there if the live check fails.
-  await store.refreshPlayer(playerId.value).catch(() => {})
   try {
     snapshots.value = await store.fetchSnapshots(playerId.value)
   } catch {
@@ -178,6 +180,20 @@ async function load() {
     snapshots.value = []
   } finally {
     loading.value = false
+  }
+
+  // Check for updates whenever this page loads, rather than only on the
+  // 6-hourly scheduler or a manual refresh. Runs after the saved data is
+  // already showing, so a slow hiscores fetch never blocks the page —
+  // snapshots.value is swapped in once the refresh completes.
+  checkingForUpdates.value = true
+  try {
+    await store.refreshPlayer(playerId.value)
+    snapshots.value = await store.fetchSnapshots(playerId.value)
+  } catch {
+    // Non-fatal — the page already has the last saved data.
+  } finally {
+    checkingForUpdates.value = false
   }
 }
 onMounted(load)
