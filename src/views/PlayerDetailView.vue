@@ -9,7 +9,6 @@
       <button class="btn btn-ghost" :disabled="refreshing" @click="refresh">
         {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
       </button>
-      <button class="btn btn-danger" @click="removePlayer">Stop Tracking</button>
     </div>
   </div>
 
@@ -132,7 +131,6 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
-import { useConfirm } from '@/composables/useConfirm'
 import { formatRelative } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import {
@@ -156,7 +154,6 @@ const route = useRoute()
 const router = useRouter()
 const store = usePlayersStore()
 const { showToast } = useToast()
-const { askConfirm } = useConfirm()
 
 const playerId = computed(() => Number(route.params.id))
 const player = computed(() => store.players.find((p) => p.id === playerId.value) ?? null)
@@ -248,16 +245,5 @@ async function refresh() {
   } finally {
     refreshing.value = false
   }
-}
-
-async function removePlayer() {
-  if (!player.value) return
-  const ok = await askConfirm(
-    `Stop tracking "${player.value.displayName}"? This deletes their whole XP history.`,
-    'Stop Tracking',
-  )
-  if (!ok) return
-  await store.removePlayer(playerId.value)
-  router.push({ name: 'players' })
 }
 </script>

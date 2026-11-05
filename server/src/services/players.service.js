@@ -172,10 +172,6 @@ export async function addPlayer(rawUsername) {
   }
 }
 
-export async function removePlayer(id) {
-  await pool.query('DELETE FROM players WHERE id = $1', [id])
-}
-
 export async function getSnapshots(playerId) {
   const result = await pool.query(
     `SELECT captured_at, overall_xp, overall_level, overall_rank, skills

@@ -11,7 +11,6 @@
   --gold-bright: #f0c976;
   --gold-ink: #1a1510;
   --xp-green: #7cb869;
-  --danger: #e2615f;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
@@ -117,15 +116,6 @@ button:focus-visible {
   border-color: var(--gold);
   color: var(--gold-bright);
 }
-.btn-danger {
-  background: transparent;
-  border-color: #5a2d2c;
-  color: var(--danger);
-}
-.btn-danger:hover {
-  background: rgba(226, 97, 95, 0.12);
-  border-color: var(--danger);
-}
 .btn-text {
   background: none;
   border: none;
@@ -196,14 +186,6 @@ button:focus-visible {
   font-weight: 700;
   font-size: 0.92rem;
   color: var(--gold-bright);
-}
-.remove-btn {
-  color: var(--muted);
-  padding: 2px 6px;
-}
-.remove-btn:hover {
-  color: var(--danger);
-  text-decoration: none;
 }
 .player-stats {
   display: flex;
@@ -514,42 +496,4 @@ button:focus-visible {
 .toast.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
-}
-
-/* ---------- confirm dialog ---------- */
-.confirm-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 8, 5, 0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 20px;
-}
-.confirm-box {
-  max-width: 400px;
-  width: 100%;
-  margin-bottom: 0;
-  box-shadow: var(--shadow-md);
-}
-.confirm-message {
-  margin: 0 0 18px;
-  color: var(--text);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-.confirm-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-.confirm-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #1a1510;
-  font-weight: 700;
-}
-.confirm-danger:hover {
-  background: #ef7a78;
 }

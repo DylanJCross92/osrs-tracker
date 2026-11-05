@@ -3,7 +3,6 @@ import { PlayerNotFoundError } from '../services/osrsHiscores.service.js'
 import {
   listPlayers,
   addPlayer,
-  removePlayer,
   getPlayer,
   getSnapshots,
   refreshPlayer,
@@ -32,15 +31,6 @@ playersRouter.post('/', async (req, res, next) => {
     res.status(201).json(await listPlayers())
   } catch (err) {
     handleKnownErrors(err, res, next)
-  }
-})
-
-playersRouter.delete('/:id', async (req, res, next) => {
-  try {
-    await removePlayer(req.params.id)
-    res.json(await listPlayers())
-  } catch (err) {
-    next(err)
   }
 })
 

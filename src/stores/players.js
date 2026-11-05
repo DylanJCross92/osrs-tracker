@@ -15,10 +15,6 @@ export const usePlayersStore = defineStore('players', () => {
     players.value = await playersApi.add(username)
   }
 
-  async function removePlayer(id) {
-    players.value = await playersApi.remove(id)
-  }
-
   async function refreshPlayer(id) {
     players.value = await playersApi.refresh(id)
   }
@@ -31,5 +27,5 @@ export const usePlayersStore = defineStore('players', () => {
     return playersApi.snapshots(id)
   }
 
-  return { players, loaded, loadPlayers, addPlayer, removePlayer, refreshPlayer, syncAll, fetchSnapshots }
+  return { players, loaded, loadPlayers, addPlayer, refreshPlayer, syncAll, fetchSnapshots }
 })
