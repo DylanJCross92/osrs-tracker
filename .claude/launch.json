@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "osrs-xp-tracker-dev",
+      "runtimeExecutable": "/Users/dylancross/.nvm/versions/node/v22.23.2/bin/node",
+      "runtimeArgs": ["node_modules/vite/bin/vite.js", "--port", "5173", "--strictPort"],
+      "port": 5173
+    }
+  ]
+}
