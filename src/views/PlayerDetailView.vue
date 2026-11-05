@@ -3,6 +3,7 @@
     <div>
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
       <h2 class="detail-name">{{ player?.displayName || playerId }}</h2>
+      <p v-if="latest" class="last-synced">Last updated {{ formatRelative(latest.capturedAt) }}</p>
     </div>
     <div class="detail-actions">
       <button class="btn btn-ghost" :disabled="refreshing" @click="refresh">
@@ -39,20 +40,30 @@
             @keydown.space.prevent="selectedSkill = skill"
           >
             <td class="hs-skill-col">
-              <span class="skill-icon">{{ SKILL_ICONS[skill] }}</span>
+              <img class="skill-icon" :src="skillIconSrc(skill)" :alt="skill" width="16" height="16" />
               <span class="skill-name">{{ skill }}</span>
             </td>
-            <td>{{ rankLabel(rankForSkill(latest, skill)) }}</td>
-            <td>{{ levelForSkill(latest, skill).toLocaleString() }}</td>
-            <td class="hs-xp-col">
-              {{ xpForSkill(latest, skill).toLocaleString() }}
+            <td>
               <span
-                v-if="lastGains[skill]"
+                v-if="todayRankGains[skill] > 0"
                 class="xp-delta"
-                :title="`+${lastGains[skill].amount.toLocaleString()} xp on ${new Date(lastGains[skill].capturedAt).toLocaleString()}`"
+                :title="`Climbed ${todayRankGains[skill].toLocaleString()} ranks in the last 24h`"
               >
-                +{{ formatXp(lastGains[skill].amount) }}
+                +{{ formatXp(todayRankGains[skill]) }}
               </span>
+              {{ rankLabel(rankForSkill(latest, skill)) }}
+            </td>
+            <td>
+              <span v-if="todayLevelGains[skill] > 0" class="xp-delta" :title="`+${todayLevelGains[skill]} levels in the last 24h`">
+                +{{ todayLevelGains[skill] }}
+              </span>
+              {{ levelForSkill(latest, skill).toLocaleString() }}
+            </td>
+            <td class="hs-xp-col">
+              <span v-if="todayXpGains[skill] > 0" class="xp-delta" :title="`+${todayXpGains[skill].toLocaleString()} xp in the last 24h`">
+                +{{ formatXp(todayXpGains[skill]) }}
+              </span>
+              {{ xpForSkill(latest, skill).toLocaleString() }}
             </td>
           </tr>
         </tbody>
@@ -87,15 +98,23 @@
           <thead>
             <tr>
               <th>Synced</th>
+              <th>Rank</th>
+              <th>Rank Gained</th>
               <th>Level</th>
+              <th>Lvl Gained</th>
               <th>XP</th>
+              <th>XP Gained</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(s, i) in [...snapshots].reverse()" :key="i">
-              <td>{{ new Date(s.capturedAt).toLocaleString() }}</td>
-              <td>{{ levelForSkill(s, selectedSkill) }}</td>
-              <td>{{ xpForSkill(s, selectedSkill).toLocaleString() }}</td>
+            <tr v-for="row in snapshotRows" :key="row.capturedAt">
+              <td>{{ new Date(row.capturedAt).toLocaleString() }}</td>
+              <td>{{ rankLabel(row.rank) }}</td>
+              <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
+              <td>{{ row.level }}</td>
+              <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
+              <td>{{ row.xp.toLocaleString() }}</td>
+              <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
             </tr>
           </tbody>
         </table>
@@ -114,17 +133,19 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
+import { formatRelative } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import {
   SKILL_NAMES,
-  SKILL_ICONS,
+  skillIconSrc,
   formatXp,
   formatSignedXp,
   xpForSkill,
   levelForSkill,
   rankForSkill,
   xpGain,
-  lastXpGain,
+  levelGain,
+  rankGain,
 } from '@/utils/osrsSkills'
 
 // Same order (and the same "Overall" row first) as the official OSRS
@@ -149,6 +170,10 @@ const selectedSkill = ref('Overall')
 async function load() {
   loading.value = true
   if (!store.loaded) await store.loadPlayers()
+  // Check for updates whenever this page loads, rather than only on the
+  // 6-hourly scheduler or a manual refresh. Non-fatal — still show
+  // whatever history is already there if the live check fails.
+  await store.refreshPlayer(playerId.value).catch(() => {})
   try {
     snapshots.value = await store.fetchSnapshots(playerId.value)
   } catch {
@@ -163,15 +188,19 @@ watch(playerId, load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
 
-// Per-skill "last time it gained xp" — computed once per snapshot load
-// rather than re-walking history on every row's render.
-const lastGains = computed(() => {
+// Per-skill xp/level/rank gained in the trailing 24h — computed once per
+// snapshot load rather than re-walking history on every row's render.
+const todayXpGains = computed(() => buildGainMap(xpGain))
+const todayLevelGains = computed(() => buildGainMap(levelGain))
+const todayRankGains = computed(() => buildGainMap(rankGain))
+
+function buildGainMap(gainFn) {
   const map = {}
   for (const skill of HISCORES_SKILL_ORDER) {
-    map[skill] = lastXpGain(snapshots.value, skill)
+    map[skill] = gainFn(snapshots.value, skill, 'day')
   }
   return map
-})
+}
 
 function rankLabel(rank) {
   return rank ? rank.toLocaleString() : '--'
@@ -184,6 +213,29 @@ function gain(period) {
 const chartPoints = computed(() =>
   snapshots.value.map((s) => ({ x: new Date(s.capturedAt).getTime(), y: xpForSkill(s, selectedSkill.value) })),
 )
+
+// Per-refresh xp/level/rank gained (the breakdown behind the daily totals
+// shown inline above) — each row's delta from the snapshot before it,
+// newest first.
+const snapshotRows = computed(() => {
+  const list = snapshots.value
+  return [...list]
+    .map((s, i) => {
+      const prev = i > 0 ? list[i - 1] : null
+      const rank = rankForSkill(s, selectedSkill.value)
+      const prevRank = prev ? rankForSkill(prev, selectedSkill.value) : null
+      return {
+        capturedAt: s.capturedAt,
+        rank,
+        rankGain: prev && rank != null && prevRank != null ? prevRank - rank : null,
+        level: levelForSkill(s, selectedSkill.value),
+        levelGain: prev ? levelForSkill(s, selectedSkill.value) - levelForSkill(prev, selectedSkill.value) : null,
+        xp: xpForSkill(s, selectedSkill.value),
+        xpGain: prev ? xpForSkill(s, selectedSkill.value) - xpForSkill(prev, selectedSkill.value) : null,
+      }
+    })
+    .reverse()
+})
 
 async function refresh() {
   refreshing.value = true

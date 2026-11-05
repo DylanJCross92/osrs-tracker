@@ -6,4 +6,5 @@ export const playersApi = {
   remove: (id) => api.delete(`/players/${id}`),
   snapshots: (id) => api.get(`/players/${id}/snapshots`),
   refresh: (id) => api.post(`/players/${id}/refresh`),
+  syncAll: () => api.post('/players/sync-all'),
 }

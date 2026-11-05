@@ -17,6 +17,7 @@ function delay(ms) {
 
 export async function syncAllPlayers() {
   const { rows: players } = await pool.query('SELECT id, username FROM players ORDER BY id ASC')
+  if (!players.length) return
 
   for (const player of players) {
     try {

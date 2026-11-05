@@ -39,32 +39,37 @@ export const SKILL_GRID_ORDER = [
   'Construction', 'Hunter',
 ]
 
-// Decorative only — plain Unicode emoji, not game assets.
-export const SKILL_ICONS = {
-  Overall: '⭐',
-  Attack: '⚔️',
-  Defence: '🛡️',
-  Strength: '💪',
-  Hitpoints: '❤️',
-  Ranged: '🏹',
-  Prayer: '🙏',
-  Magic: '🔮',
-  Cooking: '🍳',
-  Woodcutting: '🪓',
-  Fletching: '🪶',
-  Fishing: '🎣',
-  Firemaking: '🔥',
-  Crafting: '💎',
-  Smithing: '🔨',
-  Mining: '⛏️',
-  Herblore: '🧪',
-  Agility: '🏃',
-  Thieving: '🕵️',
-  Slayer: '💀',
-  Farming: '🌾',
-  Runecraft: '🌀',
-  Hunter: '🐾',
-  Construction: '🏠',
+// File names (under public/icons/skills/) for the real skill icons used on
+// the official hiscores page, keyed by skill name.
+export const SKILL_ICON_FILES = {
+  Overall: 'overall',
+  Attack: 'attack',
+  Defence: 'defence',
+  Strength: 'strength',
+  Hitpoints: 'hitpoints',
+  Ranged: 'ranged',
+  Prayer: 'prayer',
+  Magic: 'magic',
+  Cooking: 'cooking',
+  Woodcutting: 'woodcutting',
+  Fletching: 'fletching',
+  Fishing: 'fishing',
+  Firemaking: 'firemaking',
+  Crafting: 'crafting',
+  Smithing: 'smithing',
+  Mining: 'mining',
+  Herblore: 'herblore',
+  Agility: 'agility',
+  Thieving: 'thieving',
+  Slayer: 'slayer',
+  Farming: 'farming',
+  Runecraft: 'runecraft',
+  Hunter: 'hunter',
+  Construction: 'construction',
+}
+
+export function skillIconSrc(skill) {
+  return `/icons/skills/${SKILL_ICON_FILES[skill]}.gif`
 }
 
 /** 4_200_000 -> "4.2M", 12_000 -> "12K", 850 -> "850". Trailing zeros are dropped. */
@@ -105,32 +110,45 @@ const PERIODS = {
 }
 
 /**
- * XP gained over a trailing window, using the oldest snapshot still inside
- * the window as the baseline (or the very first snapshot, if the player
- * hasn't been tracked that long yet).
+ * Baseline snapshot for a trailing window — the oldest snapshot still
+ * inside it, or the very first snapshot if the player hasn't been tracked
+ * that long yet.
  */
-export function xpGain(snapshots, skill, period) {
+function baselineSnapshot(snapshots, period) {
+  if (period === 'all') return snapshots[0]
+  const cutoff = Date.now() - PERIODS[period]
+  return snapshots.find((s) => new Date(s.capturedAt).getTime() >= cutoff) ?? snapshots[0]
+}
+
+/** Change in some per-snapshot stat over a trailing window. */
+function gainBetween(snapshots, skill, period, accessor) {
   if (!snapshots.length) return 0
   const latest = snapshots[snapshots.length - 1]
-  if (period === 'all') return xpForSkill(latest, skill) - xpForSkill(snapshots[0], skill)
+  return accessor(latest, skill) - accessor(baselineSnapshot(snapshots, period), skill)
+}
 
-  const cutoff = Date.now() - PERIODS[period]
-  const baseline = snapshots.find((s) => new Date(s.capturedAt).getTime() >= cutoff) ?? snapshots[0]
-  return xpForSkill(latest, skill) - xpForSkill(baseline, skill)
+/** XP gained over a trailing window. */
+export function xpGain(snapshots, skill, period) {
+  return gainBetween(snapshots, skill, period, xpForSkill)
+}
+
+/** Levels gained over a trailing window. */
+export function levelGain(snapshots, skill, period) {
+  return gainBetween(snapshots, skill, period, levelForSkill)
 }
 
 /**
- * The most recent nonzero xp gain between two consecutive checks for a
- * skill — "gained since last check", or, if the last check (or several in a
- * row) came back flat, the last time it actually moved before that. Returns
- * null if the skill has never gained xp across the tracked history.
+ * Leaderboard positions climbed over a trailing window — a lower rank
+ * number is better, so this is baseline rank minus latest rank. Null if
+ * either end is unranked, since rank movement isn't meaningful without
+ * both points.
  */
-export function lastXpGain(snapshots, skill) {
-  for (let i = snapshots.length - 1; i > 0; i--) {
-    const amount = xpForSkill(snapshots[i], skill) - xpForSkill(snapshots[i - 1], skill)
-    if (amount > 0) {
-      return { amount, capturedAt: snapshots[i].capturedAt }
-    }
-  }
-  return null
+export function rankGain(snapshots, skill, period) {
+  if (!snapshots.length) return null
+  const latest = snapshots[snapshots.length - 1]
+  const latestRank = rankForSkill(latest, skill)
+  if (latestRank == null) return null
+  const baselineRank = rankForSkill(baselineSnapshot(snapshots, period), skill)
+  if (baselineRank == null) return null
+  return baselineRank - latestRank
 }

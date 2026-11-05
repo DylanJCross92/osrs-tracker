@@ -8,6 +8,7 @@ import {
   getSnapshots,
   refreshPlayer,
 } from '../services/players.service.js'
+import { syncAllPlayers } from '../jobs/sync.js'
 
 export const playersRouter = Router()
 
@@ -61,5 +62,17 @@ playersRouter.post('/:id/refresh', async (req, res, next) => {
     res.json(await listPlayers())
   } catch (err) {
     handleKnownErrors(err, res, next)
+  }
+})
+
+// Checks every tracked player for updates — used to sync on page load
+// instead of waiting for the scheduler. Reuses the same staggered,
+// error-tolerant sweep as the 6-hourly job.
+playersRouter.post('/sync-all', async (req, res, next) => {
+  try {
+    await syncAllPlayers()
+    res.json(await listPlayers())
+  } catch (err) {
+    next(err)
   }
 })

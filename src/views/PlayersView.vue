@@ -24,6 +24,16 @@
         <div><b>{{ formatXp(p.latest.overallXp) }}</b><span>total xp</span></div>
       </div>
       <p v-else class="empty-hint">No data yet.</p>
+      <div v-if="p.todayGain && p.todayGain.xp > 0" class="player-gain-row">
+        <span class="gain-today">
+          <img class="top-skill-icon" :src="skillIconSrc('Overall')" alt="Overall" width="16" height="16" />
+          +{{ formatXp(p.todayGain.xp) }}
+        </span>
+        <span v-if="p.todayGain.topSkill" class="top-skill">
+          <img class="top-skill-icon" :src="skillIconSrc(p.todayGain.topSkill)" :alt="p.todayGain.topSkill" width="16" height="16" />
+          +{{ formatXp(p.todayGain.topSkillXp) }}
+        </span>
+      </div>
       <p v-if="p.latest" class="last-synced">Last synced {{ formatRelative(p.latest.capturedAt) }}</p>
     </div>
   </div>
@@ -38,7 +48,7 @@ import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useConfirm } from '@/composables/useConfirm'
-import { formatXp } from '@/utils/osrsSkills'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 
@@ -50,8 +60,11 @@ const { askConfirm } = useConfirm()
 const newUsername = ref('')
 const adding = ref(false)
 
-onMounted(() => {
-  if (!store.loaded) store.loadPlayers()
+onMounted(async () => {
+  if (!store.loaded) await store.loadPlayers()
+  // Check every tracked player for updates whenever this page loads,
+  // rather than only on the 6-hourly scheduler or a manual refresh.
+  store.syncAll().catch(() => {})
 })
 
 async function submitAdd() {
