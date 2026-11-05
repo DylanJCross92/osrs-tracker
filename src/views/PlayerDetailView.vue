@@ -213,7 +213,8 @@ const chartPoints = computed(() =>
 
 // Per-refresh xp/level/rank gained (the breakdown behind the daily totals
 // shown inline above) — each row's delta from the snapshot before it,
-// newest first.
+// newest first. Refreshes that gained no xp for this skill are left out —
+// they're not meaningful "updates" to show in the breakdown.
 const snapshotRows = computed(() => {
   const list = snapshots.value
   return [...list]
@@ -231,6 +232,7 @@ const snapshotRows = computed(() => {
         xpGain: prev ? xpForSkill(s, selectedSkill.value) - xpForSkill(prev, selectedSkill.value) : null,
       }
     })
+    .filter((row) => row.xpGain == null || row.xpGain > 0)
     .reverse()
 })
 

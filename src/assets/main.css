@@ -257,6 +257,7 @@ button:focus-visible {
 /* ---------- hiscores table ---------- */
 .hiscores-panel {
   padding: 4px 0;
+  overflow-x: auto;
 }
 .hiscores-table {
   width: 100%;
@@ -271,6 +272,7 @@ button:focus-visible {
   letter-spacing: 0.06em;
   color: var(--muted);
   border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
 }
 .hiscores-table td {
   padding: 8px 20px;
@@ -278,6 +280,7 @@ button:focus-visible {
   font-variant-numeric: tabular-nums;
   border-bottom: 1px solid var(--border);
   color: var(--text);
+  white-space: nowrap;
 }
 .hiscores-row {
   cursor: pointer;
