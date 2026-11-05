@@ -124,6 +124,18 @@
         </table>
       </div>
     </div>
+
+    <div v-if="trainingAdvice" class="card training-advice">
+      <h3>Training {{ selectedSkill }} at level {{ selectedSkillLevel }}</h3>
+      <div class="advice-row">
+        <span class="advice-label">⚡ Fastest</span>
+        <span class="advice-text">{{ trainingAdvice.fastest }}</span>
+      </div>
+      <div class="advice-row">
+        <span class="advice-label">💰 Best money maker</span>
+        <span class="advice-text">{{ trainingAdvice.money || 'No reliable money-making method at this level — this is a pure xp (and gp) investment.' }}</span>
+      </div>
+    </div>
   </template>
 
   <div v-else class="card">
@@ -150,6 +162,7 @@ import {
   levelGain,
   rankGain,
 } from '@/utils/osrsSkills'
+import { getTrainingAdvice } from '@/utils/trainingGuide'
 
 // Same order (and the same "Overall" row first) as the official OSRS
 // hiscores table, not the in-game skills panel's 3-column layout.
@@ -200,6 +213,9 @@ onMounted(load)
 watch(playerId, load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
+
+const selectedSkillLevel = computed(() => (latest.value ? levelForSkill(latest.value, selectedSkill.value) : 1))
+const trainingAdvice = computed(() => getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value))
 
 // Per-skill xp/level/rank gained in the trailing 24h — computed once per
 // snapshot load rather than re-walking history on every row's render.

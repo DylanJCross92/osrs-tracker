@@ -396,6 +396,36 @@ button:focus-visible {
 .chart-header h3 {
   margin: 0;
 }
+.training-advice h3 {
+  margin: 0 0 14px;
+  font-size: 1rem;
+}
+.advice-row {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.advice-row:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.advice-label {
+  flex: none;
+  width: 140px;
+  font-weight: 600;
+  color: var(--gold-bright);
+  font-size: 0.85rem;
+}
+.advice-text {
+  flex: 1;
+  min-width: 200px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
 .table-toggle {
   margin-top: 8px;
 }
