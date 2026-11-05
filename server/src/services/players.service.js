@@ -87,7 +87,16 @@ export async function listPlayers() {
     ) b ON true
     ORDER BY p.display_name ASC
   `)
-  return result.rows.map(mapPlayerRow)
+  const players = result.rows.map(mapPlayerRow)
+  // Most xp gained today first; players with no gain (or no data to
+  // compare yet) sink to the bottom, alphabetically among themselves.
+  players.sort((a, b) => {
+    const gainA = a.todayGain?.xp ?? -Infinity
+    const gainB = b.todayGain?.xp ?? -Infinity
+    if (gainB !== gainA) return gainB - gainA
+    return a.displayName.localeCompare(b.displayName)
+  })
+  return players
 }
 
 export async function getPlayer(id) {
