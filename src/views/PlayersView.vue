@@ -13,8 +13,19 @@
     </form>
   </div>
 
+  <div v-if="store.players.length" class="period-toolbar">
+    <label class="period-select">
+      <span class="period-select-label">Show gains for</span>
+      <select v-model="period">
+        <option value="day">Today</option>
+        <option value="week">Last 7 Days</option>
+        <option value="month">Last 30 Days</option>
+      </select>
+    </label>
+  </div>
+
   <div v-if="store.players.length" class="player-grid">
-    <div v-for="p in store.players" :key="p.id" class="card player-card" @click="goToPlayer(p)">
+    <div v-for="p in sortedPlayers" :key="p.id" class="card player-card" @click="goToPlayer(p)">
       <div class="player-card-top">
         <span class="player-name">{{ p.displayName }}</span>
       </div>
@@ -23,14 +34,14 @@
         <div><b>{{ formatXp(p.latest.overallXp) }}</b><span>total xp</span></div>
       </div>
       <p v-else class="empty-hint">No data yet.</p>
-      <div v-if="p.todayGain && p.todayGain.xp > 0" class="player-gain-row">
+      <div v-if="gainFor(p) && gainFor(p).xp > 0" class="player-gain-row">
         <span class="gain-today">
           <img class="top-skill-icon" :src="skillIconSrc('Overall')" alt="Overall" width="16" height="16" />
-          +{{ formatXp(p.todayGain.xp) }}
+          +{{ formatXp(gainFor(p).xp) }}
         </span>
-        <span v-if="p.todayGain.topSkill" class="top-skill">
-          <img class="top-skill-icon" :src="skillIconSrc(p.todayGain.topSkill)" :alt="p.todayGain.topSkill" width="16" height="16" />
-          +{{ formatXp(p.todayGain.topSkillXp) }}
+        <span v-if="gainFor(p).topSkill" class="top-skill">
+          <img class="top-skill-icon" :src="skillIconSrc(gainFor(p).topSkill)" :alt="gainFor(p).topSkill" width="16" height="16" />
+          +{{ formatXp(gainFor(p).topSkillXp) }}
         </span>
       </div>
       <p v-if="p.latest" class="last-synced">Last synced {{ formatRelative(p.latest.capturedAt) }}</p>
@@ -42,10 +53,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
+import { useGainPeriod } from '@/composables/useGainPeriod'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
@@ -57,6 +69,22 @@ const { showToast } = useToast()
 
 const newUsername = ref('')
 const adding = ref(false)
+const { period } = useGainPeriod()
+
+function gainFor(player) {
+  return player.gains?.[period.value] ?? null
+}
+
+// Most xp gained in the selected period first; players with no gain (or no
+// data to compare yet) sink to the bottom, alphabetically among themselves.
+const sortedPlayers = computed(() =>
+  [...store.players].sort((a, b) => {
+    const gainA = gainFor(a)?.xp ?? -Infinity
+    const gainB = gainFor(b)?.xp ?? -Infinity
+    if (gainB !== gainA) return gainB - gainA
+    return a.displayName.localeCompare(b.displayName)
+  }),
+)
 
 setPageMeta({
   description: "Track any OSRS player's hiscores and XP gains over time, with training advice for every skill.",

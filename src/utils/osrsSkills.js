@@ -126,14 +126,22 @@ const PERIODS = {
   month: 30 * 24 * 60 * 60 * 1000,
 }
 
+/** Midnight today in the browser's own local timezone. */
+function startOfToday() {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return d.getTime()
+}
+
 /**
  * Baseline snapshot for a trailing window — the oldest snapshot still
  * inside it, or the very first snapshot if the player hasn't been tracked
- * that long yet.
+ * that long yet. "day" is pinned to local midnight (the calendar day), not
+ * a rolling 24h window — "week"/"month" are plain rolling windows.
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
-  const cutoff = Date.now() - PERIODS[period]
+  const cutoff = period === 'day' ? startOfToday() : Date.now() - PERIODS[period]
   return snapshots.find((s) => new Date(s.capturedAt).getTime() >= cutoff) ?? snapshots[0]
 }
 

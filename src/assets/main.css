@@ -162,6 +162,32 @@ button:focus-visible {
   flex: 1;
 }
 
+.period-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+.period-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.period-select select {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.period-select select:hover {
+  border-color: var(--gold);
+}
 .player-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -271,7 +297,8 @@ button:focus-visible {
 }
 .detail-actions {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 14px;
   flex-shrink: 0;
 }
 
@@ -320,6 +347,7 @@ button:focus-visible {
   margin: 8px 0 0;
   font-size: 0.78rem;
   color: var(--muted);
+  text-align: right;
 }
 
 /* ---------- hiscores table ---------- */
@@ -374,6 +402,9 @@ button:focus-visible {
 .hiscores-table tbody tr:first-child td {
   font-weight: 700;
   border-bottom: 2px solid var(--border-strong);
+}
+.hiscores-table tbody tr:last-child td {
+  border-bottom: none;
 }
 .hs-skill-col {
   text-align: left !important;
@@ -446,9 +477,12 @@ button:focus-visible {
 .chart-header h2 {
   margin: 0;
 }
-.training-advice h2 {
-  margin: 0 0 14px;
-  font-size: 1rem;
+.training-advice-heading {
+  margin: 36px 0 8px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
 }
 .advice-row {
   display: flex;
@@ -456,11 +490,9 @@ button:focus-visible {
   align-items: baseline;
   flex-wrap: wrap;
   padding: 10px 0;
-  border-top: 1px solid var(--border);
 }
-.advice-row:first-of-type {
-  border-top: none;
-  padding-top: 0;
+.advice-row + .advice-row {
+  border-top: 1px solid var(--border);
 }
 .advice-label {
   flex: none;

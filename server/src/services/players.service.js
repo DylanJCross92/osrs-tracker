@@ -1,19 +1,27 @@
 import { pool } from '../db.js'
 import { fetchHiscores } from './osrsHiscores.service.js'
 
-// Total xp gained since the baseline snapshot, plus whichever single skill
-// gained the most of it — null if there's nothing to compare against yet
-// (a brand-new player with only one snapshot).
-function computeTodayGain(row) {
-  if (!row.captured_at || !row.baseline_captured_at || row.captured_at.getTime() === row.baseline_captured_at.getTime()) {
+// Local timezone used to decide where a calendar day starts for "today's" gains.
+const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
+
+const GAIN_PERIODS = ['day', 'week', 'month']
+
+// Total xp gained since the given period's baseline snapshot, plus whichever
+// single skill gained the most of it — null if there's nothing to compare
+// against yet (a brand-new player with only one snapshot).
+function computeGain(row, period) {
+  const capturedAt = row.captured_at
+  const baselineCapturedAt = row[`baseline_captured_at_${period}`]
+  if (!capturedAt || !baselineCapturedAt || capturedAt.getTime() === baselineCapturedAt.getTime()) {
     return null
   }
 
-  const xp = Number(row.overall_xp) - Number(row.baseline_overall_xp)
+  const xp = Number(row.overall_xp) - Number(row[`baseline_overall_xp_${period}`])
+  const baselineSkills = row[`baseline_skills_${period}`]
   let topSkill = null
   let topSkillXp = 0
   for (const [name, skill] of Object.entries(row.skills || {})) {
-    const prevXp = row.baseline_skills?.[name]?.xp ?? skill.xp
+    const prevXp = baselineSkills?.[name]?.xp ?? skill.xp
     const gained = skill.xp - prevXp
     if (gained > topSkillXp) {
       topSkillXp = gained
@@ -24,6 +32,9 @@ function computeTodayGain(row) {
 }
 
 function mapPlayerRow(row) {
+  const gains = {}
+  for (const period of GAIN_PERIODS) gains[period] = computeGain(row, period)
+
   return {
     id: row.id,
     username: row.username,
@@ -38,7 +49,7 @@ function mapPlayerRow(row) {
           skills: row.skills,
         }
       : null,
-    todayGain: computeTodayGain(row),
+    gains,
   }
 }
 
@@ -52,26 +63,24 @@ function mapSnapshotRow(row) {
   }
 }
 
-export async function listPlayers() {
-  const result = await pool.query(`
-    SELECT p.id, p.username, p.display_name, p.created_at,
-           s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
-           b.captured_at AS baseline_captured_at, b.overall_xp AS baseline_overall_xp, b.skills AS baseline_skills
-    FROM players p
-    LEFT JOIN LATERAL (
-      SELECT captured_at, overall_xp, overall_level, overall_rank, skills
-      FROM snapshots
-      WHERE player_id = p.id
-      ORDER BY captured_at DESC
-      LIMIT 1
-    ) s ON true
-    -- "Today" baseline: the oldest snapshot still within the last 24h, or
-    -- the very first one ever if the player hasn't been tracked that long.
+// A period's baseline is the oldest snapshot still within its window, or the
+// very first snapshot ever if the player hasn't been tracked that long —
+// "day" is pinned to local midnight so it means the calendar day, not a
+// rolling 24h window; "week"/"month" are plain rolling windows.
+const BASELINE_CUTOFF_SQL = {
+  day: `date_trunc('day', now() AT TIME ZONE $1) AT TIME ZONE $1`,
+  week: `now() - interval '7 days'`,
+  month: `now() - interval '30 days'`,
+}
+
+function baselineJoinSql(period) {
+  const cutoff = BASELINE_CUTOFF_SQL[period]
+  return `
     LEFT JOIN LATERAL (
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id AND captured_at >= now() - interval '24 hours'
+        WHERE player_id = p.id AND captured_at >= ${cutoff}
         ORDER BY captured_at ASC
         LIMIT 1
       )
@@ -84,15 +93,42 @@ export async function listPlayers() {
         LIMIT 1
       )
       LIMIT 1
-    ) b ON true
+    ) b_${period} ON true
+  `
+}
+
+export async function listPlayers() {
+  const baselineColumns = GAIN_PERIODS.map(
+    (period) =>
+      `b_${period}.captured_at AS baseline_captured_at_${period}, ` +
+      `b_${period}.overall_xp AS baseline_overall_xp_${period}, ` +
+      `b_${period}.skills AS baseline_skills_${period}`,
+  ).join(',\n           ')
+
+  const result = await pool.query(
+    `
+    SELECT p.id, p.username, p.display_name, p.created_at,
+           s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
+           ${baselineColumns}
+    FROM players p
+    LEFT JOIN LATERAL (
+      SELECT captured_at, overall_xp, overall_level, overall_rank, skills
+      FROM snapshots
+      WHERE player_id = p.id
+      ORDER BY captured_at DESC
+      LIMIT 1
+    ) s ON true
+    ${GAIN_PERIODS.map(baselineJoinSql).join('\n')}
     ORDER BY p.display_name ASC
-  `)
+  `,
+    [APP_TIMEZONE],
+  )
   const players = result.rows.map(mapPlayerRow)
   // Most xp gained today first; players with no gain (or no data to
   // compare yet) sink to the bottom, alphabetically among themselves.
   players.sort((a, b) => {
-    const gainA = a.todayGain?.xp ?? -Infinity
-    const gainB = b.todayGain?.xp ?? -Infinity
+    const gainA = a.gains.day?.xp ?? -Infinity
+    const gainB = b.gains.day?.xp ?? -Infinity
     if (gainB !== gainA) return gainB - gainA
     return a.displayName.localeCompare(b.displayName)
   })

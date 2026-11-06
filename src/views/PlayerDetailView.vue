@@ -11,6 +11,14 @@
       </p>
     </div>
     <div class="detail-actions">
+      <label class="period-select">
+        <span class="period-select-label">Show gains for</span>
+        <select v-model="period">
+          <option value="day">Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Last 30 Days</option>
+        </select>
+      </label>
       <button class="btn btn-ghost" :disabled="refreshing || !player" @click="refresh">
         {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
       </button>
@@ -51,23 +59,23 @@
             </td>
             <td>
               <span
-                v-if="todayRankGains[skill] > 0"
+                v-if="periodRankGains[skill] > 0"
                 class="xp-delta"
-                :title="`Climbed ${todayRankGains[skill].toLocaleString()} ranks in the last 24h`"
+                :title="`Climbed ${periodRankGains[skill].toLocaleString()} ranks ${periodPhrase}`"
               >
-                +{{ formatXp(todayRankGains[skill]) }}
+                +{{ formatXp(periodRankGains[skill]) }}
               </span>
               {{ rankLabel(rankForSkill(latest, skill)) }}
             </td>
             <td>
-              <span v-if="todayLevelGains[skill] > 0" class="xp-delta" :title="`+${todayLevelGains[skill]} levels in the last 24h`">
-                +{{ todayLevelGains[skill] }}
+              <span v-if="periodLevelGains[skill] > 0" class="xp-delta" :title="`+${periodLevelGains[skill]} levels ${periodPhrase}`">
+                +{{ periodLevelGains[skill] }}
               </span>
               {{ levelForSkill(latest, skill).toLocaleString() }}
             </td>
             <td class="hs-xp-col">
-              <span v-if="todayXpGains[skill] > 0" class="xp-delta" :title="`+${todayXpGains[skill].toLocaleString()} xp in the last 24h`">
-                +{{ formatXp(todayXpGains[skill]) }}
+              <span v-if="periodXpGains[skill] > 0" class="xp-delta" :title="`+${periodXpGains[skill].toLocaleString()} xp ${periodPhrase}`">
+                +{{ formatXp(periodXpGains[skill]) }}
               </span>
               {{ xpForSkill(latest, skill).toLocaleString() }}
             </td>
@@ -76,21 +84,46 @@
       </table>
     </div>
 
-    <div class="card skill-progress-card">
+    <div v-if="selectedSkill !== 'Overall'" class="card skill-progress-card">
       <div class="skill-progress-head">
         <img class="skill-progress-icon" :src="skillIconSrc(selectedSkill)" :alt="selectedSkill" width="28" height="28" />
         <h2 class="skill-progress-name">{{ selectedSkill }}</h2>
-        <span class="skill-progress-level">Level {{ selectedSkillLevel }}</span>
+        <span class="skill-progress-level">Level {{ targetSkillLevel }}</span>
       </div>
       <template v-if="selectedSkillLevel < 99">
         <div class="level-progress-track">
           <div class="level-progress-fill" :style="{ width: levelProgressPercent + '%' }"></div>
         </div>
         <p class="level-progress-caption">
-          {{ levelProgressPercent.toFixed(1) }}% of the way to level {{ selectedSkillLevel + 1 }}
+          {{ levelProgressPercent.toFixed(1) }}% — {{ xpToNextLevel.toLocaleString() }} xp to go
         </p>
       </template>
       <p v-else class="level-progress-caption">Max level reached — nice work.</p>
+
+      <template v-if="trainingAdvice">
+        <h3 class="training-advice-heading">Training tips</h3>
+        <div class="advice-row">
+          <span class="advice-label">⚡ Fastest</span>
+          <span class="advice-text">
+            {{ trainingAdvice.fastest }}
+            <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
+              ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
+              {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString() }} xp to go).
+            </span>
+            <span v-else class="advice-eta">You're already at the max level (99)!</span>
+          </span>
+        </div>
+        <div class="advice-row">
+          <span class="advice-label">💰 Best money maker</span>
+          <span class="advice-text">
+            <template v-if="trainingAdvice.money">{{ trainingAdvice.money }}</template>
+            <template v-else-if="trainingAdvice.moneyUnlocksAt">
+              No reliable money-making method yet — that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
+            </template>
+            <template v-else>No reliable money-making method for this skill — it's a pure xp (and gp) investment.</template>
+          </span>
+        </div>
+      </template>
     </div>
 
     <div class="gain-tiles">
@@ -170,30 +203,6 @@
       </div>
     </div>
 
-    <div v-if="trainingAdvice" class="card training-advice">
-      <h2>Training {{ selectedSkill }} at level {{ selectedSkillLevel }}</h2>
-      <div class="advice-row">
-        <span class="advice-label">⚡ Fastest</span>
-        <span class="advice-text">
-          {{ trainingAdvice.fastest }}
-          <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
-            ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
-            {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString() }} xp to go).
-          </span>
-          <span v-else class="advice-eta">You're already at the max level (99)!</span>
-        </span>
-      </div>
-      <div class="advice-row">
-        <span class="advice-label">💰 Best money maker</span>
-        <span class="advice-text">
-          <template v-if="trainingAdvice.money">{{ trainingAdvice.money }}</template>
-          <template v-else-if="trainingAdvice.moneyUnlocksAt">
-            No reliable money-making method yet — that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
-          </template>
-          <template v-else>No reliable money-making method for this skill — it's a pure xp (and gp) investment.</template>
-        </span>
-      </div>
-    </div>
   </template>
 
   <div v-else class="card">
@@ -208,6 +217,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
+import { useGainPeriod } from '@/composables/useGainPeriod'
 import { formatRelative } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import {
@@ -319,17 +329,35 @@ const levelProgressPercent = computed(() => {
   const pct = ((selectedSkillXp.value - lo) / (hi - lo)) * 100
   return Math.min(Math.max(pct, 0), 100)
 })
+const xpToNextLevel = computed(() => {
+  if (selectedSkillLevel.value >= 99) return 0
+  return xpForLevel(selectedSkillLevel.value + 1) - selectedSkillXp.value
+})
+// The badge shows the level you're progressing toward, not the current one
+// — already at 99 (or total-level "Overall"), there's no next level to show.
+const targetSkillLevel = computed(() =>
+  selectedSkillLevel.value < 99 ? selectedSkillLevel.value + 1 : selectedSkillLevel.value,
+)
 
-// Per-skill xp/level/rank gained in the trailing 24h — computed once per
-// snapshot load rather than re-walking history on every row's render.
-const todayXpGains = computed(() => buildGainMap(xpGain))
-const todayLevelGains = computed(() => buildGainMap(levelGain))
-const todayRankGains = computed(() => buildGainMap(rankGain))
+// Dropdown above the hiscores table — which window its per-skill deltas
+// show. "day" means the calendar day (resets at local midnight), "week"/
+// "month" are rolling 7/30-day windows. Shared across pages for the session.
+const { period } = useGainPeriod()
+const periodPhrase = computed(
+  () => ({ day: 'today', week: 'in the last 7 days', month: 'in the last 30 days' })[period.value],
+)
+
+// Per-skill xp/level/rank gained over the selected period — computed once
+// per snapshot load/period change rather than re-walking history on every
+// row's render.
+const periodXpGains = computed(() => buildGainMap(xpGain))
+const periodLevelGains = computed(() => buildGainMap(levelGain))
+const periodRankGains = computed(() => buildGainMap(rankGain))
 
 function buildGainMap(gainFn) {
   const map = {}
   for (const skill of HISCORES_SKILL_ORDER) {
-    map[skill] = gainFn(snapshots.value, skill, 'day')
+    map[skill] = gainFn(snapshots.value, skill, period.value)
   }
   return map
 }
@@ -338,8 +366,8 @@ function rankLabel(rank) {
   return rank ? rank.toLocaleString() : '--'
 }
 
-function gain(period) {
-  return xpGain(snapshots.value, selectedSkill.value, period)
+function gain(gainPeriod) {
+  return xpGain(snapshots.value, selectedSkill.value, gainPeriod)
 }
 
 const chartPoints = computed(() =>
