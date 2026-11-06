@@ -1,6 +1,6 @@
 <template>
   <div class="card">
-    <h2>Tracked Players</h2>
+    <h1>Tracked Players</h1>
     <p class="empty-hint intro">
       Track any OSRS player's hiscores. A snapshot is taken as soon as you add them, then automatically
       every 6 hours after that.
@@ -49,6 +49,7 @@ import { useToast } from '@/composables/useToast'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
+import { setPageMeta } from '@/utils/pageMeta'
 
 const router = useRouter()
 const store = usePlayersStore()
@@ -56,6 +57,11 @@ const { showToast } = useToast()
 
 const newUsername = ref('')
 const adding = ref(false)
+
+setPageMeta({
+  description: "Track any OSRS player's hiscores and XP gains over time, with training advice for every skill.",
+  path: '/',
+})
 
 onMounted(async () => {
   if (!store.loaded) await store.loadPlayers()
@@ -80,6 +86,6 @@ async function submitAdd() {
 }
 
 function goToPlayer(player) {
-  router.push({ name: 'playerDetail', params: { id: player.id } })
+  router.push({ name: 'playerDetail', params: { username: player.username } })
 }
 </script>

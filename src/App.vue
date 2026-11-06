@@ -1,7 +1,9 @@
 <template>
   <div id="appShell">
     <header class="app-topbar">
-      <RouterLink :to="{ name: 'players' }" class="app-logo">OSRS XP Tracker</RouterLink>
+      <RouterLink :to="{ name: 'players' }" class="app-logo">
+        <img src="/logo.svg" alt="TickGains" class="app-logo-img" />
+      </RouterLink>
     </header>
     <main class="app-main">
       <RouterView />

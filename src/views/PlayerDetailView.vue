@@ -2,7 +2,7 @@
   <div class="card detail-header">
     <div>
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
-      <h2 class="detail-name">{{ player?.displayName || playerId }}</h2>
+      <h1 class="detail-name">{{ player?.displayName || usernameParam }}</h1>
       <p v-if="latest" class="last-synced">
         Last updated {{ formatRelative(latest.capturedAt) }}
         <span v-if="checkingForUpdates" class="checking-indicator">
@@ -11,7 +11,7 @@
       </p>
     </div>
     <div class="detail-actions">
-      <button class="btn btn-ghost" :disabled="refreshing" @click="refresh">
+      <button class="btn btn-ghost" :disabled="refreshing || !player" @click="refresh">
         {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
       </button>
     </div>
@@ -93,7 +93,7 @@
 
     <div class="card">
       <div class="chart-header">
-        <h3>{{ selectedSkill }} XP over time</h3>
+        <h2>{{ selectedSkill }} XP over time</h2>
       </div>
       <XpLineChart :points="chartPoints" :aria-label="`${selectedSkill} experience over time`" />
       <button class="btn-text table-toggle" @click="showTable = !showTable">
@@ -154,7 +154,7 @@
     </div>
 
     <div v-if="trainingAdvice" class="card training-advice">
-      <h3>Training {{ selectedSkill }} at level {{ selectedSkillLevel }}</h3>
+      <h2>Training {{ selectedSkill }} at level {{ selectedSkillLevel }}</h2>
       <div class="advice-row">
         <span class="advice-label">⚡ Fastest</span>
         <span class="advice-text">
@@ -180,7 +180,9 @@
   </template>
 
   <div v-else class="card">
-    <p class="empty-hint">No snapshots yet for this player.</p>
+    <p class="empty-hint">
+      {{ player ? 'No snapshots yet for this player.' : `"${usernameParam}" isn't being tracked.` }}
+    </p>
   </div>
 </template>
 
@@ -204,6 +206,7 @@ import {
   rankGain,
 } from '@/utils/osrsSkills'
 import { getTrainingAdvice } from '@/utils/trainingGuide'
+import { setPageMeta } from '@/utils/pageMeta'
 
 // Same order (and the same "Overall" row first) as the official OSRS
 // hiscores table, not the in-game skills panel's 3-column layout.
@@ -214,8 +217,27 @@ const router = useRouter()
 const store = usePlayersStore()
 const { showToast } = useToast()
 
-const playerId = computed(() => Number(route.params.id))
-const player = computed(() => store.players.find((p) => p.id === playerId.value) ?? null)
+// The URL carries the RSN rather than the numeric id, so it reads naturally
+// (/player/Dylanz297) — we still resolve it to the player's id client-side
+// since the API itself is id-based.
+const usernameParam = computed(() => route.params.username ?? '')
+const player = computed(
+  () => store.players.find((p) => p.username.toLowerCase() === usernameParam.value.toLowerCase()) ?? null,
+)
+const playerId = computed(() => player.value?.id ?? null)
+
+watch(
+  [player, usernameParam],
+  ([p, username]) => {
+    const name = p?.displayName || username
+    setPageMeta({
+      title: `${name} — OSRS Hiscores`,
+      description: `Track ${name}'s OSRS XP, levels, and hiscores over time, with training advice for every skill.`,
+      path: `/player/${encodeURIComponent(username)}`,
+    })
+  },
+  { immediate: true },
+)
 
 const snapshots = ref([])
 const loading = ref(true)
@@ -227,6 +249,14 @@ const selectedSkill = ref('Overall')
 async function load() {
   loading.value = true
   if (!store.loaded) await store.loadPlayers()
+
+  if (!playerId.value) {
+    // Unknown RSN in the URL — nothing to fetch.
+    snapshots.value = []
+    loading.value = false
+    return
+  }
+
   try {
     snapshots.value = await store.fetchSnapshots(playerId.value)
   } catch {
@@ -251,7 +281,7 @@ async function load() {
   }
 }
 onMounted(load)
-watch(playerId, load)
+watch(() => route.params.username, load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
 

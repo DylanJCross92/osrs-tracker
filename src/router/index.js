@@ -7,7 +7,7 @@ const routes = [
     component: () => import('@/views/PlayersView.vue'),
   },
   {
-    path: '/players/:id',
+    path: '/player/:username',
     name: 'playerDetail',
     component: () => import('@/views/PlayerDetailView.vue'),
   },

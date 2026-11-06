@@ -67,15 +67,15 @@ button:focus-visible {
   box-shadow: var(--shadow-sm);
 }
 .app-logo {
-  font-family: inherit;
-  font-weight: 800;
-  font-size: 1.3rem;
-  letter-spacing: 0.01em;
-  color: var(--gold-bright);
-  text-shadow: 0 0 18px rgba(217, 175, 82, 0.35);
+  display: inline-flex;
+  filter: drop-shadow(0 0 18px rgba(217, 175, 82, 0.35));
 }
 .app-logo:hover {
   text-decoration: none;
+}
+.app-logo-img {
+  height: 32px;
+  display: block;
 }
 .app-main {
   max-width: 920px;
@@ -138,6 +138,7 @@ button:focus-visible {
   margin-bottom: 16px;
   box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
+.card h1,
 .card h2,
 .card h3 {
   margin: 0 0 10px;
@@ -395,10 +396,10 @@ button:focus-visible {
   justify-content: space-between;
   margin-bottom: 12px;
 }
-.chart-header h3 {
+.chart-header h2 {
   margin: 0;
 }
-.training-advice h3 {
+.training-advice h2 {
   margin: 0 0 14px;
   font-size: 1rem;
 }

@@ -6,6 +6,7 @@ import express from 'express'
 import cors from 'cors'
 import { playersRouter } from './routes/players.routes.js'
 import { startScheduler } from './jobs/sync.js'
+import { listPlayers } from './services/players.service.js'
 
 const app = express()
 
@@ -17,6 +18,26 @@ app.use(
 app.use(express.json())
 
 app.use('/api/players', playersRouter)
+
+const SITE_URL = process.env.SITE_URL || 'https://tickgains.com'
+
+// Generated from the live player list rather than a static file, so newly
+// tracked (or removed) players show up without a redeploy.
+app.get('/sitemap.xml', async (req, res) => {
+  let players = []
+  try {
+    players = await listPlayers()
+  } catch (err) {
+    console.error('Failed to build sitemap.xml', err)
+  }
+
+  const urls = [`${SITE_URL}/`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
+    .map((url) => `  <url><loc>${url}</loc></url>`)
+    .join('\n')}\n</urlset>\n`
+
+  res.type('application/xml').send(xml)
+})
 
 // In production this one service also serves the built frontend (`npm run
 // build` at the repo root outputs to ../dist from here) — no separate static
@@ -43,7 +64,7 @@ app.use((err, req, res, next) => {
 
 const port = process.env.PORT || 4000
 app.listen(port, () => {
-  console.log(`OSRS XP tracker API listening on http://localhost:${port}`)
+  console.log(`TickGains API listening on http://localhost:${port}`)
   if (!distExists) console.log('(no dist/ build found — run `npm run build` at the repo root to serve the frontend too)')
 })
 

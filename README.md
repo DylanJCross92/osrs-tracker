@@ -1,4 +1,4 @@
-# OSRS XP Tracker
+# TickGains
 
 Tracks Old School RuneScape hiscores for a list of players: a snapshot is
 taken the moment you add someone, then automatically every 6 hours after
