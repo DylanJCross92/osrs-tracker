@@ -131,6 +131,15 @@ export const TRAINING_GUIDE = {
     { min: 50, fastest: 'Build and remove Mahogany tables for a strong xp-per-gp ratio.', xpPerAction: 840, xpPerHour: 600000, actionLabel: 'tables built & removed', money: null },
     { min: 85, fastest: 'Build and remove Magic wardrobes for the best Construction xp/hr.', xpPerAction: 1800, xpPerHour: 800000, actionLabel: 'wardrobes built & removed', money: null },
   ],
+  // Sailing is OSRS's newest skill (added Nov 2025) — the community hasn't
+  // fully settled on optimal methods/rates yet, so these brackets are a
+  // rougher approximation than the other, long-established skills.
+  Sailing: [
+    { min: 1, fastest: 'Take courier and trade voyages between nearby ports, delivering cargo for Sailing xp.', xpPerAction: 400, xpPerHour: 20000, actionLabel: 'voyages completed', money: 'Trade voyage cargo sells for a modest profit at the destination port — enough to offset supply costs early on.' },
+    { min: 40, fastest: 'Salvage shipwrecks with a crystal extractor for steady, fairly low-effort xp.', xpPerAction: 900, xpPerHour: 70000, actionLabel: 'wrecks salvaged', money: 'Salvaged goods (and the occasional valuable find) sell for a decent bonus on top of the xp.' },
+    { min: 62, fastest: 'Run Rellekka courier (port) tasks for strong mid-level xp/hr.', xpPerAction: 1500, xpPerHour: 65000, actionLabel: 'courier tasks completed', money: null },
+    { min: 72, fastest: 'Race Gwenith Glide or Barracuda trials — the fastest Sailing xp in the game, especially with a crystal extractor.', xpPerAction: 3000, xpPerHour: 180000, actionLabel: 'trial races completed', money: null },
+  ],
 }
 
 /** 90 -> "90 min", 125 -> "2h 5m", 48 -> "48 min". Input is whole minutes. */

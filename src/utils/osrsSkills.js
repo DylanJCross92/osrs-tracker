@@ -23,11 +23,13 @@ export const SKILL_NAMES = [
   'Runecraft',
   'Hunter',
   'Construction',
+  'Sailing',
 ]
 
-// Same 23 skills, reordered to match the in-game skills panel's 3-column
+// Same 24 skills, reordered to match the in-game skills panel's 3-column
 // layout (read left-to-right, top-to-bottom) — "Overall" isn't a tile there
 // either, it's the total shown separately, so it's left out here too.
+// Sailing is tacked on at the end, same as it appears in-game.
 export const SKILL_GRID_ORDER = [
   'Attack', 'Hitpoints', 'Mining',
   'Strength', 'Agility', 'Smithing',
@@ -36,7 +38,7 @@ export const SKILL_GRID_ORDER = [
   'Prayer', 'Crafting', 'Firemaking',
   'Magic', 'Fletching', 'Woodcutting',
   'Runecraft', 'Slayer', 'Farming',
-  'Construction', 'Hunter',
+  'Construction', 'Hunter', 'Sailing',
 ]
 
 // File names (under public/icons/skills/) for the real skill icons used on
@@ -66,6 +68,7 @@ export const SKILL_ICON_FILES = {
   Runecraft: 'runecraft',
   Hunter: 'hunter',
   Construction: 'construction',
+  Sailing: 'sailing',
 }
 
 export function skillIconSrc(skill) {

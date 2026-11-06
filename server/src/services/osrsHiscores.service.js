@@ -28,6 +28,7 @@ export const SKILL_NAMES = [
   'Runecraft',
   'Hunter',
   'Construction',
+  'Sailing',
 ]
 
 export class PlayerNotFoundError extends Error {}
