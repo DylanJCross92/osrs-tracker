@@ -190,8 +190,14 @@ button:focus-visible {
 
 .period-toolbar {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 14px;
+}
+.period-toolbar-title {
+  margin: 0;
+  font-size: 1.1rem;
 }
 .period-select {
   display: inline-flex;

@@ -6,10 +6,10 @@ const VALID_PERIODS = ['day', 'week', 'month']
 function loadStoredPeriod() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
-    return VALID_PERIODS.includes(stored) ? stored : 'day'
+    return VALID_PERIODS.includes(stored) ? stored : 'week'
   } catch {
     // Storage unavailable (private browsing, blocked, etc.) — just don't persist.
-    return 'day'
+    return 'week'
   }
 }
 

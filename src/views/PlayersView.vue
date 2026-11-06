@@ -30,6 +30,7 @@
   </div>
   <template v-else>
     <div v-if="store.players.length" class="period-toolbar">
+      <h2 class="period-toolbar-title">Top Player Gains</h2>
       <label class="period-select">
         <span class="period-select-label">Show gains for</span>
         <select v-model="period">
