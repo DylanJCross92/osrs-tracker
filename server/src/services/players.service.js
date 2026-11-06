@@ -151,6 +151,20 @@ export async function getPlayer(id) {
     : null
 }
 
+export async function getPlayerByUsername(username) {
+  const result = await pool.query('SELECT id, username, display_name, created_at FROM players WHERE lower(username) = lower($1)', [
+    username,
+  ])
+  return result.rows[0]
+    ? {
+        id: result.rows[0].id,
+        username: result.rows[0].username,
+        displayName: result.rows[0].display_name,
+        createdAt: result.rows[0].created_at,
+      }
+    : null
+}
+
 // True if a fetched hiscores result has nothing new over a prior snapshot
 // row (same xp/level/rank, overall and per-skill).
 function statsUnchanged(prevRow, stats) {

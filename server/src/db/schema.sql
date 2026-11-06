@@ -37,3 +37,15 @@ CREATE TABLE IF NOT EXISTS snapshots (
   skills JSONB NOT NULL
 );
 CREATE INDEX IF NOT EXISTS snapshots_player_captured_idx ON snapshots (player_id, captured_at);
+
+-- A "frozen" shareable progress card — the computed numbers are captured
+-- once at share time and never recomputed, so a link someone shares today
+-- still shows the same numbers next week (see cards.service.js). A "live"
+-- share skips this table entirely and always reflects the current period.
+CREATE TABLE IF NOT EXISTS shared_cards (
+  slug TEXT PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  card_type TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

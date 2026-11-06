@@ -30,8 +30,11 @@
       >
         {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
       </button>
+      <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
     </div>
   </div>
+
+  <ShareCardModal v-if="shareModalOpen && player" :username="player.username" @close="shareModalOpen = false" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />
@@ -259,6 +262,7 @@ import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
+import ShareCardModal from '@/components/ShareCardModal.vue'
 import {
   SKILL_NAMES,
   skillIconSrc,
@@ -332,6 +336,7 @@ const snapshots = ref([])
 const loading = ref(true)
 const refreshing = ref(false)
 const checkingWomHistory = ref(false)
+const shareModalOpen = ref(false)
 const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')

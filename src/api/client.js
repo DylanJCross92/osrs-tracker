@@ -2,7 +2,7 @@
 // API (4000), so it needs the full origin. In a production build this same
 // Express server serves both the built frontend and the API, so a relative
 // path keeps it working under whatever domain it's deployed to.
-const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')
+export const BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:4000/api' : '/api')
 
 export class ApiError extends Error {
   constructor(message, status) {

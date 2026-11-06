@@ -11,6 +11,11 @@ const routes = [
     name: 'playerDetail',
     component: () => import('@/views/PlayerDetailView.vue'),
   },
+  {
+    path: '/player/:username/card/weekly/:slug?',
+    name: 'weeklyShareCard',
+    component: () => import('@/views/ShareCardView.vue'),
+  },
 ]
 
 export function createAppRouter() {
