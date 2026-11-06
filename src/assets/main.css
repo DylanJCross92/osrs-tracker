@@ -466,6 +466,40 @@ button:focus-visible {
 .data-table tr:last-child td {
   border-bottom: none;
 }
+.day-toggle-col {
+  width: 20px;
+  padding-right: 0 !important;
+}
+.day-row {
+  cursor: pointer;
+  font-weight: 600;
+}
+.day-row:hover {
+  background: var(--panel-alt);
+}
+.day-row:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.day-row-count {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.75rem;
+}
+.chevron {
+  display: inline-block;
+  color: var(--muted);
+  transition: transform 0.12s ease;
+}
+.chevron.open {
+  transform: rotate(90deg);
+}
+.hour-row td {
+  color: var(--muted);
+}
+.hour-row td:nth-child(2) {
+  padding-left: 28px;
+}
 
 /* ---------- XP line chart ---------- */
 .xp-chart {

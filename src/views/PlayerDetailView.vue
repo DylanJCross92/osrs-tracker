@@ -103,6 +103,7 @@
         <table class="data-table">
           <thead>
             <tr>
+              <th class="day-toggle-col"></th>
               <th>Updated</th>
               <th>Rank</th>
               <th>Rank Gained</th>
@@ -113,15 +114,40 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in snapshotRows" :key="row.capturedAt">
-              <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) }}</td>
-              <td>{{ rankLabel(row.rank) }}</td>
-              <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
-              <td>{{ row.level }}</td>
-              <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
-              <td>{{ row.xp.toLocaleString() }}</td>
-              <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
-            </tr>
+            <template v-for="group in groupedSnapshotRows" :key="group.key">
+              <tr
+                class="day-row"
+                tabindex="0"
+                role="button"
+                :aria-expanded="expandedDays.has(group.key)"
+                @click="toggleDay(group.key)"
+                @keydown.enter="toggleDay(group.key)"
+                @keydown.space.prevent="toggleDay(group.key)"
+              >
+                <td class="day-toggle-col">
+                  <span class="chevron" :class="{ open: expandedDays.has(group.key) }">▸</span>
+                </td>
+                <td>{{ group.label }} <span class="day-row-count">({{ group.rows.length }})</span></td>
+                <td>{{ rankLabel(group.rank) }}</td>
+                <td :class="{ 'stat-gain': group.rankGain > 0 }">{{ group.rankGain != null ? formatSignedXp(group.rankGain) : '--' }}</td>
+                <td>{{ group.level }}</td>
+                <td :class="{ 'stat-gain': group.levelGain > 0 }">{{ group.levelGain != null ? formatSignedXp(group.levelGain) : '--' }}</td>
+                <td>{{ group.xp.toLocaleString() }}</td>
+                <td :class="{ 'stat-gain': group.xpGain > 0 }">{{ group.xpGain != null ? formatSignedXp(group.xpGain) : '--' }}</td>
+              </tr>
+              <template v-if="expandedDays.has(group.key)">
+                <tr v-for="row in group.rows" :key="row.capturedAt" class="hour-row">
+                  <td class="day-toggle-col"></td>
+                  <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { timeStyle: 'short' }) }}</td>
+                  <td>{{ rankLabel(row.rank) }}</td>
+                  <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
+                  <td>{{ row.level }}</td>
+                  <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
+                  <td>{{ row.xp.toLocaleString() }}</td>
+                  <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
+                </tr>
+              </template>
+            </template>
           </tbody>
         </table>
       </div>
@@ -285,6 +311,48 @@ const snapshotRows = computed(() => {
     .filter((row) => row.xpGain == null || row.xpGain > 0)
     .reverse()
 })
+
+// Same rows, bucketed by calendar day (newest day first, same as
+// snapshotRows) with per-day totals summed from each row's own gain —
+// rows stay newest-first within a day too, so a group's first row is
+// always its end-of-day snapshot.
+const groupedSnapshotRows = computed(() => {
+  const groups = []
+  const byDay = new Map()
+  for (const row of snapshotRows.value) {
+    const date = new Date(row.capturedAt)
+    const key = date.toLocaleDateString('en-CA')
+    let group = byDay.get(key)
+    if (!group) {
+      group = {
+        key,
+        label: date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }),
+        rows: [],
+        rank: row.rank,
+        level: row.level,
+        xp: row.xp,
+        rankGain: null,
+        levelGain: null,
+        xpGain: null,
+      }
+      byDay.set(key, group)
+      groups.push(group)
+    }
+    group.rows.push(row)
+    if (row.rankGain != null) group.rankGain = (group.rankGain ?? 0) + row.rankGain
+    if (row.levelGain != null) group.levelGain = (group.levelGain ?? 0) + row.levelGain
+    if (row.xpGain != null) group.xpGain = (group.xpGain ?? 0) + row.xpGain
+  }
+  return groups
+})
+
+const expandedDays = ref(new Set())
+function toggleDay(key) {
+  const next = new Set(expandedDays.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedDays.value = next
+}
 
 async function refresh() {
   refreshing.value = true
