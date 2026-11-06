@@ -78,7 +78,7 @@ button:focus-visible {
   display: block;
 }
 .app-main {
-  max-width: 920px;
+  max-width: 1180px;
   margin: 24px auto 60px;
   padding: 0 20px;
 }
@@ -273,6 +273,53 @@ button:focus-visible {
   display: flex;
   gap: 10px;
   flex-shrink: 0;
+}
+
+/* ---------- skill progress ---------- */
+.skill-progress-card {
+  background: linear-gradient(135deg, var(--panel-alt) 0%, var(--panel) 70%);
+}
+.skill-progress-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.skill-progress-icon {
+  width: 28px;
+  height: 28px;
+}
+.skill-progress-name {
+  margin: 0;
+  flex: 1;
+}
+.skill-progress-level {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--gold-ink);
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  padding: 4px 12px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+}
+.level-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.level-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+  box-shadow: 0 0 10px rgba(240, 201, 118, 0.55);
+  transition: width 0.3s ease;
+}
+.level-progress-caption {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 /* ---------- hiscores table ---------- */

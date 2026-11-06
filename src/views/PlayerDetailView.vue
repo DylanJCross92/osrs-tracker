@@ -76,6 +76,23 @@
       </table>
     </div>
 
+    <div class="card skill-progress-card">
+      <div class="skill-progress-head">
+        <img class="skill-progress-icon" :src="skillIconSrc(selectedSkill)" :alt="selectedSkill" width="28" height="28" />
+        <h2 class="skill-progress-name">{{ selectedSkill }}</h2>
+        <span class="skill-progress-level">Level {{ selectedSkillLevel }}</span>
+      </div>
+      <template v-if="selectedSkillLevel < 99">
+        <div class="level-progress-track">
+          <div class="level-progress-fill" :style="{ width: levelProgressPercent + '%' }"></div>
+        </div>
+        <p class="level-progress-caption">
+          {{ levelProgressPercent.toFixed(1) }}% of the way to level {{ selectedSkillLevel + 1 }}
+        </p>
+      </template>
+      <p v-else class="level-progress-caption">Max level reached — nice work.</p>
+    </div>
+
     <div class="gain-tiles">
       <div class="card gain-tile">
         <span class="stat-label">{{ selectedSkill }} gained today</span>
@@ -199,6 +216,7 @@ import {
   formatXp,
   formatSignedXp,
   xpForSkill,
+  xpForLevel,
   levelForSkill,
   rankForSkill,
   xpGain,
@@ -290,6 +308,17 @@ const selectedSkillXp = computed(() => (latest.value ? xpForSkill(latest.value, 
 const trainingAdvice = computed(() =>
   getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value, selectedSkillXp.value),
 )
+
+// How far into the current level the player is, for the progress bar — xp
+// is not evenly distributed between levels, so this is relative to the
+// actual xp window for this specific level, not a flat percentage.
+const levelProgressPercent = computed(() => {
+  if (selectedSkillLevel.value >= 99) return 100
+  const lo = xpForLevel(selectedSkillLevel.value)
+  const hi = xpForLevel(selectedSkillLevel.value + 1)
+  const pct = ((selectedSkillXp.value - lo) / (hi - lo)) * 100
+  return Math.min(Math.max(pct, 0), 100)
+})
 
 // Per-skill xp/level/rank gained in the trailing 24h — computed once per
 // snapshot load rather than re-walking history on every row's render.
