@@ -343,6 +343,19 @@ export async function getSnapshots(playerId) {
   return result.rows.map(mapSnapshotRow)
 }
 
+/** Just the most recent snapshot, for callers that don't need the full history. */
+export async function getLatestSnapshot(playerId) {
+  const result = await pool.query(
+    `SELECT captured_at, overall_xp, overall_level, overall_rank, skills
+     FROM snapshots
+     WHERE player_id = $1
+     ORDER BY captured_at DESC
+     LIMIT 1`,
+    [playerId],
+  )
+  return result.rows[0] ? mapSnapshotRow(result.rows[0]) : null
+}
+
 export async function refreshPlayer(id) {
   const player = await getPlayer(id)
   if (!player) {

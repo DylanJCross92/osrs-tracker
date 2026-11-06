@@ -7,7 +7,7 @@ import cors from 'cors'
 import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
 import { startScheduler } from './jobs/sync.js'
-import { listPlayers, getPlayerByUsername } from './services/players.service.js'
+import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard } from './services/cards.service.js'
 import { formatXp } from './services/cardImage.service.js'
 import { injectCardMeta } from './utils/cardMeta.js'
@@ -62,6 +62,49 @@ if (distExists) {
   // the markup as-is, so setPageMeta()'s client-side DOM updates are
   // invisible to them. These two routes are the only place that happens;
   // everything else still resolves through the plain SPA fallback below.
+  // A plain profile link needs the same treatment — Discord/Twitter/iMessage
+  // unfurl whatever's shared, not just the dedicated card pages, so this is
+  // what makes pasting someone's tickgains.com/player/X link show their
+  // name, level, and recent gains instead of the generic site description.
+  app.get('/player/:username', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+
+      const [latest, weekly] = await Promise.all([
+        getLatestSnapshot(player.id),
+        getWeeklyCardData(player.id, 'Overall').catch(() => null),
+      ])
+
+      const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      const imageUrl = latest
+        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png`
+        : `${SITE_URL}/icon-512.png`
+
+      let description = `${player.displayName}'s OSRS progress on TickGains.`
+      if (latest) {
+        description = `${player.displayName} — Level ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP) on TickGains.`
+        if (weekly?.xpGained > 0) {
+          description += ` +${formatXp(weekly.xpGained)} XP this week`
+          const topSkill = weekly.topSkills?.[0]
+          if (topSkill) description += `, led by ${topSkill.skill} (+${formatXp(topSkill.xp)})`
+          description += '.'
+        }
+      }
+
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${player.displayName}'s OSRS Progress — TickGains`,
+          description,
+          imageUrl,
+          pageUrl,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
   app.get('/player/:username/card/weekly', async (req, res, next) => {
     try {
       const player = await getPlayerByUsername(req.params.username)
