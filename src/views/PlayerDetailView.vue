@@ -132,7 +132,7 @@
         <span class="advice-text">
           {{ trainingAdvice.fastest }}
           <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
-            ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} to reach level
+            ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
             {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString() }} xp to go).
           </span>
           <span v-else class="advice-eta">You're already at the max level (99)!</span>
