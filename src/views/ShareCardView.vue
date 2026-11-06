@@ -6,32 +6,23 @@
   </div>
 
   <template v-else>
-    <div class="card share-card-header">
-      <div>
-        <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'playerDetail', params: { username } })">
-          ← Back to {{ card.displayName }}
-        </a>
-        <h1 class="detail-name">{{ card.displayName }}'s Weekly{{ skillSuffix }} XP Gains</h1>
-        <p class="empty-hint">
-          {{ isFrozen ? 'A snapshot of' : 'Updates live with' }} their last 7 days on TickGains.
-        </p>
+    <a href="#" class="btn-text share-back-link" @click.prevent="router.push({ name: 'playerDetail', params: { username } })">
+      ← Back to {{ card.displayName }}
+    </a>
+
+    <div class="card share-card-combined">
+      <img :src="imageUrl" :alt="`${card.displayName}'s weekly XP gains`" class="share-card-image" />
+      <div class="share-card-actions">
+        <button class="btn btn-primary" @click="copyLink">{{ copied ? 'Link copied!' : 'Copy Link' }}</button>
+        <a class="btn btn-ghost" :href="imageUrl" target="_blank" rel="noopener">Download Image</a>
+        <button v-if="canNativeShare" class="btn btn-ghost" @click="nativeShare">Share…</button>
       </div>
     </div>
 
-    <div class="card share-card-image-wrap">
-      <img :src="imageUrl" :alt="`${card.displayName}'s weekly XP gains`" class="share-card-image" />
-    </div>
-
-    <div class="card share-card-actions">
-      <button class="btn btn-primary" @click="copyLink">{{ copied ? 'Link copied!' : 'Copy Link' }}</button>
-      <a class="btn btn-ghost" :href="imageUrl" target="_blank" rel="noopener">Download Image</a>
-      <button v-if="canNativeShare" class="btn btn-ghost" @click="nativeShare">Share…</button>
-    </div>
-
-    <div class="card share-card-cta">
-      <p>Like what you see?</p>
-      <a class="btn btn-primary" href="/">Track your own OSRS progress — it's free</a>
-    </div>
+    <p class="share-card-footer-cta">
+      Like what you see?
+      <a href="/">Track your own OSRS progress — it's free →</a>
+    </p>
   </template>
 </template>
 

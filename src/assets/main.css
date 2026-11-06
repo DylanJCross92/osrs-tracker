@@ -411,14 +411,13 @@ button:focus-visible {
 }
 
 /* ---------- share card ---------- */
-.share-card-header {
-  display: flex;
-  align-items: flex-start;
+.share-back-link {
+  display: inline-block;
+  margin-bottom: 10px;
 }
-.share-card-image-wrap {
+.share-card-combined {
   padding: 0;
   overflow: hidden;
-  display: flex;
 }
 .share-card-image {
   width: 100%;
@@ -429,18 +428,16 @@ button:focus-visible {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  padding: 16px 20px;
 }
-.share-card-cta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  background: linear-gradient(135deg, var(--panel-alt) 0%, var(--panel) 70%);
+.share-card-footer-cta {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 16px 0 0;
 }
-.share-card-cta p {
-  margin: 0;
-  color: var(--text);
+.share-card-footer-cta a {
+  margin-left: 6px;
   font-weight: 600;
 }
 

@@ -84,24 +84,31 @@ async function buildOverallStats(topSkills) {
 }
 
 function buildSkillStats(data) {
-  const tiles = [
-    statTile(
-      null,
-      'Level',
-      null,
-      null,
-      [
-        node('div', {}, String(data.level)),
-        data.levelGained > 0 ? node('div', { fontSize: 18, color: '#7cb869' }, `+${data.levelGained}`) : null,
-      ].filter(Boolean),
-    ),
-  ]
-  if (data.rankGained != null) {
-    tiles.push(
-      statTile(null, 'Rank climbed', null, data.rankGained > 0 ? '#7cb869' : '#ece4d3', `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString()}`),
-    )
-  }
-  return tiles
+  const levelTile = statTile(
+    null,
+    'Level',
+    null,
+    null,
+    [
+      node('div', {}, String(data.level)),
+      data.levelGained > 0 ? node('div', { fontSize: 18, color: '#7cb869' }, `+${data.levelGained}`) : null,
+    ].filter(Boolean),
+  )
+
+  // Always two tiles, even when there's no rank to show — a lone tile
+  // would otherwise stretch to fill the whole row and look broken.
+  const rankTile =
+    data.rankGained != null
+      ? statTile(
+          null,
+          'Rank climbed',
+          null,
+          data.rankGained > 0 ? '#7cb869' : '#ece4d3',
+          `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString()}`,
+        )
+      : statTile(null, 'Rank', null, '#a99a79', 'Unranked')
+
+  return [levelTile, rankTile]
 }
 
 async function buildWeeklyCardTree(data) {
@@ -130,62 +137,45 @@ async function buildWeeklyCardTree(data) {
       color: '#ece4d3',
     },
     [
-      // Header: player name + skill badge + brand
+      // Header: player name (eyebrow names the skill when it isn't Overall) + brand
       node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
         node('div', { display: 'flex', flexDirection: 'column' }, [
           node(
             'div',
-            { fontSize: 20, color: '#a99a79', fontWeight: 400, letterSpacing: '0.04em', textTransform: 'uppercase' },
-            "This week's gains",
+            { fontSize: 20, color: isOverall ? '#a99a79' : '#f0c976', fontWeight: isOverall ? 400 : 700, letterSpacing: '0.04em', textTransform: 'uppercase' },
+            isOverall ? "This week's gains" : `${skill} — This week's gains`,
           ),
           node('div', { fontSize: 42, fontWeight: 800, color: '#f0c976', marginTop: 4 }, displayName),
         ]),
-        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
-          ...(!isOverall
-            ? [
-                node(
-                  'div',
-                  {
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 18px',
-                    borderRadius: 999,
-                    backgroundColor: '#211c14',
-                    border: '1px solid #40361f',
-                  },
-                  [
-                    skillIconUri ? image(skillIconUri, 22, 22) : node('div', { width: 22, height: 22 }),
-                    node('div', { fontSize: 20, fontWeight: 700, color: '#ece4d3' }, skill),
-                  ],
-                ),
-              ]
-            : []),
-          node(
-            'div',
-            {
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              padding: '8px 18px',
-              borderRadius: 999,
-              backgroundColor: '#211c14',
-              border: '1px solid #40361f',
-            },
-            [
-              brandUri ? image(brandUri, 22, 22) : node('div', { width: 22, height: 22 }),
-              node('div', { fontSize: 20, fontWeight: 700, color: '#f0c976' }, 'TickGains'),
-            ],
-          ),
-        ]),
+        node(
+          'div',
+          {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 18px',
+            borderRadius: 999,
+            backgroundColor: '#211c14',
+            border: '1px solid #40361f',
+          },
+          [
+            brandUri ? image(brandUri, 22, 22) : node('div', { width: 22, height: 22 }),
+            node('div', { fontSize: 20, fontWeight: 700, color: '#f0c976' }, 'TickGains'),
+          ],
+        ),
       ]),
 
-      // Headline xp number
+      // Headline xp number — the skill's own icon sits right on the number
+      // when it isn't Overall, so which skill this card is about is
+      // unmistakable even at a glance.
       node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
-        node('div', { display: 'flex', alignItems: 'baseline', gap: 14 }, [
-          node('div', { fontSize: 100, fontWeight: 800, color: '#7cb869', lineHeight: 1 }, `+${formatXp(xpGained)}`),
-          node('div', { fontSize: 32, fontWeight: 700, color: '#a99a79' }, 'XP'),
-        ]),
+        node('div', { display: 'flex', alignItems: 'center', gap: 20 }, [
+          !isOverall && skillIconUri ? image(skillIconUri, 76, 76) : null,
+          node('div', { display: 'flex', alignItems: 'baseline', gap: 14 }, [
+            node('div', { fontSize: 100, fontWeight: 800, color: '#7cb869', lineHeight: 1 }, `+${formatXp(xpGained)}`),
+            node('div', { fontSize: 32, fontWeight: 700, color: '#a99a79' }, 'XP'),
+          ]),
+        ].filter(Boolean)),
         node('div', { fontSize: 24, color: '#a99a79', marginTop: 6 }, formatDateRange(periodStart, periodEnd)),
       ]),
 
