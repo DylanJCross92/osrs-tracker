@@ -370,9 +370,14 @@ function gain(gainPeriod) {
   return xpGain(snapshots.value, selectedSkill.value, gainPeriod)
 }
 
-const chartPoints = computed(() =>
-  snapshots.value.map((s) => ({ x: new Date(s.capturedAt).getTime(), y: xpForSkill(s, selectedSkill.value) })),
-)
+// Same "no-gain snapshots dropped" rule as snapshotRows below, so the chart
+// doesn't draw flat segments for refreshes that gained nothing in this skill.
+const chartPoints = computed(() => {
+  const list = snapshots.value
+  return list
+    .filter((s, i) => i === 0 || xpForSkill(s, selectedSkill.value) > xpForSkill(list[i - 1], selectedSkill.value))
+    .map((s) => ({ x: new Date(s.capturedAt).getTime(), y: xpForSkill(s, selectedSkill.value) }))
+})
 
 // Per-refresh xp/level/rank gained (the breakdown behind the daily totals
 // shown inline above) — each row's delta from the snapshot before it,

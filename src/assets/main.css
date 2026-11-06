@@ -577,6 +577,10 @@ button:focus-visible {
 .hour-row td {
   color: var(--muted);
 }
+.hour-row td.stat-gain {
+  color: var(--xp-green);
+  font-size: 0.7rem;
+}
 .hour-row td:nth-child(2) {
   padding-left: 28px;
 }
