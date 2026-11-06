@@ -149,10 +149,36 @@ button:focus-visible {
 }
 
 /* ---------- players list ---------- */
-.intro {
-  margin-top: -4px;
+.find-player-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 24px;
   margin-bottom: 14px;
+}
+.find-player-header h1 {
+  margin: 0;
+}
+.find-player-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.find-player-features li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.78rem;
   color: var(--muted);
+}
+.check-icon {
+  flex: none;
+  color: var(--xp-green);
+  font-weight: 700;
 }
 .add-player-form {
   display: flex;
