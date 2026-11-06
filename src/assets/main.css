@@ -294,6 +294,24 @@ button:focus-visible {
 .detail-header .last-synced {
   margin-top: 4px;
 }
+.refresh-link {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 8px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--gold);
+  cursor: pointer;
+}
+.refresh-link:hover {
+  text-decoration: underline;
+}
+.refresh-link:disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: none;
+}
 .checking-indicator {
   display: inline-flex;
   align-items: center;

@@ -5,6 +5,9 @@
       <h1 class="detail-name">{{ player?.displayName || usernameParam }}</h1>
       <p v-if="latest" class="last-synced">
         Last updated {{ formatRelative(latest.capturedAt) }}
+        <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
+          {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
+        </button>
         <span v-if="checkingForUpdates" class="checking-indicator">
           <span class="spinner" /> Checking for updates…
         </span>
@@ -26,9 +29,6 @@
         @click="checkWomHistory"
       >
         {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
-      </button>
-      <button class="btn btn-ghost" :disabled="refreshing || !player" @click="refresh">
-        {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
       </button>
     </div>
   </div>
