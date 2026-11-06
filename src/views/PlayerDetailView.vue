@@ -44,8 +44,10 @@
             @keydown.space.prevent="selectedSkill = skill"
           >
             <td class="hs-skill-col">
-              <img class="skill-icon" :src="skillIconSrc(skill)" :alt="skill" width="16" height="16" />
-              <span class="skill-name">{{ skill }}</span>
+              <span class="skill-cell">
+                <img class="skill-icon" :src="skillIconSrc(skill)" :alt="skill" width="16" height="16" />
+                <span class="skill-name">{{ skill }}</span>
+              </span>
             </td>
             <td>
               <span
@@ -101,7 +103,7 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Synced</th>
+              <th>Updated</th>
               <th>Rank</th>
               <th>Rank Gained</th>
               <th>Level</th>
@@ -112,7 +114,7 @@
           </thead>
           <tbody>
             <tr v-for="row in snapshotRows" :key="row.capturedAt">
-              <td>{{ new Date(row.capturedAt).toLocaleString() }}</td>
+              <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' }) }}</td>
               <td>{{ rankLabel(row.rank) }}</td>
               <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
               <td>{{ row.level }}</td>

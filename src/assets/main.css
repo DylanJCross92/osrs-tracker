@@ -329,10 +329,12 @@ button:focus-visible {
 }
 .hs-skill-col {
   text-align: left !important;
+  font-weight: 600;
+}
+.skill-cell {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 600;
 }
 .hs-skill-col .skill-icon {
   width: 18px;
