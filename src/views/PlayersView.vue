@@ -1,12 +1,10 @@
 <template>
   <div class="card">
-    <div class="find-player-header">
-      <h1>Find Player</h1>
-      <ul class="find-player-features">
-        <li><span class="check-icon">✓</span> A snapshot is taken as soon as you add them, then every 6 hours after</li>
-        <li><span class="check-icon">✓</span> We'll search Wise Old Man for historical data and import it if we find any</li>
-      </ul>
-    </div>
+    <h1>Find Player</h1>
+    <ul class="find-player-features">
+      <li><span class="check-icon">✓</span> A snapshot is taken as soon as you add them, then every 6 hours after</li>
+      <li><span class="check-icon">✓</span> We'll search Wise Old Man for historical data and import it if we find any</li>
+    </ul>
     <form class="add-player-form" @submit.prevent="submitAdd">
       <!-- Decoy fields so Firefox/Chrome's login-manager autofill (which
            ignores autocomplete="off" on a field it suspects is a login
