@@ -255,6 +255,14 @@ button:focus-visible {
   color: var(--muted);
   margin: 0;
 }
+.wom-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  color: var(--gold);
+  margin: 0 0 4px;
+}
 
 /* ---------- player detail ---------- */
 .detail-header {
@@ -300,6 +308,17 @@ button:focus-visible {
   align-items: center;
   gap: 14px;
   flex-shrink: 0;
+}
+.wom-import-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--gold-bright);
+  background: linear-gradient(135deg, var(--panel-alt) 0%, var(--panel) 70%);
+}
+.wom-import-banner p {
+  margin: 0;
+  font-size: 0.85rem;
 }
 
 /* ---------- skill progress ---------- */
@@ -582,6 +601,22 @@ button:focus-visible {
   font-size: 0.7rem;
 }
 .hour-row td:nth-child(2) {
+  padding-left: 28px;
+}
+.month-row {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--gold-bright);
+  background: rgba(217, 175, 82, 0.05);
+}
+.month-row:hover {
+  background: var(--panel-alt);
+}
+.month-row:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+.day-row-nested td:nth-child(2) {
   padding-left: 28px;
 }
 

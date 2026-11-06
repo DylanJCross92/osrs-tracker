@@ -13,47 +13,55 @@
     </form>
   </div>
 
-  <div v-if="store.players.length" class="period-toolbar">
-    <label class="period-select">
-      <span class="period-select-label">Show gains for</span>
-      <select v-model="period">
-        <option value="day">Today</option>
-        <option value="week">Last 7 Days</option>
-        <option value="month">Last 30 Days</option>
-      </select>
-    </label>
+  <div v-if="pageLoading" class="card">
+    <p class="empty-hint">Loading your tracked players…</p>
   </div>
-
-  <div v-if="store.players.length" class="player-grid">
-    <div v-for="p in sortedPlayers" :key="p.id" class="card player-card" @click="goToPlayer(p)">
-      <div class="player-card-top">
-        <span class="player-name">{{ p.displayName }}</span>
-      </div>
-      <div v-if="p.latest" class="player-stats">
-        <div><b>{{ p.latest.overallLevel.toLocaleString() }}</b><span>total level</span></div>
-        <div><b>{{ formatXp(p.latest.overallXp) }}</b><span>total xp</span></div>
-      </div>
-      <p v-else class="empty-hint">No data yet.</p>
-      <div v-if="gainFor(p) && gainFor(p).xp > 0" class="player-gain-row">
-        <span class="gain-today">
-          <img class="top-skill-icon" :src="skillIconSrc('Overall')" alt="Overall" width="16" height="16" />
-          +{{ formatXp(gainFor(p).xp) }}
-        </span>
-        <span v-if="gainFor(p).topSkill" class="top-skill">
-          <img class="top-skill-icon" :src="skillIconSrc(gainFor(p).topSkill)" :alt="gainFor(p).topSkill" width="16" height="16" />
-          +{{ formatXp(gainFor(p).topSkillXp) }}
-        </span>
-      </div>
-      <p v-if="p.latest" class="last-synced">Last synced {{ formatRelative(p.latest.capturedAt) }}</p>
+  <template v-else>
+    <div v-if="store.players.length" class="period-toolbar">
+      <label class="period-select">
+        <span class="period-select-label">Show gains for</span>
+        <select v-model="period">
+          <option value="day">Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Last 30 Days</option>
+        </select>
+      </label>
     </div>
-  </div>
-  <div v-else class="card">
-    <p class="empty-hint">No one is being tracked yet — add an RSN above to start the timeline.</p>
-  </div>
+
+    <div v-if="store.players.length" class="player-grid">
+      <div v-for="p in sortedPlayers" :key="p.id" class="card player-card" @click="goToPlayer(p)">
+        <div class="player-card-top">
+          <span class="player-name">{{ p.displayName }}</span>
+        </div>
+        <div v-if="p.latest" class="player-stats">
+          <div><b>{{ p.latest.overallLevel.toLocaleString() }}</b><span>total level</span></div>
+          <div><b>{{ formatXp(p.latest.overallXp) }}</b><span>total xp</span></div>
+        </div>
+        <p v-else class="empty-hint">No data yet.</p>
+        <div v-if="gainFor(p) && gainFor(p).xp > 0" class="player-gain-row">
+          <span class="gain-today">
+            <img class="top-skill-icon" :src="skillIconSrc('Overall')" alt="Overall" width="16" height="16" />
+            +{{ formatXp(gainFor(p).xp) }}
+          </span>
+          <span v-if="gainFor(p).topSkill" class="top-skill">
+            <img class="top-skill-icon" :src="skillIconSrc(gainFor(p).topSkill)" :alt="gainFor(p).topSkill" width="16" height="16" />
+            +{{ formatXp(gainFor(p).topSkillXp) }}
+          </span>
+        </div>
+        <p v-if="isImporting(p)" class="wom-status">
+          <span class="spinner" /> Importing history from Wise Old Man…
+        </p>
+        <p v-if="p.latest" class="last-synced">Last synced {{ formatRelative(p.latest.capturedAt) }}</p>
+      </div>
+    </div>
+    <div v-else class="card">
+      <p class="empty-hint">No one is being tracked yet — add an RSN above to start the timeline.</p>
+    </div>
+  </template>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
@@ -69,7 +77,12 @@ const { showToast } = useToast()
 
 const newUsername = ref('')
 const adding = ref(false)
+const pageLoading = ref(true)
 const { period } = useGainPeriod()
+
+function isImporting(player) {
+  return player.womImportStatus === 'pending' || player.womImportStatus === 'running'
+}
 
 function gainFor(player) {
   return player.gains?.[period.value] ?? null
@@ -86,13 +99,37 @@ const sortedPlayers = computed(() =>
   }),
 )
 
+// The Wise Old Man import runs in the background and is picked up by the
+// store's polling — this just announces it here once, when it finishes
+// while this page happens to be open.
+watch(
+  () => store.players.map((p) => ({ id: p.id, status: p.womImportStatus, count: p.womImportedCount, name: p.displayName })),
+  (current, previous) => {
+    if (!previous) return
+    for (const player of current) {
+      const before = previous.find((p) => p.id === player.id)
+      const wasImporting = before && (before.status === 'pending' || before.status === 'running')
+      if (!wasImporting || player.status !== 'done') continue
+      showToast(
+        player.count > 0
+          ? `Finished importing ${player.count.toLocaleString()} historical snapshots for ${player.name}.`
+          : `${player.name} is all set — no extra history found on Wise Old Man.`,
+      )
+    }
+  },
+)
+
 setPageMeta({
   description: "Track any OSRS player's hiscores and XP gains over time, with training advice for every skill.",
   path: '/',
 })
 
 onMounted(async () => {
-  if (!store.loaded) await store.loadPlayers()
+  try {
+    if (!store.loaded) await store.loadPlayers()
+  } finally {
+    pageLoading.value = false
+  }
   // Check every tracked player for updates whenever this page loads,
   // rather than only on the 6-hourly scheduler or a manual refresh.
   store.syncAll().catch(() => {})
@@ -104,7 +141,7 @@ async function submitAdd() {
   adding.value = true
   try {
     await store.addPlayer(username)
-    showToast(`Now tracking ${username}.`)
+    showToast(`Now tracking ${username} — checking Wise Old Man for history in the background.`)
     newUsername.value = ''
   } catch (err) {
     showToast(err instanceof ApiError ? err.message : 'Could not add that player.')

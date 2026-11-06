@@ -67,6 +67,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { formatXp } from '@/utils/osrsSkills'
+import { withYearIfNotCurrent } from '@/utils/time'
 
 // points: [{ x: <ms timestamp>, y: <xp> }, ...] sorted ascending by x.
 const props = defineProps({
@@ -209,14 +210,14 @@ function onKeydown(e) {
 }
 
 function shortDate(ms) {
-  return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  const date = new Date(ms)
+  return date.toLocaleDateString(undefined, withYearIfNotCurrent(date, { month: 'short', day: 'numeric' }))
 }
 function fullDate(ms) {
-  return new Date(ms).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  const date = new Date(ms)
+  return date.toLocaleString(
+    undefined,
+    withYearIfNotCurrent(date, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+  )
 }
 </script>

@@ -19,10 +19,23 @@
           <option value="month">Last 30 Days</option>
         </select>
       </label>
+      <button
+        v-if="player?.womImportStatus === 'none'"
+        class="btn btn-ghost"
+        :disabled="checkingWomHistory"
+        @click="checkWomHistory"
+      >
+        {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
+      </button>
       <button class="btn btn-ghost" :disabled="refreshing || !player" @click="refresh">
         {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
       </button>
     </div>
+  </div>
+
+  <div v-if="isImportingWomHistory" class="card wom-import-banner">
+    <span class="spinner" />
+    <p>Still importing historical data from Wise Old Man — the chart and table below will fill in as it finds more.</p>
   </div>
 
   <div v-if="loading" class="card"><p class="empty-hint">Loading hiscores history…</p></div>
@@ -164,38 +177,64 @@
             </tr>
           </thead>
           <tbody>
-            <template v-for="group in groupedSnapshotRows" :key="group.key">
+            <template v-for="month in monthGroups" :key="month.key">
               <tr
-                class="day-row"
+                v-if="showMonthGrouping"
+                class="month-row"
                 tabindex="0"
                 role="button"
-                :aria-expanded="expandedDays.has(group.key)"
-                @click="toggleDay(group.key)"
-                @keydown.enter="toggleDay(group.key)"
-                @keydown.space.prevent="toggleDay(group.key)"
+                :aria-expanded="expandedMonths.has(month.key)"
+                @click="toggleMonth(month.key)"
+                @keydown.enter="toggleMonth(month.key)"
+                @keydown.space.prevent="toggleMonth(month.key)"
               >
                 <td class="day-toggle-col">
-                  <span class="chevron" :class="{ open: expandedDays.has(group.key) }">▸</span>
+                  <span class="chevron" :class="{ open: expandedMonths.has(month.key) }">▸</span>
                 </td>
-                <td>{{ group.label }} <span class="day-row-count">({{ group.rows.length }})</span></td>
-                <td>{{ rankLabel(group.rank) }}</td>
-                <td :class="{ 'stat-gain': group.rankGain > 0 }">{{ group.rankGain != null ? formatSignedXp(group.rankGain) : '--' }}</td>
-                <td>{{ group.level }}</td>
-                <td :class="{ 'stat-gain': group.levelGain > 0 }">{{ group.levelGain != null ? formatSignedXp(group.levelGain) : '--' }}</td>
-                <td>{{ group.xp.toLocaleString() }}</td>
-                <td :class="{ 'stat-gain': group.xpGain > 0 }">{{ group.xpGain != null ? formatSignedXp(group.xpGain) : '--' }}</td>
+                <td>{{ month.label }} <span class="day-row-count">({{ month.days.length }} day{{ month.days.length === 1 ? '' : 's' }})</span></td>
+                <td>{{ rankLabel(month.rank) }}</td>
+                <td :class="{ 'stat-gain': month.rankGain > 0 }">{{ month.rankGain != null ? formatSignedXp(month.rankGain) : '--' }}</td>
+                <td>{{ month.level }}</td>
+                <td :class="{ 'stat-gain': month.levelGain > 0 }">{{ month.levelGain != null ? formatSignedXp(month.levelGain) : '--' }}</td>
+                <td>{{ month.xp.toLocaleString() }}</td>
+                <td :class="{ 'stat-gain': month.xpGain > 0 }">{{ month.xpGain != null ? formatSignedXp(month.xpGain) : '--' }}</td>
               </tr>
-              <template v-if="expandedDays.has(group.key)">
-                <tr v-for="row in group.rows" :key="row.capturedAt" class="hour-row">
-                  <td class="day-toggle-col"></td>
-                  <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { timeStyle: 'short' }) }}</td>
-                  <td>{{ rankLabel(row.rank) }}</td>
-                  <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
-                  <td>{{ row.level }}</td>
-                  <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
-                  <td>{{ row.xp.toLocaleString() }}</td>
-                  <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
-                </tr>
+              <template v-if="!showMonthGrouping || expandedMonths.has(month.key)">
+                <template v-for="group in month.days" :key="group.key">
+                  <tr
+                    class="day-row"
+                    :class="{ 'day-row-nested': showMonthGrouping }"
+                    tabindex="0"
+                    role="button"
+                    :aria-expanded="expandedDays.has(group.key)"
+                    @click="toggleDay(group.key)"
+                    @keydown.enter="toggleDay(group.key)"
+                    @keydown.space.prevent="toggleDay(group.key)"
+                  >
+                    <td class="day-toggle-col">
+                      <span class="chevron" :class="{ open: expandedDays.has(group.key) }">▸</span>
+                    </td>
+                    <td>{{ group.label }} <span class="day-row-count">({{ group.rows.length }})</span></td>
+                    <td>{{ rankLabel(group.rank) }}</td>
+                    <td :class="{ 'stat-gain': group.rankGain > 0 }">{{ group.rankGain != null ? formatSignedXp(group.rankGain) : '--' }}</td>
+                    <td>{{ group.level }}</td>
+                    <td :class="{ 'stat-gain': group.levelGain > 0 }">{{ group.levelGain != null ? formatSignedXp(group.levelGain) : '--' }}</td>
+                    <td>{{ group.xp.toLocaleString() }}</td>
+                    <td :class="{ 'stat-gain': group.xpGain > 0 }">{{ group.xpGain != null ? formatSignedXp(group.xpGain) : '--' }}</td>
+                  </tr>
+                  <template v-if="expandedDays.has(group.key)">
+                    <tr v-for="row in group.rows" :key="row.capturedAt" class="hour-row">
+                      <td class="day-toggle-col"></td>
+                      <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { timeStyle: 'short' }) }}</td>
+                      <td>{{ rankLabel(row.rank) }}</td>
+                      <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
+                      <td>{{ row.level }}</td>
+                      <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
+                      <td>{{ row.xp.toLocaleString() }}</td>
+                      <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
+                    </tr>
+                  </template>
+                </template>
               </template>
             </template>
           </tbody>
@@ -218,7 +257,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
-import { formatRelative } from '@/utils/time'
+import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import {
   SKILL_NAMES,
@@ -267,9 +306,32 @@ watch(
   { immediate: true },
 )
 
+const isImportingWomHistory = computed(
+  () => player.value?.womImportStatus === 'pending' || player.value?.womImportStatus === 'running',
+)
+
+// The store polls for Wise Old Man import status in the background (see
+// stores/players.js) — once it flips away from pending/running for this
+// specific player, re-fetch their snapshots so the chart/table pick up
+// whatever history just landed, without the user having to reload.
+watch(
+  () => player.value?.womImportStatus,
+  (status, previousStatus) => {
+    const wasImporting = previousStatus === 'pending' || previousStatus === 'running'
+    if (!wasImporting || status !== 'done' || !playerId.value) return
+    store
+      .fetchSnapshots(playerId.value)
+      .then((rows) => {
+        snapshots.value = rows
+      })
+      .catch(() => {})
+  },
+)
+
 const snapshots = ref([])
 const loading = ref(true)
 const refreshing = ref(false)
+const checkingWomHistory = ref(false)
 const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')
@@ -418,7 +480,7 @@ const groupedSnapshotRows = computed(() => {
     if (!group) {
       group = {
         key,
-        label: date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }),
+        label: date.toLocaleDateString(undefined, withYearIfNotCurrent(date, { weekday: 'short', month: 'short', day: 'numeric' })),
         rows: [],
         rank: row.rank,
         level: row.level,
@@ -446,6 +508,57 @@ function toggleDay(key) {
   expandedDays.value = next
 }
 
+// Day groups bucketed by calendar month (newest month first, same ordering
+// as groupedSnapshotRows) — only actually used as a collapsing level when
+// there's data outside the current month, so a freshly-added player's
+// table stays a flat day list instead of a single redundant month wrapper.
+const monthGroups = computed(() => {
+  const groups = []
+  const byMonth = new Map()
+  for (const day of groupedSnapshotRows.value) {
+    const date = new Date(day.rows[0].capturedAt)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    let group = byMonth.get(key)
+    if (!group) {
+      group = {
+        key,
+        label: date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+        days: [],
+        rank: day.rank,
+        level: day.level,
+        xp: day.xp,
+        rankGain: null,
+        levelGain: null,
+        xpGain: null,
+      }
+      byMonth.set(key, group)
+      groups.push(group)
+    }
+    group.days.push(day)
+    if (day.rankGain != null) group.rankGain = (group.rankGain ?? 0) + day.rankGain
+    if (day.levelGain != null) group.levelGain = (group.levelGain ?? 0) + day.levelGain
+    if (day.xpGain != null) group.xpGain = (group.xpGain ?? 0) + day.xpGain
+  }
+  return groups
+})
+
+const showMonthGrouping = computed(() => {
+  if (monthGroups.value.length > 1) return true
+  const onlyMonth = monthGroups.value[0]
+  if (!onlyMonth) return false
+  const now = new Date()
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  return onlyMonth.key !== currentMonthKey
+})
+
+const expandedMonths = ref(new Set())
+function toggleMonth(key) {
+  const next = new Set(expandedMonths.value)
+  if (next.has(key)) next.delete(key)
+  else next.add(key)
+  expandedMonths.value = next
+}
+
 async function refresh() {
   refreshing.value = true
   try {
@@ -456,6 +569,18 @@ async function refresh() {
     showToast('Could not refresh right now.')
   } finally {
     refreshing.value = false
+  }
+}
+
+async function checkWomHistory() {
+  checkingWomHistory.value = true
+  try {
+    await store.checkWomHistory(playerId.value)
+    showToast('Checking Wise Old Man for historical data in the background.')
+  } catch {
+    showToast('Could not start the Wise Old Man check right now.')
+  } finally {
+    checkingWomHistory.value = false
   }
 }
 </script>

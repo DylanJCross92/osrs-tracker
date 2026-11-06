@@ -1,3 +1,11 @@
+/** Adds { year: 'numeric' } to a set of toLocaleDateString/toLocaleString
+ * options, but only when `date` isn't in the current year — so date labels
+ * stay short for the common case and only grow when they'd otherwise be
+ * ambiguous (e.g. imported history from a prior year). */
+export function withYearIfNotCurrent(date, options) {
+  return date.getFullYear() === new Date().getFullYear() ? options : { ...options, year: 'numeric' }
+}
+
 /** ISO timestamp -> "Just now" / "15m" / "6d" / "January 5th". */
 export function formatRelative(iso) {
   const date = new Date(iso)
