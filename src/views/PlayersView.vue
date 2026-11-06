@@ -3,10 +3,22 @@
     <h1>Tracked Players</h1>
     <p class="empty-hint intro">
       Track any OSRS player's hiscores. A snapshot is taken as soon as you add them, then automatically
-      every 6 hours after that.
+      every 6 hours after that. We'll also search Wise Old Man for historical data and import it if we find any.
     </p>
     <form class="add-player-form" @submit.prevent="submitAdd">
-      <input v-model="newUsername" type="text" placeholder="OSRS username / RSN..." :disabled="adding" />
+      <!-- Decoy fields so Firefox/Chrome's login-manager autofill (which
+           ignores autocomplete="off" on a field it suspects is a login
+           username) latches onto these instead of the real RSN input. -->
+      <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
+      <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
+      <input
+        v-model="newUsername"
+        type="text"
+        placeholder="OSRS username / RSN..."
+        :disabled="adding"
+        autocomplete="off"
+        name="rsn"
+      />
       <button class="btn btn-primary" type="submit" :disabled="adding || !newUsername.trim()">
         {{ adding ? 'Adding…' : 'Track Player' }}
       </button>
