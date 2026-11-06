@@ -36,7 +36,10 @@ cardsRouter.get('/players/:username/card/weekly/image.png', async (req, res, nex
     if (!data) return res.status(404).end()
     const png = await renderWeeklyCardPng(data)
     res.set('Content-Type', 'image/png')
-    res.set('Cache-Control', 'public, max-age=300') // short cache — this one keeps moving
+    // Never cache — this is the "live" card, so a reload after refreshing
+    // hiscores (or just the data moving on) should always show current
+    // numbers, not whatever the browser already has for this same URL.
+    res.set('Cache-Control', 'no-store')
     res.send(png)
   } catch (err) {
     next(err)
