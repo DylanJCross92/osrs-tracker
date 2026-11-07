@@ -8,7 +8,7 @@ import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
-import { getWeeklyCardData, getFrozenCard } from './services/cards.service.js'
+import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
@@ -34,6 +34,10 @@ app.get('/api/discover', async (req, res, next) => {
     next(err)
   }
 })
+
+const PERIOD_ADJ = { day: 'Daily', week: 'Weekly', month: 'Monthly' }
+const PERIOD_PHRASE = { day: 'today', week: 'this week', month: 'in the last 30 days' }
+const PERIOD_PHRASE_PAST = { day: 'that day', week: 'that week', month: 'over 30 days' }
 
 const SITE_URL = process.env.SITE_URL || 'https://tickgains.com'
 
@@ -170,18 +174,22 @@ if (distExists) {
       if (!player) return res.sendFile(path.join(distPath, 'index.html'))
 
       const skill = req.query.skill
-      const data = await getWeeklyCardData(player.id, skill)
-      const skillQuery = data && data.skill !== 'Overall' ? `?skill=${encodeURIComponent(data.skill)}` : ''
+      const period = normalizePeriod(req.query.period)
+      const data = await getWeeklyCardData(player.id, skill, period)
+      const qs = new URLSearchParams()
+      if (data && data.skill !== 'Overall') qs.set('skill', data.skill)
+      if (period !== 'week') qs.set('period', period)
+      const skillQuery = qs.toString() ? `?${qs.toString()}` : ''
       const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}/card/weekly${skillQuery}`
       const imageUrl = `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png${skillQuery}`
       const skillLabel = data && data.skill !== 'Overall' ? ` ${data.skill}` : ''
       const description = data
-        ? `${player.displayName} gained ${formatXp(data.xpGained)}${skillLabel} XP this week on TickGains.`
+        ? `${player.displayName} gained ${formatXp(data.xpGained)}${skillLabel} XP ${PERIOD_PHRASE[period]} on TickGains.`
         : `${player.displayName}'s OSRS progress on TickGains.`
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${player.displayName}'s Weekly${skillLabel} XP Gains — TickGains`,
+          title: `${player.displayName}'s ${PERIOD_ADJ[period]}${skillLabel} XP Gains — TickGains`,
           description,
           imageUrl,
           pageUrl,
@@ -200,11 +208,12 @@ if (distExists) {
       const pageUrl = `${SITE_URL}/player/${encodeURIComponent(card.username)}/card/weekly/${card.slug}`
       const imageUrl = `${SITE_URL}/api/cards/${card.slug}/image.png`
       const skillLabel = card.skill && card.skill !== 'Overall' ? ` ${card.skill}` : ''
-      const description = `${card.displayName} gained ${formatXp(card.xpGained)}${skillLabel} XP that week on TickGains.`
+      const cardPeriod = normalizePeriod(card.period)
+      const description = `${card.displayName} gained ${formatXp(card.xpGained)}${skillLabel} XP ${PERIOD_PHRASE_PAST[cardPeriod]} on TickGains.`
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${card.displayName}'s Weekly${skillLabel} XP Gains — TickGains`,
+          title: `${card.displayName}'s ${PERIOD_ADJ[cardPeriod]}${skillLabel} XP Gains — TickGains`,
           description,
           imageUrl,
           pageUrl,

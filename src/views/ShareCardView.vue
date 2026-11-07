@@ -42,6 +42,10 @@ const username = computed(() => route.params.username)
 const slug = computed(() => route.params.slug || null)
 const isFrozen = computed(() => Boolean(slug.value))
 const skillParam = computed(() => route.query.skill || 'Overall')
+const periodParam = computed(() => (['day', 'month'].includes(route.query.period) ? route.query.period : 'week'))
+const PERIOD_ADJ = { day: 'Daily', week: 'Weekly', month: 'Monthly' }
+const PERIOD_PHRASE = { day: 'today', week: 'this week', month: 'in the last 30 days' }
+const cardPeriod = computed(() => card.value?.period || periodParam.value)
 
 const loading = ref(true)
 const card = ref(null)
@@ -50,7 +54,7 @@ const copied = ref(false)
 const skillSuffix = computed(() => (card.value?.skill && card.value.skill !== 'Overall' ? ` ${card.value.skill}` : ''))
 
 const imageUrl = computed(() =>
-  isFrozen.value ? cardsApi.frozenImageUrl(slug.value) : cardsApi.weeklyImageUrl(username.value, skillParam.value),
+  isFrozen.value ? cardsApi.frozenImageUrl(slug.value) : cardsApi.weeklyImageUrl(username.value, skillParam.value, periodParam.value),
 )
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
@@ -58,7 +62,7 @@ onMounted(async () => {
   try {
     card.value = isFrozen.value
       ? await cardsApi.getFrozen(slug.value)
-      : await cardsApi.getWeeklyData(username.value, skillParam.value)
+      : await cardsApi.getWeeklyData(username.value, skillParam.value, periodParam.value)
   } catch {
     card.value = null
   } finally {
@@ -66,10 +70,10 @@ onMounted(async () => {
   }
 
   if (card.value) {
-    const skillQuery = card.value.skill && card.value.skill !== 'Overall' ? `?skill=${encodeURIComponent(card.value.skill)}` : ''
+    const skillQuery = cardsApi.cardQuery(card.value.skill, cardPeriod.value)
     setPageMeta({
-      title: `${card.value.displayName}'s Weekly${skillSuffix.value} XP Gains`,
-      description: `${card.value.displayName} gained ${formatXp(card.value.xpGained)}${skillSuffix.value} XP this week on TickGains.`,
+      title: `${card.value.displayName}'s ${PERIOD_ADJ[cardPeriod.value]}${skillSuffix.value} XP Gains`,
+      description: `${card.value.displayName} gained ${formatXp(card.value.xpGained)}${skillSuffix.value} XP ${PERIOD_PHRASE[cardPeriod.value]} on TickGains.`,
       path: isFrozen.value
         ? `/player/${encodeURIComponent(username.value)}/card/weekly/${slug.value}`
         : `/player/${encodeURIComponent(username.value)}/card/weekly${skillQuery}`,
@@ -90,7 +94,7 @@ async function copyLink() {
 async function nativeShare() {
   try {
     await navigator.share({
-      title: `${card.value.displayName}'s Weekly XP Gains — TickGains`,
+      title: `${card.value.displayName}'s ${PERIOD_ADJ[cardPeriod.value]} XP Gains — TickGains`,
       url: window.location.href,
     })
   } catch {

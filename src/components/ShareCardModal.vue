@@ -2,8 +2,12 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <div class="modal-card share-modal-card">
       <div class="share-modal-header">
-        <h2>Share weekly card</h2>
+        <h2>Share progress card</h2>
         <button class="btn-text" @click="$emit('close')">✕</button>
+      </div>
+
+      <div class="share-modal-period" role="group" aria-label="Timeframe">
+        <button v-for="p in PERIODS" :key="p.key" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
       </div>
 
       <label class="period-select share-modal-skill">
@@ -37,7 +41,7 @@
         </a>
       </div>
       <p class="empty-hint share-modal-hint">
-        <strong>Live</strong> always reflects the last 7 days. <strong>Current snapshot</strong> freezes today's numbers
+        <strong>Live</strong> always reflects {{ periodPhrase }}. <strong>Current snapshot</strong> freezes today's numbers
         permanently, so the link never changes.
       </p>
     </div>
@@ -57,14 +61,21 @@ defineEmits(['close'])
 
 const { showToast } = useToast()
 
+const PERIODS = [
+  { key: 'day', label: 'Daily' },
+  { key: 'week', label: 'Weekly' },
+  { key: 'month', label: 'Monthly' },
+]
+const period = ref('week')
 const skill = ref('Overall')
 const imageLoading = ref(true)
 const copyingLive = ref(false)
 const freezing = ref(false)
 
-const previewUrl = computed(() => cardsApi.weeklyImageUrl(props.username, skill.value))
+const periodPhrase = computed(() => ({ day: 'today so far', week: 'the last 7 days', month: 'the last 30 days' })[period.value])
+const previewUrl = computed(() => cardsApi.weeklyImageUrl(props.username, skill.value, period.value))
 
-watch(skill, () => {
+watch([skill, period], () => {
   imageLoading.value = true
 })
 
@@ -79,14 +90,14 @@ async function copyToClipboard(url) {
 
 function copyLiveLink() {
   copyingLive.value = true
-  const path = `/player/${encodeURIComponent(props.username)}/card/weekly${skill.value !== 'Overall' ? `?skill=${encodeURIComponent(skill.value)}` : ''}`
+  const path = `/player/${encodeURIComponent(props.username)}/card/weekly${cardsApi.cardQuery(skill.value, period.value)}`
   copyToClipboard(`${window.location.origin}${path}`).finally(() => (copyingLive.value = false))
 }
 
 async function copySnapshotLink() {
   freezing.value = true
   try {
-    const frozen = await cardsApi.freezeWeekly(props.username, skill.value)
+    const frozen = await cardsApi.freezeWeekly(props.username, skill.value, period.value)
     await copyToClipboard(`${window.location.origin}/player/${encodeURIComponent(props.username)}/card/weekly/${frozen.slug}`)
   } catch {
     showToast('Could not create a share link right now.')

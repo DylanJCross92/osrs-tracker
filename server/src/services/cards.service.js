@@ -2,9 +2,16 @@ import crypto from 'node:crypto'
 import { pool } from '../db.js'
 import { getPlayer } from './players.service.js'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
-import { localDay, addDays, diffDays, weekdayShort } from '../utils/dates.js'
+import { localDay, addDays, diffDays, weekdayShort, APP_TIMEZONE } from '../utils/dates.js'
 
 const DAY_MS = 86_400_000
+
+// Card timeframes: 'day' = since the start of today (calendar day), 'week' / 'month'
+// = rolling 7 / 30 days.
+const PERIODS = { day: { days: 1 }, week: { days: 7 }, month: { days: 30 } }
+export function normalizePeriod(period) {
+  return PERIODS[period] ? period : 'week'
+}
 
 export function isValidCardSkill(skill) {
   return skill === 'Overall' || SKILL_NAMES.includes(skill)
@@ -17,7 +24,8 @@ export function isValidCardSkill(skill) {
  * beat every earlier week. Comparisons only run for a full 7-day card —
  * a 3-day partial period has nothing fair to compare against.
  */
-async function computeExtras(playerId, skill, startIso, endIso, xpGained) {
+async function computeExtras(playerId, skill, startIso, endIso, xpGained, period = 'week') {
+  const windowDays = PERIODS[period].days
   const result = await pool.query(
     `SELECT captured_at,
             CASE WHEN $2::text = 'Overall' THEN overall_xp ELSE (skills->$2::text->>'xp')::bigint END AS xp
@@ -53,7 +61,7 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained) {
   const firstDay = localDay(start)
   const lastDay = localDay(end)
   const spanDays = diffDays(firstDay, lastDay) + 1
-  if (spanDays >= 2) {
+  if (period !== 'day' && spanDays >= 2) {
     const lastXpOfDay = new Map()
     for (const p of series) {
       if (p.t >= start && p.t <= end) lastXpOfDay.set(localDay(p.t), p.xp)
@@ -66,16 +74,16 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained) {
       days.push({ date: day, label: weekdayShort(day), xp: Math.max(next - carry, 0) })
       carry = next
     }
-    daily = days.slice(-7)
+    daily = days.slice(-windowDays)
   }
 
   // Previous-period comparison + personal best, full-week cards only.
   let comparison = null
-  if (spanDays >= 7) {
+  if (period === 'day' || spanDays >= windowDays) {
     const gains = []
     for (let j = 1; j <= 52; j++) {
-      const endT = start - 7 * (j - 1) * DAY_MS
-      const beginT = start - 7 * j * DAY_MS
+      const endT = start - windowDays * (j - 1) * DAY_MS
+      const beginT = start - windowDays * j * DAY_MS
       const e = j === 1 ? xpAt(start) : xpAt(endT)
       const b = baseAt(beginT)
       if (e == null || b == null) break
@@ -105,8 +113,9 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained) {
  * the top 3 skills gained that week) — a single-skill mode returns
  * { xpGained, level, levelGained, rankGained } for that skill specifically.
  */
-export async function getWeeklyCardData(playerId, skill = 'Overall') {
+export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'week') {
   if (!isValidCardSkill(skill)) skill = 'Overall'
+  period = normalizePeriod(period)
 
   const player = await getPlayer(playerId)
   if (!player) return null
@@ -122,8 +131,8 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
       (
         SELECT overall_xp, skills, captured_at
         FROM snapshots
-        WHERE player_id = $1 AND captured_at >= now() - interval '7 days'
-        ORDER BY captured_at ASC LIMIT 1
+        WHERE player_id = $1 AND ${period === 'day' ? "captured_at < (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at >= now() - ($2::int * interval '1 day')"}
+        ORDER BY captured_at ${period === 'day' ? 'DESC' : 'ASC'} LIMIT 1
       )
       UNION ALL
       (
@@ -138,7 +147,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
            baseline.captured_at AS baseline_captured_at
     FROM latest, baseline
     `,
-    [playerId],
+    [playerId, period === 'day' ? APP_TIMEZONE : PERIODS[period].days],
   )
   if (result.rowCount === 0) return null
 
@@ -147,6 +156,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
     username: player.username,
     displayName: player.displayName,
     skill,
+    period,
     periodStart: row.baseline_captured_at,
     periodEnd: row.captured_at,
   }
@@ -166,7 +176,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
     gains.sort((a, b) => b.xp - a.xp)
     const topSkills = gains.filter((g) => g.xp > 0).slice(0, 3)
 
-    const extras = await computeExtras(playerId, 'Overall', row.baseline_captured_at, row.captured_at, xpGained)
+    const extras = await computeExtras(playerId, 'Overall', row.baseline_captured_at, row.captured_at, xpGained, period)
     return { ...base, xpGained, topSkills, ...extras }
   }
 
@@ -176,7 +186,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
   const levelGained = current.level - baseline.level
   const rankGained = current.rank != null && baseline.rank != null ? baseline.rank - current.rank : null
 
-  const extras = await computeExtras(playerId, skill, row.baseline_captured_at, row.captured_at, xpGained)
+  const extras = await computeExtras(playerId, skill, row.baseline_captured_at, row.captured_at, xpGained, period)
   return { ...base, xpGained, level: current.level, levelStart: baseline.level, levelGained, rankGained, ...extras }
 }
 
@@ -186,8 +196,8 @@ export async function getWeeklyCardData(playerId, skill = 'Overall') {
  * even as the player's real "last 7 days" moves on. Returns null if there's
  * nothing to share yet.
  */
-export async function freezeWeeklyCard(playerId, skill = 'Overall') {
-  const data = await getWeeklyCardData(playerId, skill)
+export async function freezeWeeklyCard(playerId, skill = 'Overall', period = 'week') {
+  const data = await getWeeklyCardData(playerId, skill, period)
   if (!data) return null
 
   const slug = crypto.randomBytes(6).toString('base64url')

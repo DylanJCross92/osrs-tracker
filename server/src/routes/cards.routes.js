@@ -20,7 +20,7 @@ cardsRouter.get('/players/:username/card/weekly/data', async (req, res, next) =>
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
-    const data = await getWeeklyCardData(player.id, req.query.skill)
+    const data = await getWeeklyCardData(player.id, req.query.skill, req.query.period)
     if (!data) return res.status(404).json({ error: 'Nothing to show yet for this player.' })
     res.json(data)
   } catch (err) {
@@ -32,7 +32,7 @@ cardsRouter.get('/players/:username/card/weekly/image.png', async (req, res, nex
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
-    const data = await getWeeklyCardData(player.id, req.query.skill)
+    const data = await getWeeklyCardData(player.id, req.query.skill, req.query.period)
     if (!data) return res.status(404).end()
     const png = await renderWeeklyCardPng(data)
     res.set('Content-Type', 'image/png')
@@ -52,7 +52,7 @@ cardsRouter.post('/players/:username/card/weekly/freeze', async (req, res, next)
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
-    const frozen = await freezeWeeklyCard(player.id, req.body?.skill)
+    const frozen = await freezeWeeklyCard(player.id, req.body?.skill, req.body?.period)
     if (!frozen) return res.status(404).json({ error: 'Nothing to share yet for this player.' })
     res.status(201).json(frozen)
   } catch (err) {

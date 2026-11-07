@@ -75,8 +75,10 @@ const ICON = {
 
 // "THIS WEEK'S GAINS" is only honest for a full week; a player tracked for
 // three days gets "LAST 3 DAYS' GAINS" instead.
-function periodTitle(startIso, endIso) {
+function periodTitle(startIso, endIso, period = 'week') {
   const days = dayCount(startIso, endIso)
+  if (period === 'day') return "Today's gains"
+  if (period === 'month') return `Last ${Math.min(days, 30)} days' gains`
   if (days >= 7) return "This week's gains"
   if (days <= 1) return "Today's gains"
   return `Last ${days} days' gains`
@@ -156,7 +158,8 @@ function buildSkillStats(data) {
 
 // One chip under the headline: a personal best, or how this period moved
 // against the previous one. Nothing when there's nothing fair to compare.
-function comparisonChip(comparison) {
+const COMPARE_LABEL = { day: 'vs. yesterday', week: 'vs. previous week', month: 'vs. previous 30 days' }
+function comparisonChip(comparison, period = 'week') {
   if (!comparison) return null
   let icon
   let color
@@ -169,7 +172,7 @@ function comparisonChip(comparison) {
     const up = comparison.pct > 0
     icon = svgIcon(18, up ? COLORS.green : COLORS.red, [up ? ICON.up : ICON.down])
     color = up ? COLORS.green : COLORS.red
-    text = `${Math.abs(comparison.pct)}% vs. previous week`
+    text = `${Math.abs(comparison.pct)}% ${COMPARE_LABEL[period] || COMPARE_LABEL.week}`
   } else {
     return null
   }
@@ -199,18 +202,20 @@ function dailyChart(daily) {
   const max = Math.max(...daily.map((d) => d.xp))
   if (max <= 0) return null
   const best = daily.find((d) => d.xp === max)
+  const many = daily.length > 10 // monthly card: thin bars, only the date range is labelled
+  const shortDate = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
   const CHART_H = 120
   return node('div', { display: 'flex', flexDirection: 'column', width: 500 }, [
     node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }, [
       node('div', { fontSize: 18, color: COLORS.muted, letterSpacing: '0.04em', textTransform: 'uppercase' }, 'Daily xp'),
       node('div', { display: 'flex', gap: 8, fontSize: 18, color: COLORS.muted }, [
-        node('div', {}, `Best day · ${best.label}`),
+        node('div', {}, `Best day · ${many ? shortDate(best.date) : best.label}`),
         node('div', { color: COLORS.gold, fontWeight: 700 }, `+${formatXp(best.xp)}`),
       ]),
     ]),
     node(
       'div',
-      { display: 'flex', alignItems: 'flex-end', gap: 10, height: CHART_H },
+      { display: 'flex', alignItems: 'flex-end', gap: many ? 3 : 10, height: CHART_H },
       daily.map((d) =>
         node(
           'div',
@@ -218,7 +223,7 @@ function dailyChart(daily) {
             display: 'flex',
             flex: 1,
             height: Math.max(Math.round((d.xp / max) * CHART_H), 5),
-            borderRadius: 6,
+            borderRadius: many ? 3 : 6,
             backgroundColor: d.xp === max ? COLORS.gold : d.xp > 0 ? COLORS.green : '#352d1d',
             opacity: d.xp === max ? 1 : 0.85,
           },
@@ -226,13 +231,18 @@ function dailyChart(daily) {
         ),
       ),
     ),
-    node(
-      'div',
-      { display: 'flex', gap: 10, marginTop: 8 },
-      daily.map((d) =>
-        node('div', { display: 'flex', flex: 1, justifyContent: 'center', fontSize: 16, color: COLORS.muted }, d.label.slice(0, 3)),
-      ),
-    ),
+    many
+      ? node('div', { display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 16, color: COLORS.muted }, [
+          node('div', {}, shortDate(daily[0].date)),
+          node('div', {}, shortDate(daily[daily.length - 1].date)),
+        ])
+      : node(
+          'div',
+          { display: 'flex', gap: 10, marginTop: 8 },
+          daily.map((d) =>
+            node('div', { display: 'flex', flex: 1, justifyContent: 'center', fontSize: 16, color: COLORS.muted }, d.label.slice(0, 3)),
+          ),
+        ),
   ])
 }
 
@@ -270,8 +280,8 @@ async function buildWeeklyCardTree(data) {
   ])
 
   const chart = dailyChart(data.daily)
-  const chip = comparisonChip(data.comparison)
-  const title = periodTitle(periodStart, periodEnd)
+  const chip = xpGained > 0 ? comparisonChip(data.comparison, data.period) : null
+  const title = periodTitle(periodStart, periodEnd, data.period)
 
   return node(
     'div',
@@ -322,7 +332,7 @@ async function buildWeeklyCardTree(data) {
               ]),
             ].filter(Boolean),
           ),
-          node('div', { fontSize: 24, color: COLORS.muted, marginTop: 6 }, formatRange(periodStart, periodEnd)),
+          node('div', { fontSize: 24, color: COLORS.muted, marginTop: 6 }, (data.period === 'day' ? formatRange(periodEnd, periodEnd) : formatRange(periodStart, periodEnd))),
           ...(chip ? [chip] : []),
         ]),
         ...(chart ? [chart] : []),

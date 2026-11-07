@@ -1286,3 +1286,10 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .profile-banner .banner-actions { margin-left: auto; display: flex; gap: 10px; }
 .profile-banner .banner-actions .btn { min-width: 0; padding: 7px 16px; font-size: 0.85rem; background: rgba(14, 12, 9, 0.55); }
 .profile-banner .banner-actions .btn { display: inline-flex; align-items: center; gap: 8px; }
+
+/* share modal: timeframe switch */
+.share-modal-period { display: inline-flex; gap: 4px; padding: 4px; margin-bottom: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; }
+.share-modal-period button { padding: 7px 18px; border: none; border-radius: 999px; background: transparent; color: var(--muted); font-size: 0.88rem; cursor: pointer; }
+.share-modal-period button:hover { color: var(--text); }
+.share-modal-period button.active { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); color: var(--gold-ink); }
+.share-modal-period { display: flex; width: fit-content; }
