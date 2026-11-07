@@ -55,3 +55,22 @@ CREATE TABLE IF NOT EXISTS shared_cards (
 ALTER TABLE players ADD COLUMN IF NOT EXISTS badge TEXT;
 UPDATE players SET badge = 'Admin / Founder' WHERE lower(username) = 'dylanz297' AND badge IS NULL;
 UPDATE players SET badge = 'Admin / Founder' WHERE badge = 'Admin Founder';
+
+-- Achievement/timeline milestones detected from snapshots (see
+-- milestones.service.js). One row per (player, kind, skill, value); the
+-- unique key makes detection idempotent. occurred_at is the first snapshot
+-- that showed the milestone — NULL means it was already achieved when the
+-- player's earliest data begins, so the real date is unknown (never guessed).
+CREATE TABLE IF NOT EXISTS player_milestones (
+  id SERIAL PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  milestone_type TEXT NOT NULL,
+  skill TEXT NOT NULL DEFAULT '',
+  value BIGINT NOT NULL,
+  occurred_at TIMESTAMPTZ,
+  detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  source TEXT NOT NULL DEFAULT 'snapshot',
+  UNIQUE (player_id, milestone_type, skill, value)
+);
+CREATE INDEX IF NOT EXISTS player_milestones_player_idx ON player_milestones (player_id, occurred_at);
+CREATE INDEX IF NOT EXISTS player_milestones_recent_idx ON player_milestones (milestone_type, value, occurred_at DESC);

@@ -9,10 +9,14 @@ import { cardsRouter } from './routes/cards.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard } from './services/cards.service.js'
+import { getDiscover } from './services/discover.service.js'
+import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
 import { injectCardMeta } from './utils/cardMeta.js'
 
 const app = express()
+// Behind Render's proxy — needed so req.ip is the visitor (rate limiting).
+app.set('trust proxy', 1)
 
 app.use(
   cors({
@@ -23,6 +27,13 @@ app.use(express.json())
 
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
+app.get('/api/discover', async (req, res, next) => {
+  try {
+    res.json(await getDiscover())
+  } catch (err) {
+    next(err)
+  }
+})
 
 const SITE_URL = process.env.SITE_URL || 'https://tickgains.com'
 
@@ -36,7 +47,7 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Failed to build sitemap.xml', err)
   }
 
-  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
+  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((url) => `  <url><loc>${url}</loc></url>`)
     .join('\n')}\n</urlset>\n`
@@ -71,6 +82,12 @@ if (distExists) {
       const player = await getPlayerByUsername(req.params.username)
       if (!player) return res.sendFile(path.join(distPath, 'index.html'))
 
+      // One canonical URL per player: /player/dylanz297 and /player/Dylanz297
+      // must not be two indexable pages, so any other casing redirects.
+      if (req.params.username !== player.username) {
+        return res.redirect(301, `/player/${encodeURIComponent(player.username)}${req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''}`)
+      }
+
       const [latest, weekly] = await Promise.all([
         getLatestSnapshot(player.id),
         getWeeklyCardData(player.id, 'Overall').catch(() => null),
@@ -81,28 +98,41 @@ if (distExists) {
         ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png`
         : `${SITE_URL}/og-default.png`
 
-      let description = `${player.displayName}'s OSRS progress on TickGains.`
+      let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
       if (latest) {
-        description = `${player.displayName} — Level ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP) on TickGains.`
+        description = `${player.displayName} — Level ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
         if (weekly?.xpGained > 0) {
-          description += ` +${formatXp(weekly.xpGained)} XP this week`
-          const topSkill = weekly.topSkills?.[0]
-          if (topSkill) description += `, led by ${topSkill.skill} (+${formatXp(topSkill.xp)})`
-          description += '.'
+          description += ` +${formatXp(weekly.xpGained)} XP this week.`
         }
       }
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${player.displayName}'s OSRS Progress — TickGains`,
+          title: `${player.displayName} — OSRS Player Profile | TickGains`,
           description,
           imageUrl,
           pageUrl,
+          jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'ProfilePage',
+            mainEntity: { '@type': 'Person', name: player.displayName, url: pageUrl, description },
+          },
         }),
       )
     } catch (err) {
       next(err)
     }
+  })
+
+  app.get('/discover', (req, res) => {
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'Discover OSRS Players | TickGains',
+        description: 'Discover tracked Old School RuneScape players: recent 99s, top XP gains this week and month, and players closing in on max.',
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl: `${SITE_URL}/discover`,
+      }),
+    )
   })
 
   // The planner's title/description are baked into the HTML for crawlers and
@@ -205,3 +235,5 @@ app.listen(port, () => {
 })
 
 startScheduler()
+// Reconstruct achievements/milestones for players tracked before they existed (idempotent).
+backfillAllMilestones().catch((err) => console.error('[milestones] backfill failed:', err))

@@ -1,0 +1,161 @@
+import { pool } from '../db.js'
+import { SKILL_NAMES } from './osrsHiscores.service.js'
+
+// Achievements are defined here in code (version-controlled, no registration
+// or manual awarding) and evaluated against recorded snapshots. What is
+// persisted is the *milestone* — the first moment a threshold was seen — so
+// pages never recompute history and dates are never invented.
+
+export const SKILL_LEVEL_TARGETS = [50, 70, 90, 99]
+export const SKILL_XP_TARGETS = [10_000_000, 25_000_000, 50_000_000, 100_000_000, 200_000_000]
+export const MAX_TOTAL_LEVEL = SKILL_NAMES.length * 99
+export const TOTAL_LEVEL_TARGETS = [500, 1000, 1500, 2000, 2200, MAX_TOTAL_LEVEL]
+export const TOTAL_XP_TARGETS = [10_000_000, 50_000_000, 100_000_000, 250_000_000, 500_000_000, 1_000_000_000, 2_000_000_000]
+
+const fmtXp = (n) => (n >= 1e9 ? `${n / 1e9}B` : `${n / 1e6}M`)
+
+/** Every achievement definition: { key, category, type, skill, value, title, description }. */
+export function achievementDefinitions() {
+  const defs = []
+  for (const skill of SKILL_NAMES) {
+    for (const value of SKILL_LEVEL_TARGETS) {
+      defs.push({ key: `skill_level:${skill}:${value}`, category: 'Skill Levels', type: 'skill_level', skill, value, title: `${value} ${skill}`, description: `Reach level ${value} ${skill}.` })
+    }
+  }
+  for (const skill of SKILL_NAMES) {
+    for (const value of SKILL_XP_TARGETS) {
+      defs.push({ key: `skill_xp:${skill}:${value}`, category: 'Skill XP', type: 'skill_xp', skill, value, title: `${fmtXp(value)} ${skill} XP`, description: `Earn ${fmtXp(value)} XP in ${skill}.` })
+    }
+  }
+  for (const value of TOTAL_LEVEL_TARGETS) {
+    const isMax = value === MAX_TOTAL_LEVEL
+    defs.push({ key: `total_level::${value}`, category: 'Total Level', type: 'total_level', skill: '', value, title: isMax ? `Maxed (${value.toLocaleString()} total)` : `${value.toLocaleString()} Total Level`, description: `Reach a total level of ${value.toLocaleString()}.` })
+  }
+  for (const value of TOTAL_XP_TARGETS) {
+    defs.push({ key: `total_xp::${value}`, category: 'Total XP', type: 'total_xp', skill: '', value, title: `${fmtXp(value)} Total XP`, description: `Earn ${fmtXp(value)} total XP.` })
+  }
+  return defs
+}
+
+// Value of a milestone's metric inside one snapshot-shaped object.
+function metric(type, skill, snap) {
+  if (type === 'total_level') return snap.overallLevel
+  if (type === 'total_xp') return snap.overallXp
+  const s = snap.skills?.[skill]
+  if (!s) return 0
+  return type === 'skill_level' ? s.level : s.xp
+}
+
+const defKey = (d) => `${d.type}|${d.skill}|${d.value}`
+
+/**
+ * Idempotently records any milestones a player has reached but not yet
+ * stored, using the earliest snapshot that shows each one. Cheap when
+ * nothing is missing (latest snapshot + stored keys only); loads the full
+ * history only when something new appeared. Safe to call after every
+ * snapshot, WOM import, or on a backfill loop.
+ */
+export async function syncMilestones(playerId) {
+  const latestRes = await pool.query(
+    `SELECT overall_xp, overall_level, skills FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`,
+    [playerId],
+  )
+  if (!latestRes.rowCount) return 0
+  const latest = { overallXp: Number(latestRes.rows[0].overall_xp), overallLevel: latestRes.rows[0].overall_level, skills: latestRes.rows[0].skills }
+
+  const storedRes = await pool.query('SELECT milestone_type, skill, value, occurred_at FROM player_milestones WHERE player_id = $1', [playerId])
+  const stored = new Map(storedRes.rows.map((r) => [`${r.milestone_type}|${r.skill}|${Number(r.value)}`, r.occurred_at]))
+
+  // Missing, or stored without a date (might be datable now that older history exists).
+  const todo = achievementDefinitions().filter((d) => metric(d.type, d.skill, latest) >= d.value && (!stored.has(defKey(d)) || stored.get(defKey(d)) === null))
+  if (!todo.length) return 0
+
+  const snapsRes = await pool.query(
+    `SELECT captured_at, overall_xp, overall_level, skills FROM snapshots WHERE player_id = $1 ORDER BY captured_at ASC`,
+    [playerId],
+  )
+  const snaps = snapsRes.rows.map((r) => ({ at: r.captured_at, overallXp: Number(r.overall_xp), overallLevel: r.overall_level, skills: r.skills }))
+  const earliest = snaps[0]
+
+  const rows = []
+  for (const d of todo) {
+    const first = snaps.find((s) => metric(d.type, d.skill, s) >= d.value)
+    if (!first) continue
+    // Already true in the very first snapshot = achieved before tracking; the date is unknown.
+    rows.push({ d, occurredAt: first === earliest ? null : first.at })
+  }
+  let written = 0
+  for (const { d, occurredAt } of rows) {
+    const res = await pool.query(
+      `INSERT INTO player_milestones (player_id, milestone_type, skill, value, occurred_at, source)
+       VALUES ($1, $2, $3, $4, $5, 'snapshot')
+       ON CONFLICT (player_id, milestone_type, skill, value)
+       DO UPDATE SET occurred_at = EXCLUDED.occurred_at WHERE player_milestones.occurred_at IS NULL AND EXCLUDED.occurred_at IS NOT NULL`,
+      [playerId, d.type, d.skill, d.value, occurredAt],
+    )
+    written += res.rowCount
+  }
+  return written
+}
+
+/** Fire-and-forget wrapper for hooks — a milestone failure must never break a snapshot. */
+export function syncMilestonesSafe(playerId) {
+  syncMilestones(playerId).catch((err) => console.error(`[milestones] sync failed for player ${playerId}:`, err.message))
+}
+
+/** Startup backfill for players tracked before milestones existed. */
+export async function backfillAllMilestones() {
+  const { rows } = await pool.query('SELECT id FROM players ORDER BY id ASC')
+  for (const { id } of rows) {
+    try {
+      await syncMilestones(id)
+    } catch (err) {
+      console.error(`[milestones] backfill failed for player ${id}:`, err.message)
+    }
+  }
+}
+
+function currentValueFor(def, latest) {
+  return metric(def.type, def.skill, latest)
+}
+
+/** Profile payload: every achievement with status/progress/date, plus the timeline. */
+export async function getProfileAchievements(playerId) {
+  const [latestRes, milestonesRes, firstRes] = await Promise.all([
+    pool.query(`SELECT overall_xp, overall_level, skills FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`, [playerId]),
+    pool.query('SELECT milestone_type, skill, value, occurred_at, detected_at, source FROM player_milestones WHERE player_id = $1', [playerId]),
+    pool.query('SELECT MIN(captured_at) AS first FROM snapshots WHERE player_id = $1', [playerId]),
+  ])
+  const latest = latestRes.rows[0]
+    ? { overallXp: Number(latestRes.rows[0].overall_xp), overallLevel: latestRes.rows[0].overall_level, skills: latestRes.rows[0].skills }
+    : { overallXp: 0, overallLevel: 0, skills: {} }
+  const byKey = new Map(milestonesRes.rows.map((r) => [`${r.milestone_type}|${r.skill}|${Number(r.value)}`, r]))
+
+  const achievements = achievementDefinitions().map((d) => {
+    const current = currentValueFor(d, latest)
+    const m = byKey.get(defKey(d))
+    return {
+      key: d.key,
+      category: d.category,
+      type: d.type,
+      skill: d.skill,
+      value: d.value,
+      title: d.title,
+      description: d.description,
+      current,
+      progress: Math.min(current / d.value, 1),
+      completed: Boolean(m) || current >= d.value,
+      achievedAt: m?.occurred_at || null,
+      dateKnown: Boolean(m?.occurred_at),
+    }
+  })
+
+  const timeline = milestonesRes.rows
+    .map((r) => {
+      const d = achievementDefinitions().find((x) => x.type === r.milestone_type && x.skill === r.skill && x.value === Number(r.value))
+      return { key: d?.key, title: d?.title, description: d?.description, category: d?.category, type: r.milestone_type, skill: r.skill, value: Number(r.value), occurredAt: r.occurred_at, detectedAt: r.detected_at, source: r.source }
+    })
+    .filter((t) => t.key)
+
+  return { achievements, timeline, trackingStartedAt: firstRes.rows[0]?.first || null }
+}

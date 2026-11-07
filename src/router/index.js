@@ -7,6 +7,11 @@ const routes = [
     component: () => import('@/views/PlayersView.vue'),
   },
   {
+    path: '/discover',
+    name: 'discover',
+    component: () => import('@/views/DiscoverView.vue'),
+  },
+  {
     path: '/planner',
     name: 'planner',
     component: () => import('@/views/PlannerView.vue'),

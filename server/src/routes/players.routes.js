@@ -9,6 +9,12 @@ import {
   startWomImport,
 } from '../services/players.service.js'
 import { syncAllPlayers } from '../jobs/sync.js'
+import { getProfileAchievements } from '../services/milestones.service.js'
+import { searchPlayers } from '../services/discover.service.js'
+import { rateLimit } from '../utils/rateLimit.js'
+
+const importLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many player lookups — try again in a minute.' })
+const searchLimiter = rateLimit({ windowMs: 10_000, max: 20 })
 
 export const playersRouter = Router()
 
@@ -30,7 +36,25 @@ playersRouter.get('/', async (req, res, next) => {
 // history backfill keeps running in the background (see players.service.js)
 // and is reflected in each player's womImportStatus from here on, so the
 // client can show "still importing" without this request blocking on it.
-playersRouter.post('/', async (req, res, next) => {
+playersRouter.get('/search', searchLimiter, async (req, res, next) => {
+  try {
+    res.json(await searchPlayers(req.query.q))
+  } catch (err) {
+    next(err)
+  }
+})
+
+playersRouter.get('/:id/profile', async (req, res, next) => {
+  try {
+    const player = await getPlayer(req.params.id)
+    if (!player) return res.status(404).json({ error: 'Player not found.' })
+    res.json(await getProfileAchievements(player.id))
+  } catch (err) {
+    next(err)
+  }
+})
+
+playersRouter.post('/', importLimiter, async (req, res, next) => {
   try {
     await addPlayer(req.body.username)
     res.status(201).json(await listPlayers())
@@ -52,7 +76,7 @@ playersRouter.get('/:id/snapshots', async (req, res, next) => {
 // One-time manual trigger for a player who was never auto-checked (e.g.
 // added before this feature existed) — runs in the background same as the
 // automatic check, see players.service.js.
-playersRouter.post('/:id/check-wom-history', async (req, res, next) => {
+playersRouter.post('/:id/check-wom-history', importLimiter, async (req, res, next) => {
   try {
     await startWomImport(req.params.id)
     res.json(await listPlayers())
@@ -63,7 +87,7 @@ playersRouter.post('/:id/check-wom-history', async (req, res, next) => {
 
 // Manual sync, so you can see a fresh data point without waiting for the
 // scheduler's next 6-hourly run.
-playersRouter.post('/:id/refresh', async (req, res, next) => {
+playersRouter.post('/:id/refresh', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     await refreshPlayer(req.params.id)
     res.json(await listPlayers())

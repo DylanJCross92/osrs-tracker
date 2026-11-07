@@ -23,6 +23,14 @@
         {{ adding ? 'Adding…' : 'Track Player' }}
       </button>
     </form>
+    <ul v-if="suggestions.length" class="search-suggest">
+      <li v-for="sg in suggestions" :key="sg.username">
+        <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }">
+          <span>{{ sg.displayName }}</span>
+          <small>Tracked · Lvl {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small>
+        </RouterLink>
+      </li>
+    </ul>
   </div>
 
   <div v-if="pageLoading" class="card">
@@ -85,6 +93,7 @@ import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import { playersApi } from '@/api/players'
 
 const router = useRouter()
 const store = usePlayersStore()
@@ -133,6 +142,26 @@ watch(
     }
   },
 )
+
+// Typeahead: partial, case-insensitive matches among already-tracked players.
+const suggestions = ref([])
+let suggestTimer = null
+watch(newUsername, (q) => {
+  clearTimeout(suggestTimer)
+  const term = (q || '').trim()
+  if (term.length < 2) {
+    suggestions.value = []
+    return
+  }
+  suggestTimer = setTimeout(async () => {
+    try {
+      const rows = await playersApi.search(term)
+      if ((newUsername.value || '').trim() === term) suggestions.value = rows
+    } catch {
+      suggestions.value = []
+    }
+  }, 250)
+})
 
 setPageMeta({
   description: "Track any OSRS player's hiscores and XP gains over time, with training advice for every skill.",

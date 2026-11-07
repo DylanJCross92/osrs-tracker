@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import { fetchHiscores } from './osrsHiscores.service.js'
 import { fetchWomHistory } from './wiseOldMan.service.js'
+import { syncMilestonesSafe } from './milestones.service.js'
 
 // Local timezone used to decide where a calendar day starts for "today's" gains.
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
@@ -193,6 +194,7 @@ export async function recordSnapshot(playerId, stats) {
      VALUES ($1, $2, $3, $4, $5)`,
     [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
   )
+  syncMilestonesSafe(playerId)
 }
 
 export async function addPlayer(rawUsername) {
@@ -231,6 +233,7 @@ export async function addPlayer(rawUsername) {
     )
     liveCapturedAt = snapshot.rows[0].captured_at
     await client.query('COMMIT')
+    syncMilestonesSafe(playerId)
   } catch (err) {
     await client.query('ROLLBACK')
     throw err
@@ -287,6 +290,8 @@ async function runWomImportInBackground(playerId, username, liveCapturedAt) {
       playerId,
       count,
     ])
+    // Older history may now date milestones that were previously "before tracking".
+    syncMilestonesSafe(playerId)
   } catch (err) {
     console.error(`Wise Old Man import failed for "${username}":`, err)
     await pool

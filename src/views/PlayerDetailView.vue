@@ -1,6 +1,11 @@
 <template>
   <div class="card detail-header">
-    <div>
+    <div class="profile-banner" aria-hidden="true" />
+    <div class="detail-identity">
+      <div class="profile-avatar" aria-hidden="true">
+        <img v-if="topSkill" :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="40" height="40" />
+      </div>
+      <div>
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
       <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
       <p v-if="latest" class="last-synced">
@@ -12,6 +17,13 @@
           <span class="spinner" /> Checking for updates…
         </span>
       </p>
+      <div v-if="latest" class="profile-chips">
+        <span>Total level <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
+        <span>Total XP <b>{{ latest.overallXp.toLocaleString() }}</b></span>
+        <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString() }}</b></span>
+        <span v-if="topSkill">Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>
+      </div>
+      </div>
     </div>
     <div class="detail-actions">
       <label class="period-select">
@@ -36,6 +48,7 @@
         class="btn btn-ghost"
         :to="{ name: 'planner', query: { u: player.username } }"
       >Goal Planner</RouterLink>
+      <button class="btn btn-ghost" :disabled="!player" @click="copyProfileLink">Copy Link</button>
       <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
       </div>
     </div>
@@ -51,6 +64,14 @@
   <div v-if="loading" class="card"><p class="empty-hint">Loading hiscores history…</p></div>
 
   <template v-else-if="snapshots.length">
+    <nav class="profile-tabs" aria-label="Profile sections">
+      <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
+    </nav>
+    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" />
+    <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
+    <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
+    <ProfileHistory v-else-if="tab === 'history'" :profile="profile" />
+    <template v-else>
     <div class="card hiscores-panel">
       <table class="hiscores-table">
         <thead>
@@ -262,6 +283,7 @@
       </div>
     </div>
 
+    </template>
   </template>
 
   <div v-else class="card">
@@ -281,6 +303,12 @@ import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import ProfileOverview from '@/components/profile/ProfileOverview.vue'
+import ProfileAchievements from '@/components/profile/ProfileAchievements.vue'
+import ProfileGoals from '@/components/profile/ProfileGoals.vue'
+import ProfileHistory from '@/components/profile/ProfileHistory.vue'
+import { playersApi } from '@/api/players'
+import { highestSkill } from '@/utils/profile'
 import {
   SKILL_NAMES,
   skillIconSrc,
@@ -320,8 +348,8 @@ watch(
   ([p, username]) => {
     const name = p?.displayName || username
     setPageMeta({
-      title: `${name} — OSRS Hiscores`,
-      description: `Track ${name}'s OSRS XP, levels, and hiscores over time, with training advice for every skill.`,
+      title: `${name} — OSRS Player Profile`,
+      description: `Explore ${name}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`,
       path: `/player/${encodeURIComponent(username)}`,
     })
   },
@@ -351,6 +379,47 @@ watch(
 )
 
 const snapshots = ref([])
+
+// --- profile tabs (kept in ?tab= so a tab is linkable; history.replaceState
+// rather than router.replace so switching never scrolls the page to the top)
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'stats', label: 'Stats' },
+  { key: 'achievements', label: 'Achievements' },
+  { key: 'goals', label: 'Goals' },
+  { key: 'history', label: 'History' },
+]
+const tab = ref(TABS.some((t) => t.key === route.query.tab) ? route.query.tab : 'overview')
+function setTab(key) {
+  tab.value = key
+  const url = new URL(window.location.href)
+  if (key === 'overview') url.searchParams.delete('tab')
+  else url.searchParams.set('tab', key)
+  window.history.replaceState(window.history.state, '', url)
+}
+
+const profile = ref(null)
+async function loadProfile() {
+  if (!playerId.value) return
+  try {
+    profile.value = await playersApi.profile(playerId.value)
+  } catch {
+    profile.value = null
+  }
+}
+watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true })
+
+const topSkill = computed(() => highestSkill(snapshots.value[snapshots.value.length - 1]))
+
+async function copyProfileLink() {
+  const url = `${window.location.origin}/player/${encodeURIComponent(player.value.username)}`
+  try {
+    await navigator.clipboard.writeText(url)
+    showToast('Profile link copied')
+  } catch {
+    showToast(url)
+  }
+}
 const loading = ref(true)
 const refreshing = ref(false)
 const checkingWomHistory = ref(false)
