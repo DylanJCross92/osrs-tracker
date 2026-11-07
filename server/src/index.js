@@ -36,7 +36,7 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Failed to build sitemap.xml', err)
   }
 
-  const urls = [`${SITE_URL}/`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
+  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((url) => `  <url><loc>${url}</loc></url>`)
     .join('\n')}\n</urlset>\n`
@@ -103,6 +103,21 @@ if (distExists) {
     } catch (err) {
       next(err)
     }
+  })
+
+  // The planner's title/description are baked into the HTML for crawlers and
+  // link unfurls; parameterized plan URLs share the same page (the client
+  // marks those noindex).
+  app.get('/planner', (req, res) => {
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'OSRS Account Planner & XP Calculator | TickGains',
+        description:
+          'Plan your Old School RuneScape skill goals. Calculate XP remaining, training hours, and GP costs using your OSRS username. Free OSRS account planner.',
+        imageUrl: `${SITE_URL}/icon-512.png`,
+        pageUrl: `${SITE_URL}/planner`,
+      }),
+    )
   })
 
   app.get('/player/:username/card/weekly', async (req, res, next) => {

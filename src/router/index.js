@@ -7,6 +7,11 @@ const routes = [
     component: () => import('@/views/PlayersView.vue'),
   },
   {
+    path: '/planner',
+    name: 'planner',
+    component: () => import('@/views/PlannerView.vue'),
+  },
+  {
     path: '/player/:username',
     name: 'playerDetail',
     component: () => import('@/views/PlayerDetailView.vue'),
