@@ -30,6 +30,11 @@
       >
         {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
       </button>
+      <RouterLink
+        v-if="player"
+        class="btn btn-ghost"
+        :to="{ name: 'planner', query: { u: player.username } }"
+      >Plan Goals</RouterLink>
       <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
     </div>
   </div>

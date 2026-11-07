@@ -34,8 +34,8 @@
       <div class="planner-form">
         <label>
           <span>Skill</span>
-          <div class="planner-skill-select">
-            <img :src="skillIconSrc(form.skill)" :alt="form.skill" width="24" height="24" />
+          <div class="planner-skill-select"><span class="planner-skill-icon">
+            <img :src="skillIconSrc(form.skill)" :alt="form.skill" width="24" height="24" /></span>
             <select v-model="form.skill" @change="onSkillChange">
               <option v-for="s in SKILL_NAMES" :key="s" :value="s">{{ s }}</option>
             </select>
@@ -180,7 +180,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
@@ -202,7 +202,6 @@ import {
 
 const store = usePlayersStore()
 const route = useRoute()
-const router = useRouter()
 const { showToast } = useToast()
 
 setPageMeta({
@@ -390,13 +389,11 @@ watch(
     } catch {
       /* storage unavailable — URL sharing still works */
     }
-    if (goals.value.length) {
-      router.replace({ path: '/planner', query: Object.fromEntries(encodePlan(state)) })
-      setRobots('noindex, follow')
-    } else {
-      router.replace({ path: '/planner' })
-      setRobots('index, follow')
-    }
+    // history.replaceState (not router.replace) so syncing the URL never
+    // triggers the router's scroll-to-top while dragging the slider.
+    const qs = goals.value.length ? `?${encodePlan(state).toString()}` : ''
+    window.history.replaceState(window.history.state, '', `/planner${qs}`)
+    setRobots(goals.value.length ? 'noindex, follow' : 'index, follow')
   },
   { deep: true },
 )
@@ -404,6 +401,7 @@ watch(
 onMounted(async () => {
   let restored = null
   if (route.query.g) restored = decodePlan(route.query, SKILL_NAMES)
+  else if (typeof route.query.u === 'string') restored = { username: route.query.u, goals: [], hoursPerDay: 2 }
   else {
     try {
       restored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
