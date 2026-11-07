@@ -17,11 +17,12 @@
 
     <!-- By day: one block per day, skills collapsed into level ranges -->
     <div v-else-if="view === 'day'" class="history-days">
-      <section v-for="d in visibleDays" :key="d.key" class="history-day">
+      <section v-for="d in visibleDays" :key="d.key" class="history-day" :class="{ 'history-gap': d.gap }">
         <header>
           <b>{{ d.label }}</b>
           <span>{{ d.summary }}</span>
         </header>
+        <p v-if="d.gap" class="history-gap-note">Exact days unknown — there is no saved data between these dates, so these happened somewhere within the range.</p>
         <ul>
           <li v-for="r in d.rows" :key="r.id">
             <img v-if="r.skill" :src="skillIconSrc(r.skill)" :alt="r.skill" width="22" height="22" />
@@ -46,7 +47,7 @@
         </header>
         <ul>
           <li v-for="r in g.rows" :key="r.id">
-            <span class="history-row-date">{{ r.dateLabel }}</span>
+            <span class="history-row-date" :class="{ 'is-range': r.gap }">{{ r.dateLabel }}</span>
             <span class="history-row-title">{{ r.title }}</span>
             <span v-if="r.chip" class="history-chip">{{ r.chip }}</span>
           </li>
@@ -64,8 +65,7 @@
     </div>
 
     <p class="profile-note">
-      Reconstructed from saved XP snapshots (including imported Wise Old Man history). A date is the first snapshot that showed the
-      level or milestone — the real moment may be earlier. The earliest record{{ profile?.trackingStartedAt ? ` (${fmt(profile.trackingStartedAt)})` : '' }} is not the account's creation date.
+      Reconstructed from saved XP snapshots (including imported Wise Old Man history). Where saved data is sparse, changes are shown as a date range instead of a single day. The earliest record{{ profile?.trackingStartedAt ? ` (${fmt(profile.trackingStartedAt)})` : '' }} is not the account's creation date.
     </p>
   </div>
 </template>
@@ -86,11 +86,18 @@ watch([skill, category, view], () => (shownDays.value = 10))
 
 const skills = SKILL_NAMES
 const fmt = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+const fmtShort = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const sameYear = (a, b) => new Date(a).getFullYear() === new Date(b).getFullYear()
 const dayKey = (d) => new Date(d).toLocaleDateString('en-CA') // YYYY-MM-DD in the viewer's zone
 
-// Every level gained per skill, from the snapshots (a level's date is the first
-// snapshot showing it). Levels already held in a skill's earliest snapshot are
-// returned separately as "pre-tracking" instead of dozens of undated rows.
+// When two consecutive snapshots are further apart than this, whatever changed
+// between them can't be pinned to a day — it happened *somewhere in the gap*
+// (typical for sparse imported history before daily tracking began).
+const GAP_MS = 48 * 3_600_000
+const isGap = (after, at) => after != null && new Date(at) - new Date(after) > GAP_MS
+
+// Every level gained per skill, from the snapshots. Levels already held in a
+// skill's earliest snapshot are returned separately ("pre-tracking").
 const levelEvents = computed(() => {
   const list = props.snapshots
   const dated = []
@@ -101,7 +108,9 @@ const levelEvents = computed(() => {
     if (prev > 1) pre.push({ id: `pre:${name}`, skill: name, level: prev })
     for (let i = 1; i < list.length; i++) {
       const level = list[i].skills?.[name]?.level ?? prev
-      for (let l = prev + 1; l <= level; l++) dated.push({ skill: name, level: l, at: list[i].capturedAt, category: 'Skill Levels' })
+      for (let l = prev + 1; l <= level; l++) {
+        dated.push({ skill: name, level: l, at: list[i].capturedAt, after: list[i - 1].capturedAt, category: 'Skill Levels' })
+      }
       if (level > prev) prev = level
     }
   }
@@ -112,7 +121,7 @@ const levelEvents = computed(() => {
 const otherEvents = computed(() =>
   (props.profile?.timeline || [])
     .filter((t) => t.type !== 'skill_level' && t.occurredAt)
-    .map((t) => ({ id: t.key, title: t.title, skill: t.skill, category: t.category, at: t.occurredAt })),
+    .map((t) => ({ id: t.key, title: t.title, skill: t.skill, category: t.category, at: t.occurredAt, after: t.occurredAfter })),
 )
 
 const categories = computed(() => {
@@ -126,12 +135,26 @@ const preTracking = computed(() =>
   category.value && category.value !== 'Skill Levels' ? [] : levelEvents.value.pre.filter((p) => !skill.value || p.skill === skill.value),
 )
 
-// Collapse consecutive levels of one skill on one day into a single range row.
+// Where an event belongs: an exact day, or the whole gap between two snapshots.
+function placement(at, after) {
+  if (isGap(after, at)) {
+    return {
+      gap: true,
+      group: `gap:${dayKey(after)}|${dayKey(at)}`,
+      label: `${sameYear(after, at) ? fmtShort(after) : fmt(after)} → ${fmt(at)}`,
+      dateLabel: `${sameYear(after, at) ? fmtShort(after) : fmt(after)} – ${fmtShort(at)}`,
+    }
+  }
+  return { gap: false, group: `day:${dayKey(at)}`, label: fmt(at), dateLabel: fmt(at) }
+}
+
+// Collapse consecutive levels of one skill within one placement into a single range row.
 function levelRuns(events) {
   const runs = new Map()
   for (const e of events) {
-    const key = `${dayKey(e.at)}|${e.skill}`
-    const r = runs.get(key) || { day: dayKey(e.at), at: e.at, skill: e.skill, from: e.level, to: e.level }
+    const pl = placement(e.at, e.after)
+    const key = `${pl.group}|${e.skill}`
+    const r = runs.get(key) || { ...pl, at: e.at, skill: e.skill, from: e.level, to: e.level }
     r.from = Math.min(r.from, e.level)
     r.to = Math.max(r.to, e.level)
     runs.set(key, r)
@@ -141,7 +164,7 @@ function levelRuns(events) {
 function runRow(r) {
   const n = r.to - r.from + 1
   return {
-    id: `run:${r.day}:${r.skill}`,
+    id: `run:${r.group}:${r.skill}`,
     skill: r.skill,
     title: n === 1 ? `${r.skill} level ${r.to}` : `${r.skill} level ${r.from - 1} → ${r.to}`,
     chip: n === 1 ? 'new level' : `+${n} levels`,
@@ -151,26 +174,31 @@ function runRow(r) {
 
 const allRows = computed(() => {
   const runs = levelRuns(levelEvents.value.dated.filter(keep)).map((r) => ({ ...r, ...runRow(r), kind: 'level' }))
-  const others = otherEvents.value.filter(keep).map((e) => ({ id: e.id, skill: e.skill, title: e.title, chip: 'milestone', day: dayKey(e.at), at: e.at, kind: 'milestone', sort: 1e12 }))
+  const others = otherEvents.value.filter(keep).map((e) => {
+    const pl = placement(e.at, e.after)
+    return { ...pl, id: e.id, skill: e.skill, title: e.title, chip: 'milestone', at: e.at, kind: 'milestone', sort: 1e12 }
+  })
   return [...runs, ...others]
 })
 
+const countLevels = (rows) => rows.filter((r) => r.kind === 'level').reduce((n, r) => n + (Number(r.chip.replace(/\D/g, '')) || 1), 0)
+
 const dayGroups = computed(() => {
-  const byDay = new Map()
+  const by = new Map()
   for (const r of allRows.value) {
-    if (!byDay.has(r.day)) byDay.set(r.day, [])
-    byDay.get(r.day).push(r)
+    if (!by.has(r.group)) by.set(r.group, [])
+    by.get(r.group).push(r)
   }
-  return [...byDay.entries()]
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+  return [...by.entries()]
     .map(([key, rows]) => {
-      const levels = rows.filter((r) => r.kind === 'level').reduce((n, r) => n + (Number(r.chip.replace(/\D/g, '')) || 1), 0)
+      const levels = countLevels(rows)
+      const ms = rows.filter((r) => r.kind === 'milestone').length
       const bits = []
       if (levels) bits.push(`${levels} level${levels === 1 ? '' : 's'} gained`)
-      const ms = rows.filter((r) => r.kind === 'milestone').length
       if (ms) bits.push(`${ms} milestone${ms === 1 ? '' : 's'}`)
-      return { key, label: fmt(rows[0].at), summary: bits.join(' · '), rows: rows.sort((a, b) => b.sort - a.sort) }
+      return { key, gap: rows[0].gap, label: rows[0].label, summary: bits.join(' · '), at: rows[0].at, rows: rows.sort((a, b) => b.sort - a.sort) }
     })
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
 })
 const visibleDays = computed(() => dayGroups.value.slice(0, shownDays.value))
 
@@ -179,12 +207,12 @@ const skillGroups = computed(() => {
   for (const r of allRows.value) {
     const k = r.skill || ''
     if (!by.has(k)) by.set(k, [])
-    by.get(k).push({ ...r, dateLabel: fmt(r.at) })
+    by.get(k).push({ ...r })
   }
   return [...by.entries()]
     .map(([name, rows]) => {
       rows.sort((a, b) => new Date(b.at) - new Date(a.at))
-      const levels = rows.filter((r) => r.kind === 'level').reduce((n, r) => n + (Number(r.chip.replace(/\D/g, '')) || 1), 0)
+      const levels = countLevels(rows)
       return { skill: name, rows, summary: levels ? `${levels} level${levels === 1 ? '' : 's'} gained` : `${rows.length} milestone${rows.length === 1 ? '' : 's'}`, latest: rows[0].at }
     })
     .sort((a, b) => new Date(b.latest) - new Date(a.latest))

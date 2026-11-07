@@ -123,7 +123,15 @@ function currentValueFor(def, latest) {
 export async function getProfileAchievements(playerId) {
   const [latestRes, milestonesRes, firstRes] = await Promise.all([
     pool.query(`SELECT overall_xp, overall_level, skills FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`, [playerId]),
-    pool.query('SELECT milestone_type, skill, value, occurred_at, detected_at, source FROM player_milestones WHERE player_id = $1', [playerId]),
+    // occurred_after = the last snapshot BEFORE the one that first showed the
+    // milestone. A wide gap between the two means the real date is only known
+    // to be somewhere inside it (e.g. sparse imported history).
+    pool.query(
+      `SELECT m.milestone_type, m.skill, m.value, m.occurred_at, m.detected_at, m.source,
+              (SELECT MAX(s.captured_at) FROM snapshots s WHERE s.player_id = m.player_id AND s.captured_at < m.occurred_at) AS occurred_after
+       FROM player_milestones m WHERE m.player_id = $1`,
+      [playerId],
+    ),
     pool.query('SELECT MIN(captured_at) AS first FROM snapshots WHERE player_id = $1', [playerId]),
   ])
   const latest = latestRes.rows[0]
@@ -153,7 +161,7 @@ export async function getProfileAchievements(playerId) {
   const timeline = milestonesRes.rows
     .map((r) => {
       const d = achievementDefinitions().find((x) => x.type === r.milestone_type && x.skill === r.skill && x.value === Number(r.value))
-      return { key: d?.key, title: d?.title, description: d?.description, category: d?.category, type: r.milestone_type, skill: r.skill, value: Number(r.value), occurredAt: r.occurred_at, detectedAt: r.detected_at, source: r.source }
+      return { key: d?.key, title: d?.title, description: d?.description, category: d?.category, type: r.milestone_type, skill: r.skill, value: Number(r.value), occurredAt: r.occurred_at, occurredAfter: r.occurred_after, detectedAt: r.detected_at, source: r.source }
     })
     .filter((t) => t.key)
 

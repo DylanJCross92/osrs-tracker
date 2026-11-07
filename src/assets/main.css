@@ -1261,3 +1261,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .ach-cell.done { color: var(--gold-ink); background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border: 1px solid var(--gold); font-size: 0.85rem; }
 .stats-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .detail-header .profile-banner { justify-content: flex-start; }
+.history-gap { border-style: dashed; border-color: var(--border-strong); }
+.history-gap header { background: rgba(217, 175, 82, 0.08); }
+.history-gap-note { margin: 0; padding: 8px 16px; color: var(--muted); font-size: 0.78rem; border-bottom: 1px solid var(--border); }
+.history-row-date.is-range { width: 150px; }
