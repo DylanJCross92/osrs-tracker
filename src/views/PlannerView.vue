@@ -49,6 +49,7 @@
           <span>Current XP</span>
           <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" />
         </label>
+        <div class="planner-pair">
         <label>
           <span>Goal</span>
           <select v-model="form.targetMode" @change="syncTarget">
@@ -67,11 +68,12 @@
         </label>
         <label v-else><span>Target XP</span><input type="text" :value="formatNum(MAX_XP)" disabled /></label>
 
+        </div>
         <label class="planner-method">
           <span>Training method</span>
           <select v-model="form.methodId">
             <option v-for="meth in skillMethods" :key="meth.id" :value="meth.id">
-              {{ meth.name }} (lvl {{ meth.minLevel }}+, ~{{ formatNum(meth.xpPerHour) }} xp/h)
+              {{ meth.name }}{{ meth.fastest ? ' ★ Fastest' : '' }} (lvl {{ meth.minLevel }}+, ~{{ formatNum(meth.xpPerHour) }} xp/h)
             </option>
             <option value="custom">Custom XP/hour…</option>
           </select>

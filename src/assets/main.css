@@ -991,3 +991,6 @@ button:focus-visible {
   .planner-goal-grid { grid-template-columns: 1fr 1.7fr 1fr 1fr; }
   .planner-goal-grid label { grid-column: span 1; }
 }
+.planner-pair { grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.planner-pair label { display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 640px) { .planner-pair { grid-column: span 1; } }
