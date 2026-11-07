@@ -1213,3 +1213,8 @@ a.btn, a.btn:hover, a.btn:focus { text-decoration: none; }
 .history-pre { margin-top: 16px; padding: 12px 16px; background: var(--bg); border: 1px dashed var(--border-strong); border-radius: 12px; }
 .history-pre > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .history-pre-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }
+
+/* profile header: keep the back link clear of the overlapping avatar */
+.detail-header .profile-banner { min-height: 96px; align-items: flex-start; padding-top: 14px; }
+.detail-header .profile-banner > * { position: relative; z-index: 3; }
+.detail-body .profile-avatar { margin-top: -34px; position: relative; z-index: 2; }
