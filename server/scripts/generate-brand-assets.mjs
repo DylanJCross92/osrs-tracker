@@ -37,7 +37,7 @@ writeFileSync(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
   <rect x="2" y="2" width="96" height="96" rx="22" fill="#16130e" stroke="${BORDER}" stroke-width="2"/>
   <g transform="translate(19 19) scale(2.6)">${markSvgInner(GOLD)}</g>
-  <text x="118" y="67" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="52" letter-spacing="-1"><tspan fill="${CREAM}">Tick</tspan><tspan fill="${GOLD}">Gains</tspan></text>
+  <text x="118" y="67" font-family="Arial, Helvetica, sans-serif" font-weight="500" font-size="52" letter-spacing="-1"><tspan fill="${CREAM}">Tick</tspan><tspan fill="${GOLD}">Gains</tspan></text>
 </svg>
 `,
 )
