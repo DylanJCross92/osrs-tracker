@@ -171,28 +171,6 @@
         <button class="btn btn-ghost" type="button" @click="copySummary">Copy text summary</button>
       </div>
     </div>
-
-    <div class="card planner-about">
-      <h2>How the OSRS planner works</h2>
-      <p>
-        XP remaining is your target XP minus current XP, using the official OSRS XP table (level 92 = 6,517,253 XP, level
-        99 = 13,034,431 XP, 200M cap, virtual levels to 126). Estimated hours are XP remaining divided by the XP/hour rate
-        of the method you pick; GP is hours times that method's approximate net gp/hour.
-      </p>
-      <p>
-        Pick the method you want to end up training. If it unlocks above your current level, the plan first builds a
-        route of milestones, using the fastest catalog method available at each level, to get you there — then runs
-        your chosen method, and switches to the next-fastest if it caps out before your goal. Playtime per day turns
-        total hours into an estimated completion date.
-      </p>
-      <h3>Training methods in the catalog</h3>
-      <ul class="planner-catalog">
-        <li v-for="s in catalogSkills" :key="s">
-          <b>{{ s }}:</b>
-          {{ methodsForSkill(s).map((meth) => `${meth.name} (lvl ${meth.minLevel}+)`).join(', ') }}
-        </li>
-      </ul>
-    </div>
   </div>
 </template>
 
@@ -205,7 +183,7 @@ import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
-import { methodsForSkill, getMethod, skillsWithMethods } from '@/data/trainingMethods'
+import { methodsForSkill, getMethod } from '@/data/trainingMethods'
 import {
   MAX_XP,
   xpAtLevel,
@@ -231,7 +209,6 @@ setPageMeta({
 })
 
 const STORAGE_KEY = 'tickgains-planner-v1'
-const catalogSkills = skillsWithMethods()
 
 const username = ref('')
 const player = ref(null)
