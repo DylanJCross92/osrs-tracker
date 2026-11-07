@@ -1197,3 +1197,19 @@ button:focus-visible {
 
 /* Buttons rendered as links (e.g. Goal Planner) never underline. */
 a.btn, a.btn:hover, a.btn:focus { text-decoration: none; }
+
+/* history timeline v2 (grouped) */
+.history-days, .history-skills { display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
+.history-day { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.history-day header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: var(--panel-alt); border-bottom: 1px solid var(--border); }
+.history-day header span:last-child { color: var(--muted); font-size: 0.8rem; }
+.history-skill-head { display: flex; align-items: center; gap: 10px; }
+.history-day ul { list-style: none; margin: 0; padding: 4px 0; }
+.history-day li { display: flex; align-items: center; gap: 12px; padding: 8px 16px; }
+.history-day li + li { border-top: 1px solid rgba(64, 54, 31, 0.5); }
+.history-row-title { flex: 1; font-weight: 600; }
+.history-row-date { width: 112px; color: var(--muted); font-size: 0.82rem; flex-shrink: 0; }
+.history-chip { padding: 2px 10px; border-radius: 999px; background: rgba(124, 184, 105, 0.14); color: var(--xp-green); font-size: 0.76rem; font-weight: 700; white-space: nowrap; }
+.history-pre { margin-top: 16px; padding: 12px 16px; background: var(--bg); border: 1px dashed var(--border-strong); border-radius: 12px; }
+.history-pre > div { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.history-pre-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }
