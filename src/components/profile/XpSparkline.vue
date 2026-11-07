@@ -11,7 +11,7 @@
           <stop offset="100%" stop-color="#7cb869" stop-opacity="0" />
         </linearGradient>
       </defs>
-      <line v-for="g in 3" :key="g" :x1="padX" :x2="W - padX" :y1="padT + ((H - padT - padB) * (g - 1)) / 2" :y2="padT + ((H - padT - padB) * (g - 1)) / 2" class="spark-grid" />
+      <line v-for="g in 3" :key="g" :x1="0" :x2="W" :y1="padT + ((H - padT - padB) * (g - 1)) / 2" :y2="padT + ((H - padT - padB) * (g - 1)) / 2" class="spark-grid" />
       <path v-if="points.length > 1" :d="areaPath" fill="url(#sparkFill)" />
       <path v-if="points.length > 1" :d="linePath" class="spark-line" />
       <g v-for="p in points" :key="p.label">
@@ -29,18 +29,21 @@ import { computed } from 'vue'
 const props = defineProps({ days: { type: Array, required: true } })
 const W = 320
 const H = 110
-const padX = 14
+const padX = 0
 const padT = 10
 const padB = 22
 
 const total = computed(() => props.days.reduce((s, d) => s + d.xp, 0))
+// Points sit at the centre of 7 equal columns (like a bar chart), so the gap
+// from the edge to the first/last point is half the gap between points —
+// even spacing all the way across, and the day labels centre under each point.
 const points = computed(() => {
   const max = Math.max(...props.days.map((d) => d.xp), 1)
-  const step = (W - padX * 2) / Math.max(props.days.length - 1, 1)
+  const step = (W - padX * 2) / props.days.length
   return props.days.map((d, i) => ({
     ...d,
-    x: padX + i * step,
-    y: padT + (1 - d.xp / max) * (H - padT - padB),
+    x: padX + (i + 0.5) * step,
+    y: padT + 4 + (1 - d.xp / max) * (H - padT - padB - 8),
   }))
 })
 const linePath = computed(() => points.value.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' '))
