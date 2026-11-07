@@ -1259,3 +1259,5 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .ach-skill-col img { vertical-align: middle; margin-right: 10px; }
 .ach-cell { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; padding: 4px 8px; border-radius: 8px; font-size: 0.78rem; color: var(--muted); background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--border-strong); cursor: default; }
 .ach-cell.done { color: var(--gold-ink); background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border: 1px solid var(--gold); font-size: 0.85rem; }
+.stats-toolbar { display: flex; justify-content: flex-end; margin-bottom: 12px; }
+.detail-header .profile-banner { justify-content: flex-start; }

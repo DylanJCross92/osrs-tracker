@@ -2,14 +2,6 @@
   <div class="card detail-header">
     <div class="profile-banner">
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
-      <label v-if="tab === 'stats'" class="period-select">
-        <span class="period-select-label">Show gains for</span>
-        <select v-model="period">
-          <option value="day">Today</option>
-          <option value="week">Last 7 Days</option>
-          <option value="month">Last 30 Days</option>
-        </select>
-      </label>
     </div>
     <div class="detail-body">
       <div class="profile-avatar" aria-hidden="true">
@@ -73,6 +65,16 @@
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
     <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
     <template v-else>
+    <div class="stats-toolbar">
+      <label class="period-select">
+        <span class="period-select-label">Show gains for</span>
+        <select v-model="period">
+          <option value="day">Today</option>
+          <option value="week">Last 7 Days</option>
+          <option value="month">Last 30 Days</option>
+        </select>
+      </label>
+    </div>
     <div class="card hiscores-panel">
       <table class="hiscores-table">
         <thead>
