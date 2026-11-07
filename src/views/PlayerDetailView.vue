@@ -2,6 +2,20 @@
   <div class="card detail-header">
     <div class="profile-banner">
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
+      <div class="detail-buttons banner-actions">
+          <button
+            v-if="player?.womImportStatus === 'none'"
+            class="btn btn-ghost"
+            :disabled="checkingWomHistory"
+            @click="checkWomHistory"
+          >
+            {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
+          </button>
+          <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
+            Share
+          </button>
+      </div>
     </div>
     <div class="detail-body">
       <div class="profile-avatar" aria-hidden="true">
@@ -25,24 +39,8 @@
           <span v-if="topSkill"><img :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="16" height="16" />Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>
         </div>
       </div>
-      <div class="detail-actions">
-      <div class="detail-buttons">
-      <button
-        v-if="player?.womImportStatus === 'none'"
-        class="btn btn-ghost"
-        :disabled="checkingWomHistory"
-        @click="checkWomHistory"
-      >
-        {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
-      </button>
-      <RouterLink
-        v-if="player"
-        class="btn btn-ghost"
-        :to="{ name: 'planner', query: { u: player.username } }"
-      >Goal Planner</RouterLink>
-      <button class="btn btn-ghost" :disabled="!player" @click="copyProfileLink">Copy Link</button>
-      <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
-      </div>
+      <div class="detail-side">
+        <XpSparkline v-if="weekDays.length" :days="weekDays" />
       </div>
     </div>
   </div>
@@ -312,6 +310,7 @@ import ProfileGoals from '@/components/profile/ProfileGoals.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { playersApi } from '@/api/players'
 import { highestSkill } from '@/utils/profile'
+import XpSparkline from '@/components/profile/XpSparkline.vue'
 import {
   SKILL_NAMES,
   skillIconSrc,
@@ -412,17 +411,33 @@ async function loadProfile() {
 }
 watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true })
 
+// XP gained per calendar day over the last 7 days (oldest first). Uses the same
+// baseline as the weekly total elsewhere — the first snapshot inside the 7-day
+// window — and credits each later snapshot's gain to its own day, so a gap in
+// older data can never be dumped onto one day.
+const weekDays = computed(() => {
+  const list = snapshots.value
+  const cutoff = Date.now() - 7 * 86_400_000
+  const windowSnaps = list.filter((s) => new Date(s.capturedAt).getTime() >= cutoff)
+  if (windowSnaps.length < 2) return []
+  const key = (t) => new Date(t).toLocaleDateString('en-CA')
+  const byDay = new Map()
+  for (let i = 1; i < windowSnaps.length; i++) {
+    const k = key(windowSnaps[i].capturedAt)
+    byDay.set(k, (byDay.get(k) || 0) + Math.max(windowSnaps[i].overallXp - windowSnaps[i - 1].overallXp, 0))
+  }
+  const days = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setHours(12, 0, 0, 0)
+    d.setDate(d.getDate() - i)
+    days.push({ label: d.toLocaleDateString(undefined, { weekday: 'short' }), xp: byDay.get(key(d)) || 0 })
+  }
+  return days
+})
+
 const topSkill = computed(() => highestSkill(snapshots.value[snapshots.value.length - 1]))
 
-async function copyProfileLink() {
-  const url = `${window.location.origin}/player/${encodeURIComponent(player.value.username)}`
-  try {
-    await navigator.clipboard.writeText(url)
-    showToast('Profile link copied')
-  } catch {
-    showToast(url)
-  }
-}
 const loading = ref(true)
 const refreshing = ref(false)
 const checkingWomHistory = ref(false)
