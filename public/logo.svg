@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100">
   <rect x="2" y="2" width="96" height="96" rx="22" fill="#16130e" stroke="#40361f" stroke-width="2"/>
-  <path d="M27 53 L43 69 L75 33" fill="none" stroke="#f0c976" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="118" y="67" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="52" fill="#f0c976" letter-spacing="-1">TickGains</text>
+  <g transform="translate(19 19) scale(2.6)"><path d="M3 17l6-6 4 4 8-9" fill="none" stroke="#f0c976" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6h6v6" fill="none" stroke="#f0c976" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <text x="118" y="67" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="52" letter-spacing="-1"><tspan fill="#ece4d3">Tick</tspan><tspan fill="#f0c976">Gains</tspan></text>
 </svg>

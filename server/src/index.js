@@ -79,7 +79,7 @@ if (distExists) {
       const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
       const imageUrl = latest
         ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png`
-        : `${SITE_URL}/icon-512.png`
+        : `${SITE_URL}/og-default.png`
 
       let description = `${player.displayName}'s OSRS progress on TickGains.`
       if (latest) {
@@ -109,12 +109,26 @@ if (distExists) {
   // link unfurls; parameterized plan URLs share the same page (the client
   // marks those noindex).
   app.get('/planner', (req, res) => {
+    // A shared plan link names the player and skills in its description;
+    // the bare page keeps the generic one. Query parsing is defensive —
+    // it's user-controlled text that ends up in HTML meta (escaped by injectCardMeta).
+    const who = typeof req.query.u === 'string' ? req.query.u.slice(0, 12).trim() : ''
+    const skills = (typeof req.query.g === 'string' ? req.query.g.split(',') : [])
+      .map((chunk) => chunk.split('~')[0])
+      .filter((name) => /^[A-Za-z]{3,12}$/.test(name))
+      .slice(0, 6)
+    let title = 'OSRS Account Planner & XP Calculator | TickGains'
+    let description =
+      'Plan your Old School RuneScape skill goals. Calculate XP remaining, training hours, and GP costs using your OSRS username. Free OSRS account planner.'
+    if (skills.length) {
+      title = `${who ? `${who}'s ` : ''}OSRS Training Plan | TickGains`
+      description = `${who ? `${who}'s` : 'A'} OSRS training plan for ${skills.join(', ')} — XP remaining, training hours, GP and days to finish, built with the TickGains Account Planner.`
+    }
     res.send(
       injectCardMeta(indexHtmlTemplate, {
-        title: 'OSRS Account Planner & XP Calculator | TickGains',
-        description:
-          'Plan your Old School RuneScape skill goals. Calculate XP remaining, training hours, and GP costs using your OSRS username. Free OSRS account planner.',
-        imageUrl: `${SITE_URL}/icon-512.png`,
+        title,
+        description,
+        imageUrl: `${SITE_URL}/og-planner.png`,
         pageUrl: `${SITE_URL}/planner`,
       }),
     )
