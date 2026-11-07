@@ -1222,3 +1222,7 @@ a.btn, a.btn:hover, a.btn:focus { text-decoration: none; }
 /* Site-wide weight cap: nothing heavier than 500, including the elements
    browsers render bold by default. */
 b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
+
+/* The banner was originally a decorative overlay (pointer-events: none) —
+   it now holds the back link and gains dropdown, so it must take clicks. */
+.detail-header .profile-banner { pointer-events: auto; }
