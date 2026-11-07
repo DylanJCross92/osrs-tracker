@@ -1194,3 +1194,6 @@ button:focus-visible {
 .detail-body .detail-actions { margin-left: auto; align-self: center; flex-direction: row; align-items: center; }
 .detail-identity { display: none; }
 @media (max-width: 720px) { .detail-body .detail-actions { margin-left: 0; width: 100%; } .detail-body .detail-buttons { width: 100%; } .detail-buttons .btn { min-width: 0; } }
+
+/* Buttons rendered as links (e.g. Goal Planner) never underline. */
+a.btn, a.btn:hover, a.btn:focus { text-decoration: none; }
