@@ -2,7 +2,7 @@
   <div class="card detail-header">
     <div class="profile-banner">
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
-      <label class="period-select">
+      <label v-if="tab === 'stats'" class="period-select">
         <span class="period-select-label">Show gains for</span>
         <select v-model="period">
           <option value="day">Today</option>
