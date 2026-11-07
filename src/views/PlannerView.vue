@@ -43,11 +43,11 @@
         </label>
         <label>
           <span>Current level</span>
-          <input type="number" min="1" max="126" :value="currentLevel" @change="setCurrentLevel($event.target.value)" />
+          <NumberInput v-model="currentLevelModel" :min="1" :max="126" />
         </label>
         <label>
           <span>Current XP</span>
-          <input type="number" min="0" :max="MAX_XP" v-model.number="form.currentXp" />
+          <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" />
         </label>
         <label>
           <span>Goal</span>
@@ -58,12 +58,12 @@
           </select>
         </label>
         <label v-if="form.targetMode === 'level'">
-          <span>Target level (up to 126 virtual)</span>
-          <input type="number" min="1" max="126" v-model.number="form.targetLevel" @change="syncTarget" />
+          <span>Target level</span>
+          <NumberInput v-model="form.targetLevel" :min="1" :max="126" />
         </label>
         <label v-else-if="form.targetMode === 'xp'">
           <span>Target XP</span>
-          <input type="number" min="0" :max="MAX_XP" v-model.number="form.targetXp" />
+          <NumberInput v-model="form.targetXp" :min="0" :max="MAX_XP" />
         </label>
         <label v-else><span>Target XP</span><input type="text" :value="formatNum(MAX_XP)" disabled /></label>
 
@@ -78,7 +78,7 @@
         </label>
         <label v-if="form.methodId === 'custom'">
           <span>XP per hour</span>
-          <input type="number" min="1" v-model.number="form.customXpPerHour" />
+          <NumberInput v-model="form.customXpPerHour" :min="1" :max="10000000" />
         </label>
       </div>
       <p class="planner-hint" v-if="formMethod">
@@ -112,7 +112,7 @@
             </label>
             <label v-if="g.methodId === 'custom'">
               <span>XP/hour</span>
-              <input type="number" min="1" v-model.number="g.customXpPerHour" />
+              <NumberInput v-model="g.customXpPerHour" :min="1" :max="10000000" />
             </label>
             <div><span>Est. hours</span><b>{{ formatHours(plans[i].hours) }}</b></div>
             <div><span>Est. GP (approx.)</span><b :class="gpClass(plans[i].netGp)">{{ formatGp(plans[i].netGp) }}</b></div>
@@ -181,6 +181,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import NumberInput from '@/components/NumberInput.vue'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
@@ -266,10 +267,14 @@ function onSkillChange() {
   pickDefaultMethod()
 }
 
-function setCurrentLevel(value) {
-  const lvl = Math.min(Math.max(parseInt(value, 10) || 1, 1), 126)
-  form.currentXp = xpAtLevel(lvl)
-}
+const currentLevelModel = computed({
+  get: () => currentLevel.value,
+  set: (v) => {
+    if (v != null) form.currentXp = xpAtLevel(Math.min(Math.max(v, 1), 126))
+  },
+})
+
+watch(() => form.targetLevel, () => syncTarget())
 
 function syncTarget() {
   if (form.targetMode === 'level') form.targetXp = xpAtLevel(form.targetLevel || 1)
@@ -281,6 +286,14 @@ function addGoal() {
   syncTarget()
   const currentXp = Math.min(Math.max(Math.floor(form.currentXp || 0), 0), MAX_XP)
   const targetXp = Math.min(Math.floor(form.targetXp || 0), MAX_XP)
+  if (form.targetMode === 'level' && !(form.targetLevel >= 1 && form.targetLevel <= 126)) {
+    formError.value = 'Target level must be between 1 and 126.'
+    return
+  }
+  if (currentXp >= MAX_XP) {
+    formError.value = 'You already have 200M XP in this skill.'
+    return
+  }
   if (targetXp <= currentXp) {
     formError.value = 'Your target has to be higher than your current XP.'
     return
@@ -308,6 +321,12 @@ function removeGoal(i) {
 async function loadPlayer() {
   const name = username.value.trim()
   if (!name) return
+  // OSRS names: 1-12 letters, digits, spaces, hyphens or underscores.
+  if (!/^[A-Za-z0-9 _-]{1,12}$/.test(name)) {
+    player.value = null
+    lookupError.value = 'Usernames are 1–12 characters: letters, numbers, spaces, hyphens or underscores.'
+    return
+  }
   lookingUp.value = true
   lookupError.value = ''
   try {
