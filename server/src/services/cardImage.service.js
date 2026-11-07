@@ -3,7 +3,8 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
-import { skillIconDataUri, brandMarkDataUri } from './skillIcons.service.js'
+import { skillIconDataUri } from './skillIcons.service.js'
+import { dayCount, formatRange } from '../utils/dates.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fontsDir = path.join(__dirname, '../assets/fonts')
@@ -37,16 +38,61 @@ export function formatXp(xp) {
   return String(Math.round(n))
 }
 
-function formatDateRange(startIso, endIso) {
-  const start = new Date(startIso)
-  const end = new Date(endIso)
-  const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  const sameYear = start.getFullYear() === end.getFullYear() && end.getFullYear() === new Date().getFullYear()
-  const yearSuffix = sameYear ? '' : `, ${end.getFullYear()}`
-  return `${fmt(start)} – ${fmt(end)}${yearSuffix}`
+const COLORS = {
+  green: '#7cb869',
+  red: '#d98a78',
+  gold: '#f0c976',
+  cream: '#ece4d3',
+  muted: '#a99a79',
+  panel: '#211c14',
+  border: '#40361f',
 }
 
-function statTile(iconUri, label, value, valueColor, children) {
+// Inline vector icons — the font has no arrow/star glyphs, and these keep
+// the card independent of which characters a font happens to ship.
+function svgIcon(size, color, paths, { stroke = false } = {}) {
+  return {
+    type: 'svg',
+    props: {
+      width: size,
+      height: size,
+      viewBox: '0 0 24 24',
+      children: paths.map((d) => ({
+        type: 'path',
+        props: stroke
+          ? { d, fill: 'none', stroke: color, strokeWidth: 2.6, strokeLinecap: 'round', strokeLinejoin: 'round' }
+          : { d, fill: color },
+      })),
+    },
+  }
+}
+const ICON = {
+  up: 'M12 4l8 9h-5v7h-6v-7H4z',
+  down: 'M12 20l-8-9h5V4h6v7h5z',
+  star: 'M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7L12 17.3 5.8 20.9l1.6-7L2 9.2l7.1-.6z',
+  right: 'M4 11h12.2l-5.6-5.6L12 4l8 8-8 8-1.4-1.4 5.6-5.6H4z',
+}
+
+// "THIS WEEK'S GAINS" is only honest for a full week; a player tracked for
+// three days gets "LAST 3 DAYS' GAINS" instead.
+function periodTitle(startIso, endIso) {
+  const days = dayCount(startIso, endIso)
+  if (days >= 7) return "This week's gains"
+  if (days <= 1) return "Today's gains"
+  return `Last ${days} days' gains`
+}
+
+// "90 → 91" (arrow in gold) when a level was gained, otherwise just "90".
+function levelProgress(start, end, size, baseColor) {
+  const parts = [node('div', { color: baseColor }, String(start ?? end))]
+  if (start != null && end > start) {
+    parts.push(svgIcon(size, COLORS.muted, [ICON.right]))
+    parts.push(node('div', { color: COLORS.gold }, String(end)))
+  }
+  return node('div', { display: 'flex', alignItems: 'center', gap: 8 }, parts)
+}
+
+function statTile(iconUri, label, children) {
   return node(
     'div',
     {
@@ -54,72 +100,178 @@ function statTile(iconUri, label, value, valueColor, children) {
       flex: 1,
       alignItems: 'center',
       gap: 16,
-      padding: '18px 22px',
+      padding: '16px 22px',
       borderRadius: 16,
-      backgroundColor: '#211c14',
-      border: '1px solid #40361f',
+      backgroundColor: COLORS.panel,
+      border: `1px solid ${COLORS.border}`,
     },
     [
-      iconUri ? image(iconUri, 40, 40) : node('div', { width: 40, height: 40 }),
+      iconUri ? image(iconUri, 40, 40) : null,
       node('div', { display: 'flex', flexDirection: 'column', flex: 1 }, [
-        node('div', { fontSize: 17, color: '#a99a79' }, label),
-        node(
-          'div',
-          { display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 24, fontWeight: 700, color: '#ece4d3' },
-          children ?? [node('div', { color: valueColor ?? '#ece4d3' }, value)],
-        ),
+        node('div', { fontSize: 17, color: COLORS.muted }, label),
+        ...children,
       ]),
-    ],
+    ].filter(Boolean),
   )
 }
 
 async function buildOverallStats(topSkills) {
   const icons = await Promise.all(topSkills.map((s) => skillIconDataUri(s.skill)))
   return topSkills.map((s, i) =>
-    statTile(icons[i], s.skill, null, null, [
-      node('div', { color: '#7cb869' }, `+${formatXp(s.xp)}`),
-      node('div', { fontSize: 16, color: '#a99a79' }, 'xp'),
+    statTile(icons[i], s.skill, [
+      node('div', { display: 'flex', alignItems: 'baseline', gap: 8, fontSize: 24, fontWeight: 700 }, [
+        node('div', { color: COLORS.green }, `+${formatXp(s.xp)}`),
+        node('div', { fontSize: 16, color: COLORS.muted, fontWeight: 400 }, 'xp'),
+      ]),
+      node('div', { display: 'flex', alignItems: 'center', gap: 8, fontSize: 17, color: COLORS.muted, marginTop: 2 }, [
+        node('div', {}, 'Level'),
+        levelProgress(s.levelStart, s.levelEnd, 16, COLORS.cream),
+      ]),
     ]),
   )
 }
 
 function buildSkillStats(data) {
-  const levelTile = statTile(
-    null,
-    'Level',
-    null,
-    null,
-    [
-      node('div', {}, String(data.level)),
-      data.levelGained > 0 ? node('div', { fontSize: 18, color: '#7cb869' }, `+${data.levelGained}`) : null,
-    ].filter(Boolean),
-  )
+  const levelTile = statTile(null, 'Level', [
+    node('div', { display: 'flex', fontSize: 26, fontWeight: 700 }, [
+      levelProgress(data.levelStart ?? data.level - (data.levelGained || 0), data.level, 20, COLORS.cream),
+    ]),
+  ])
 
   // Always two tiles, even when there's no rank to show — a lone tile
   // would otherwise stretch to fill the whole row and look broken.
   const rankTile =
     data.rankGained != null
-      ? statTile(
-          null,
-          'Rank climbed',
-          null,
-          data.rankGained > 0 ? '#7cb869' : '#ece4d3',
-          `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString()}`,
-        )
-      : statTile(null, 'Rank', null, '#a99a79', 'Unranked')
+      ? statTile(null, 'Rank climbed', [
+          node(
+            'div',
+            { fontSize: 26, fontWeight: 700, color: data.rankGained > 0 ? COLORS.green : COLORS.cream },
+            `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString()}`,
+          ),
+        ])
+      : statTile(null, 'Rank', [node('div', { fontSize: 26, fontWeight: 700, color: COLORS.muted }, 'Unranked')])
 
   return [levelTile, rankTile]
+}
+
+// One chip under the headline: a personal best, or how this period moved
+// against the previous one. Nothing when there's nothing fair to compare.
+function comparisonChip(comparison) {
+  if (!comparison) return null
+  let icon
+  let color
+  let text
+  if (comparison.personalBest) {
+    icon = svgIcon(20, COLORS.gold, [ICON.star])
+    color = COLORS.gold
+    text = 'New personal best!'
+  } else if (comparison.pct != null && comparison.pct !== 0) {
+    const up = comparison.pct > 0
+    icon = svgIcon(18, up ? COLORS.green : COLORS.red, [up ? ICON.up : ICON.down])
+    color = up ? COLORS.green : COLORS.red
+    text = `${Math.abs(comparison.pct)}% vs. previous week`
+  } else {
+    return null
+  }
+  return node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+      padding: '7px 16px',
+      borderRadius: 999,
+      backgroundColor: COLORS.panel,
+      border: `1px solid ${COLORS.border}`,
+      fontSize: 20,
+      fontWeight: 700,
+      color,
+    },
+    [icon, node('div', {}, text)],
+  )
+}
+
+// Daily xp bars — fills the card's right-hand side and makes every card
+// look different. The biggest day is gold.
+function dailyChart(daily) {
+  if (!daily || daily.length < 2) return null
+  const max = Math.max(...daily.map((d) => d.xp))
+  if (max <= 0) return null
+  const best = daily.find((d) => d.xp === max)
+  const CHART_H = 120
+  return node('div', { display: 'flex', flexDirection: 'column', width: 500 }, [
+    node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }, [
+      node('div', { fontSize: 18, color: COLORS.muted, letterSpacing: '0.04em', textTransform: 'uppercase' }, 'Daily xp'),
+      node('div', { display: 'flex', gap: 8, fontSize: 18, color: COLORS.muted }, [
+        node('div', {}, `Best day · ${best.label}`),
+        node('div', { color: COLORS.gold, fontWeight: 700 }, `+${formatXp(best.xp)}`),
+      ]),
+    ]),
+    node(
+      'div',
+      { display: 'flex', alignItems: 'flex-end', gap: 10, height: CHART_H },
+      daily.map((d) =>
+        node(
+          'div',
+          {
+            display: 'flex',
+            flex: 1,
+            height: Math.max(Math.round((d.xp / max) * CHART_H), 5),
+            borderRadius: 6,
+            backgroundColor: d.xp === max ? COLORS.gold : d.xp > 0 ? COLORS.green : '#352d1d',
+            opacity: d.xp === max ? 1 : 0.85,
+          },
+          [],
+        ),
+      ),
+    ),
+    node(
+      'div',
+      { display: 'flex', gap: 10, marginTop: 8 },
+      daily.map((d) =>
+        node('div', { display: 'flex', flex: 1, justifyContent: 'center', fontSize: 16, color: COLORS.muted }, d.label.slice(0, 3)),
+      ),
+    ),
+  ])
+}
+
+// Rising-line mark with a TickGains wordmark — deliberately not a bare
+// checkmark in a box, which reads as a checkbox.
+function brandBadge() {
+  return node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 10,
+      padding: '8px 20px 8px 16px',
+      borderRadius: 999,
+      backgroundColor: COLORS.panel,
+      border: `1px solid ${COLORS.border}`,
+    },
+    [
+      svgIcon(26, COLORS.gold, ['M3 17l6-6 4 4 8-9', 'M15 6h6v6'], { stroke: true }),
+      node('div', { display: 'flex', fontSize: 24, fontWeight: 800 }, [
+        node('div', { color: COLORS.cream }, 'Tick'),
+        node('div', { color: COLORS.gold }, 'Gains'),
+      ]),
+    ],
+  )
 }
 
 async function buildWeeklyCardTree(data) {
   const { displayName, skill, xpGained, periodStart, periodEnd } = data
   const isOverall = skill === 'Overall'
 
-  const [skillIconUri, brandUri, statTiles] = await Promise.all([
+  const [skillIconUri, statTiles] = await Promise.all([
     isOverall ? Promise.resolve(null) : skillIconDataUri(skill),
-    brandMarkDataUri(),
     isOverall ? buildOverallStats(data.topSkills || []) : Promise.resolve(buildSkillStats(data)),
   ])
+
+  const chart = dailyChart(data.daily)
+  const chip = comparisonChip(data.comparison)
+  const title = periodTitle(periodStart, periodEnd)
 
   return node(
     'div',
@@ -130,63 +282,58 @@ async function buildWeeklyCardTree(data) {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      padding: '48px 56px',
+      padding: '44px 56px',
       backgroundColor: '#16130e',
       backgroundImage: 'radial-gradient(circle at 15% 0%, #241f15 0%, #16130e 55%, #0e0c09 100%)',
       fontFamily: 'Plus Jakarta Sans',
-      color: '#ece4d3',
+      color: COLORS.cream,
     },
     [
-      // Header: player name (eyebrow names the skill when it isn't Overall) + brand
+      // Header: eyebrow (names the skill when it isn't Overall) + player + brand
       node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
         node('div', { display: 'flex', flexDirection: 'column' }, [
           node(
             'div',
-            { fontSize: 20, color: isOverall ? '#a99a79' : '#f0c976', fontWeight: isOverall ? 400 : 700, letterSpacing: '0.04em', textTransform: 'uppercase' },
-            isOverall ? "This week's gains" : `${skill} — This week's gains`,
+            {
+              fontSize: 20,
+              color: isOverall ? COLORS.muted : COLORS.gold,
+              fontWeight: isOverall ? 400 : 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+            },
+            isOverall ? title : `${skill} — ${title}`,
           ),
-          node('div', { fontSize: 42, fontWeight: 800, color: '#f0c976', marginTop: 4 }, displayName),
+          node('div', { fontSize: 42, fontWeight: 800, color: COLORS.gold, marginTop: 4 }, displayName),
         ]),
-        node(
-          'div',
-          {
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            padding: '8px 18px',
-            borderRadius: 999,
-            backgroundColor: '#211c14',
-            border: '1px solid #40361f',
-          },
-          [
-            brandUri ? image(brandUri, 22, 22) : node('div', { width: 22, height: 22 }),
-            node('div', { fontSize: 20, fontWeight: 700, color: '#f0c976' }, 'TickGains'),
-          ],
-        ),
+        brandBadge(),
       ]),
 
-      // Headline xp number — the skill's own icon sits right on the number
-      // when it isn't Overall, so which skill this card is about is
-      // unmistakable even at a glance.
-      node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
-        node('div', { display: 'flex', alignItems: 'center', gap: 20 }, [
-          !isOverall && skillIconUri ? image(skillIconUri, 76, 76) : null,
-          node('div', { display: 'flex', alignItems: 'baseline', gap: 14 }, [
-            node('div', { fontSize: 100, fontWeight: 800, color: '#7cb869', lineHeight: 1 }, `+${formatXp(xpGained)}`),
-            node('div', { fontSize: 32, fontWeight: 700, color: '#a99a79' }, 'XP'),
-          ]),
-        ].filter(Boolean)),
-        node('div', { fontSize: 24, color: '#a99a79', marginTop: 6 }, formatDateRange(periodStart, periodEnd)),
+      // Headline xp (left) + daily chart (right)
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
+          node(
+            'div',
+            { display: 'flex', alignItems: 'center', gap: 20 },
+            [
+              !isOverall && skillIconUri ? image(skillIconUri, 76, 76) : null,
+              node('div', { display: 'flex', alignItems: 'baseline', gap: 14 }, [
+                node('div', { fontSize: 100, fontWeight: 800, color: COLORS.green, lineHeight: 1 }, `+${formatXp(xpGained)}`),
+                node('div', { fontSize: 32, fontWeight: 700, color: COLORS.muted }, 'XP'),
+              ]),
+            ].filter(Boolean),
+          ),
+          node('div', { fontSize: 24, color: COLORS.muted, marginTop: 6 }, formatRange(periodStart, periodEnd)),
+          ...(chip ? [chip] : []),
+        ]),
+        ...(chart ? [chart] : []),
       ]),
 
-      // Stat tiles row: top 3 skills gained (Overall) or level/rank (single skill)
-      statTiles.length
-        ? node('div', { display: 'flex', gap: 16 }, statTiles)
-        : node('div', { display: 'flex' }, []),
+      // Stat tiles: top skills gained (Overall) or level/rank (single skill)
+      statTiles.length ? node('div', { display: 'flex', gap: 16 }, statTiles) : node('div', { display: 'flex' }, []),
 
-      // Footer: site url
+      // Footer
       node('div', { display: 'flex', justifyContent: 'flex-end' }, [
-        node('div', { fontSize: 22, color: '#a99a79', fontWeight: 600 }, 'tickgains.com'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
       ]),
     ],
   )
@@ -198,7 +345,7 @@ async function renderPng(tree) {
   return resvg.render().asPng()
 }
 
-/** data: { displayName, xpGained, topSkill, topSkillXp, periodStart, periodEnd } -> PNG Buffer. */
+/** data: see cards.service.js getWeeklyCardData -> PNG Buffer. */
 export async function renderWeeklyCardPng(data) {
   const tree = await buildWeeklyCardTree(data)
   return renderPng(tree)
