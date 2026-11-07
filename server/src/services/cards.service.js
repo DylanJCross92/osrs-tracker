@@ -6,8 +6,10 @@ import { localDay, addDays, diffDays, weekdayShort, APP_TIMEZONE } from '../util
 
 const DAY_MS = 86_400_000
 
-// Card timeframes: 'day' = since the start of today (calendar day), 'week' / 'month'
-// = rolling 7 / 30 days.
+// Card timeframes. Baselines match the stats table / Player Gains exactly
+// (see BASELINE_CUTOFF_SQL in players.service.js): the oldest snapshot inside
+// the window — for 'day' that's the first snapshot since local midnight —
+// so a card never disagrees with the numbers shown on the profile.
 const PERIODS = { day: { days: 1 }, week: { days: 7 }, month: { days: 30 } }
 export function normalizePeriod(period) {
   return PERIODS[period] ? period : 'week'
@@ -131,8 +133,8 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
       (
         SELECT overall_xp, skills, captured_at
         FROM snapshots
-        WHERE player_id = $1 AND ${period === 'day' ? "captured_at < (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at >= now() - ($2::int * interval '1 day')"}
-        ORDER BY captured_at ${period === 'day' ? 'DESC' : 'ASC'} LIMIT 1
+        WHERE player_id = $1 AND ${period === 'day' ? "captured_at >= (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at >= now() - ($2::int * interval '1 day')"}
+        ORDER BY captured_at ASC LIMIT 1
       )
       UNION ALL
       (
