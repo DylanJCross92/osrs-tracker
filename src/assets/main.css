@@ -1079,15 +1079,11 @@ button:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 1px solid var(--gold);
-  background: linear-gradient(180deg, rgba(240, 201, 118, 0.28), rgba(217, 175, 82, 0.1));
   color: var(--gold-bright);
   vertical-align: middle;
   cursor: help;
 }
+.player-badge svg { filter: drop-shadow(0 0 6px rgba(240, 201, 118, 0.45)); }
 .player-badge::after {
   content: attr(data-tip);
   position: absolute;
@@ -1113,5 +1109,6 @@ button:focus-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-.detail-name .player-badge { margin-left: 12px; width: 28px; height: 28px; }
+.detail-name .player-badge { margin-left: 10px; }
+.detail-name .player-badge svg { width: 26px; height: 26px; }
 .player-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
