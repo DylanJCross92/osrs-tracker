@@ -1300,3 +1300,8 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .share-modal-controls .share-modal-skill select { flex: none; }
 @media (max-width: 560px) { .share-modal-controls { flex-wrap: wrap; justify-content: flex-start; } }
 .planner-back { display: inline-block; margin-bottom: 10px; font-size: 0.9rem; }
+
+/* history, by-skill view: fixed date column so titles and chips line up in every row */
+.history-skills li { display: grid; grid-template-columns: 170px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.history-skills .history-row-date, .history-skills .history-row-date.is-range { width: auto; white-space: nowrap; }
+@media (max-width: 560px) { .history-skills li { grid-template-columns: 120px minmax(0, 1fr) auto; } }
