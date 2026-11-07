@@ -45,6 +45,7 @@
       <div v-for="p in sortedPlayers" :key="p.id" class="card player-card" @click="goToPlayer(p)">
         <div class="player-card-top">
           <span class="player-name">{{ p.displayName }}</span>
+          <PlayerBadge :label="p.badge" />
         </div>
         <div v-if="p.latest" class="player-stats">
           <div><b>{{ p.latest.overallLevel.toLocaleString() }}</b><span>total level</span></div>
@@ -83,6 +84,7 @@ import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
+import PlayerBadge from '@/components/PlayerBadge.vue'
 
 const router = useRouter()
 const store = usePlayersStore()

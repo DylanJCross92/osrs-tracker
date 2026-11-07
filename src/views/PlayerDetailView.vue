@@ -2,7 +2,7 @@
   <div class="card detail-header">
     <div>
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
-      <h1 class="detail-name">{{ player?.displayName || usernameParam }}</h1>
+      <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
       <p v-if="latest" class="last-synced">
         Last updated {{ formatRelative(latest.capturedAt) }}
         <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
@@ -280,6 +280,7 @@ import { useGainPeriod } from '@/composables/useGainPeriod'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
+import PlayerBadge from '@/components/PlayerBadge.vue'
 import {
   SKILL_NAMES,
   skillIconSrc,

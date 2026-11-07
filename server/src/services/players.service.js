@@ -40,6 +40,7 @@ function mapPlayerRow(row) {
     id: row.id,
     username: row.username,
     displayName: row.display_name,
+    badge: row.badge || null,
     createdAt: row.created_at,
     latest: row.captured_at
       ? {
@@ -110,7 +111,7 @@ export async function listPlayers() {
 
   const result = await pool.query(
     `
-    SELECT p.id, p.username, p.display_name, p.created_at,
+    SELECT p.id, p.username, p.display_name, p.badge, p.created_at,
            p.wom_import_status, p.wom_imported_count,
            s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
            ${baselineColumns}
