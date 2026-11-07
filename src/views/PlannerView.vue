@@ -70,7 +70,7 @@
 
         </div>
         <label class="planner-method">
-          <span>Training method</span>
+          <span>Target method</span>
           <select v-model="form.methodId">
             <option v-for="meth in skillMethods" :key="meth.id" :value="meth.id">
               {{ meth.name }}{{ meth.fastest ? ' ★ Fastest' : '' }} (lvl {{ meth.minLevel }}+, ~{{ formatNum(meth.xpPerHour) }} xp/h)
@@ -106,7 +106,7 @@
           <div class="planner-goal-grid">
             <div><span>XP remaining</span><b>{{ formatNum(plans[i].remainingXp) }}</b></div>
             <label>
-              <span>Method</span>
+              <span>Target method</span>
               <select v-model="g.methodId">
                 <option v-for="meth in methodsForSkill(g.skill)" :key="meth.id" :value="meth.id">{{ meth.name }}</option>
                 <option value="custom">Custom XP/hour</option>
@@ -119,6 +119,21 @@
             <div><span>Est. hours</span><b>{{ formatHours(plans[i].hours) }}</b></div>
             <div><span>Est. GP (approx.)</span><b :class="gpClass(plans[i].netGp)">{{ formatGp(plans[i].netGp) }}</b></div>
           </div>
+          <ol v-if="plans[i].segments.length" class="planner-route">
+            <li v-for="(seg, k) in plans[i].segments" :key="k" :class="['planner-step', `planner-step-${seg.kind}`, { 'planner-step-gap': !seg.method }]">
+              <span class="planner-step-levels">{{ seg.startLevel }} → {{ seg.endLevel }}</span>
+              <span class="planner-step-name">
+                {{ seg.method ? seg.method.name : 'No catalog method' }}
+                <em v-if="seg.kind === 'main'">your chosen method</em>
+                <em v-else-if="seg.kind === 'prep'">to unlock it</em>
+                <em v-else-if="seg.kind === 'post'">after it caps out</em>
+              </span>
+              <span class="planner-step-meta">
+                {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h</template>
+              </span>
+              <span class="planner-step-hours">{{ seg.hours == null ? '—' : formatHours(seg.hours) }}</span>
+            </li>
+          </ol>
           <p v-if="plans[i].warning" class="planner-warning">⚠ {{ plans[i].warning }}</p>
         </div>
       </div>
@@ -165,9 +180,10 @@
         of the method you pick; GP is hours times that method's approximate net gp/hour.
       </p>
       <p>
-        Each training method only counts for the levels it actually works at. If a method unlocks above your current
-        level, the xp before it is flagged instead of being counted at the wrong rate — add another goal or pick a
-        different method for those levels. Playtime per day turns total hours into an estimated completion date.
+        Pick the method you want to end up training. If it unlocks above your current level, the plan first builds a
+        route of milestones, using the fastest catalog method available at each level, to get you there — then runs
+        your chosen method, and switches to the next-fastest if it caps out before your goal. Playtime per day turns
+        total hours into an estimated completion date.
       </p>
       <h3>Training methods in the catalog</h3>
       <ul class="planner-catalog">
@@ -251,10 +267,10 @@ function playerXp(skill) {
 }
 
 function pickDefaultMethod() {
-  // Best method the player can already use (highest unlocked), else the first.
-  const level = currentLevel.value
-  const usable = skillMethods.value.filter((meth) => meth.minLevel <= level)
-  const chosen = usable.length ? usable[usable.length - 1] : skillMethods.value[0]
+  // The skill's fastest method — the route climbs to it from your current
+  // level automatically, so it doesn't need to be unlocked yet.
+  const list = skillMethods.value
+  const chosen = list.find((meth) => meth.fastest) || list[list.length - 1]
   form.methodId = chosen ? chosen.id : 'custom'
 }
 

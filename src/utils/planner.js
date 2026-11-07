@@ -1,4 +1,4 @@
-import { getMethod } from '@/data/trainingMethods'
+import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 
 export const MAX_XP = 200_000_000
 export const MAX_VIRTUAL_LEVEL = 126
@@ -27,55 +27,111 @@ export function levelAtXp(xp, allowVirtual = false) {
   return level
 }
 
+// Best-xp/hr catalog method usable at a given level (null if none).
+function bestMethodAt(skill, level) {
+  let best = null
+  for (const meth of methodsForSkill(skill)) {
+    if (meth.minLevel > level) continue
+    if (meth.maxLevel != null && level > meth.maxLevel) continue
+    if (!best || meth.xpPerHour > best.xpPerHour) best = meth
+  }
+  return best
+}
+
 /**
- * Hours/gp for one skill goal with one selected method.
- * goal: { skill, currentXp, targetXp, methodId, customXpPerHour? }
- *
- * A method only counts for xp inside its own level window, so xp earned
- * before its unlock (or past its max level) is reported as `uncoveredXp`
- * instead of being silently credited at the wrong rate.
+ * Fills [fromXp, toXp) with the fastest usable method at each point. The
+ * range is cut at every level where any method of the skill unlocks or
+ * stops being valid, so each piece uses whatever is best at that level —
+ * e.g. copper -> iron -> Motherlode -> Blast Mine on the way to granite.
+ * Pieces with no catalog method come back with method: null.
+ */
+function fillRoute(skill, fromXp, toXp) {
+  if (toXp <= fromXp) return []
+  const cuts = new Set([fromXp, toXp])
+  for (const meth of methodsForSkill(skill)) {
+    const start = xpAtLevel(meth.minLevel)
+    if (start > fromXp && start < toXp) cuts.add(start)
+    if (meth.maxLevel != null) {
+      const end = xpAtLevel(meth.maxLevel + 1)
+      if (end > fromXp && end < toXp) cuts.add(end)
+    }
+  }
+  const points = [...cuts].sort((x, y) => x - y)
+  const pieces = []
+  for (let i = 0; i < points.length - 1; i++) {
+    const method = bestMethodAt(skill, levelAtXp(points[i], true))
+    const last = pieces[pieces.length - 1]
+    if (last && last.method === method) last.toXp = points[i + 1]
+    else pieces.push({ method, fromXp: points[i], toXp: points[i + 1] })
+  }
+  return pieces
+}
+
+function finishSegment(seg, kind) {
+  const xp = seg.toXp - seg.fromXp
+  const rate = seg.method ? seg.method.xpPerHour : 0
+  const hours = rate ? xp / rate : null
+  const gp = seg.method?.gpPerHour
+  return {
+    ...seg,
+    kind,
+    xp,
+    startLevel: levelAtXp(seg.fromXp, true),
+    endLevel: levelAtXp(seg.toXp, true),
+    xpPerHour: rate,
+    hours,
+    netGp: hours != null && gp != null ? Math.round(hours * gp) : null,
+  }
+}
+
+/**
+ * Plans one skill goal as a route of milestones. goal: { skill, currentXp,
+ * targetXp, methodId, customXpPerHour? } where methodId is the method you
+ * want to end up training with. If it unlocks above your current level the
+ * route first climbs to it with the fastest available methods ('prep'
+ * segments), then runs the chosen method ('main') for as long as it is
+ * valid, then continues with the fastest available ('post') if it caps out
+ * before the target. A custom xp/hr rate is a single segment.
  */
 export function planGoal(goal) {
   const currentXp = Math.max(Math.floor(goal.currentXp || 0), 0)
   const targetXp = Math.min(Math.floor(goal.targetXp || 0), MAX_XP)
   const remainingXp = Math.max(targetXp - currentXp, 0)
-  const method = goal.methodId === 'custom' ? null : getMethod(goal.methodId)
-  const xpPerHour = method ? method.xpPerHour : Math.floor(goal.customXpPerHour || 0)
-  const gpPerHour = method ? method.gpPerHour : null
+  const chosen = goal.methodId === 'custom' ? null : getMethod(goal.methodId)
 
-  const result = {
-    currentXp,
-    targetXp,
-    remainingXp,
-    method,
-    xpPerHour,
-    coveredXp: 0,
-    uncoveredXp: 0,
-    hours: null,
-    netGp: null,
-    warning: null,
+  const result = { currentXp, targetXp, remainingXp, method: chosen, segments: [], hours: null, netGp: null, gpPartial: false, warning: null }
+  if (remainingXp === 0) return { ...result, hours: 0 }
+
+  let segments = []
+  if (!chosen) {
+    const rate = Math.floor(goal.customXpPerHour || 0)
+    if (!rate) return { ...result, warning: 'Pick a training method or enter an XP/hour rate.' }
+    segments = [{ method: { name: 'Custom rate', xpPerHour: rate, gpPerHour: null }, fromXp: currentXp, toXp: targetXp, kind: 'main' }]
+  } else {
+    const mainStart = xpAtLevel(chosen.minLevel)
+    const mainEnd = chosen.maxLevel == null ? Infinity : xpAtLevel(chosen.maxLevel + 1)
+    const prepEnd = Math.min(targetXp, mainStart)
+    segments.push(...fillRoute(chosen.skill, currentXp, prepEnd).map((x) => ({ ...x, kind: 'prep' })))
+    const mainFrom = Math.max(currentXp, mainStart)
+    const mainTo = Math.min(targetXp, mainEnd)
+    if (mainTo > mainFrom) segments.push({ method: chosen, fromXp: mainFrom, toXp: mainTo, kind: 'main' })
+    if (targetXp > mainEnd) {
+      segments.push(...fillRoute(chosen.skill, Math.max(mainEnd, currentXp), targetXp).map((x) => ({ ...x, kind: 'post' })))
+    }
   }
-  if (remainingXp === 0) return { ...result, hours: 0, netGp: gpPerHour == null ? null : 0 }
-  if (!xpPerHour) return { ...result, warning: 'Pick a training method or enter an XP/hour rate.' }
 
-  let from = currentXp
-  let to = targetXp
-  if (method) {
-    from = Math.max(from, xpAtLevel(method.minLevel))
-    if (method.maxLevel != null) to = Math.min(to, xpAtLevel(method.maxLevel + 1))
-  }
-  const coveredXp = Math.max(to - from, 0)
-  const uncoveredXp = remainingXp - coveredXp
-  result.coveredXp = coveredXp
-  result.uncoveredXp = uncoveredXp
-  result.hours = coveredXp / xpPerHour
-  result.netGp = gpPerHour == null ? null : Math.round(result.hours * gpPerHour)
+  const finished = segments.map((seg) => finishSegment(seg, seg.kind))
+  const gaps = finished.filter((seg) => !seg.method)
+  const timed = finished.filter((seg) => seg.hours != null)
+  const gpKnown = finished.filter((seg) => seg.netGp != null)
 
-  if (uncoveredXp > 0 && method) {
-    const startsTooLow = currentXp < xpAtLevel(method.minLevel)
-    result.warning = startsTooLow
-      ? `${method.name} unlocks at level ${method.minLevel} — the first ${formatNum(uncoveredXp)} xp isn't included. Add another goal or method for those levels.`
-      : `${method.name} stops being the right fit at level ${method.maxLevel} — the last ${formatNum(uncoveredXp)} xp isn't included.`
+  result.segments = finished
+  result.hours = timed.reduce((sum, seg) => sum + seg.hours, 0)
+  result.netGp = gpKnown.length ? gpKnown.reduce((sum, seg) => sum + seg.netGp, 0) : null
+  result.gpPartial = gpKnown.length > 0 && gpKnown.length < timed.length
+  if (gaps.length) {
+    const xp = gaps.reduce((sum, seg) => sum + seg.xp, 0)
+    result.warning = `No catalog method covers levels ${gaps[0].startLevel}–${gaps[gaps.length - 1].endLevel} (${formatNum(xp)} xp) — that part isn't counted. Use a custom rate for it.`
   }
   return result
 }
@@ -91,7 +147,7 @@ export function planTotals(plans, hoursPerDay) {
   if (days != null && totalHours > 0) {
     completionDate = new Date(Date.now() + days * 86_400_000)
   }
-  return { totalXp, totalHours, netGp, days, completionDate, gpIncomplete: gpPlans.length < plans.length }
+  return { totalXp, totalHours, netGp, days, completionDate, gpIncomplete: gpPlans.length < plans.length || plans.some((p) => p.gpPartial) }
 }
 
 export function formatNum(n) {

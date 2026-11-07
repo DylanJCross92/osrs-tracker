@@ -123,6 +123,17 @@ export const TRAINING_METHODS = [
   m('Thieving', 'vyres', 'Vyres in Darkmeyer', 82, 300000, 100000, 'Low', 'Fast, low-click pickpocketing.', 'Sins of the Father', null, true),
   m('Thieving', 'pyramid', 'Pyramid Plunder', 91, 60000, 200000, 'Medium', 'Strong late Thieving xp with loot.', 'Pyramid Plunder access'),
   m('Slayer', 'tasks', 'Slayer tasks', 1, 30000, 300000, 'Medium', 'Match task monsters to your combat level.', 'Slayer Master access'),
+  // Starter methods for low levels, so a route can climb to the method you want.
+  m('Woodcutting', 'early', 'Regular & oak trees', 1, 16000, 0, 'AFK', 'Chop normal then oak trees near a bank.', '', 29),
+  m('Fishing', 'early', 'Shrimp & anchovies (net)', 1, 12000, 0, 'AFK', 'Net fishing at any low-level spot.', '', 19),
+  m('Mining', 'early', 'Copper & tin', 1, 14000, 0, 'High', 'Power-mine copper and tin.', '', 14),
+  m('Hunter', 'early', 'Birds, kebbits & early traps', 1, 20000, 0, 'Medium', 'Early Hunter via bird snares and low-level traps.', '', 42),
+  m('Farming', 'early', 'Allotments & early patches', 1, 6000, 0, 'Low', 'Plant allotments and herbs while passing patches.', '', 14),
+  m('Cooking', 'early', 'Shrimp, trout & salmon', 1, 50000, 0, 'Low', 'Cook low-level fish on a range.', '', 44),
+  m('Crafting', 'early', 'Leather & early items', 1, 25000, -50000, 'Low', 'Craft leather gloves, boots and armour.', '', 19),
+  m('Smithing', 'early', 'Bronze & iron items', 1, 20000, -20000, 'Low', 'Smith bars into daggers or similar.', '', 14),
+  m('Herblore', 'early', 'Early potions', 3, 70000, -50000, 'Low', 'Attack, strength and energy potions.', 'Druidic Ritual quest', 39),
+  m('Thieving', 'early', 'Men, women & early stalls', 1, 20000, 0, 'Medium', 'Pickpocket men or steal from the baker\u2019s stall.', '', 37),
   // Sailing is new — community rates are still settling, so treat these as rough.
   m('Sailing', 'courier', 'Courier / trade voyages', 1, 20000, 0, 'Low', 'Deliver cargo between nearby ports.'),
   m('Sailing', 'salvage', 'Shipwreck salvaging', 40, 70000, 50000, 'Low', 'Salvage wrecks for steady, low-effort xp.'),
