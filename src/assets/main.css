@@ -1083,7 +1083,7 @@ button:focus-visible {
   vertical-align: middle;
   cursor: help;
 }
-.player-badge svg { filter: drop-shadow(0 0 6px rgba(240, 201, 118, 0.45)); }
+.player-badge svg { width: 20px; height: 20px; filter: drop-shadow(0 0 6px rgba(240, 201, 118, 0.45)); }
 .player-badge::after {
   content: attr(data-tip);
   position: absolute;
@@ -1110,5 +1110,5 @@ button:focus-visible {
   transform: translateX(-50%) translateY(0);
 }
 .detail-name .player-badge { margin-left: 10px; }
-.detail-name .player-badge svg { width: 26px; height: 26px; }
-.player-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.detail-name .player-badge svg { width: 32px; height: 32px; }
+.player-card-top { justify-content: flex-start; gap: 8px; flex-wrap: wrap; }
