@@ -53,4 +53,5 @@ CREATE TABLE IF NOT EXISTS shared_cards (
 -- Profile badge shown next to a player's name (e.g. "Admin Founder"). Set
 -- directly in the database; there is deliberately no public API to edit it.
 ALTER TABLE players ADD COLUMN IF NOT EXISTS badge TEXT;
-UPDATE players SET badge = 'Admin Founder' WHERE lower(username) = 'dylanz297' AND badge IS NULL;
+UPDATE players SET badge = 'Admin / Founder' WHERE lower(username) = 'dylanz297' AND badge IS NULL;
+UPDATE players SET badge = 'Admin / Founder' WHERE badge = 'Admin Founder';
