@@ -12,7 +12,7 @@
         <RouterLink v-for="p in data[sec.key]" :key="p.id" :to="{ name: 'playerDetail', params: { username: p.username } }" class="card discover-card">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
           <span class="discover-card-stats">
-            <span>Lvl {{ p.overallLevel?.toLocaleString() }}</span>
+            <span>Overall {{ p.overallLevel?.toLocaleString() }}</span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
             <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString() }}</span>
           </span>

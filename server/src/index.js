@@ -104,7 +104,7 @@ if (distExists) {
 
       let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
       if (latest) {
-        description = `${player.displayName} — Level ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
+        description = `${player.displayName} — Overall ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
         if (weekly?.xpGained > 0) {
           description += ` +${formatXp(weekly.xpGained)} XP this week.`
         }

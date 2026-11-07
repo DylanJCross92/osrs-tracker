@@ -13,7 +13,7 @@
 
     <p v-if="!profile" class="empty-hint">Loading achievements…</p>
     <template v-else>
-      <!-- Total level / total XP milestone tracks -->
+      <!-- Overall level / total XP milestone tracks -->
       <section v-for="row in totalRows" :key="row.title" class="ach-section">
         <h3>{{ row.title }}</h3>
         <div class="ach-milestones">
@@ -111,7 +111,7 @@ const totalRows = computed(() => {
     .filter((a) => a.type === 'total_xp')
     .map((a) => ({ ...a, label: a.value >= 1e9 ? `${a.value / 1e9}B` : `${a.value / 1e6}M` }))
   return [
-    { title: 'Total level', items: levels },
+    { title: 'Overall', items: levels },
     { title: 'Total XP', items: xp },
   ]
 })

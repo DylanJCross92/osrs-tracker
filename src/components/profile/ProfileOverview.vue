@@ -1,7 +1,7 @@
 <template>
   <div class="profile-overview">
     <div class="profile-stat-grid">
-      <div class="card profile-stat"><span>Total level</span><b>{{ latest.overallLevel.toLocaleString() }}</b></div>
+      <div class="card profile-stat"><span>Overall</span><b>{{ latest.overallLevel.toLocaleString() }}</b></div>
       <div class="card profile-stat"><span>Total XP</span><b>{{ latest.overallXp.toLocaleString() }}</b></div>
       <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString() : '—' }}</b></div>
       <div class="card profile-stat"><span>Level 99 skills</span><b>{{ n99 }}</b></div>

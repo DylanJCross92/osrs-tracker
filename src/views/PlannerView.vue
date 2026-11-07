@@ -22,7 +22,7 @@
 
       <div v-if="player" class="planner-player">
         <b>{{ player.displayName }}</b>
-        <span>Total level {{ player.latest.overallLevel.toLocaleString() }}</span>
+        <span>Overall {{ player.latest.overallLevel.toLocaleString() }}</span>
         <span>{{ formatNum(player.latest.overallXp) }} XP</span>
         <span>Updated {{ formatRelative(player.latest.capturedAt) }}</span>
         <RouterLink :to="{ name: 'playerDetail', params: { username: player.username } }">View TickGains profile →</RouterLink>

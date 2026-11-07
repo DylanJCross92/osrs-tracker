@@ -33,7 +33,7 @@
           </span>
         </p>
         <div v-if="latest" class="profile-chips">
-          <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Total level <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
+          <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
           <span>Total XP <b>{{ latest.overallXp.toLocaleString() }}</b></span>
           <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString() }}</b></span>
           <span v-if="topSkill"><img :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="16" height="16" />Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>

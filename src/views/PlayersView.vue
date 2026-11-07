@@ -27,7 +27,7 @@
       <li v-for="sg in suggestions" :key="sg.username">
         <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username }, query: { tab: 'stats' } }">
           <span>{{ sg.displayName }}</span>
-          <small>Tracked · Lvl {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small>
+          <small>Tracked · Overall {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small>
         </RouterLink>
       </li>
     </ul>
@@ -56,7 +56,7 @@
           <PlayerBadge :label="p.badge" />
         </div>
         <div v-if="p.latest" class="player-stats">
-          <div><b>{{ p.latest.overallLevel.toLocaleString() }}</b><span>total level</span></div>
+          <div><b>{{ p.latest.overallLevel.toLocaleString() }}</b><span>overall</span></div>
           <div><b>{{ formatXp(p.latest.overallXp) }}</b><span>total xp</span></div>
         </div>
         <p v-else class="empty-hint">No data yet.</p>
