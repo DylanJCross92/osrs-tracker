@@ -1265,3 +1265,4 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .history-gap header { background: rgba(217, 175, 82, 0.08); }
 .history-gap-note { margin: 0; padding: 8px 16px; color: var(--muted); font-size: 0.78rem; border-bottom: 1px solid var(--border); }
 .history-row-date.is-range { width: 150px; }
+.showcase-meta.is-gain { color: var(--xp-green); font-size: 0.9rem; }

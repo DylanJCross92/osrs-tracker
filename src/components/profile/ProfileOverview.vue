@@ -17,7 +17,7 @@
           <div>
             <span class="showcase-label">{{ s.label }}</span>
             <b>{{ s.skill }}</b>
-            <span class="showcase-meta">{{ s.meta }}</span>
+            <span class="showcase-meta" :class="{ 'is-gain': s.gain }">{{ s.meta }}</span>
           </div>
         </div>
       </div>
@@ -83,9 +83,9 @@ const showcase = computed(() => {
   const top = mostXpSkill(latest.value)
   if (top) list.push({ label: 'Most XP', skill: top.skill, meta: `${formatXp(top.xp)} XP · Level ${top.level}` })
   const w = props.player.gains?.week
-  if (w?.topSkill) list.push({ label: 'Top skill · 7 days', skill: w.topSkill, meta: `+${formatXp(w.topSkillXp)} XP` })
+  if (w?.topSkill) list.push({ label: 'Top skill · 7 days', skill: w.topSkill, meta: `+${formatXp(w.topSkillXp)} XP`, gain: true })
   const m = props.player.gains?.month
-  if (m?.topSkill) list.push({ label: 'Top skill · 30 days', skill: m.topSkill, meta: `+${formatXp(m.topSkillXp)} XP` })
+  if (m?.topSkill) list.push({ label: 'Top skill · 30 days', skill: m.topSkill, meta: `+${formatXp(m.topSkillXp)} XP`, gain: true })
   return list
 })
 
