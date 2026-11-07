@@ -1,31 +1,7 @@
 <template>
   <div class="card detail-header">
-    <div class="profile-banner" aria-hidden="true" />
-    <div class="detail-identity">
-      <div class="profile-avatar" aria-hidden="true">
-        <img v-if="topSkill" :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="40" height="40" />
-      </div>
-      <div>
+    <div class="profile-banner">
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
-      <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
-      <p v-if="latest" class="last-synced">
-        Last updated {{ formatRelative(latest.capturedAt) }}
-        <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
-          {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
-        </button>
-        <span v-if="checkingForUpdates" class="checking-indicator">
-          <span class="spinner" /> Checking for updates…
-        </span>
-      </p>
-      <div v-if="latest" class="profile-chips">
-        <span>Total level <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
-        <span>Total XP <b>{{ latest.overallXp.toLocaleString() }}</b></span>
-        <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString() }}</b></span>
-        <span v-if="topSkill">Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>
-      </div>
-      </div>
-    </div>
-    <div class="detail-actions">
       <label class="period-select">
         <span class="period-select-label">Show gains for</span>
         <select v-model="period">
@@ -34,6 +10,30 @@
           <option value="month">Last 30 Days</option>
         </select>
       </label>
+    </div>
+    <div class="detail-body">
+      <div class="profile-avatar" aria-hidden="true">
+        <img v-if="topSkill" :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="40" height="40" />
+      </div>
+      <div class="detail-info">
+        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
+        <p v-if="latest" class="last-synced">
+          Last updated {{ formatRelative(latest.capturedAt) }}
+          <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
+            {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
+          </button>
+          <span v-if="checkingForUpdates" class="checking-indicator">
+            <span class="spinner" /> Checking for updates…
+          </span>
+        </p>
+        <div v-if="latest" class="profile-chips">
+          <span>Total level <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
+          <span>Total XP <b>{{ latest.overallXp.toLocaleString() }}</b></span>
+          <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString() }}</b></span>
+          <span v-if="topSkill">Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>
+        </div>
+      </div>
+      <div class="detail-actions">
       <div class="detail-buttons">
       <button
         v-if="player?.womImportStatus === 'none'"
@@ -50,6 +50,7 @@
       >Goal Planner</RouterLink>
       <button class="btn btn-ghost" :disabled="!player" @click="copyProfileLink">Copy Link</button>
       <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
+      </div>
       </div>
     </div>
   </div>
@@ -70,7 +71,7 @@
     <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
-    <ProfileHistory v-else-if="tab === 'history'" :profile="profile" />
+    <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
     <template v-else>
     <div class="card hiscores-panel">
       <table class="hiscores-table">

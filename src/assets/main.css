@@ -1184,3 +1184,13 @@ button:focus-visible {
 .search-suggest a:hover { background: var(--panel-alt); text-decoration: none; }
 .search-suggest small { color: var(--muted); }
 @media (max-width: 640px) { .detail-identity { align-items: flex-start; } .profile-avatar { width: 56px; height: 56px; } .profile-avatar img { width: 30px; height: 30px; } }
+
+/* ---------- profile header v2 ---------- */
+.detail-header { padding: 0; display: block; }
+.detail-header .profile-banner { position: static; height: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; min-height: 64px; box-sizing: border-box; }
+.detail-body { display: flex; align-items: flex-start; flex-wrap: wrap; gap: 18px; padding: 0 20px 20px; }
+.detail-body .profile-avatar { margin-top: -30px; }
+.detail-info { flex: 1; min-width: 240px; padding-top: 4px; }
+.detail-body .detail-actions { margin-left: auto; align-self: center; flex-direction: row; align-items: center; }
+.detail-identity { display: none; }
+@media (max-width: 720px) { .detail-body .detail-actions { margin-left: 0; width: 100%; } .detail-body .detail-buttons { width: 100%; } .detail-buttons .btn { min-width: 0; } }
