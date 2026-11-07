@@ -29,7 +29,7 @@
         <div v-for="a in featured" :key="a.key" class="achievement-chip">
           <img v-if="a.skill" :src="skillIconSrc(a.skill)" :alt="a.skill" width="24" height="24" />
           <span v-else class="achievement-total-icon">★</span>
-          <div><b>{{ a.title }}</b><span>{{ dateLabel(a) }}</span></div>
+          <div><b>{{ a.title }}</b><span v-if="dateLabel(a)">{{ dateLabel(a) }}</span></div>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@ const recent = computed(() =>
     .slice(0, 5),
 )
 function dateLabel(a) {
-  return a.dateKnown ? new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'Before tracking began'
+  return a.dateKnown ? new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : ''
 }
 
 const ranges = [

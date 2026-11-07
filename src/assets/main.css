@@ -1226,3 +1226,36 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 /* The banner was originally a decorative overlay (pointer-events: none) —
    it now holds the back link and gains dropdown, so it must take clicks. */
 .detail-header .profile-banner { pointer-events: auto; }
+
+/* achievements v2 */
+.ach-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.ach-count { margin: 4px 0 0; color: var(--muted); }
+.ach-count b { color: var(--gold-bright); font-size: 1.2rem; }
+.ach-overall { display: flex; align-items: center; gap: 12px; min-width: 220px; flex: 1; max-width: 360px; }
+.ach-overall .level-progress-track { flex: 1; }
+.ach-overall span { color: var(--gold-bright); }
+.ach-section { margin-top: 22px; }
+.ach-section h3 { margin: 0 0 10px; font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.ach-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.ach-section-head h3 { margin: 0; }
+.ach-milestones { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.ach-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 66px; padding: 10px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); text-align: center; }
+.ach-tile.done { background: linear-gradient(180deg, rgba(240, 201, 118, 0.2), rgba(217, 175, 82, 0.08)); border-color: var(--gold); color: var(--gold-bright); }
+.ach-tile-label { color: var(--text); font-size: 0.92rem; }
+.ach-tile.done .ach-tile-label { color: var(--gold-bright); }
+.ach-tile .level-progress-track { width: 100%; }
+.ach-check { font-size: 1.1rem; }
+.ach-pct { font-size: 0.72rem; }
+.ach-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.ach-table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.88rem; }
+.ach-table th { padding: 9px 8px; text-align: center; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; background: var(--panel-alt); border-bottom: 1px solid var(--border); }
+.ach-table td { padding: 6px 8px; text-align: center; border-bottom: 1px solid rgba(64, 54, 31, 0.45); }
+.ach-table tbody tr:last-child td { border-bottom: none; }
+.ach-table tbody tr:hover td { background: rgba(255, 255, 255, 0.02); }
+.ach-group-start { border-left: 1px solid var(--border); }
+.ach-group-head { border-bottom: none !important; }
+.ach-skill-col { text-align: left !important; white-space: nowrap; position: sticky; left: 0; background: var(--bg); min-width: 130px; }
+.ach-table thead .ach-skill-col { background: var(--panel-alt); }
+.ach-skill-col img { vertical-align: middle; margin-right: 10px; }
+.ach-cell { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; padding: 4px 8px; border-radius: 8px; font-size: 0.78rem; color: var(--muted); background: rgba(255, 255, 255, 0.03); border: 1px dashed var(--border-strong); cursor: default; }
+.ach-cell.done { color: var(--gold-ink); background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border: 1px solid var(--gold); font-size: 0.85rem; }
