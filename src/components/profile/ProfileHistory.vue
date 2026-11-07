@@ -1,13 +1,14 @@
 <template>
   <div class="card">
     <div class="chart-header">
-      <h2>Progression timeline</h2>
-      <div class="range-tabs">
+      <h2>{{ compact ? 'Recent milestones' : 'Progression timeline' }}</h2>
+      <button v-if="compact" class="btn-text" @click="$emit('view-history')">View full history →</button>
+      <div v-else class="range-tabs">
         <button :class="{ active: view === 'day' }" @click="view = 'day'">By day</button>
         <button :class="{ active: view === 'skill' }" @click="view = 'skill'">By skill</button>
       </div>
     </div>
-    <div class="achievement-filters">
+    <div v-if="!compact" class="achievement-filters">
       <select v-model="skill"><option value="">All skills</option><option v-for="s in skills" :key="s">{{ s }}</option></select>
       <select v-model="category"><option value="">All categories</option><option v-for="c in categories" :key="c">{{ c }}</option></select>
     </div>
@@ -16,7 +17,7 @@
     <p v-else-if="!dayGroups.length && !preTracking.length" class="empty-hint">No milestones match yet.</p>
 
     <!-- By day: one block per day, skills collapsed into level ranges -->
-    <div v-else-if="view === 'day'" class="history-days">
+    <div v-else-if="view === 'day' || compact" class="history-days">
       <section v-for="d in visibleDays" :key="d.key" class="history-day" :class="{ 'history-gap': d.gap }">
         <header>
           <b>{{ d.label }}</b>
@@ -32,7 +33,7 @@
           </li>
         </ul>
       </section>
-      <button v-if="dayGroups.length > shownDays" class="btn btn-ghost" @click="shownDays += 10">Show earlier days ({{ dayGroups.length - shownDays }})</button>
+      <button v-if="!compact && dayGroups.length > shownDays" class="btn btn-ghost" @click="shownDays += 10">Show earlier days ({{ dayGroups.length - shownDays }})</button>
     </div>
 
     <!-- By skill: one block per skill, its level-ups as dated ranges -->
@@ -55,7 +56,7 @@
       </section>
     </div>
 
-    <div v-if="preTracking.length" class="history-pre">
+    <div v-if="!compact && preTracking.length" class="history-pre">
       <b>Already reached when tracking began</b>
       <div>
         <span v-for="p in preTracking" :key="p.id" class="history-pre-chip">
@@ -64,7 +65,7 @@
       </div>
     </div>
 
-    <p class="profile-note">
+    <p v-if="!compact" class="profile-note">
       Reconstructed from saved XP snapshots (including imported Wise Old Man history). Where saved data is sparse, changes are shown as a date range instead of a single day. The earliest record{{ profile?.trackingStartedAt ? ` (${fmt(profile.trackingStartedAt)})` : '' }} is not the account's creation date.
     </p>
   </div>
@@ -77,7 +78,11 @@ import { skillIconSrc, SKILL_NAMES } from '@/utils/osrsSkills'
 const props = defineProps({
   profile: { type: Object, default: null },
   snapshots: { type: Array, default: () => [] },
+  // Overview preview: newest few day-blocks only, no filters/notes.
+  compact: { type: Boolean, default: false },
+  limit: { type: Number, default: 3 },
 })
+defineEmits(['view-history'])
 const view = ref('day')
 const skill = ref('')
 const category = ref('')
@@ -200,7 +205,7 @@ const dayGroups = computed(() => {
     })
     .sort((a, b) => new Date(b.at) - new Date(a.at))
 })
-const visibleDays = computed(() => dayGroups.value.slice(0, shownDays.value))
+const visibleDays = computed(() => dayGroups.value.slice(0, props.compact ? props.limit : shownDays.value))
 
 const skillGroups = computed(() => {
   const by = new Map()

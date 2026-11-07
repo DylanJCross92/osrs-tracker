@@ -34,17 +34,7 @@
       </div>
     </div>
 
-    <div class="card" v-if="recent.length">
-      <h2>Recent milestones</h2>
-      <ul class="milestone-list">
-        <li v-for="m in recent" :key="m.key">
-          <img v-if="m.skill" :src="skillIconSrc(m.skill)" :alt="m.skill" width="20" height="20" />
-          <span class="milestone-title">{{ m.title }}</span>
-          <span class="milestone-date">{{ new Date(m.occurredAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }}</span>
-        </li>
-      </ul>
-      <p class="profile-note">Dates are when TickGains first saw the milestone in a saved snapshot.</p>
-    </div>
+    <ProfileHistory compact :limit="3" :profile="profile" :snapshots="snapshots" @view-history="$emit('view-history')" />
 
     <div class="card">
       <div class="chart-header">
@@ -62,9 +52,11 @@
 <script setup>
 import { computed, ref } from 'vue'
 import XpLineChart from '@/components/XpLineChart.vue'
+import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { highestSkill, mostXpSkill, count99s, featuredAchievements } from '@/utils/profile'
 
+defineEmits(['view-history'])
 const props = defineProps({
   player: { type: Object, required: true },
   snapshots: { type: Array, required: true },
@@ -90,12 +82,6 @@ const showcase = computed(() => {
 })
 
 const featured = computed(() => featuredAchievements(props.profile?.achievements || []))
-const recent = computed(() =>
-  (props.profile?.timeline || [])
-    .filter((t) => t.occurredAt)
-    .sort((a, b) => new Date(b.occurredAt) - new Date(a.occurredAt))
-    .slice(0, 5),
-)
 function dateLabel(a) {
   return a.dateKnown ? new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : ''
 }

@@ -58,7 +58,7 @@
     <nav class="profile-tabs" aria-label="Profile sections">
       <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
-    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" />
+    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" @view-history="setTab('history')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
     <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
