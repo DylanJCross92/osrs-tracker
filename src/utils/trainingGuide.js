@@ -14,7 +14,9 @@ import { xpForLevel } from './osrsSkills'
 // same method, used only to turn xp-to-next-level into a ballpark time
 // estimate — both are meant as a quick ballpark, not a precision xp tracker.
 //
-// Shape: SKILL -> [{ min, fastest, xpPerAction, xpPerHour, actionLabel, money }, ...]
+// Shape: SKILL -> [{ min, fastest, xpPerAction, xpPerHour, actionLabel, alt?, money }, ...]
+// `alt` (optional, same shape minus min/money) is a skiller-friendly
+// alternative — fewer quest/combat requirements — shown beside the fastest.
 // sorted ascending by `min`. `money` is null when there's no real profit
 // angle at that level.
 export const TRAINING_GUIDE = {
@@ -66,7 +68,7 @@ export const TRAINING_GUIDE = {
   Fletching: [
     { min: 1, fastest: 'Cut arrow shafts from logs, or fletch unstrung bows from the logs you chop.', xpPerAction: 5, xpPerHour: 15000, actionLabel: 'arrow shafts cut', money: null },
     { min: 40, fastest: 'Fletch and string bows in bulk at a bank — very fast per-click xp.', xpPerAction: 50, xpPerHour: 450000, actionLabel: 'bows fletched/strung', money: null },
-    { min: 70, fastest: 'String Magic longbows (or whatever bow matches your Woodcutting logs) for the best xp/hr.', xpPerAction: 83, xpPerHour: 400000, actionLabel: 'longbows strung', money: 'Usually a net cost — Fletching is typically trained as a byproduct of logs you already chopped yourself, not bought fresh.' },
+    { min: 70, fastest: 'String Magic longbows (or whatever bow matches your Woodcutting logs) for the best xp/hr.', xpPerAction: 92, xpPerHour: 400000, actionLabel: 'longbows strung', money: 'Usually a net cost — Fletching is typically trained as a byproduct of logs you already chopped yourself, not bought fresh.' },
   ],
   Fishing: [
     { min: 1, fastest: 'Net shrimp and anchovies at any fishing spot.', xpPerAction: 25, xpPerHour: 20000, actionLabel: 'fish caught', money: null },
@@ -80,11 +82,11 @@ export const TRAINING_GUIDE = {
   Crafting: [
     { min: 1, fastest: 'Cut gems or craft leather gloves/boots.', xpPerAction: 15, xpPerHour: 20000, actionLabel: 'items crafted', money: null },
     { min: 30, fastest: 'Craft leather armour pieces (studded/green d’hide) or glassblow molten glass into items.', xpPerAction: 55, xpPerHour: 35000, actionLabel: 'items crafted', money: null },
-    { min: 82, fastest: 'Cut amethyst into bolt tips, arrowtips, or javelin heads — fast, simple, click-light xp.', xpPerAction: 4, xpPerHour: 60000, actionLabel: 'amethyst tips/heads cut', money: 'Amethyst products and green d’hide armour both have steady sell margins over their raw material cost.' },
+    { min: 82, fastest: 'Cut amethyst into bolt tips, arrowtips, or javelin heads — fast, simple, click-light xp.', xpPerAction: 60, xpPerHour: 60000, actionLabel: 'amethyst cut into tips/heads', money: 'Amethyst products and green d’hide armour both have steady sell margins over their raw material cost.' },
   ],
   Smithing: [
     { min: 1, fastest: 'Smith bars into daggers or other cheap items at an anvil.', xpPerAction: 12, xpPerHour: 30000, actionLabel: 'items smithed', money: null },
-    { min: 35, fastest: 'Smith steel bars into cannonballs — fast, simple, and bar cost is largely recovered.', xpPerAction: 1, xpPerHour: 35000, actionLabel: 'cannonballs smithed', money: 'Cannonballs are a classic reliable Smithing money maker: buy steel bars, smith, sell for a steady margin.' },
+    { min: 35, fastest: 'Smith steel bars into cannonballs — fast, simple, and bar cost is largely recovered.', xpPerAction: 26, xpPerHour: 35000, actionLabel: 'steel bars smithed into cannonballs', money: 'Cannonballs are a classic reliable Smithing money maker: buy steel bars, smith, sell for a steady margin.' },
   ],
   Mining: [
     { min: 1, fastest: 'Power-mine copper/tin, then iron, dropping ore instead of banking it.', xpPerAction: 25, xpPerHour: 30000, actionLabel: 'ore mined', money: null },
@@ -97,15 +99,16 @@ export const TRAINING_GUIDE = {
     { min: 90, fastest: 'Make Super combat potions or Saradomin brews in bulk.', xpPerAction: 150, xpPerHour: 150000, actionLabel: 'potions made', money: 'Super combat potions in particular have a strong, consistent profit margin at this level.' },
   ],
   Agility: [
-    { min: 1, fastest: 'Gnome Stronghold Agility Course.', xpPerAction: 60, xpPerHour: 30000, actionLabel: 'laps', money: null },
+    { min: 1, fastest: 'Gnome Stronghold Agility Course.', xpPerAction: 87, xpPerHour: 8000, actionLabel: 'laps', money: null },
     { min: 30, fastest: 'Varrock, then Canifis and Falador rooftop courses as you level.', xpPerAction: 250, xpPerHour: 45000, actionLabel: 'laps', money: null },
-    { min: 52, fastest: 'Hallowed Sepulchre — great xp and it drops useful loot, though it needs more active play than a rooftop lap.', xpPerAction: 500, xpPerHour: 60000, actionLabel: 'Sepulchre laps', money: 'Hallowed Sepulchre loot (marks of grace, hallowed items) gives Agility training a real, if modest, profit angle.' },
-    { min: 60, fastest: 'Ardougne rooftop course, moving to the Prifddinas course at 75 for the best xp/hr in the game.', xpPerAction: 700, xpPerHour: 90000, actionLabel: 'laps', money: null },
+    { min: 52, fastest: 'Hallowed Sepulchre — great xp and it drops useful loot, though it needs more active play than a rooftop lap.', xpPerAction: 500, xpPerHour: 60000, actionLabel: 'Sepulchre laps', alt: { fastest: 'Falador rooftop course — simple, no combat or quest requirements beyond the level.', xpPerAction: 440, xpPerHour: 40000, actionLabel: 'laps' }, money: 'Hallowed Sepulchre loot (marks of grace, hallowed items) gives Agility training a real, if modest, profit angle.' },
+    { min: 60, fastest: 'Ardougne rooftop course — reliable and close to a bank. Move to the Prifddinas course at 75 for the best xp/hr in the game.', xpPerAction: 889, xpPerHour: 60000, actionLabel: 'laps', alt: { fastest: 'Seers’ Village rooftop course — an easy, popular rooftop with no quest requirements.', xpPerAction: 570, xpPerHour: 50000, actionLabel: 'laps' }, money: null },
+    { min: 75, fastest: 'Prifddinas Agility Course — the best Agility xp/hr in the game (needs Song of the Elves).', xpPerAction: 1337, xpPerHour: 90000, actionLabel: 'laps', alt: { fastest: 'Ardougne rooftop course — no quest requirement, and still excellent xp/hr.', xpPerAction: 889, xpPerHour: 60000, actionLabel: 'laps' }, money: null },
   ],
   Thieving: [
     { min: 1, fastest: 'Pickpocket Men/Women, or steal from the baker’s stall.', xpPerAction: 8, xpPerHour: 20000, actionLabel: 'pickpockets', money: null },
     { min: 38, fastest: 'Pickpocket Master Farmers.', xpPerAction: 43, xpPerHour: 25000, actionLabel: 'pickpockets', money: 'Master Farmer pockets often contain valuable seeds (ranarr, snapdragon, etc.) worth well more than the time spent.' },
-    { min: 55, fastest: 'Pickpocket vampyres in Darkmeyer (post-quest) for excellent AFK-ish xp.', xpPerAction: 130, xpPerHour: 300000, actionLabel: 'pickpockets', money: 'Vampyre pockets are consistently valuable — strong xp and profit together.' },
+    { min: 55, fastest: 'Pickpocket vampyres in Darkmeyer (post-quest) for excellent AFK-ish xp.', xpPerAction: 130, xpPerHour: 300000, actionLabel: 'pickpockets', alt: { fastest: 'Pickpocket Knights of Ardougne — no quest requirement and strong, steady xp.', xpPerAction: 84, xpPerHour: 80000, actionLabel: 'pickpockets' }, money: 'Vampyre pockets are consistently valuable — strong xp and profit together.' },
     { min: 91, fastest: 'Pyramid Plunder for some of the best Thieving xp/hr in the game.', xpPerAction: 300, xpPerHour: 60000, actionLabel: 'rooms looted', money: null },
   ],
   Slayer: [
@@ -123,8 +126,8 @@ export const TRAINING_GUIDE = {
   ],
   Hunter: [
     { min: 1, fastest: 'Catch birds with bird snares.', xpPerAction: 35, xpPerHour: 20000, actionLabel: 'birds caught', money: null },
-    { min: 63, fastest: 'Box-trap Red Chinchompas.', xpPerAction: 200, xpPerHour: 200000, actionLabel: 'red chinchompas caught', money: 'Chinchompas sell briskly — they’re in constant demand for Ranged training, so this method pays for itself and then some.' },
-    { min: 80, fastest: 'Box-trap Black Chinchompas — the best Hunter xp/hr in the game.', xpPerAction: 265, xpPerHour: 250000, actionLabel: 'black chinchompas caught', money: 'Black chinchompas have an even higher sell value, making this the best combined xp-and-profit Hunter method.' },
+    { min: 63, fastest: 'Box-trap Red Chinchompas.', xpPerAction: 265, xpPerHour: 200000, actionLabel: 'red chinchompas caught', money: 'Chinchompas sell briskly — they’re in constant demand for Ranged training, so this method pays for itself and then some.' },
+    { min: 80, fastest: 'Box-trap Black Chinchompas — the best Hunter xp/hr in the game.', xpPerAction: 315, xpPerHour: 250000, actionLabel: 'black chinchompas caught', money: 'Black chinchompas have an even higher sell value, making this the best combined xp-and-profit Hunter method.' },
   ],
   Construction: [
     { min: 1, fastest: 'Build then immediately remove cheap furniture (e.g. Oak Larders) in your player-owned house — repeat for fast, simple xp.', xpPerAction: 60, xpPerHour: 180000, actionLabel: 'pieces built & removed', money: null },
@@ -172,6 +175,16 @@ export function getTrainingAdvice(skill, level, currentXp) {
   const actionsToNext = xpToNext != null ? Math.max(Math.ceil(xpToNext / bracket.xpPerAction), 1) : null
   const timeToNext = xpToNext != null ? formatDuration(Math.max(Math.round((xpToNext / bracket.xpPerHour) * 60), 1)) : null
 
+  let alt = null
+  if (bracket.alt && xpToNext != null) {
+    alt = {
+      fastest: bracket.alt.fastest,
+      actionLabel: bracket.alt.actionLabel,
+      actionsToNext: Math.max(Math.ceil(xpToNext / bracket.alt.xpPerAction), 1),
+      timeToNext: formatDuration(Math.max(Math.round((xpToNext / bracket.alt.xpPerHour) * 60), 1)),
+    }
+  }
+
   let money = bracket.money
   let moneyUnlocksAt = null
   if (!money) {
@@ -186,6 +199,7 @@ export function getTrainingAdvice(skill, level, currentXp) {
     actionsToNext,
     timeToNext,
     nextLevel: atMaxLevel ? null : level + 1,
+    alt,
     money,
     moneyUnlocksAt,
   }

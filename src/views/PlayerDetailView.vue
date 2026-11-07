@@ -129,6 +129,16 @@
             <span v-else class="advice-eta">You're already at the max level (99)!</span>
           </span>
         </div>
+        <div v-if="trainingAdvice.alt" class="advice-row">
+          <span class="advice-label">🌱 Skiller-friendly</span>
+          <span class="advice-text">
+            {{ trainingAdvice.alt.fastest }}
+            <span class="advice-eta">
+              ~{{ trainingAdvice.alt.actionsToNext.toLocaleString() }} {{ trainingAdvice.alt.actionLabel }} (~{{ trainingAdvice.alt.timeToNext }}) to reach level
+              {{ trainingAdvice.nextLevel }}.
+            </span>
+          </span>
+        </div>
         <div class="advice-row">
           <span class="advice-label">💰 Best money maker</span>
           <span class="advice-text">
