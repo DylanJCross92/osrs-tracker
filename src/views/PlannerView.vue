@@ -1,6 +1,7 @@
 <template>
   <div class="planner">
     <div class="card">
+      <a v-if="backName" href="#" class="btn-text planner-back" @click.prevent="goBack">← Back to {{ backName }}'s profile</a>
       <h1>OSRS Account Planner &amp; XP Calculator</h1>
       <p class="planner-intro">
         Plan your Old School RuneScape skill goals. Load your stats by username (or enter them by hand), pick targets and
@@ -176,7 +177,7 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import NumberInput from '@/components/NumberInput.vue'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
@@ -199,6 +200,7 @@ import {
 
 const store = usePlayersStore()
 const route = useRoute()
+const router = useRouter()
 const { showToast } = useToast()
 
 setPageMeta({
@@ -211,6 +213,17 @@ setPageMeta({
 const STORAGE_KEY = 'tickgains-planner-v1'
 
 const username = ref('')
+
+// A way back to the profile you came from: the loaded player, or ?u= from a
+// profile link. If the previous page in history was a profile (and its tab),
+// go straight back to it; otherwise open the profile fresh.
+const cameFromProfile = typeof window !== 'undefined' && String(window.history.state?.back || '').startsWith('/player/')
+const backName = computed(() => player.value?.displayName || (typeof route.query.u === 'string' ? route.query.u : ''))
+function goBack() {
+  if (cameFromProfile) return router.back()
+  const target = player.value?.username || route.query.u
+  router.push({ name: 'playerDetail', params: { username: target } })
+}
 const player = ref(null)
 const lookingUp = ref(false)
 const lookupError = ref('')

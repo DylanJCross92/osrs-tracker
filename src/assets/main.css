@@ -1299,3 +1299,4 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .share-modal-controls { flex-wrap: nowrap; justify-content: space-between; }
 .share-modal-controls .share-modal-skill select { flex: none; }
 @media (max-width: 560px) { .share-modal-controls { flex-wrap: wrap; justify-content: flex-start; } }
+.planner-back { display: inline-block; margin-bottom: 10px; font-size: 0.9rem; }
