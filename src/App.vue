@@ -3,7 +3,7 @@
     <header class="app-topbar">
       <div class="app-topbar-inner">
         <RouterLink :to="{ name: 'players' }" class="app-logo">
-          <img src="/logo.svg" alt="TickGains" class="app-logo-img" />
+          <img src="/logo.svg?v=2" alt="TickGains" class="app-logo-img" />
         </RouterLink>
         <nav class="app-nav" aria-label="Main">
           <RouterLink :to="{ name: 'players' }" class="app-nav-link" :class="{ 'is-active': route.name === 'players' || route.name === 'playerDetail' || route.name === 'weeklyShareCard' }">

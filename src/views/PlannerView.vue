@@ -117,7 +117,7 @@
               <NumberInput v-model="g.customXpPerHour" :min="1" :max="10000000" />
             </label>
             <div><span>Est. hours</span><b>{{ formatHours(plans[i].hours) }}</b></div>
-            <div><span>Est. GP (approx.)</span><b :class="gpClass(plans[i].netGp)">{{ formatGp(plans[i].netGp) }}</b></div>
+            <div v-if="plans[i].netGp != null"><span>Est. GP (approx.)</span><b :class="gpClass(plans[i].netGp)">{{ formatGp(plans[i].netGp) }}</b></div>
           </div>
           <ol v-if="plans[i].segments.length" class="planner-route">
             <li v-for="(seg, k) in plans[i].segments" :key="k" :class="['planner-step', `planner-step-${seg.kind}`, { 'planner-step-gap': !seg.method }]">
@@ -148,7 +148,7 @@
       <div class="planner-summary">
         <div><span>Total XP remaining</span><b>{{ formatNum(totals.totalXp) }}</b></div>
         <div><span>Total training hours</span><b>{{ formatHours(totals.totalHours) }}</b></div>
-        <div>
+        <div v-if="totals.netGp != null">
           <span>Est. GP cost / profit</span>
           <b :class="gpClass(totals.netGp)">{{ formatGp(totals.netGp) }}</b>
           <small v-if="totals.gpIncomplete && totals.netGp != null">some methods have no GP data</small>
