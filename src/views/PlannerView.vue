@@ -13,7 +13,7 @@
         <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
         <input v-model="username" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" />
         <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">
-          {{ lookingUp ? 'Loading…' : 'Load Player' }}
+          {{ lookingUp ? 'Finding…' : 'Find Player' }}
         </button>
       </form>
       <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan manually below.</p>
