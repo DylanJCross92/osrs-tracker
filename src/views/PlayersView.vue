@@ -25,7 +25,7 @@
     </form>
     <ul v-if="suggestions.length" class="search-suggest">
       <li v-for="sg in suggestions" :key="sg.username">
-        <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }">
+        <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username }, query: { tab: 'stats' } }">
           <span>{{ sg.displayName }}</span>
           <small>Tracked · Lvl {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small>
         </RouterLink>
@@ -195,6 +195,6 @@ async function submitAdd() {
 }
 
 function goToPlayer(player) {
-  router.push({ name: 'playerDetail', params: { username: player.username } })
+  router.push({ name: 'playerDetail', params: { username: player.username }, query: { tab: 'stats' } })
 }
 </script>
