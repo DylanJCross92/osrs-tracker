@@ -6,6 +6,7 @@
         <button class="btn-text" @click="$emit('close')">✕</button>
       </div>
 
+      <div class="share-modal-controls">
       <div class="share-modal-period" role="group" aria-label="Timeframe">
         <button v-for="p in PERIODS" :key="p.key" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
       </div>
@@ -17,6 +18,7 @@
           <option v-for="name in SKILL_NAMES" :key="name" :value="name">{{ name }}</option>
         </select>
       </label>
+      </div>
 
       <div class="share-modal-preview">
         <p v-if="imageLoading" class="empty-hint">Loading preview…</p>

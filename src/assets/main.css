@@ -1293,3 +1293,9 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .share-modal-period button:hover { color: var(--text); }
 .share-modal-period button.active { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); color: var(--gold-ink); }
 .share-modal-period { display: flex; width: fit-content; }
+.share-modal-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 14px; }
+.share-modal-controls .share-modal-period, .share-modal-controls .share-modal-skill { margin: 0; }
+.share-modal-card.modal-card { max-width: 580px; }
+.share-modal-controls { flex-wrap: nowrap; justify-content: space-between; }
+.share-modal-controls .share-modal-skill select { flex: none; }
+@media (max-width: 560px) { .share-modal-controls { flex-wrap: wrap; justify-content: flex-start; } }
