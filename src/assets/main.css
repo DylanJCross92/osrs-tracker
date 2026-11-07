@@ -357,9 +357,25 @@ button:focus-visible {
 }
 .detail-actions {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 14px;
   flex-shrink: 0;
+}
+/* Equal-width buttons (Goal Planner / Share / Check for Historical). */
+.detail-buttons {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 12px;
+}
+.detail-buttons .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  white-space: nowrap;
+  box-sizing: border-box;
 }
 .share-menu-wrap {
   position: relative;

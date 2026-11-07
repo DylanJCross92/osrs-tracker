@@ -22,6 +22,7 @@
           <option value="month">Last 30 Days</option>
         </select>
       </label>
+      <div class="detail-buttons">
       <button
         v-if="player?.womImportStatus === 'none'"
         class="btn btn-ghost"
@@ -34,8 +35,9 @@
         v-if="player"
         class="btn btn-ghost"
         :to="{ name: 'planner', query: { u: player.username } }"
-      >Plan Goals</RouterLink>
+      >Goal Planner</RouterLink>
       <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">Share</button>
+      </div>
     </div>
   </div>
 
