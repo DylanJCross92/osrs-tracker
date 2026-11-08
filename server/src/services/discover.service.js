@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import { listPlayers } from './players.service.js'
 import { achievementDefinitions } from './milestones.service.js'
+import { buildInsights } from './discoverInsights.service.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
 
 function card(p, featured = null) {
@@ -108,8 +109,42 @@ async function getActivity(byId) {
     })
 }
 
-/** Public discovery data: interactive leaderboards + a live activity feed + curated lists. */
-export async function getDiscover() {
+// Cached: live pieces for 45s (the page polls every minute), the heavier
+// insights (history comparisons, spotlight) for 10 minutes. Both are dropped
+// when a scheduled sync finishes, so fresh data shows up without a page-load
+// recompute.
+const LIVE_TTL = 45_000
+const INSIGHTS_TTL = 10 * 60_000
+let liveCache = { value: null, at: 0, promise: null }
+let insightsCache = { value: null, at: 0, promise: null }
+
+export function invalidateDiscoverCache() {
+  liveCache.at = 0
+  insightsCache.at = 0
+}
+
+async function cached(cache, ttl, build) {
+  if (cache.value && Date.now() - cache.at < ttl) return cache.value
+  if (cache.promise) return cache.value && cache.at ? cache.value : cache.promise
+  cache.promise = build()
+    .then((v) => {
+      cache.value = v
+      cache.at = Date.now()
+      return v
+    })
+    .finally(() => {
+      cache.promise = null
+    })
+  // Serve the stale copy immediately while it refreshes in the background.
+  return cache.value || cache.promise
+}
+
+export function getDiscover() {
+  return cached(liveCache, LIVE_TTL, buildDiscover)
+}
+
+/** Public discovery data: interactive leaderboards + a live activity feed + curated lists + insights. */
+async function buildDiscover() {
   const all = await listPlayers({ skillGains: true })
   const players = all.filter((p) => p.latest)
   const byId = new Map(players.map((p) => [p.id, p]))
@@ -145,6 +180,7 @@ export async function getDiscover() {
     .map((r) => card(byId.get(r.player_id), { kind: 'milestone', skill: r.skill, text: `99 ${r.skill}`, at: r.occurred_at }))
 
   const activity = await getActivity(byId)
+  const insights = await cached(insightsCache, INSIGHTS_TTL, () => buildInsights({ players, activity, byId }))
 
   return {
     generatedAt: new Date().toISOString(),
@@ -155,6 +191,7 @@ export async function getDiscover() {
     topWeek: gainsBy('week'),
     topMonth: gainsBy('month'),
     approachingMax,
+    insights,
   }
 }
 

@@ -37,10 +37,55 @@
       </RouterLink>
     </section>
 
+
     <p v-if="loading" class="card empty-hint">Loading the latest activity…</p>
     <p v-else-if="error" class="card empty-hint">{{ error }}</p>
 
-    <div v-else class="disc-grid">
+    <template v-else>
+    <!-- Featured: weekly spotlight + players near milestones -->
+    <div class="disc-featured">
+      <section class="card disc-spotlight-card">
+        <div class="disc-head">
+          <h2>Player spotlight</h2>
+          <span v-if="insights.spotlight" class="disc-updated">week of {{ shortDate(insights.spotlight.periodStart) }}</span>
+        </div>
+        <RouterLink v-if="insights.spotlight" :to="profileTo(insights.spotlight.username)" class="disc-spotlight">
+          <span class="disc-spotlight-reason">{{ insights.spotlight.reason }}</span>
+          <span class="disc-spotlight-name">{{ insights.spotlight.displayName }}<PlayerBadge :label="insights.spotlight.badge" /></span>
+          <span class="disc-spotlight-headline">
+            <img v-if="insights.spotlight.skill" :src="skillIconSrc(insights.spotlight.skill)" :alt="insights.spotlight.skill" width="28" height="28" />
+            {{ insights.spotlight.headline }}
+          </span>
+          <span class="disc-spotlight-stats">
+            <span v-for="st in insights.spotlight.stats" :key="st.label"><small>{{ st.label }}</small><b>{{ st.value }}</b></span>
+          </span>
+          <span class="disc-spot-cta">View profile →</span>
+        </RouterLink>
+        <p v-else class="empty-hint">The spotlight appears once someone has a week of activity to feature.</p>
+      </section>
+
+      <section class="card disc-near">
+        <div class="disc-head">
+          <h2>Closing in on a milestone</h2>
+          <button v-if="nearAll.length > 5" class="btn-text" @click="nearOpen = !nearOpen">{{ nearOpen ? 'Show less' : `View all (${nearAll.length})` }}</button>
+        </div>
+        <ul v-if="nearList.length" class="disc-near-list">
+          <li v-for="n in nearList" :key="n.id + n.milestone + n.skill">
+            <RouterLink :to="profileTo(n.username)">
+              <img :src="skillIconSrc(n.skill || 'Overall')" :alt="n.skill || 'Overall'" width="26" height="26" />
+              <span class="disc-near-main">
+                <span class="disc-near-top"><b>{{ n.displayName }}</b><span>{{ n.milestone }}<template v-if="n.skill"> · {{ n.skill }}</template></span></span>
+                <span class="disc-bar gold"><span :style="{ width: `${n.progress}%` }" /></span>
+                <small>{{ n.progress }}% · {{ n.remainingXp != null ? `${formatXp(n.remainingXp)} XP to go` : `${n.remainingLevels} levels to go` }}</small>
+              </span>
+            </RouterLink>
+          </li>
+        </ul>
+        <p v-else class="empty-hint">Nobody is within reach of a milestone yet — as players level up, the closest ones show here.</p>
+      </section>
+    </div>
+
+    <div class="disc-grid">
       <!-- Live activity -->
       <section class="card disc-feed">
         <div class="disc-head">
@@ -102,6 +147,94 @@
       </section>
     </div>
 
+
+    <!-- Explore by skill -->
+    <section class="card disc-explore">
+      <div class="disc-head"><h2>Explore by skill</h2></div>
+      <div class="disc-explore-controls">
+        <label class="period-select"><span class="period-select-label">Skill</span>
+          <select v-model="exSkill"><option v-for="s in SKILL_NAMES" :key="s" :value="s">{{ s }}</option></select>
+        </label>
+        <div class="range-tabs">
+          <button v-for="p in periods" :key="p.key" :class="{ active: exPeriod === p.key }" @click="exPeriod = p.key">{{ p.label }}</button>
+        </div>
+        <label class="period-select"><span class="period-select-label">Sort</span>
+          <select v-model="exSort">
+            <option value="gained">XP gained</option>
+            <option value="total">Total XP</option>
+            <option value="milestone">Closest milestone</option>
+            <option value="n99">Closest to 99</option>
+          </select>
+        </label>
+      </div>
+      <ol v-if="exRows.length" class="disc-board-list">
+        <li v-for="(r, i) in exRows" :key="r.p.id + exSkill" :style="{ '--i': i }">
+          <RouterLink :to="profileTo(r.p.username)">
+            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+            <span class="disc-board-main">
+              <span class="disc-board-name"><img :src="skillIconSrc(exSkill)" :alt="exSkill" width="18" height="18" />{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
+              <span class="disc-bar gold"><span :style="{ width: `${r.progress}%` }" /></span>
+              <small class="disc-explore-meta">Level {{ r.level }} · {{ formatXp(r.xp) }} XP · next: {{ r.nextLabel }} ({{ r.progress }}%)</small>
+            </span>
+            <span class="disc-board-xp" :class="{ dim: !r.gained }">{{ r.gained ? `+${formatXp(r.gained)}` : '—' }}</span>
+          </RouterLink>
+        </li>
+      </ol>
+      <p v-else class="empty-hint">No tracked players have {{ exSkill }} data yet.</p>
+      <div v-if="skillAchievements.length" class="disc-skill-ach">
+        <h3>Recent {{ exSkill }} achievements</h3>
+        <ul class="disc-ach-list compact">
+          <li v-for="a in skillAchievements" :key="a.key"><RouterLink :to="profileTo(a.username)"><b>{{ a.displayName }}</b> {{ a.title }} <small>{{ achievedWhen(a) }}</small></RouterLink></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Recent achievements -->
+    <section class="card disc-achievements">
+      <div class="disc-head">
+        <h2>Recent achievements</h2>
+        <span class="disc-updated">as detected by TickGains</span>
+      </div>
+      <ul v-if="achievements.length" class="disc-ach-list">
+        <li v-for="a in achievements.slice(0, achShown)" :key="a.key">
+          <RouterLink :to="profileTo(a.username)">
+            <span class="disc-event-icon"><img v-if="a.skill" :src="skillIconSrc(a.skill)" :alt="a.skill" width="24" height="24" /><span v-else class="disc-glyph">★</span></span>
+            <span class="disc-event-text"><b>{{ a.displayName }}</b> <em class="gold">{{ a.title }}</em><small>{{ a.description }}</small></span>
+            <span class="disc-event-time">{{ achievedWhen(a) }}</span>
+          </RouterLink>
+        </li>
+      </ul>
+      <p v-else class="empty-hint">No major achievements detected yet — 99s, 100M+ XP and big total-level milestones land here.</p>
+      <button v-if="achievements.length > achShown" class="btn btn-ghost" @click="achShown += 5">View more ({{ achievements.length - achShown }})</button>
+      <p class="profile-note">"Detected" is when TickGains first saw the achievement in a saved snapshot. Where data had a gap, the date is shown as a range.</p>
+    </section>
+
+    <!-- Trending + Most improved -->
+    <div class="disc-two">
+      <section class="card">
+        <div class="disc-head"><h2>Trending players</h2><span class="disc-updated">updated {{ ago(insights.computedAt) }}</span></div>
+        <ol v-if="trendingList.length" class="disc-rank-list">
+          <li v-for="(t, i) in trendingList" :key="t.id"><RouterLink :to="profileTo(t.username)">
+            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>{{ t.reason }}</small></span>
+          </RouterLink></li>
+        </ol>
+        <p v-else class="empty-hint">Nothing is trending yet — players show up here with fresh gains or milestones.</p>
+      </section>
+
+      <section class="card">
+        <div class="disc-head"><h2>Most improved</h2><span class="disc-updated">vs. previous 4-week average</span></div>
+        <ol v-if="improvedList.length" class="disc-rank-list">
+          <li v-for="(t, i) in improvedList" :key="t.id"><RouterLink :to="profileTo(t.username)">
+            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
+            <span class="disc-board-xp">+{{ t.pct }}%</span>
+          </RouterLink></li>
+        </ol>
+        <p v-else class="empty-hint">Most improved compares this week with the previous four weeks, so it needs about five weeks of tracking history — and a meaningful gain — before anyone qualifies.</p>
+      </section>
+    </div>
+
     <!-- Curated rails -->
     <section v-for="rail in rails" v-show="data[rail.key]?.length" :key="rail.key" class="disc-rail-section">
       <h2>{{ rail.title }}</h2>
@@ -120,6 +253,7 @@
         </RouterLink>
       </div>
     </section>
+    </template>
   </div>
 </template>
 
@@ -276,9 +410,80 @@ function surprise() {
   router.push(profileTo(pick.username))
 }
 
-const rails = [
-  { key: 'recent99', title: 'Recent level 99s' },
-  { key: 'approachingMax', title: 'Closing in on max' },
-  { key: 'recentlyTracked', title: 'Recently tracked' },
-]
+
+// --- insights (cached server-side; see discoverInsights.service.js) ---
+const insights = computed(() => data.value.insights || {})
+const shortDate = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const fullDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+const achievedWhen = (a) => (a.after ? `between ${fullDate(a.after)} and ${fullDate(a.detectedAt)}` : `detected ${fullDate(a.detectedAt)}`)
+const achievements = computed(() => insights.value.achievements || [])
+const achShown = ref(5)
+
+// Don't repeat the weekly spotlight player in neighbouring sections when there are alternatives.
+const spotId = computed(() => insights.value.spotlight?.id)
+const without = (list, min) => {
+  const filtered = list.filter((x) => x.id !== spotId.value)
+  return filtered.length >= min ? filtered : list
+}
+const nearAll = computed(() => without(insights.value.nearMilestones || [], 5))
+const nearOpen = ref(false)
+const nearList = computed(() => (nearOpen.value ? nearAll.value : nearAll.value.slice(0, 5)))
+const trendingList = computed(() => without(insights.value.trending || [], 3))
+const improvedList = computed(() => insights.value.improved || [])
+
+// --- explore by skill ---
+const exSkill = ref('Agility')
+const exPeriod = ref('week')
+const exSort = ref('gained')
+let exAutoPicked = false
+watch(players, (list) => {
+  if (exAutoPicked || !list.length) return
+  exAutoPicked = true
+  // Start on whichever skill saw the most XP this week.
+  const totals = {}
+  for (const p of list) for (const [k, v] of Object.entries(p.skillGains?.week || {})) totals[k] = (totals[k] || 0) + v
+  const top = Object.entries(totals).sort((a, b) => b[1] - a[1])[0]
+  if (top) exSkill.value = top[0]
+})
+const SKILL_XP_STEPS = [10_000_000, 50_000_000, 100_000_000, 200_000_000]
+const xpForLvl = (level) => {
+  let points = 0
+  let xp = 0
+  for (let l = 1; l < level; l++) {
+    points += Math.floor(l + 300 * 2 ** (l / 7))
+    xp = Math.floor(points / 4)
+  }
+  return xp
+}
+const XP99 = xpForLvl(99)
+const XP90 = xpForLvl(90)
+function nextMilestone(level, xp) {
+  const steps = [
+    { label: 'Level 90', xp: XP90 },
+    { label: 'Level 99', xp: XP99 },
+    ...SKILL_XP_STEPS.map((x) => ({ label: `${formatXp(x)} XP`, xp: x })),
+  ].filter((s) => xp < s.xp)
+  const next = steps[0]
+  return next ? { label: next.label, progress: Math.min(Math.round((xp / next.xp) * 1000) / 10, 99.9) } : { label: 'Maxed', progress: 100 }
+}
+const exRows = computed(() => {
+  const rows = players.value
+    .map((p) => {
+      const sk = p.skillLevels?.[exSkill.value]
+      if (!sk) return null
+      const next = nextMilestone(sk.level, sk.xp)
+      const to99 = sk.level >= 99 ? 100 : Math.round((sk.xp / XP99) * 1000) / 10
+      return { p, level: sk.level, xp: sk.xp, gained: p.skillGains?.[exPeriod.value]?.[exSkill.value] || 0, nextLabel: next.label, progress: exSort.value === 'n99' ? to99 : next.progress, to99 }
+    })
+    .filter(Boolean)
+  if (exSort.value === 'gained') rows.sort((a, b) => b.gained - a.gained || b.xp - a.xp)
+  else if (exSort.value === 'total') rows.sort((a, b) => b.xp - a.xp)
+  else if (exSort.value === 'n99') return rows.filter((r) => r.level < 99).sort((a, b) => b.to99 - a.to99).slice(0, 10).map((r) => ({ ...r, nextLabel: 'Level 99' }))
+  else rows.sort((a, b) => b.progress - a.progress)
+  return rows.slice(0, 10)
+})
+const skillAchievements = computed(() => achievements.value.filter((a) => a.skill === exSkill.value).slice(0, 3))
+watch([exSkill, exPeriod, exSort], () => track('discover_explore', { skill: exSkill.value, period: exPeriod.value, sort: exSort.value }))
+
+const rails = [{ key: 'recentlyTracked', title: 'Recently tracked' }]
 </script>

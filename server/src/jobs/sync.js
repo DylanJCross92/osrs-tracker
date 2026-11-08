@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import { pool } from '../db.js'
 import { fetchHiscores } from '../services/osrsHiscores.service.js'
 import { recordSnapshot } from '../services/players.service.js'
+import { invalidateDiscoverCache, getDiscover } from '../services/discover.service.js'
 
 // Every 6 hours, on the hour: 00:00, 06:00, 12:00, 18:00. Override in .env
 // (e.g. for a short interval while testing) via SYNC_CRON.
@@ -31,6 +32,9 @@ export async function syncAllPlayers() {
     }
     await delay(DELAY_BETWEEN_PLAYERS_MS)
   }
+  // Fresh data landed — rebuild Discover's cached sections now, not on the next visitor's request.
+  invalidateDiscoverCache()
+  getDiscover().catch((err) => console.error('[discover] warm failed:', err.message))
 }
 
 export function startScheduler() {

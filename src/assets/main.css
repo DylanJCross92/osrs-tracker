@@ -1375,3 +1375,35 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-rail .discover-card { flex: 0 0 240px; scroll-snap-align: start; }
 .discover-card-featured.neutral { color: var(--gold-bright); }
 .last-checked { margin-left: 2px; }
+
+/* ---------- discover: featured + explore + achievements ---------- */
+.disc-featured { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 18px; align-items: stretch; }
+.disc-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start; }
+@media (max-width: 860px) { .disc-featured, .disc-two { grid-template-columns: 1fr; } }
+.disc-spotlight { display: flex; flex-direction: column; gap: 10px; padding: 18px; border-radius: 14px; border: 1px solid var(--gold); background: linear-gradient(160deg, rgba(240, 201, 118, 0.16), rgba(14, 12, 9, 0.7)); color: var(--text); transition: transform 0.18s, box-shadow 0.18s; }
+.disc-spotlight:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); text-decoration: none; }
+.disc-spotlight-reason { align-self: flex-start; padding: 3px 12px; border-radius: 999px; background: rgba(240, 201, 118, 0.15); border: 1px solid var(--gold); color: var(--gold-bright); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.disc-spotlight-name { display: flex; align-items: center; gap: 8px; font-size: 1.7rem; color: var(--gold-bright); }
+.disc-spotlight-headline { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; color: var(--xp-green); }
+.disc-spotlight-stats { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.disc-spotlight-stats span { display: flex; flex-direction: column; }
+.disc-spotlight-stats small { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.disc-near-list, .disc-rank-list, .disc-ach-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.disc-near-list a, .disc-rank-list a, .disc-ach-list a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); transition: border-color 0.15s, background 0.15s; }
+.disc-near-list a:hover, .disc-rank-list a:hover, .disc-ach-list a:hover { border-color: var(--gold); background: var(--panel-alt); text-decoration: none; }
+.disc-near-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.disc-near-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.disc-near-top b { color: var(--gold-bright); }
+.disc-near-top span { color: var(--muted); font-size: 0.85rem; }
+.disc-near-main small, .disc-rank-list small, .disc-explore-meta { color: var(--muted); font-size: 0.78rem; }
+.disc-bar.gold span { background: linear-gradient(90deg, #b9892f, var(--gold-bright)); }
+.disc-explore-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-bottom: 14px; }
+.disc-explore .period-select select { min-width: 140px; }
+.disc-board-xp.dim { color: var(--muted); }
+.disc-skill-ach { margin-top: 18px; }
+.disc-skill-ach h3 { margin: 0 0 8px; font-size: 0.82rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.disc-ach-list.compact a { padding: 8px 12px; font-size: 0.9rem; flex-wrap: wrap; }
+.disc-ach-list small { color: var(--muted); }
+.disc-event-text small { display: block; }
+.disc-rank-list .disc-board-main { gap: 3px; }
+.disc-featured { align-items: start; }

@@ -79,3 +79,13 @@ CREATE INDEX IF NOT EXISTS player_milestones_recent_idx ON player_milestones (mi
 -- nothing changed (an unchanged fetch saves no snapshot, so snapshots alone
 -- can't say when we last checked).
 ALTER TABLE players ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ;
+
+-- Weekly "Player Spotlight": picked once per period and stored, so the
+-- featured player stays stable all week and isn't repeated back-to-back.
+CREATE TABLE IF NOT EXISTS discover_spotlights (
+  period_key TEXT PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  payload JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
