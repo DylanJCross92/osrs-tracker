@@ -1559,3 +1559,14 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-spot:hover .disc-spot-cta { filter: brightness(1.08); }
 @media (max-width: 860px) { .disc-hero { padding: 22px 18px; } }
 @media (max-width: 520px) { .disc-stat-tiles { grid-template-columns: 1fr; } }
+
+/* discover header: tiles fit their content cleanly */
+.disc-stat-tiles { gap: 10px; }
+.disc-stat-tile { padding: 12px; gap: 10px; align-items: center; }
+.disc-stat-icon { width: 34px; height: 34px; }
+.disc-stat-tile > span:last-child { gap: 1px; overflow: hidden; }
+.disc-stat-tile b { font-size: 1.1rem; line-height: 1.2; white-space: nowrap; }
+.disc-stat-tile small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.disc-spot-xp { font-size: clamp(1.8rem, 3.2vw, 2.5rem); white-space: nowrap; }
+.disc-spot-xp small { font-size: 0.85rem; margin-left: 2px; }
+@media (max-width: 1100px) { .disc-stat-tile { padding: 10px; } .disc-stat-icon { display: none; } }
