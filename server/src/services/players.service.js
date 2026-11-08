@@ -87,8 +87,10 @@ function mapSnapshotRow(row) {
   }
 }
 
-// A period's baseline is the oldest snapshot still within its window, or the
-// very first snapshot ever if the player hasn't been tracked that long —
+// A period's baseline is the player's state at the window's start: the latest
+// snapshot taken before it (snapshots are only saved when XP changes, so the
+// newest one before the cutoff is still the current state at that moment), or
+// the very first snapshot ever if the player wasn't tracked yet —
 // "day" is pinned to local midnight so it means the calendar day, not a
 // rolling 24h window; "week"/"month" are plain rolling windows.
 const BASELINE_CUTOFF_SQL = {
@@ -104,8 +106,8 @@ function baselineJoinSql(period) {
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id AND captured_at >= ${cutoff}
-        ORDER BY captured_at ASC
+        WHERE player_id = p.id AND captured_at < ${cutoff}
+        ORDER BY captured_at DESC
         LIMIT 1
       )
       UNION ALL
