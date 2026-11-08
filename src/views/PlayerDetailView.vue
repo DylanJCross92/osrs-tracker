@@ -24,7 +24,8 @@
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
         <p v-if="latest" class="last-synced">
-          Last updated {{ formatRelative(latest.capturedAt) }}
+          <span title="When the data last changed — new XP, levels or ranks">Last updated {{ formatRelative(latest.capturedAt) }}</span>
+          <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
           <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
             {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
           </button>

@@ -74,3 +74,8 @@ CREATE TABLE IF NOT EXISTS player_milestones (
 );
 CREATE INDEX IF NOT EXISTS player_milestones_player_idx ON player_milestones (player_id, occurred_at);
 CREATE INDEX IF NOT EXISTS player_milestones_recent_idx ON player_milestones (milestone_type, value, occurred_at DESC);
+
+-- Last time the hiscores were successfully fetched for this player, even when
+-- nothing changed (an unchanged fetch saves no snapshot, so snapshots alone
+-- can't say when we last checked).
+ALTER TABLE players ADD COLUMN IF NOT EXISTS last_checked_at TIMESTAMPTZ;

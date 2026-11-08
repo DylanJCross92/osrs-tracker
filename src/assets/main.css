@@ -1374,3 +1374,4 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-rail { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
 .disc-rail .discover-card { flex: 0 0 240px; scroll-snap-align: start; }
 .discover-card-featured.neutral { color: var(--gold-bright); }
+.last-checked { margin-left: 2px; }

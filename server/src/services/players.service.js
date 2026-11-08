@@ -60,6 +60,7 @@ function mapPlayerRow(row, { skillGains = false } = {}) {
     displayName: row.display_name,
     badge: row.badge || null,
     createdAt: row.created_at,
+    lastCheckedAt: row.last_checked_at,
     latest: row.captured_at
       ? {
           capturedAt: row.captured_at,
@@ -130,7 +131,7 @@ export async function listPlayers({ skillGains = false } = {}) {
 
   const result = await pool.query(
     `
-    SELECT p.id, p.username, p.display_name, p.badge, p.created_at,
+    SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at,
            p.wom_import_status, p.wom_imported_count,
            s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
            ${baselineColumns}
@@ -200,6 +201,8 @@ function statsUnchanged(prevRow, stats) {
 }
 
 export async function recordSnapshot(playerId, stats) {
+  // The hiscores fetch already succeeded — note the check even if nothing changed.
+  await pool.query('UPDATE players SET last_checked_at = now() WHERE id = $1', [playerId])
   const prev = await pool.query(
     `SELECT overall_xp, overall_level, overall_rank, skills
      FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`,
@@ -239,7 +242,7 @@ export async function addPlayer(rawUsername) {
   try {
     await client.query('BEGIN')
     const inserted = await client.query(
-      "INSERT INTO players (username, display_name, wom_import_status) VALUES ($1, $2, 'pending') RETURNING id",
+      "INSERT INTO players (username, display_name, wom_import_status, last_checked_at) VALUES ($1, $2, 'pending', now()) RETURNING id",
       [username, username],
     )
     playerId = inserted.rows[0].id
