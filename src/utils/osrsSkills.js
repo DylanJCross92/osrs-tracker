@@ -134,15 +134,23 @@ function startOfToday() {
 }
 
 /**
- * Baseline snapshot for a trailing window, the oldest snapshot still
- * inside it, or the very first snapshot if the player hasn't been tracked
+ * Baseline snapshot for a trailing window, the newest snapshot from before
+ * it began, or the very first snapshot if the player hasn't been tracked
  * that long yet. "day" is pinned to local midnight (the calendar day), not
  * a rolling 24h window, "week"/"month" are plain rolling windows.
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
   const cutoff = period === 'day' ? startOfToday() : Date.now() - PERIODS[period]
-  return snapshots.find((s) => new Date(s.capturedAt).getTime() >= cutoff) ?? snapshots[0]
+  // Use the last snapshot taken before the cutoff, so xp earned between that
+  // snapshot and the first one inside the window still counts. If the player
+  // has no snapshot that old, fall back to their first one.
+  let baseline = snapshots[0]
+  for (const s of snapshots) {
+    if (new Date(s.capturedAt).getTime() < cutoff) baseline = s
+    else break
+  }
+  return baseline
 }
 
 /** Change in some per-snapshot stat over a trailing window. */
