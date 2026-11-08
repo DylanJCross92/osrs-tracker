@@ -188,27 +188,51 @@ export async function getPlayerByUsername(username) {
 
 // True if a fetched hiscores result has nothing new over a prior snapshot
 // row (same xp/level/rank, overall and per-skill).
-function statsUnchanged(prevRow, stats) {
+// True if any xp or level changed. Rank-only movement (other players
+// overtaking you) doesn't count — it isn't progress, and saving a whole new
+// snapshot for it just bloats the table.
+function progressUnchanged(prevRow, stats) {
   if (Number(prevRow.overall_xp) !== stats.overall.xp) return false
   if (prevRow.overall_level !== stats.overall.level) return false
-  if (prevRow.overall_rank !== stats.overall.rank) return false
-
   for (const [name, skill] of Object.entries(stats.skills)) {
     const prev = prevRow.skills[name]
-    if (!prev || prev.xp !== skill.xp || prev.level !== skill.level || prev.rank !== skill.rank) return false
+    if (!prev || prev.xp !== skill.xp || prev.level !== skill.level) return false
   }
   return true
 }
 
+function ranksUnchanged(prevRow, stats) {
+  if (prevRow.overall_rank !== stats.overall.rank) return false
+  for (const [name, skill] of Object.entries(stats.skills)) {
+    if (prevRow.skills[name]?.rank !== skill.rank) return false
+  }
+  return true
+}
+
+/**
+ * Saves a snapshot only when xp or levels changed. If only ranks moved, the
+ * newest snapshot's ranks are refreshed in place (captured_at untouched), so
+ * the current rank stays accurate without a new row per check.
+ */
 export async function recordSnapshot(playerId, stats) {
   // The hiscores fetch already succeeded — note the check even if nothing changed.
   await pool.query('UPDATE players SET last_checked_at = now() WHERE id = $1', [playerId])
+
   const prev = await pool.query(
-    `SELECT overall_xp, overall_level, overall_rank, skills
+    `SELECT id, overall_xp, overall_level, overall_rank, skills
      FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`,
     [playerId],
   )
-  if (prev.rowCount > 0 && statsUnchanged(prev.rows[0], stats)) return
+  if (prev.rowCount > 0 && progressUnchanged(prev.rows[0], stats)) {
+    if (!ranksUnchanged(prev.rows[0], stats)) {
+      await pool.query('UPDATE snapshots SET overall_rank = $2, skills = $3 WHERE id = $1', [
+        prev.rows[0].id,
+        stats.overall.rank,
+        JSON.stringify(stats.skills),
+      ])
+    }
+    return { saved: false }
+  }
 
   await pool.query(
     `INSERT INTO snapshots (player_id, overall_xp, overall_level, overall_rank, skills)
@@ -216,6 +240,7 @@ export async function recordSnapshot(playerId, stats) {
     [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
   )
   syncMilestonesSafe(playerId)
+  return { saved: true }
 }
 
 export async function addPlayer(rawUsername) {

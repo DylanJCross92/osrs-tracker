@@ -480,7 +480,7 @@ async function load() {
   }
 
   // Check for updates whenever this page loads, rather than only on the
-  // 6-hourly scheduler or a manual refresh. Runs after the saved data is
+  // hourly scheduler or a manual refresh. Runs after the saved data is
   // already showing, so a slow hiscores fetch never blocks the page —
   // snapshots.value is swapped in once the refresh completes.
   checkingForUpdates.value = true

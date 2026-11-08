@@ -1,7 +1,7 @@
 import { SKILL_NAMES } from './osrsHiscores.service.js'
 
 // Thin client for Wise Old Man's public API, used only to backfill history
-// for a brand-new player — our own 6-hourly sync is the source of truth
+// for a brand-new player — our own hourly sync is the source of truth
 // going forward. No API key: https://docs.wiseoldman.net/api — 20 req/min,
 // so deep history (years of densely-tracked snapshots) takes real wall time
 // to pull; callers should surface progress rather than assume this is fast.

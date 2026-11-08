@@ -33,6 +33,48 @@ export const SKILL_NAMES = [
 
 export class PlayerNotFoundError extends Error {}
 
+/** Hiscores couldn't be reached or are rate-limiting us, even after retrying. */
+export class HiscoresUnavailableError extends Error {
+  constructor(message) {
+    super(message)
+    this.status = 503
+  }
+}
+
+const MAX_ATTEMPTS = 3
+const REQUEST_TIMEOUT_MS = 15_000
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Seconds from a Retry-After header (numeric form only), capped so one slow
+// response can't stall a whole sync run for long.
+function retryAfterMs(res) {
+  const n = Number(res.headers.get('retry-after'))
+  return Number.isFinite(n) && n > 0 ? Math.min(n * 1000, 30_000) : null
+}
+
+// Fetches with a timeout and retries 429 / 5xx / network errors with
+// exponential backoff + jitter. 404 (unknown player) and other 4xx are
+// answers, not outages, so they return immediately.
+async function fetchWithRetry(url) {
+  let lastReason = 'unknown error'
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let wait = null
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) })
+      if (res.status !== 429 && res.status < 500) return res
+      lastReason = `status ${res.status}`
+      wait = retryAfterMs(res)
+    } catch (err) {
+      lastReason = err?.name === 'TimeoutError' ? 'request timed out' : `network error (${err?.message || err})`
+    }
+    if (attempt < MAX_ATTEMPTS) {
+      const backoff = wait ?? 1000 * 3 ** (attempt - 1) // 1s, then 3s
+      await sleep(backoff + Math.random() * 500)
+    }
+  }
+  throw new HiscoresUnavailableError(`OSRS hiscores are unavailable right now (${lastReason}).`)
+}
+
 function normalizeEntry(entry) {
   return {
     level: entry?.level ?? 1,
@@ -48,7 +90,7 @@ function normalizeEntry(entry) {
  */
 export async function fetchHiscores(username) {
   const url = `${HISCORES_URL}?player=${encodeURIComponent(username)}`
-  const res = await fetch(url)
+  const res = await fetchWithRetry(url)
 
   if (res.status === 404) {
     throw new PlayerNotFoundError(`"${username}" wasn't found on the OSRS hiscores.`)
