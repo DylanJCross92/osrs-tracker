@@ -12,10 +12,6 @@
         </div>
         <div class="disc-search">
           <input v-model="query" type="text" placeholder="Search a tracked player…" autocomplete="off" @keydown.enter="goFirst" />
-          <button class="btn btn-ghost" type="button" :disabled="!players.length" @click="surprise">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4l4 4M20 4l-4 4M4 20l4-4M20 20l-4-4" /><circle cx="12" cy="12" r="3" /></svg>
-            Surprise me
-          </button>
         </div>
         <ul v-if="suggestions.length" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
@@ -42,49 +38,6 @@
     <p v-else-if="error" class="card empty-hint">{{ error }}</p>
 
     <template v-else>
-    <!-- Featured: weekly spotlight + players near milestones -->
-    <div class="disc-featured">
-      <section class="card disc-spotlight-card">
-        <div class="disc-head">
-          <h2>Player spotlight</h2>
-          <span v-if="insights.spotlight" class="disc-updated">week of {{ shortDate(insights.spotlight.periodStart) }}</span>
-        </div>
-        <RouterLink v-if="insights.spotlight" :to="profileTo(insights.spotlight.username)" class="disc-spotlight">
-          <span class="disc-spotlight-reason">{{ insights.spotlight.reason }}</span>
-          <span class="disc-spotlight-name">{{ insights.spotlight.displayName }}<PlayerBadge :label="insights.spotlight.badge" /></span>
-          <span class="disc-spotlight-headline">
-            <img v-if="insights.spotlight.skill" :src="skillIconSrc(insights.spotlight.skill)" :alt="insights.spotlight.skill" width="28" height="28" />
-            {{ insights.spotlight.headline }}
-          </span>
-          <span class="disc-spotlight-stats">
-            <span v-for="st in insights.spotlight.stats" :key="st.label"><small>{{ st.label }}</small><b>{{ st.value }}</b></span>
-          </span>
-          <span class="disc-spot-cta">View profile →</span>
-        </RouterLink>
-        <p v-else class="empty-hint">The spotlight appears once someone has a week of activity to feature.</p>
-      </section>
-
-      <section class="card disc-near">
-        <div class="disc-head">
-          <h2>Closing in on a milestone</h2>
-          <button v-if="nearAll.length > 5" class="btn-text" @click="nearOpen = !nearOpen">{{ nearOpen ? 'Show less' : `View all (${nearAll.length})` }}</button>
-        </div>
-        <ul v-if="nearList.length" class="disc-near-list">
-          <li v-for="n in nearList" :key="n.id + n.milestone + n.skill">
-            <RouterLink :to="profileTo(n.username)">
-              <img :src="skillIconSrc(n.skill || 'Overall')" :alt="n.skill || 'Overall'" width="26" height="26" />
-              <span class="disc-near-main">
-                <span class="disc-near-top"><b>{{ n.displayName }}</b><span>{{ n.milestone }}<template v-if="n.skill"> · {{ n.skill }}</template></span></span>
-                <span class="disc-bar gold"><span :style="{ width: `${n.progress}%` }" /></span>
-                <small>{{ n.progress }}% · {{ n.remainingXp != null ? `${formatXp(n.remainingXp)} XP to go` : `${n.remainingLevels} levels to go` }}</small>
-              </span>
-            </RouterLink>
-          </li>
-        </ul>
-        <p v-else class="empty-hint">Nobody is within reach of a milestone yet — as players level up, the closest ones show here.</p>
-      </section>
-    </div>
-
     <div class="disc-grid">
       <!-- Live activity -->
       <section class="card disc-feed">
@@ -148,6 +101,75 @@
     </div>
 
 
+    <!-- Trending + Most improved -->
+    <div class="disc-two">
+      <section class="card">
+        <div class="disc-head"><h2>Trending players</h2><span class="disc-updated">updated {{ ago(insights.computedAt) }}</span></div>
+        <ol v-if="trendingList.length" class="disc-rank-list">
+          <li v-for="(t, i) in trendingList" :key="t.id"><RouterLink :to="profileTo(t.username)">
+            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>{{ t.reason }}</small></span>
+          </RouterLink></li>
+        </ol>
+        <p v-else class="empty-hint">Nothing is trending yet — players show up here with fresh gains or milestones.</p>
+      </section>
+
+      <section class="card">
+        <div class="disc-head"><h2>Most improved</h2><span class="disc-updated">vs. previous 4-week average</span></div>
+        <ol v-if="improvedList.length" class="disc-rank-list">
+          <li v-for="(t, i) in improvedList" :key="t.id"><RouterLink :to="profileTo(t.username)">
+            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
+            <span class="disc-board-xp">+{{ t.pct }}%</span>
+          </RouterLink></li>
+        </ol>
+        <p v-else class="empty-hint">Most improved compares this week with the previous four weeks, so it needs about five weeks of tracking history — and a meaningful gain — before anyone qualifies.</p>
+      </section>
+    </div>
+
+    <!-- Featured: weekly spotlight + players near milestones -->
+    <div class="disc-featured">
+      <section class="card disc-spotlight-card">
+        <div class="disc-head">
+          <h2>Player spotlight</h2>
+          <span v-if="insights.spotlight" class="disc-updated">week of {{ shortDate(insights.spotlight.periodStart) }}</span>
+        </div>
+        <RouterLink v-if="insights.spotlight" :to="profileTo(insights.spotlight.username)" class="disc-spotlight">
+          <span class="disc-spotlight-reason">{{ insights.spotlight.reason }}</span>
+          <span class="disc-spotlight-name">{{ insights.spotlight.displayName }}<PlayerBadge :label="insights.spotlight.badge" /></span>
+          <span class="disc-spotlight-headline">
+            <img v-if="insights.spotlight.skill" :src="skillIconSrc(insights.spotlight.skill)" :alt="insights.spotlight.skill" width="28" height="28" />
+            {{ insights.spotlight.headline }}
+          </span>
+          <span class="disc-spotlight-stats">
+            <span v-for="st in insights.spotlight.stats" :key="st.label"><small>{{ st.label }}</small><b>{{ st.value }}</b></span>
+          </span>
+          <span class="disc-spot-cta">View profile →</span>
+        </RouterLink>
+        <p v-else class="empty-hint">The spotlight appears once someone has a week of activity to feature.</p>
+      </section>
+
+      <section class="card disc-near">
+        <div class="disc-head">
+          <h2>Closing in on a milestone</h2>
+          <button v-if="nearAll.length > 5" class="btn-text" @click="nearOpen = !nearOpen">{{ nearOpen ? 'Show less' : `View all (${nearAll.length})` }}</button>
+        </div>
+        <ul v-if="nearList.length" class="disc-near-list">
+          <li v-for="n in nearList" :key="n.id + n.milestone + n.skill">
+            <RouterLink :to="profileTo(n.username)">
+              <img :src="skillIconSrc(n.skill || 'Overall')" :alt="n.skill || 'Overall'" width="26" height="26" />
+              <span class="disc-near-main">
+                <span class="disc-near-top"><b>{{ n.displayName }}</b><span>{{ n.milestone }}<template v-if="n.skill"> · {{ n.skill }}</template></span></span>
+                <span class="disc-bar gold"><span :style="{ width: `${n.progress}%` }" /></span>
+                <small>{{ n.progress }}% · {{ n.remainingXp != null ? `${formatXp(n.remainingXp)} XP to go` : `${n.remainingLevels} levels to go` }}</small>
+              </span>
+            </RouterLink>
+          </li>
+        </ul>
+        <p v-else class="empty-hint">Nobody is within reach of a milestone yet — as players level up, the closest ones show here.</p>
+      </section>
+    </div>
+
     <!-- Explore by skill -->
     <section class="card disc-explore">
       <div class="disc-head"><h2>Explore by skill</h2></div>
@@ -208,32 +230,6 @@
       <button v-if="achievements.length > achShown" class="btn btn-ghost" @click="achShown += 5">View more ({{ achievements.length - achShown }})</button>
       <p class="profile-note">"Detected" is when TickGains first saw the achievement in a saved snapshot. Where data had a gap, the date is shown as a range.</p>
     </section>
-
-    <!-- Trending + Most improved -->
-    <div class="disc-two">
-      <section class="card">
-        <div class="disc-head"><h2>Trending players</h2><span class="disc-updated">updated {{ ago(insights.computedAt) }}</span></div>
-        <ol v-if="trendingList.length" class="disc-rank-list">
-          <li v-for="(t, i) in trendingList" :key="t.id"><RouterLink :to="profileTo(t.username)">
-            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>{{ t.reason }}</small></span>
-          </RouterLink></li>
-        </ol>
-        <p v-else class="empty-hint">Nothing is trending yet — players show up here with fresh gains or milestones.</p>
-      </section>
-
-      <section class="card">
-        <div class="disc-head"><h2>Most improved</h2><span class="disc-updated">vs. previous 4-week average</span></div>
-        <ol v-if="improvedList.length" class="disc-rank-list">
-          <li v-for="(t, i) in improvedList" :key="t.id"><RouterLink :to="profileTo(t.username)">
-            <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
-            <span class="disc-board-xp">+{{ t.pct }}%</span>
-          </RouterLink></li>
-        </ol>
-        <p v-else class="empty-hint">Most improved compares this week with the previous four weeks, so it needs about five weeks of tracking history — and a meaningful gain — before anyone qualifies.</p>
-      </section>
-    </div>
 
     <!-- Curated rails -->
     <section v-for="rail in rails" v-show="data[rail.key]?.length" :key="rail.key" class="disc-rail-section">
@@ -375,7 +371,7 @@ const spotlight = computed(() => {
   return null
 })
 
-// --- search + surprise ---
+// --- search ---
 const query = ref('')
 const suggestions = ref([])
 const searched = ref(false)
@@ -401,13 +397,6 @@ watch(query, (q) => {
 })
 function goFirst() {
   if (suggestions.value[0]) router.push(profileTo(suggestions.value[0].username))
-}
-function surprise() {
-  const pool = players.value
-  if (!pool.length) return
-  const pick = pool[Math.floor(Math.random() * pool.length)]
-  track('discover_surprise')
-  router.push(profileTo(pick.username))
 }
 
 
