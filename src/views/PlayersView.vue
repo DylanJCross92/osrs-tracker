@@ -94,6 +94,7 @@ import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import { playersApi } from '@/api/players'
+import { track } from '@/utils/analytics'
 
 const router = useRouter()
 const store = usePlayersStore()
@@ -185,6 +186,7 @@ async function submitAdd() {
   adding.value = true
   try {
     await store.addPlayer(username)
+    track('player_added')
     showToast(`Now tracking ${username} — checking Wise Old Man for history in the background.`)
     newUsername.value = ''
   } catch (err) {

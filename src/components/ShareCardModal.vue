@@ -38,7 +38,7 @@
         <button class="btn btn-ghost" :disabled="freezing" @click="copySnapshotLink">
           {{ freezing ? 'Creating…' : 'Current snapshot' }}
         </button>
-        <a class="btn btn-ghost" :href="previewUrl" target="_blank" rel="noopener">
+        <a class="btn btn-ghost" :href="previewUrl" target="_blank" rel="noopener" @click="track('share_card', { method: 'download', period, skill })">
           Download Image
         </a>
       </div>
@@ -54,6 +54,7 @@
 import { ref, computed, watch } from 'vue'
 import { cardsApi } from '@/api/cards'
 import { useToast } from '@/composables/useToast'
+import { track } from '@/utils/analytics'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 
 const props = defineProps({
@@ -91,12 +92,14 @@ async function copyToClipboard(url) {
 }
 
 function copyLiveLink() {
+  track('share_card', { method: 'live', period: period.value, skill: skill.value })
   copyingLive.value = true
   const path = `/player/${encodeURIComponent(props.username)}/card/weekly${cardsApi.cardQuery(skill.value, period.value)}`
   copyToClipboard(`${window.location.origin}${path}`).finally(() => (copyingLive.value = false))
 }
 
 async function copySnapshotLink() {
+  track('share_card', { method: 'snapshot', period: period.value, skill: skill.value })
   freezing.value = true
   try {
     const frozen = await cardsApi.freezeWeekly(props.username, skill.value, period.value)

@@ -310,6 +310,7 @@ import ProfileGoals from '@/components/profile/ProfileGoals.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { playersApi } from '@/api/players'
 import { highestSkill } from '@/utils/profile'
+import { track } from '@/utils/analytics'
 import XpSparkline from '@/components/profile/XpSparkline.vue'
 import {
   SKILL_NAMES,
@@ -394,6 +395,7 @@ const TABS = [
 const tab = ref(TABS.some((t) => t.key === route.query.tab) ? route.query.tab : 'overview')
 function setTab(key) {
   tab.value = key
+  track('profile_tab', { tab: key })
   const url = new URL(window.location.href)
   if (key === 'overview') url.searchParams.delete('tab')
   else url.searchParams.set('tab', key)

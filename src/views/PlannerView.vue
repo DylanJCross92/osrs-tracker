@@ -182,6 +182,7 @@ import NumberInput from '@/components/NumberInput.vue'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
+import { track } from '@/utils/analytics'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { methodsForSkill, getMethod } from '@/data/trainingMethods'
@@ -320,6 +321,7 @@ function addGoal() {
   const existing = goals.value.findIndex((g) => g.skill === form.skill)
   if (existing >= 0) goals.value.splice(existing, 1, goal)
   else goals.value.push(goal)
+  track('planner_goal_added', { skill: goal.skill, method: goal.methodId })
 }
 
 function removeGoal(i) {
@@ -377,10 +379,12 @@ async function copy(text, message) {
 }
 
 function copyLink() {
+  track('planner_share', { method: 'link', goals: goals.value.length })
   copy(planUrl(), 'Plan link copied')
 }
 
 function copySummary() {
+  track('planner_share', { method: 'summary', goals: goals.value.length })
   const lines = goals.value.map((g, i) => {
     const p = plans.value[i]
     return `${g.skill} ${levelAtXp(g.currentXp, true)} → ${levelAtXp(g.targetXp, true)}: ${formatHours(p.hours)} (${formatNum(p.remainingXp)} xp)`
