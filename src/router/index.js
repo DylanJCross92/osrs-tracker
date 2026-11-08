@@ -6,8 +6,11 @@ const routes = [
   {
     path: '/',
     name: 'players',
-    component: () => import('@/views/PlayersView.vue'),
+    component: () => import('@/views/HomeView.vue'),
   },
+  { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
+  { path: '/privacy', name: 'privacy', component: () => import('@/views/PrivacyView.vue') },
+  { path: '/contact', name: 'contact', component: () => import('@/views/ContactView.vue') },
   {
     path: '/discover',
     name: 'discover',
@@ -34,7 +37,9 @@ export function createAppRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes,
-    scrollBehavior() {
+    scrollBehavior(to) {
+      // Footer links like /#features scroll to their section (below the sticky nav).
+      if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
       return { top: 0 }
     },
   })

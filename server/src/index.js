@@ -10,6 +10,7 @@ import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
+import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
 import { injectCardMeta } from './utils/cardMeta.js'
@@ -27,6 +28,13 @@ app.use(express.json())
 
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
+app.get('/api/home', async (req, res, next) => {
+  try {
+    res.json(await getHome())
+  } catch (err) {
+    next(err)
+  }
+})
 app.get('/api/discover', async (req, res, next) => {
   try {
     res.json(await getDiscover())
@@ -244,5 +252,7 @@ app.listen(port, () => {
 })
 
 startScheduler()
+// Warm the cached homepage/Discover data so the first visitor doesn't pay for it.
+getHome().catch(() => {})
 // Reconstruct achievements/milestones for players tracked before they existed (idempotent).
 backfillAllMilestones().catch((err) => console.error('[milestones] backfill failed:', err))

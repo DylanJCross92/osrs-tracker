@@ -7,8 +7,8 @@
         </RouterLink>
         <nav class="app-nav" aria-label="Main">
           <RouterLink :to="{ name: 'players' }" class="app-nav-link" :class="{ 'is-active': route.name === 'players' || route.name === 'playerDetail' || route.name === 'weeklyShareCard' }">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg>
-            Player Gains
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
+            Home
           </RouterLink>
           <RouterLink :to="{ name: 'discover' }" class="app-nav-link" :class="{ 'is-active': route.name === 'discover' }">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
@@ -24,6 +24,18 @@
     <main class="app-main">
       <RouterView />
     </main>
+    <footer class="app-footer">
+      <div class="app-footer-inner">
+        <span class="app-footer-brand">TickGains <small>· OSRS XP tracking, no sign-up</small></span>
+        <nav aria-label="Footer">
+          <RouterLink :to="{ name: 'about' }">About</RouterLink>
+          <RouterLink :to="{ name: 'players', hash: '#features' }">Features</RouterLink>
+          <RouterLink :to="{ name: 'privacy' }">Privacy</RouterLink>
+          <RouterLink :to="{ name: 'contact' }">Contact</RouterLink>
+        </nav>
+      </div>
+      <p class="app-footer-note">TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd. Old School RuneScape is a trademark of Jagex Ltd.</p>
+    </footer>
     <ToastHost />
   </div>
 </template>

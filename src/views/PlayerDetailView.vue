@@ -1,7 +1,7 @@
 <template>
   <div class="card detail-header">
     <div class="profile-banner">
-      <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← All players</a>
+      <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← Home</a>
       <div class="detail-buttons banner-actions">
           <button
             v-if="player?.womImportStatus === 'none'"

@@ -3,6 +3,7 @@ import { pool } from '../db.js'
 import { fetchHiscores } from '../services/osrsHiscores.service.js'
 import { recordSnapshot } from '../services/players.service.js'
 import { invalidateDiscoverCache, getDiscover } from '../services/discover.service.js'
+import { invalidateHomeCache } from '../services/home.service.js'
 
 // Every 6 hours, on the hour: 00:00, 06:00, 12:00, 18:00. Override in .env
 // (e.g. for a short interval while testing) via SYNC_CRON.
@@ -34,6 +35,7 @@ export async function syncAllPlayers() {
   }
   // Fresh data landed — rebuild Discover's cached sections now, not on the next visitor's request.
   invalidateDiscoverCache()
+  invalidateHomeCache()
   getDiscover().catch((err) => console.error('[discover] warm failed:', err.message))
 }
 
