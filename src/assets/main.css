@@ -1407,3 +1407,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-event-text small { display: block; }
 .disc-rank-list .disc-board-main { gap: 3px; }
 .disc-featured { align-items: start; }
+
+/* Every two-column block on Discover uses two equal columns. */
+.disc-hero, .disc-grid, .disc-featured, .disc-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 860px) { .disc-hero, .disc-grid, .disc-featured, .disc-two { grid-template-columns: 1fr; } }
