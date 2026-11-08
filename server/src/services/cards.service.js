@@ -133,13 +133,13 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
       (
         SELECT overall_xp, skills, captured_at
         FROM snapshots
-        WHERE player_id = $1 AND ${period === 'day' ? "captured_at < (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at < now() - ($2::int * interval '1 day')"}
+        WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1) AND ${period === 'day' ? "captured_at < (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at < now() - ($2::int * interval '1 day')"}
         ORDER BY captured_at DESC LIMIT 1
       )
       UNION ALL
       (
         SELECT overall_xp, skills, captured_at
-        FROM snapshots WHERE player_id = $1
+        FROM snapshots WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1)
         ORDER BY captured_at ASC LIMIT 1
       )
       LIMIT 1

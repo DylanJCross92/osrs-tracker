@@ -99,14 +99,20 @@ const BASELINE_CUTOFF_SQL = {
   month: `now() - interval '30 days'`,
 }
 
+// Snapshots dated before the player was added are sparse Wise Old Man imports
+// (months apart) — never a valid "start of window" state, so baselines only
+// use snapshots TickGains tracked itself.
+const TRACKED_SQL = `captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = %ID%)`
+
 function baselineJoinSql(period) {
   const cutoff = BASELINE_CUTOFF_SQL[period]
+  const tracked = TRACKED_SQL.replace('%ID%', 'p.id')
   return `
     LEFT JOIN LATERAL (
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id AND captured_at < ${cutoff}
+        WHERE player_id = p.id AND ${tracked} AND captured_at < ${cutoff}
         ORDER BY captured_at DESC
         LIMIT 1
       )
@@ -114,7 +120,7 @@ function baselineJoinSql(period) {
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id
+        WHERE player_id = p.id AND ${tracked}
         ORDER BY captured_at ASC
         LIMIT 1
       )
