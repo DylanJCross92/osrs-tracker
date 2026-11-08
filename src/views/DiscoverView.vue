@@ -1,18 +1,31 @@
 <template>
   <div class="disc">
-    <!-- Hero: pitch + search + spotlight -->
+    <!-- Hero: pitch + stats + search + top gainer -->
     <section class="card disc-hero">
       <div class="disc-hero-main">
-        <h1>Discover</h1>
-        <p class="disc-sub">See what's happening across tracked OSRS players — right now.</p>
-        <div class="disc-stats" v-if="players.length">
-          <span><b>{{ players.length }}</b> players</span>
-          <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b> XP {{ totalToday ? 'today' : 'this week' }}</span>
-          <span><b>{{ levelUps }}</b> level-ups this week</span>
+        <span class="disc-eyebrow"><span class="disc-live-dot" /> Live · updated {{ ago(data.generatedAt) }}</span>
+        <h1>Discover <span class="home-accent">players</span></h1>
+        <p class="disc-sub">Level-ups, 99s, big XP days and rising stars across every tracked OSRS player — right now.</p>
+
+        <div v-if="players.length" class="disc-stat-tiles">
+          <div class="disc-stat-tile">
+            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
+            <span><b>{{ players.length }}</b><small>players tracked</small></span>
+          </div>
+          <div class="disc-stat-tile">
+            <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
+            <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? 'today' : 'this week' }}</small></span>
+          </div>
+          <div class="disc-stat-tile">
+            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
+            <span><b>{{ levelUps }}</b><small>level-ups this week</small></span>
+          </div>
         </div>
-        <div class="disc-search">
-          <input v-model="query" type="text" placeholder="Search a tracked player…" autocomplete="off" @keydown.enter="goFirst" />
-        </div>
+
+        <label class="disc-search">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
+          <input v-model="query" type="text" placeholder="Search a tracked player…" autocomplete="off" maxlength="12" @keydown.enter="goFirst" />
+        </label>
         <ul v-if="suggestions.length" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
             <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small></RouterLink>
@@ -23,16 +36,15 @@
 
       <RouterLink v-if="spotlight" :to="profileTo(spotlight.p.username)" class="disc-spot">
         <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'day' ? 'today' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
-        <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" /></span>
-        <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString() }} <small>XP</small></span>
-        <span v-if="spotlight.topSkill" class="disc-spot-skill">
-          <img :src="skillIconSrc(spotlight.topSkill)" :alt="spotlight.topSkill" width="22" height="22" />
-          mostly {{ spotlight.topSkill }} (+{{ formatXp(spotlight.topSkillXp) }})
+        <span class="disc-spot-top">
+          <span v-if="spotlight.topSkill" class="disc-spot-avatar"><img :src="skillIconSrc(spotlight.topSkill)" :alt="spotlight.topSkill" width="34" height="34" /></span>
+          <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" /></span>
         </span>
+        <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString() }} <small>XP</small></span>
+        <span v-if="spotlight.topSkill" class="disc-spot-chip">mostly {{ spotlight.topSkill }} <b>+{{ formatXp(spotlight.topSkillXp) }}</b></span>
         <span class="disc-spot-cta">View profile →</span>
       </RouterLink>
     </section>
-
 
     <p v-if="loading" class="card empty-hint">Loading the latest activity…</p>
     <p v-else-if="error" class="card empty-hint">{{ error }}</p>
