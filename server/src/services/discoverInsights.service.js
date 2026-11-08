@@ -150,12 +150,14 @@ const MIN_IMPROVEMENT = 0.25
 
 export function mostImproved(players, h) {
   const out = []
+  let withHistory = 0
   for (const p of players) {
     const a = h.x0.get(p.id)
     const b = h.x7.get(p.id)
     const c = h.x35.get(p.id)
     // Needs real history across all five weeks — no guessing from sparse data.
     if (a == null || b == null || c == null || [h.x14, h.x21, h.x28].some((m) => !m.has(p.id))) continue
+    withHistory++
     const current = a - b
     const prevAvg = (b - c) / 4
     if (current < MIN_CURRENT_WEEK || prevAvg < MIN_PREVIOUS_AVG) continue
@@ -163,7 +165,8 @@ export function mostImproved(players, h) {
     if (pct < MIN_IMPROVEMENT) continue
     out.push({ ...who(p), currentWeek: current, previousAvg: Math.round(prevAvg), pct: Math.round(pct * 100) })
   }
-  return out.sort((x, y) => y.pct - x.pct).slice(0, 10)
+  out.sort((x, y) => y.pct - x.pct)
+  return { list: out.slice(0, 10), withHistory, total: players.length }
 }
 
 // ---------------------------------------------------------------------------
@@ -249,7 +252,7 @@ export async function pickSpotlight(players, { activity, achievements, improved,
     xp: eligible.filter((p) => p.gains?.week?.xp > 0).sort((a, b) => b.gains.week.xp - a.gains.week.xp)[0],
     levels: eligible.filter((p) => levelsBy.get(p.id) > 0).sort((a, b) => levelsBy.get(b.id) - levelsBy.get(a.id))[0],
     achievement: [...achievements].filter((a) => eligible.some((p) => p.id === a.id)).sort((a, b) => achievementWeight(b) - achievementWeight(a) || new Date(b.detectedAt) - new Date(a.detectedAt))[0],
-    improved: improved.find((i) => eligible.some((p) => p.id === i.id)),
+    improved: improved.list.find((i) => eligible.some((p) => p.id === i.id)),
   }
   const available = CATEGORIES.filter((c) => candidates[c])
   if (!available.length) return null
@@ -309,13 +312,15 @@ export async function buildInsights({ players, activity, byId }) {
   const now = Date.now()
   const history = await loadHistory(now)
   const [achievements, trendingList] = await Promise.all([recentAchievements(byId), trending(players, history)])
-  const improved = mostImproved(players, history)
+  const improvedResult = mostImproved(players, history)
+  const improved = improvedResult
   const spotlight = await pickSpotlight(players, { activity, achievements, improved, now })
   return {
     nearMilestones: nearMilestones(players),
     achievements,
     trending: trendingList.slice(0, 5),
-    improved: improved.slice(0, 5),
+    improved: improvedResult.list.slice(0, 5),
+    improvedMeta: { withHistory: improvedResult.withHistory, total: improvedResult.total, minWeek: MIN_CURRENT_WEEK, minUsual: MIN_PREVIOUS_AVG, minPct: Math.round(MIN_IMPROVEMENT * 100) },
     spotlight,
     skills: SKILL_NAMES,
     computedAt: new Date(now).toISOString(),

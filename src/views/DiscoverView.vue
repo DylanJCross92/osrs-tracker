@@ -68,7 +68,6 @@
           </li>
         </ul>
         <p v-if="!events.length" class="empty-hint">Nothing in the last 7 days for this filter — check back soon.</p>
-        <button v-if="events.length > shownEvents" class="btn btn-ghost" @click="shownEvents += 12">Show more ({{ events.length - shownEvents }})</button>
       </section>
 
       <!-- Leaderboard -->
@@ -90,13 +89,13 @@
               <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
               <span class="disc-board-main">
                 <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
-                <span class="disc-bar"><span :style="{ width: `${(r.xp / board[0].xp) * 100}%` }" /></span>
+                <span class="disc-bar"><span :style="{ width: `${(r.xp / boardMax) * 100}%` }" /></span>
               </span>
-              <span class="disc-board-xp">+{{ formatXp(r.xp) }}</span>
+              <span class="disc-board-xp" :class="{ dim: !r.xp }">{{ r.xp ? `+${formatXp(r.xp)}` : '—' }}</span>
             </RouterLink>
           </li>
         </ol>
-        <p v-if="!board.length" class="empty-hint">Nobody has gained {{ skill === 'Overall' ? '' : skill + ' ' }}XP {{ periodWord }} yet.</p>
+        <p v-if="board.length && !board[0].xp" class="empty-hint">Nobody has gained {{ skill === 'Overall' ? '' : skill + ' ' }}XP {{ periodWord }} yet.</p>
       </section>
     </div>
 
@@ -123,7 +122,14 @@
             <span class="disc-board-xp">+{{ t.pct }}%</span>
           </RouterLink></li>
         </ol>
-        <p v-else class="empty-hint">Most improved compares this week with the previous four weeks, so it needs about five weeks of tracking history — and a meaningful gain — before anyone qualifies.</p>
+        <div v-if="improvedList.length < 3" class="disc-info">
+          <b>How "Most improved" works</b>
+          <p>
+            It compares the last 7 days with each player's previous four-week weekly average, so a player needs about five weeks of tracking history.
+            Right now <b>{{ insights.improvedMeta?.withHistory ?? 0 }} of {{ insights.improvedMeta?.total ?? players.length }}</b> tracked players have that much.
+          </p>
+          <p>To qualify: at least {{ formatXp(insights.improvedMeta?.minWeek || 250000) }} XP this week, a usual week of {{ formatXp(insights.improvedMeta?.minUsual || 25000) }}+, and {{ insights.improvedMeta?.minPct || 25 }}% or more above it.</p>
+        </div>
       </section>
     </div>
 
@@ -331,7 +337,7 @@ const feedFilters = [
 const feedFilter = ref('all')
 const shownEvents = ref(12)
 watch(feedFilter, () => (shownEvents.value = 12))
-const visibleEvents = computed(() => events.value.slice(0, shownEvents.value))
+const visibleEvents = computed(() => events.value)
 
 // --- leaderboard (period + skill) ---
 const periods = [
@@ -350,13 +356,14 @@ watch(players, (list) => {
   }
 })
 const periodWord = computed(() => ({ day: 'today', week: 'this week', month: 'this month' })[period.value])
+// Gainers first, then everyone else dimmed — the board always fills out instead of leaving a gap.
 const board = computed(() =>
   players.value
     .map((p) => ({ p, xp: skill.value === 'Overall' ? p.gains?.[period.value]?.xp || 0 : p.skillGains?.[period.value]?.[skill.value] || 0 }))
-    .filter((r) => r.xp > 0)
-    .sort((a, b) => b.xp - a.xp)
+    .sort((a, b) => b.xp - a.xp || (b.p.overallXp || 0) - (a.p.overallXp || 0))
     .slice(0, 10),
 )
+const boardMax = computed(() => Math.max(board.value[0]?.xp || 0, 1))
 watch([period, skill], () => track('discover_leaderboard', { period: period.value, skill: skill.value }))
 
 // --- hero ---

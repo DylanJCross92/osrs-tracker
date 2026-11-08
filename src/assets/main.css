@@ -1411,3 +1411,20 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 /* Every two-column block on Discover uses two equal columns. */
 .disc-hero, .disc-grid, .disc-featured, .disc-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 860px) { .disc-hero, .disc-grid, .disc-featured, .disc-two { grid-template-columns: 1fr; } }
+
+/* Paired blocks line up: equal heights, with the content filling its card (no dead space between rows). */
+.disc-grid, .disc-two, .disc-featured { align-items: stretch; }
+.disc-grid > .card, .disc-two > .card, .disc-featured > .card { display: flex; flex-direction: column; margin: 0; }
+.disc-feed .disc-events { flex: 1; min-height: 0; max-height: 470px; overflow-y: auto; padding-right: 4px; margin-bottom: 0; }
+.disc-feed .disc-events::-webkit-scrollbar { width: 6px; }
+.disc-feed .disc-events::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+.disc-board .disc-board-list { flex: 1; justify-content: space-between; }
+.disc-spotlight-card .disc-spotlight { flex: 1; justify-content: space-between; }
+.disc-two > .card > .disc-rank-list { flex: 1; }
+.disc-two > .card > .empty-hint { margin-top: auto; padding-top: 12px; }
+.disc-near .disc-near-list { flex: 1; justify-content: space-between; }
+@media (max-width: 860px) { .disc-feed .disc-events { max-height: 380px; } }
+.disc-info { margin-top: auto; padding: 14px 16px; border-radius: 12px; border: 1px dashed var(--border-strong); background: var(--bg); color: var(--muted); font-size: 0.85rem; line-height: 1.55; }
+.disc-info b { color: var(--text); }
+.disc-info p { margin: 6px 0 0; }
+.disc-two > .card > .disc-rank-list + .disc-info { margin-top: 14px; }
