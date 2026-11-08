@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
 import { listPlayers } from './players.service.js'
+import { achievementDefinitions } from './milestones.service.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
 
 function card(p, featured = null) {
@@ -20,9 +21,98 @@ function card(p, featured = null) {
 
 const gainText = (g) => (g ? { kind: 'gain', skill: g.topSkill, xp: g.xp, text: `+${Math.round(g.xp).toLocaleString()} XP` } : null)
 
-/** Public discovery sections, derived from the same data the player list already loads. */
+// Compact per-player record the client uses for interactive leaderboards.
+function compact(p) {
+  const l = p.latest
+  const highest = Object.entries(l?.skills || {}).sort((a, b) => b[1].level - a[1].level || b[1].xp - a[1].xp)[0]
+  return {
+    id: p.id,
+    username: p.username,
+    displayName: p.displayName,
+    badge: p.badge,
+    overallLevel: l?.overallLevel ?? null,
+    overallXp: l?.overallXp ?? null,
+    overallRank: l?.overallRank ?? null,
+    capturedAt: l?.capturedAt ?? null,
+    highest: highest ? { skill: highest[0], level: highest[1].level } : null,
+    gains: {
+      day: p.gains?.day ? { xp: p.gains.day.xp, topSkill: p.gains.day.topSkill, topSkillXp: p.gains.day.topSkillXp } : null,
+      week: p.gains?.week ? { xp: p.gains.week.xp, topSkill: p.gains.week.topSkill, topSkillXp: p.gains.week.topSkillXp } : null,
+      month: p.gains?.month ? { xp: p.gains.month.xp, topSkill: p.gains.month.topSkill, topSkillXp: p.gains.month.topSkillXp } : null,
+    },
+    skillGains: p.skillGains,
+    skillLevels: Object.fromEntries(Object.entries(l?.skills || {}).map(([k, v]) => [k, { level: v.level, xp: v.xp }])),
+  }
+}
+
+const ACTIVITY_WINDOW_DAYS = 7
+
+/**
+ * Newest-first feed of what just happened across all players: level-ups and
+ * 99s (from consecutive snapshots), big XP gains, and XP / total-level
+ * milestones. Only consecutive snapshots a few hours apart count, so a gap in
+ * old data is never reported as something that "just" happened.
+ */
+async function getActivity(byId) {
+  const snaps = await pool.query(
+    `SELECT player_id, captured_at, overall_xp, overall_level, skills
+     FROM snapshots
+     WHERE captured_at >= now() - ($1::int * interval '1 day')
+     ORDER BY player_id ASC, captured_at ASC`,
+    [ACTIVITY_WINDOW_DAYS],
+  )
+  const events = []
+  let prev = null
+  for (const row of snaps.rows) {
+    const p = byId.get(row.player_id)
+    if (!p) continue
+    if (prev && prev.player_id === row.player_id && row.captured_at - prev.captured_at <= 36 * 3_600_000) {
+      const at = row.captured_at
+      for (const [skill, s] of Object.entries(row.skills || {})) {
+        const before = prev.skills?.[skill]?.level
+        if (before != null && s.level > before) {
+          events.push({ id: `lvl:${row.player_id}:${skill}:${s.level}`, kind: s.level >= 99 ? 'max' : 'levelup', playerId: p.id, skill, from: before, to: s.level, at })
+        }
+      }
+      const gained = Number(row.overall_xp) - Number(prev.overall_xp)
+      if (gained >= 250_000) events.push({ id: `gain:${row.player_id}:${at.getTime()}`, kind: 'gain', playerId: p.id, xp: gained, at })
+    }
+    prev = row
+  }
+
+  const ms = await pool.query(
+    `SELECT player_id, milestone_type, skill, value, occurred_at
+     FROM player_milestones
+     WHERE occurred_at >= now() - ($1::int * interval '1 day') AND milestone_type IN ('skill_xp','total_level','total_xp')`,
+    [ACTIVITY_WINDOW_DAYS],
+  )
+  const titles = new Map(achievementDefinitions().map((d) => [`${d.type}|${d.skill}|${d.value}`, d.title]))
+  for (const r of ms.rows) {
+    if (!byId.has(r.player_id)) continue
+    events.push({
+      id: `ms:${r.player_id}:${r.milestone_type}:${r.skill}:${r.value}`,
+      kind: 'milestone',
+      playerId: r.player_id,
+      skill: r.skill || null,
+      title: titles.get(`${r.milestone_type}|${r.skill}|${Number(r.value)}`) || 'Milestone',
+      at: r.occurred_at,
+    })
+  }
+
+  return events
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, 60)
+    .map((e) => {
+      const p = byId.get(e.playerId)
+      return { ...e, username: p.username, displayName: p.displayName, badge: p.badge }
+    })
+}
+
+/** Public discovery data: interactive leaderboards + a live activity feed + curated lists. */
 export async function getDiscover() {
-  const players = (await listPlayers()).filter((p) => p.latest)
+  const all = await listPlayers({ skillGains: true })
+  const players = all.filter((p) => p.latest)
+  const byId = new Map(players.map((p) => [p.id, p]))
 
   const recentlyTracked = [...players].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8).map((p) => card(p))
 
@@ -48,14 +138,24 @@ export async function getDiscover() {
      WHERE milestone_type = 'skill_level' AND value = 99 AND occurred_at IS NOT NULL
      ORDER BY player_id, occurred_at DESC`,
   )
-  const byId = new Map(players.map((p) => [p.id, p]))
   const recent99 = recent99Rows.rows
     .filter((r) => byId.has(r.player_id))
     .sort((a, b) => new Date(b.occurred_at) - new Date(a.occurred_at))
     .slice(0, 8)
     .map((r) => card(byId.get(r.player_id), { kind: 'milestone', skill: r.skill, text: `99 ${r.skill}`, at: r.occurred_at }))
 
-  return { recentlyTracked, recent99, topWeek: gainsBy('week'), topMonth: gainsBy('month'), approachingMax }
+  const activity = await getActivity(byId)
+
+  return {
+    generatedAt: new Date().toISOString(),
+    players: players.map(compact),
+    activity,
+    recentlyTracked,
+    recent99,
+    topWeek: gainsBy('week'),
+    topMonth: gainsBy('month'),
+    approachingMax,
+  }
 }
 
 /** Case-insensitive partial RSN match among tracked players. */

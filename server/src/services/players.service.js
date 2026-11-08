@@ -33,9 +33,26 @@ function computeGain(row, period) {
   return { xp, topSkill, topSkillXp }
 }
 
-function mapPlayerRow(row) {
+// xp gained per skill since a period's baseline (only skills that gained) —
+// used by Discover's per-skill leaderboards.
+function computeSkillGains(row, period) {
+  const capturedAt = row.captured_at
+  const baselineCapturedAt = row[`baseline_captured_at_${period}`]
+  if (!capturedAt || !baselineCapturedAt || capturedAt.getTime() === baselineCapturedAt.getTime()) return {}
+  const baseline = row[`baseline_skills_${period}`] || {}
+  const out = {}
+  for (const [name, skill] of Object.entries(row.skills || {})) {
+    const gained = skill.xp - (baseline[name]?.xp ?? skill.xp)
+    if (gained > 0) out[name] = gained
+  }
+  return out
+}
+
+function mapPlayerRow(row, { skillGains = false } = {}) {
   const gains = {}
   for (const period of GAIN_PERIODS) gains[period] = computeGain(row, period)
+  const perSkill = {}
+  if (skillGains) for (const period of GAIN_PERIODS) perSkill[period] = computeSkillGains(row, period)
 
   return {
     id: row.id,
@@ -53,6 +70,7 @@ function mapPlayerRow(row) {
         }
       : null,
     gains,
+    ...(skillGains ? { skillGains: perSkill } : {}),
     womImportStatus: row.wom_import_status,
     womImportedCount: row.wom_imported_count,
   }
@@ -102,7 +120,7 @@ function baselineJoinSql(period) {
   `
 }
 
-export async function listPlayers() {
+export async function listPlayers({ skillGains = false } = {}) {
   const baselineColumns = GAIN_PERIODS.map(
     (period) =>
       `b_${period}.captured_at AS baseline_captured_at_${period}, ` +
@@ -129,7 +147,7 @@ export async function listPlayers() {
   `,
     [APP_TIMEZONE],
   )
-  const players = result.rows.map(mapPlayerRow)
+  const players = result.rows.map((row) => mapPlayerRow(row, { skillGains }))
   // Most xp gained today first; players with no gain (or no data to
   // compare yet) sink to the bottom, alphabetically among themselves.
   players.sort((a, b) => {
