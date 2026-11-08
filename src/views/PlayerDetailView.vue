@@ -24,7 +24,7 @@
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
         <p v-if="latest" class="last-synced">
-          <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : '— no XP gained yet' }}</span>
+          <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
           <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
           <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
             {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
@@ -50,7 +50,7 @@
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />
-    <p>Still importing historical data from Wise Old Man — the chart and table below will fill in as it finds more.</p>
+    <p>Still importing historical data from Wise Old Man, the chart and table below will fill in as it finds more.</p>
   </div>
 
   <div v-if="loading" class="card"><p class="empty-hint">Loading hiscores history…</p></div>
@@ -141,10 +141,10 @@
           <div class="level-progress-fill" :style="{ width: levelProgressPercent + '%' }"></div>
         </div>
         <p class="level-progress-caption">
-          {{ levelProgressPercent.toFixed(1) }}% — {{ xpToNextLevel.toLocaleString() }} xp to go
+          {{ levelProgressPercent.toFixed(1) }}%, {{ xpToNextLevel.toLocaleString() }} xp to go
         </p>
       </template>
-      <p v-else class="level-progress-caption">Max level reached — nice work.</p>
+      <p v-else class="level-progress-caption">Max level reached, nice work.</p>
 
       <template v-if="trainingAdvice">
         <h3 class="training-advice-heading">Training tips</h3>
@@ -174,9 +174,9 @@
           <span class="advice-text">
             <template v-if="trainingAdvice.money">{{ trainingAdvice.money }}</template>
             <template v-else-if="trainingAdvice.moneyUnlocksAt">
-              No reliable money-making method yet — that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
+              No reliable money-making method yet, that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
             </template>
-            <template v-else>No reliable money-making method for this skill — it's a pure xp (and gp) investment.</template>
+            <template v-else>No reliable money-making method for this skill, it's a pure xp (and gp) investment.</template>
           </span>
         </div>
       </template>
@@ -339,7 +339,7 @@ const store = usePlayersStore()
 const { showToast } = useToast()
 
 // The URL carries the RSN rather than the numeric id, so it reads naturally
-// (/player/Dylanz297) — we still resolve it to the player's id client-side
+// (/player/Dylanz297), we still resolve it to the player's id client-side
 // since the API itself is id-based.
 const usernameParam = computed(() => route.params.username ?? '')
 const player = computed(
@@ -352,7 +352,7 @@ watch(
   ([p, username]) => {
     const name = p?.displayName || username
     setPageMeta({
-      title: `${name} — OSRS Player Profile`,
+      title: `${name} | OSRS Player Profile`,
       description: `Explore ${name}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`,
       path: `/player/${encodeURIComponent(username)}`,
     })
@@ -365,7 +365,7 @@ const isImportingWomHistory = computed(
 )
 
 // The store polls for Wise Old Man import status in the background (see
-// stores/players.js) — once it flips away from pending/running for this
+// stores/players.js), once it flips away from pending/running for this
 // specific player, re-fetch their snapshots so the chart/table pick up
 // whatever history just landed, without the user having to reload.
 watch(
@@ -415,8 +415,8 @@ async function loadProfile() {
 watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true })
 
 // XP gained per calendar day over the last 7 days (oldest first). Uses the same
-// baseline as the weekly total elsewhere — the first snapshot inside the 7-day
-// window — and credits each later snapshot's gain to its own day, so a gap in
+// baseline as the weekly total elsewhere, the first snapshot inside the 7-day
+// window, and credits each later snapshot's gain to its own day, so a gap in
 // older data can never be dumped onto one day.
 const weekDays = computed(() => {
   const list = snapshots.value
@@ -464,7 +464,7 @@ async function load() {
   if (!store.loaded) await store.loadPlayers()
 
   if (!playerId.value) {
-    // Unknown RSN in the URL — nothing to fetch.
+    // Unknown RSN in the URL, nothing to fetch.
     snapshots.value = []
     loading.value = false
     return
@@ -481,14 +481,14 @@ async function load() {
 
   // Check for updates whenever this page loads, rather than only on the
   // hourly scheduler or a manual refresh. Runs after the saved data is
-  // already showing, so a slow hiscores fetch never blocks the page —
+  // already showing, so a slow hiscores fetch never blocks the page,
   // snapshots.value is swapped in once the refresh completes.
   checkingForUpdates.value = true
   try {
     await store.refreshPlayer(playerId.value)
     snapshots.value = await store.fetchSnapshots(playerId.value)
   } catch {
-    // Non-fatal — the page already has the last saved data.
+    // Non-fatal, the page already has the last saved data.
   } finally {
     checkingForUpdates.value = false
   }
@@ -504,7 +504,7 @@ const trainingAdvice = computed(() =>
   getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value, selectedSkillXp.value),
 )
 
-// How far into the current level the player is, for the progress bar — xp
+// How far into the current level the player is, for the progress bar, xp
 // is not evenly distributed between levels, so this is relative to the
 // actual xp window for this specific level, not a flat percentage.
 const levelProgressPercent = computed(() => {
@@ -519,12 +519,12 @@ const xpToNextLevel = computed(() => {
   return xpForLevel(selectedSkillLevel.value + 1) - selectedSkillXp.value
 })
 // The badge shows the level you're progressing toward, not the current one
-// — already at 99 (or total-level "Overall"), there's no next level to show.
+//, already at 99 (or total-level "Overall"), there's no next level to show.
 const targetSkillLevel = computed(() =>
   selectedSkillLevel.value < 99 ? selectedSkillLevel.value + 1 : selectedSkillLevel.value,
 )
 
-// Dropdown above the hiscores table — which window its per-skill deltas
+// Dropdown above the hiscores table, which window its per-skill deltas
 // show. "day" means the calendar day (resets at local midnight), "week"/
 // "month" are rolling 7/30-day windows. Shared across pages for the session.
 const { period } = useGainPeriod()
@@ -532,7 +532,7 @@ const periodPhrase = computed(
   () => ({ day: 'today', week: 'in the last 7 days', month: 'in the last 30 days' })[period.value],
 )
 
-// Per-skill xp/level/rank gained over the selected period — computed once
+// Per-skill xp/level/rank gained over the selected period, computed once
 // per snapshot load/period change rather than re-walking history on every
 // row's render.
 const periodXpGains = computed(() => buildGainMap(xpGain))
@@ -565,8 +565,8 @@ const chartPoints = computed(() => {
 })
 
 // Per-refresh xp/level/rank gained (the breakdown behind the daily totals
-// shown inline above) — each row's delta from the snapshot before it,
-// newest first. Refreshes that gained no xp for this skill are left out —
+// shown inline above), each row's delta from the snapshot before it,
+// newest first. Refreshes that gained no xp for this skill are left out,
 // they're not meaningful "updates" to show in the breakdown.
 const snapshotRows = computed(() => {
   const list = snapshots.value
@@ -590,7 +590,7 @@ const snapshotRows = computed(() => {
 })
 
 // Same rows, bucketed by calendar day (newest day first, same as
-// snapshotRows) with per-day totals summed from each row's own gain —
+// snapshotRows) with per-day totals summed from each row's own gain,
 // rows stay newest-first within a day too, so a group's first row is
 // always its end-of-day snapshot.
 const groupedSnapshotRows = computed(() => {
@@ -632,7 +632,7 @@ function toggleDay(key) {
 }
 
 // Day groups bucketed by calendar month (newest month first, same ordering
-// as groupedSnapshotRows) — only actually used as a collapsing level when
+// as groupedSnapshotRows), only actually used as a collapsing level when
 // there's data outside the current month, so a freshly-added player's
 // table stays a flat day list instead of a single redundant month wrapper.
 const monthGroups = computed(() => {

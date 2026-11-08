@@ -3,7 +3,7 @@ import { SKILL_NAMES } from './osrsHiscores.service.js'
 
 // Achievements are defined here in code (version-controlled, no registration
 // or manual awarding) and evaluated against recorded snapshots. What is
-// persisted is the *milestone* — the first moment a threshold was seen — so
+// persisted is the *milestone*, the first moment a threshold was seen, so
 // pages never recompute history and dates are never invented.
 
 export const SKILL_LEVEL_TARGETS = [50, 70, 90, 99]
@@ -98,7 +98,7 @@ export async function syncMilestones(playerId) {
   return written
 }
 
-/** Fire-and-forget wrapper for hooks — a milestone failure must never break a snapshot. */
+/** Fire-and-forget wrapper for hooks, a milestone failure must never break a snapshot. */
 export function syncMilestonesSafe(playerId) {
   syncMilestones(playerId).catch((err) => console.error(`[milestones] sync failed for player ${playerId}:`, err.message))
 }

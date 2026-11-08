@@ -8,13 +8,13 @@ function loadStoredPeriod() {
     const stored = localStorage.getItem(STORAGE_KEY)
     return VALID_PERIODS.includes(stored) ? stored : 'week'
   } catch {
-    // Storage unavailable (private browsing, blocked, etc.) — just don't persist.
+    // Storage unavailable (private browsing, blocked, etc.), just don't persist.
     return 'week'
   }
 }
 
 // Module-level (not created inside useGainPeriod) so every caller shares the
-// same ref — picking a period on one page keeps it selected on the others,
+// same ref, picking a period on one page keeps it selected on the others,
 // and it's saved to localStorage so it survives a reload too.
 const period = ref(loadStoredPeriod())
 

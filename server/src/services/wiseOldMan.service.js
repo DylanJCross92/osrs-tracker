@@ -1,8 +1,8 @@
 import { SKILL_NAMES } from './osrsHiscores.service.js'
 
 // Thin client for Wise Old Man's public API, used only to backfill history
-// for a brand-new player — our own hourly sync is the source of truth
-// going forward. No API key: https://docs.wiseoldman.net/api — 20 req/min,
+// for a brand-new player, our own hourly sync is the source of truth
+// going forward. No API key: https://docs.wiseoldman.net/api, 20 req/min,
 // so deep history (years of densely-tracked snapshots) takes real wall time
 // to pull; callers should surface progress rather than assume this is fast.
 const WOM_BASE_URL = 'https://api.wiseoldman.net/v2'
@@ -14,7 +14,7 @@ function womSkillKey(name) {
 }
 
 const PAGE_SIZE = 200
-const MAX_PAGES = 75 // up to 15,000 snapshots — enough for years of dense history
+const MAX_PAGES = 75 // up to 15,000 snapshots, enough for years of dense history
 const REQUEST_DELAY_MS = 3200 // keeps us under WOM's 20-req/min unauthenticated limit
 const RATE_LIMIT_BACKOFF_MS = 65_000 // a minute-window reset, plus a little slack
 
@@ -73,13 +73,13 @@ async function fetchPage(username, offset) {
  * Fetches a player's full historical snapshots from Wise Old Man, oldest
  * first, mapped to our own snapshot shape ({ capturedAt, overall, skills }).
  * WOM only has data going back to whenever the community started tracking
- * that player, which varies hugely — this is a best-effort backfill, not a
+ * that player, which varies hugely, this is a best-effort backfill, not a
  * guarantee of full account history. Never throws: returns [] if WOM
  * doesn't know the player, is unreachable, or returns anything unexpected.
  *
  * This runs in the background (see players.service.js) and can take well
  * over a minute for a densely-tracked account, since WOM's rate limit caps
- * us at ~20 req/min — hence the console logging, our only visibility into
+ * us at ~20 req/min, hence the console logging, our only visibility into
  * a long-running import once it's detached from the request that started it.
  */
 export async function fetchWomHistory(username) {

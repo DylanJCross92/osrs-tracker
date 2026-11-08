@@ -21,7 +21,7 @@
 
     <p class="share-card-footer-cta">
       Like what you see?
-      <a href="/">Track your own OSRS progress — it's free →</a>
+      <a href="/">Track your own OSRS progress, it's free →</a>
     </p>
   </template>
 </template>
@@ -87,18 +87,18 @@ async function copyLink() {
     copied.value = true
     setTimeout(() => (copied.value = false), 2000)
   } catch {
-    showToast('Could not copy the link — copy it from the address bar instead.')
+    showToast('Could not copy the link, copy it from the address bar instead.')
   }
 }
 
 async function nativeShare() {
   try {
     await navigator.share({
-      title: `${card.value.displayName}'s ${PERIOD_ADJ[cardPeriod.value]} XP Gains — TickGains`,
+      title: `${card.value.displayName}'s ${PERIOD_ADJ[cardPeriod.value]} XP Gains | TickGains`,
       url: window.location.href,
     })
   } catch {
-    // User cancelled the share sheet — not an error.
+    // User cancelled the share sheet, not an error.
   }
 }
 </script>

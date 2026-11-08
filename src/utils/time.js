@@ -1,5 +1,5 @@
 /** Adds { year: 'numeric' } to a set of toLocaleDateString/toLocaleString
- * options, but only when `date` isn't in the current year — so date labels
+ * options, but only when `date` isn't in the current year, so date labels
  * stay short for the common case and only grow when they'd otherwise be
  * ambiguous (e.g. imported history from a prior year). */
 export function withYearIfNotCurrent(date, options) {

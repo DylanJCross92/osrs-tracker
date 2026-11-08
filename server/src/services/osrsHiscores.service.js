@@ -1,4 +1,4 @@
-// Thin client for the official OSRS hiscores lite feed. No API key — it's a
+// Thin client for the official OSRS hiscores lite feed. No API key, it's a
 // public endpoint Jagex also uses for the in-game hiscores widget.
 const HISCORES_URL = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.json'
 

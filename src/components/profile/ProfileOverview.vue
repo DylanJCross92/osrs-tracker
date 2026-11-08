@@ -3,10 +3,10 @@
     <div class="profile-stat-grid">
       <div class="card profile-stat"><span>Overall</span><b>{{ latest.overallLevel.toLocaleString() }}</b></div>
       <div class="card profile-stat"><span>Total XP</span><b>{{ latest.overallXp.toLocaleString() }}</b></div>
-      <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString() : '—' }}</b></div>
+      <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString() : '-' }}</b></div>
       <div class="card profile-stat"><span>Level 99 skills</span><b>{{ n99 }}</b></div>
-      <div class="card profile-stat"><span>XP · last 7 days</span><b :class="{ 'stat-gain': weekGain }">{{ weekGain ? `+${weekGain.toLocaleString()}` : '—' }}</b></div>
-      <div class="card profile-stat"><span>XP · last 30 days</span><b :class="{ 'stat-gain': monthGain }">{{ monthGain ? `+${monthGain.toLocaleString()}` : '—' }}</b></div>
+      <div class="card profile-stat"><span>XP · last 7 days</span><b :class="{ 'stat-gain': weekGain }">{{ weekGain ? `+${weekGain.toLocaleString()}` : '-' }}</b></div>
+      <div class="card profile-stat"><span>XP · last 30 days</span><b :class="{ 'stat-gain': monthGain }">{{ monthGain ? `+${monthGain.toLocaleString()}` : '-' }}</b></div>
     </div>
 
     <div class="card">

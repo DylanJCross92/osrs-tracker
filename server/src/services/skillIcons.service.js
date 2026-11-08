@@ -6,7 +6,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const iconsDir = path.join(__dirname, '../assets/icons')
 
 // PNG copies of public/icons/skills/*.gif, pre-converted (see that folder's
-// README-less history) — satori embeds <img> as an SVG <image>, and PNG is
+// README-less history), satori embeds <img> as an SVG <image>, and PNG is
 // the format resvg reliably rasterizes, unlike GIF.
 const cache = new Map()
 

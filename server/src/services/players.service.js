@@ -9,7 +9,7 @@ const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
 const GAIN_PERIODS = ['day', 'week', 'month']
 
 // Total xp gained since the given period's baseline snapshot, plus whichever
-// single skill gained the most of it — null if there's nothing to compare
+// single skill gained the most of it, null if there's nothing to compare
 // against yet (a brand-new player with only one snapshot).
 function computeGain(row, period) {
   const capturedAt = row.captured_at
@@ -33,7 +33,7 @@ function computeGain(row, period) {
   return { xp, topSkill, topSkillXp }
 }
 
-// xp gained per skill since a period's baseline (only skills that gained) —
+// xp gained per skill since a period's baseline (only skills that gained),
 // used by Discover's per-skill leaderboards.
 function computeSkillGains(row, period) {
   const capturedAt = row.captured_at
@@ -90,7 +90,7 @@ function mapSnapshotRow(row) {
 // A period's baseline is the player's state at the window's start: the latest
 // snapshot taken before it (snapshots are only saved when XP changes, so the
 // newest one before the cutoff is still the current state at that moment), or
-// the very first snapshot ever if the player wasn't tracked yet —
+// the very first snapshot ever if the player wasn't tracked yet,
 // "day" is pinned to local midnight so it means the calendar day, not a
 // rolling 24h window; "week"/"month" are plain rolling windows.
 const BASELINE_CUTOFF_SQL = {
@@ -100,7 +100,7 @@ const BASELINE_CUTOFF_SQL = {
 }
 
 // Snapshots dated before the player was added are sparse Wise Old Man imports
-// (months apart) — never a valid "start of window" state, so baselines only
+// (months apart), never a valid "start of window" state, so baselines only
 // use snapshots TickGains tracked itself.
 const TRACKED_SQL = `captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = %ID%)`
 
@@ -197,7 +197,7 @@ export async function getPlayerByUsername(username) {
 // True if a fetched hiscores result has nothing new over a prior snapshot
 // row (same xp/level/rank, overall and per-skill).
 // True if any xp or level changed. Rank-only movement (other players
-// overtaking you) doesn't count — it isn't progress, and saving a whole new
+// overtaking you) doesn't count, it isn't progress, and saving a whole new
 // snapshot for it just bloats the table.
 function progressUnchanged(prevRow, stats) {
   if (Number(prevRow.overall_xp) !== stats.overall.xp) return false
@@ -223,7 +223,7 @@ function ranksUnchanged(prevRow, stats) {
  * the current rank stays accurate without a new row per check.
  */
 export async function recordSnapshot(playerId, stats) {
-  // The hiscores fetch already succeeded — note the check even if nothing changed.
+  // The hiscores fetch already succeeded, note the check even if nothing changed.
   await pool.query('UPDATE players SET last_checked_at = now() WHERE id = $1', [playerId])
 
   const prev = await pool.query(
@@ -248,7 +248,7 @@ export async function recordSnapshot(playerId, stats) {
     [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
   )
   // Seeing xp go up (or the very first snapshot) is what keeps a player in the
-  // hourly sync tier — see jobs/sync.js.
+  // hourly sync tier, see jobs/sync.js.
   if (prev.rowCount === 0 || stats.overall.xp > Number(prev.rows[0].overall_xp)) {
     await pool.query('UPDATE players SET last_xp_gain_at = now() WHERE id = $1', [playerId])
   }
@@ -302,7 +302,7 @@ export async function addPlayer(rawUsername) {
 
   // Legacy backfill from Wise Old Man can take well over a minute (WOM's
   // rate limit caps us at ~20 req/min, and dense history needs many pages),
-  // so it runs in the background rather than blocking the response — the
+  // so it runs in the background rather than blocking the response, the
   // player is already saved above. The UI polls wom_import_status to show
   // progress. Deliberately not awaited.
   runWomImportInBackground(playerId, username, liveCapturedAt)
@@ -310,7 +310,7 @@ export async function addPlayer(rawUsername) {
   return { playerId }
 }
 
-// Manual trigger for the "Check Wise Old Man" button — only for a player
+// Manual trigger for the "Check Wise Old Man" button, only for a player
 // who's never been checked (status 'none'); the button disappears once
 // this succeeds, so there's nothing to re-trigger from the UI, but the
 // atomic status flip below guards against a stray double-click anyway.
@@ -362,12 +362,12 @@ async function runWomImportInBackground(playerId, username, liveCapturedAt) {
 // Backfills snapshots strictly older than the player's first live snapshot
 // from Wise Old Man's history, so a brand-new player shows legacy data
 // instead of starting from a blank slate. WOM's depth varies a lot per
-// player — this is a best-effort import, not guaranteed full history.
+// player, this is a best-effort import, not guaranteed full history.
 async function importWomHistory(playerId, username, beforeDate) {
   const history = await fetchWomHistory(username)
 
   // Excludes timestamps we already have for this player, not just
-  // duplicates within this WOM fetch — matters for the manual "Check Wise
+  // duplicates within this WOM fetch, matters for the manual "Check Wise
   // Old Man" button, which can run against a player who (for whatever
   // reason) already has some overlapping history saved.
   const existing = await pool.query('SELECT captured_at FROM snapshots WHERE player_id = $1', [playerId])

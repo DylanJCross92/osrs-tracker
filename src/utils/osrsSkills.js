@@ -27,7 +27,7 @@ export const SKILL_NAMES = [
 ]
 
 // Same 24 skills, reordered to match the in-game skills panel's 3-column
-// layout (read left-to-right, top-to-bottom) — "Overall" isn't a tile there
+// layout (read left-to-right, top-to-bottom), "Overall" isn't a tile there
 // either, it's the total shown separately, so it's left out here too.
 // Sailing is tacked on at the end, same as it appears in-game.
 export const SKILL_GRID_ORDER = [
@@ -134,10 +134,10 @@ function startOfToday() {
 }
 
 /**
- * Baseline snapshot for a trailing window — the oldest snapshot still
+ * Baseline snapshot for a trailing window, the oldest snapshot still
  * inside it, or the very first snapshot if the player hasn't been tracked
  * that long yet. "day" is pinned to local midnight (the calendar day), not
- * a rolling 24h window — "week"/"month" are plain rolling windows.
+ * a rolling 24h window, "week"/"month" are plain rolling windows.
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
@@ -163,7 +163,7 @@ export function levelGain(snapshots, skill, period) {
 }
 
 /**
- * Leaderboard positions climbed over a trailing window — a lower rank
+ * Leaderboard positions climbed over a trailing window, a lower rank
  * number is better, so this is baseline rank minus latest rank. Null if
  * either end is unranked, since rank movement isn't meaningful without
  * both points.

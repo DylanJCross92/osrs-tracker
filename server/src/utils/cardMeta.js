@@ -1,9 +1,9 @@
 // Injects per-share-card meta tags into the built index.html template, so a
 // plain HTTP GET (which is all link-unfurling bots like Discord/Twitter/
-// iMessage ever do — they never run the SPA's JS) sees the right title,
+// iMessage ever do, they never run the SPA's JS) sees the right title,
 // description, and og:image for that specific card. The Vue app still calls
 // setPageMeta() client-side too, for in-app navigation and a consistent tab
-// title once it hydrates — this is only about what a bot sees on first byte.
+// title once it hydrates, this is only about what a bot sees on first byte.
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -23,7 +23,7 @@ function setLinkHref(html, rel, newHref) {
 
 /**
  * template: the raw index.html string. { title, description, imageUrl,
- * pageUrl }: all plain text/URLs — escaped here, callers don't need to.
+ * pageUrl }: all plain text/URLs, escaped here, callers don't need to.
  */
 export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd }) {
   let html = template

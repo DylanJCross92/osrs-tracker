@@ -100,9 +100,9 @@ const get = (type, skill, value) => lookup.value.get(`${type}|${skill}|${value}`
 const pct = (a) => Math.floor(a.progress * 100)
 function tip(a) {
   if (a.completed) {
-    return a.dateKnown ? `${a.title} — detected ${new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : `${a.title} — complete`
+    return a.dateKnown ? `${a.title}: detected ${new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : `${a.title}: complete`
   }
-  return `${a.title} — ${a.current.toLocaleString()} / ${a.value.toLocaleString()} (${pct(a)}%)`
+  return `${a.title}: ${a.current.toLocaleString()} / ${a.value.toLocaleString()} (${pct(a)}%)`
 }
 
 const totalRows = computed(() => {

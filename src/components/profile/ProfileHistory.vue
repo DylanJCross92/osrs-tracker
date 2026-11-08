@@ -23,7 +23,7 @@
           <b>{{ d.label }}</b>
           <span>{{ d.summary }}</span>
         </header>
-        <p v-if="d.gap" class="history-gap-note">Exact days unknown — there is no saved data between these dates, so these happened somewhere within the range.</p>
+        <p v-if="d.gap" class="history-gap-note">Exact days unknown, there is no saved data between these dates, so these happened somewhere within the range.</p>
         <ul>
           <li v-for="r in d.rows" :key="r.id">
             <img v-if="r.skill" :src="skillIconSrc(r.skill)" :alt="r.skill" width="22" height="22" />
@@ -96,7 +96,7 @@ const sameYear = (a, b) => new Date(a).getFullYear() === new Date(b).getFullYear
 const dayKey = (d) => new Date(d).toLocaleDateString('en-CA') // YYYY-MM-DD in the viewer's zone
 
 // When two consecutive snapshots are further apart than this, whatever changed
-// between them can't be pinned to a day — it happened *somewhere in the gap*
+// between them can't be pinned to a day, it happened *somewhere in the gap*
 // (typical for sparse imported history before daily tracking began).
 const GAP_MS = 48 * 3_600_000
 const isGap = (after, at) => after != null && new Date(at) - new Date(after) > GAP_MS

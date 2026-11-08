@@ -149,7 +149,7 @@ async function buildDiscover() {
   const players = all.filter((p) => p.latest)
   const byId = new Map(players.map((p) => [p.id, p]))
 
-  const recentlyTracked = [...players].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8).map((p) => card(p))
+  const recentlyTracked = [...players].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8).map((p) => ({ ...card(p), trackedAt: p.createdAt }))
 
   const gainsBy = (period) =>
     players

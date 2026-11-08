@@ -10,7 +10,7 @@ import { invalidateHomeCache } from '../services/home.service.js'
 const SYNC_CRON = process.env.SYNC_CRON || '0 * * * *'
 
 // Pause between players so a big tracked list never bursts at Jagex's
-// hiscores endpoint — a base delay plus a little random jitter so requests
+// hiscores endpoint, a base delay plus a little random jitter so requests
 // aren't perfectly periodic.
 const BASE_DELAY_MS = 1000
 const JITTER_MS = 400
@@ -69,7 +69,7 @@ export async function selectDuePlayers() {
  */
 export async function syncAllPlayers() {
   if (running) {
-    console.log('[sync] previous run still in progress — skipping')
+    console.log('[sync] previous run still in progress, skipping')
     return { skipped: true }
   }
   running = true
@@ -79,7 +79,7 @@ export async function syncAllPlayers() {
   try {
     const { rows } = await lockClient.query('SELECT pg_try_advisory_lock($1) AS ok', [SYNC_LOCK_KEY])
     if (!rows[0].ok) {
-      console.log('[sync] another instance is already syncing — skipping')
+      console.log('[sync] another instance is already syncing, skipping')
       return { skipped: true }
     }
 
@@ -103,7 +103,7 @@ export async function syncAllPlayers() {
           console.error(`[sync] "${player.username}": ${err.message}`)
           if (outages >= MAX_CONSECUTIVE_OUTAGES) {
             summary.aborted = true
-            console.error(`[sync] hiscores unavailable ${outages}x in a row — ending this run early`)
+            console.error(`[sync] hiscores unavailable ${outages}x in a row, ending this run early`)
             break
           }
         } else if (err instanceof PlayerNotFoundError) {
@@ -121,12 +121,12 @@ export async function syncAllPlayers() {
     }
 
     console.log(
-      `[sync] done in ${Math.round((Date.now() - startedAt) / 1000)}s — checked ${summary.checked}/${summary.total}: ` +
+      `[sync] done in ${Math.round((Date.now() - startedAt) / 1000)}s, checked ${summary.checked}/${summary.total}: ` +
         `${summary.saved} new snapshots, ${summary.unchanged} unchanged, ${summary.notFound} not found, ${summary.failed} failed` +
         (summary.aborted ? ' (run ended early: hiscores unavailable)' : ''),
     )
 
-    // Fresh data landed — rebuild Discover's cached sections now, not on the next visitor's request.
+    // Fresh data landed, rebuild Discover's cached sections now, not on the next visitor's request.
     invalidateDiscoverCache()
     invalidateHomeCache()
     getDiscover().catch((err) => console.error('[discover] warm failed:', err.message))

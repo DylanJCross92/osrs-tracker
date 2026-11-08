@@ -99,7 +99,7 @@ await writeOg('og-default.png', {
 })
 await writeOg('og-planner.png', {
   headline: 'OSRS Account Planner',
-  sub: 'Plan your skill goals — see the XP, hours, GP and days it takes, using your own stats.',
+  sub: 'Plan your skill goals, see the XP, hours, GP and days it takes, using your own stats.',
   chips: ['XP remaining', 'Training hours', 'GP estimate', 'Days to goal'],
 })
 console.log('Brand assets written to', publicDir)

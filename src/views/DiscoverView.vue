@@ -5,7 +5,7 @@
       <div class="disc-hero-main">
         <span class="disc-eyebrow"><span class="disc-live-dot" /> Live · updated {{ ago(data.generatedAt) }}</span>
         <h1>Discover <span class="home-accent">players</span></h1>
-        <p class="disc-sub">Level-ups, 99s, big XP days and rising stars across every tracked OSRS player — right now.</p>
+        <p class="disc-sub">Level-ups, 99s, big XP days and rising stars across every tracked OSRS player, right now.</p>
 
         <div v-if="players.length" class="disc-stat-tiles">
           <div class="disc-stat-tile">
@@ -22,16 +22,18 @@
           </div>
         </div>
 
+        <div class="suggest-wrap">
         <label class="disc-search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
           <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="goFirst" />
         </label>
         <ul v-if="suggestions.length" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small></RouterLink>
+            <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString() ?? '-' }}</small></RouterLink>
           </li>
         </ul>
         <p v-else-if="query.trim().length >= 2 && searched" class="disc-nomatch">No tracked player matches. <RouterLink to="/">Track them →</RouterLink></p>
+        </div>
       </div>
 
       <RouterLink v-if="spotlight" :to="profileTo(spotlight.p.username)" class="disc-spot">
@@ -52,7 +54,7 @@
     <template v-else>
     <div class="disc-grid">
       <!-- Live activity -->
-      <section class="card disc-feed">
+      <section id="live-activity" class="card disc-feed">
         <div class="disc-head">
           <h2><span class="disc-live-dot" /> Live activity</h2>
           <span class="disc-updated">updated {{ ago(data.generatedAt) }}</span>
@@ -79,11 +81,11 @@
             </RouterLink>
           </li>
         </ul>
-        <p v-if="!events.length" class="empty-hint">Nothing in the last 7 days for this filter — check back soon.</p>
+        <p v-if="!events.length" class="empty-hint">Nothing in the last 7 days for this filter, check back soon.</p>
       </section>
 
       <!-- Leaderboard -->
-      <section class="card disc-board">
+      <section id="leaderboard" class="card disc-board">
         <div class="disc-head"><h2>Leaderboard</h2></div>
         <div class="range-tabs disc-chips">
           <button v-for="p in periods" :key="p.key" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
@@ -103,7 +105,7 @@
                 <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
                 <span class="disc-bar"><span :style="{ width: `${(r.xp / boardMax) * 100}%` }" /></span>
               </span>
-              <span class="disc-board-xp" :class="{ dim: !r.xp }">{{ r.xp ? `+${formatXp(r.xp)}` : '—' }}</span>
+              <span class="disc-board-xp" :class="{ dim: !r.xp }">{{ r.xp ? `+${formatXp(r.xp)}` : '-' }}</span>
             </RouterLink>
           </li>
         </ol>
@@ -122,7 +124,7 @@
             <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>{{ t.reason }}</small></span>
           </RouterLink></li>
         </ol>
-        <p v-else class="empty-hint">Nothing is trending yet — players show up here with fresh gains or milestones.</p>
+        <p v-else class="empty-hint">Nothing is trending yet, players show up here with fresh gains or milestones.</p>
       </section>
 
       <section class="card">
@@ -150,21 +152,23 @@
       <section class="card disc-spotlight-card">
         <div class="disc-head">
           <h2>Player spotlight</h2>
-          <span v-if="insights.spotlight" class="disc-updated">week of {{ shortDate(insights.spotlight.periodStart) }}</span>
+          <span class="disc-updated">today and this week</span>
         </div>
-        <RouterLink v-if="insights.spotlight" :to="profileTo(insights.spotlight.username)" class="disc-spotlight">
-          <span class="disc-spotlight-reason">{{ insights.spotlight.reason }}</span>
-          <span class="disc-spotlight-name">{{ insights.spotlight.displayName }}<PlayerBadge :label="insights.spotlight.badge" /></span>
-          <span class="disc-spotlight-headline">
-            <img v-if="insights.spotlight.skill" :src="skillIconSrc(insights.spotlight.skill)" :alt="insights.spotlight.skill" width="28" height="28" />
-            {{ insights.spotlight.headline }}
-          </span>
-          <span class="disc-spotlight-stats">
-            <span v-for="st in insights.spotlight.stats" :key="st.label"><small>{{ st.label }}</small><b>{{ st.value }}</b></span>
-          </span>
-          <span class="disc-spot-cta">View profile →</span>
-        </RouterLink>
-        <p v-else class="empty-hint">The spotlight appears once someone has a week of activity to feature.</p>
+        <div class="disc-spotlights">
+          <RouterLink v-for="sp in spotlights" :key="sp.period" :to="profileTo(sp.p.username)" class="disc-spotlight">
+            <span class="disc-spotlight-reason">{{ sp.label }}</span>
+            <span class="disc-spotlight-name">{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" /></span>
+            <span class="disc-spotlight-headline">
+              <img v-if="sp.topSkill" :src="skillIconSrc(sp.topSkill)" :alt="sp.topSkill" width="28" height="28" />
+              +{{ sp.xp.toLocaleString() }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
+            </span>
+            <span class="disc-spotlight-stats">
+              <span v-if="sp.topSkill"><small>Top skill</small><b>{{ sp.topSkill }} (+{{ formatXp(sp.topSkillXp) }})</b></span>
+              <span><small>Overall</small><b>{{ sp.p.overallLevel?.toLocaleString() ?? '-' }}</b></span>
+            </span>
+          </RouterLink>
+          <p v-if="!spotlights.length" class="empty-hint">Spotlights appear once someone has gained XP.</p>
+        </div>
       </section>
 
       <section class="card disc-near">
@@ -184,7 +188,7 @@
             </RouterLink>
           </li>
         </ul>
-        <p v-else class="empty-hint">Nobody is within reach of a milestone yet — as players level up, the closest ones show here.</p>
+        <p v-else class="empty-hint">Nobody is within reach of a milestone yet, as players level up, the closest ones show here.</p>
       </section>
     </div>
 
@@ -216,7 +220,7 @@
               <span class="disc-bar gold"><span :style="{ width: `${r.progress}%` }" /></span>
               <small class="disc-explore-meta">Level {{ r.level }} · {{ formatXp(r.xp) }} XP · next: {{ r.nextLabel }} ({{ r.progress }}%)</small>
             </span>
-            <span class="disc-board-xp" :class="{ dim: !r.gained }">{{ r.gained ? `+${formatXp(r.gained)}` : '—' }}</span>
+            <span class="disc-board-xp" :class="{ dim: !r.gained }">{{ r.gained ? `+${formatXp(r.gained)}` : '-' }}</span>
           </RouterLink>
         </li>
       </ol>
@@ -244,7 +248,7 @@
           </RouterLink>
         </li>
       </ul>
-      <p v-else class="empty-hint">No major achievements detected yet — 99s, 100M+ XP and big total-level milestones land here.</p>
+      <p v-else class="empty-hint">No major achievements detected yet, 99s, 100M+ XP and big total-level milestones land here.</p>
       <button v-if="achievements.length > achShown" class="btn btn-ghost" @click="achShown += 5">View more ({{ achievements.length - achShown }})</button>
       <p class="profile-note">"Detected" is when TickGains first saw the achievement in a saved snapshot. Where data had a gap, the date is shown as a range.</p>
     </section>
@@ -252,8 +256,10 @@
     <!-- Curated rails -->
     <section v-for="rail in rails" v-show="data[rail.key]?.length" :key="rail.key" class="disc-rail-section">
       <h2>{{ rail.title }}</h2>
-      <div class="disc-rail">
-        <RouterLink v-for="p in data[rail.key]" :key="p.id" :to="profileTo(p.username)" class="card discover-card">
+      <div v-auto-scroll class="disc-rail">
+        <div class="disc-rail-track">
+          <div class="disc-rail-list">
+        <RouterLink v-for="p in data[rail.key]" :key="`a${p.id}`" :to="profileTo(p.username)" class="card discover-card">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
           <span class="discover-card-stats">
             <span>Overall {{ p.overallLevel?.toLocaleString() }}</span>
@@ -264,7 +270,26 @@
             <img v-if="p.featured.skill" :src="skillIconSrc(p.featured.skill)" :alt="p.featured.skill" width="16" height="16" />
             {{ p.featured.text }}
           </span>
+          <span v-if="p.trackedAt" class="discover-card-tracked">{{ trackedLabel(p.trackedAt) }}</span>
         </RouterLink>
+          </div>
+          <!-- Second copy makes the slow scroll loop seamlessly. -->
+          <div class="disc-rail-list" aria-hidden="true">
+        <RouterLink v-for="p in data[rail.key]" :key="`b${p.id}`" :to="profileTo(p.username)" class="card discover-card" tabindex="-1">
+          <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
+          <span class="discover-card-stats">
+            <span>Overall {{ p.overallLevel?.toLocaleString() }}</span>
+            <span>{{ formatXp(p.overallXp) }} XP</span>
+            <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString() }}</span>
+          </span>
+          <span v-if="p.featured" :class="['discover-card-featured', p.featured.kind === 'gain' ? '' : 'neutral']">
+            <img v-if="p.featured.skill" :src="skillIconSrc(p.featured.skill)" :alt="p.featured.skill" width="16" height="16" />
+            {{ p.featured.text }}
+          </span>
+          <span v-if="p.trackedAt" class="discover-card-tracked">{{ trackedLabel(p.trackedAt) }}</span>
+        </RouterLink>
+          </div>
+        </div>
       </div>
     </section>
     </template>
@@ -368,7 +393,7 @@ watch(players, (list) => {
   }
 })
 const periodWord = computed(() => ({ day: 'today', week: 'this week', month: 'this month' })[period.value])
-// Gainers first, then everyone else dimmed — the board always fills out instead of leaving a gap.
+// Gainers first, then everyone else dimmed, the board always fills out instead of leaving a gap.
 const board = computed(() =>
   players.value
     .map((p) => ({ p, xp: skill.value === 'Overall' ? p.gains?.[period.value]?.xp || 0 : p.skillGains?.[period.value]?.[skill.value] || 0 }))
@@ -382,6 +407,18 @@ watch([period, skill], () => track('discover_leaderboard', { period: period.valu
 const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.day?.xp || 0, 0), 0))
 const totalWeek = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.week?.xp || 0, 0), 0))
 const levelUps = computed(() => (data.value.activity || []).filter((e) => e.kind === 'levelup' || e.kind === 'max').reduce((n, e) => n + (e.to - e.from), 0))
+// Two spotlights: highest XP gain today and highest XP gain this week.
+const spotlights = computed(() =>
+  [
+    { period: 'day', label: 'Highest daily XP gain' },
+    { period: 'week', label: 'Highest weekly XP gain' },
+  ]
+    .map(({ period, label }) => {
+      const top = [...players.value].filter((p) => p.gains?.[period]?.xp > 0).sort((a, b) => b.gains[period].xp - a.gains[period].xp)[0]
+      return top ? { period, label, p: top, xp: top.gains[period].xp, topSkill: top.gains[period].topSkill, topSkillXp: top.gains[period].topSkillXp } : null
+    })
+    .filter(Boolean),
+)
 const spotlight = computed(() => {
   for (const key of ['day', 'week', 'month']) {
     const top = [...players.value].filter((p) => p.gains?.[key]?.xp > 0).sort((a, b) => b.gains[key].xp - a.gains[key].xp)[0]
@@ -493,5 +530,62 @@ const exRows = computed(() => {
 const skillAchievements = computed(() => achievements.value.filter((a) => a.skill === exSkill.value).slice(0, 3))
 watch([exSkill, exPeriod, exSort], () => track('discover_explore', { skill: exSkill.value, period: exPeriod.value, sort: exSort.value }))
 
+// "Tracked 6d ago" for the first week, then "Tracked since January 5th".
+const trackedLabel = (iso) => {
+  const rel = formatRelative(iso)
+  if (rel === 'Just now') return 'Started tracking just now'
+  return /^\d+[mhd]$/.test(rel) ? `Started tracking ${rel} ago` : `Tracked since ${rel}`
+}
 const rails = [{ key: 'recentlyTracked', title: 'Recently tracked' }]
+
+// Slow auto-scroll that still scrolls by hand: a rAF loop nudges scrollLeft,
+// pauses while the pointer is over the rail or for a few seconds after any
+// manual scroll/touch, and wraps at the halfway point (the content is doubled).
+const vAutoScroll = {
+  mounted(el) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const SPEED = 18 // px per second
+    let pos = el.scrollLeft
+    let last = 0
+    let pausedUntil = 0
+    let hovering = false
+    let raf = 0
+    const pause = (ms = 3000) => (pausedUntil = performance.now() + ms)
+    const half = () => el.scrollWidth / 2
+    const tick = (t) => {
+      const dt = last ? Math.min(t - last, 250) : 0
+      last = t
+      // The user moved it (wheel, drag, trackpad, touch): adopt their position.
+      if (Math.abs(el.scrollLeft - pos) > 1.5) {
+        pos = el.scrollLeft
+        pause()
+      }
+      if (!hovering && t > pausedUntil && !document.hidden) {
+        pos += (SPEED * dt) / 1000
+        if (pos >= half()) pos -= half()
+        el.scrollLeft = pos
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    // Scrolling back past the start jumps to the matching spot in the second copy.
+    el.addEventListener('scroll', () => {
+      if (el.scrollLeft <= 0 && half() > 0 && pausedUntil > performance.now()) {
+        el.scrollLeft = half() - 1
+        pos = el.scrollLeft
+      }
+    })
+    el.addEventListener('mouseenter', () => (hovering = true))
+    el.addEventListener('mouseleave', () => {
+      hovering = false
+      pause(1500)
+    })
+    el.addEventListener('touchstart', () => pause(5000), { passive: true })
+    el.addEventListener('wheel', () => pause(), { passive: true })
+    el._stopAutoScroll = () => cancelAnimationFrame(raf)
+    raf = requestAnimationFrame(tick)
+  },
+  unmounted(el) {
+    el._stopAutoScroll?.()
+  },
+}
 </script>

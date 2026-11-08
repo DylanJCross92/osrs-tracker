@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 
 // Module-level (not created inside useToast) so every caller shares the
-// same reactive object — this is intentionally a singleton, not a
+// same reactive object, this is intentionally a singleton, not a
 // per-component instance.
 const toastState = reactive({ message: '', visible: false })
 let hideTimeout = null

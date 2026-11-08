@@ -8,7 +8,7 @@ const DAY_MS = 86_400_000
 
 // Card timeframes. Baselines match the stats table / Player Gains exactly
 // (see BASELINE_CUTOFF_SQL in players.service.js): the oldest snapshot inside
-// the window — for 'day' that's the first snapshot since local midnight —
+// the window, for 'day' that's the first snapshot since local midnight,
 // so a card never disagrees with the numbers shown on the profile.
 const PERIODS = { day: { days: 1 }, week: { days: 7 }, month: { days: 30 } }
 export function normalizePeriod(period) {
@@ -23,7 +23,7 @@ export function isValidCardSkill(skill) {
 /**
  * Everything on a card beyond the headline number: a per-day xp series for
  * the chart, how this period compares with the one before it, and whether it
- * beat every earlier week. Comparisons only run for a full 7-day card —
+ * beat every earlier week. Comparisons only run for a full 7-day card,
  * a 3-day partial period has nothing fair to compare against.
  */
 async function computeExtras(playerId, skill, startIso, endIso, xpGained, period = 'week') {
@@ -52,7 +52,7 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained, period
     return found
   }
   // Like xpAt, but a window that starts just after the first snapshot still
-  // counts — the history simply begins a little late.
+  // counts, the history simply begins a little late.
   const baseAt = (t) => xpAt(t) ?? (series[0].t <= t + 1.5 * DAY_MS ? series[0].xp : null)
 
   const start = new Date(startIso).getTime()
@@ -112,7 +112,7 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained, period
  * null if the player has no data at all yet.
  *
  * 'Overall' mode returns { xpGained, topSkills: [{skill, xp}, ...] } (up to
- * the top 3 skills gained that week) — a single-skill mode returns
+ * the top 3 skills gained that week), a single-skill mode returns
  * { xpGained, level, levelGained, rankGained } for that skill specifically.
  */
 export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'week') {
@@ -194,7 +194,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
 
 /**
  * Freezes the player's current weekly numbers (for the given skill) into a
- * permanent, shareable record — the slug's data never changes after this,
+ * permanent, shareable record, the slug's data never changes after this,
  * even as the player's real "last 7 days" moves on. Returns null if there's
  * nothing to share yet.
  */

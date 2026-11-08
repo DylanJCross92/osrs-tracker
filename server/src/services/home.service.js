@@ -108,6 +108,8 @@ async function build() {
     generatedAt: new Date().toISOString(),
     community: { totalPlayers: players.length, xpToday, xpWeek, topSkills, topGainers, gainersPeriod: period, recentMilestones },
     example,
+    // Newest events for the homepage live ticker (same feed as Discover).
+    activity: (discover.activity || []).slice(0, 30),
   }
 }
 

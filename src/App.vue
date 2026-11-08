@@ -25,13 +25,14 @@
       <RouterView />
     </main>
     <footer class="app-footer">
-      <div class="app-footer-inner">
-        <span class="app-footer-brand">TickGains <small>· OSRS XP tracking, no sign-up</small></span>
-        <nav aria-label="Footer">
-          <RouterLink :to="{ name: 'about' }">About</RouterLink>
-          <RouterLink :to="{ name: 'players', hash: '#features' }">Features</RouterLink>
-          <RouterLink :to="{ name: 'privacy' }">Privacy</RouterLink>
-          <RouterLink :to="{ name: 'contact' }">Contact</RouterLink>
+      <div class="app-footer-cols">
+        <div class="app-footer-about">
+          <span class="app-footer-brand">TickGains</span>
+          <p>Free OSRS XP tracking, hiscores history and account planning. No sign-up, just your RSN.</p>
+        </div>
+        <nav v-for="col in footerCols" :key="col.title" :aria-label="col.title" class="app-footer-col">
+          <h4>{{ col.title }}</h4>
+          <component :is="link.to ? 'RouterLink' : 'a'" v-for="link in col.links" :key="link.label" :to="link.to" :href="link.href" :target="link.href ? '_blank' : undefined" :rel="link.href ? 'noopener' : undefined">{{ link.label }}</component>
         </nav>
       </div>
       <p class="app-footer-note">TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd. Old School RuneScape is a trademark of Jagex Ltd.</p>
@@ -45,4 +46,37 @@ import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 
 const route = useRoute()
+
+const footerCols = [
+  {
+    title: 'Track',
+    links: [
+      { label: 'Start tracking', to: { name: 'players' } },
+      { label: 'Features', to: { name: 'players', hash: '#features' } },
+      { label: 'How it works', to: { name: 'players', hash: '#how-it-works' } },
+    ],
+  },
+  {
+    title: 'Discover',
+    links: [
+      { label: 'Live activity', to: { name: 'discover', hash: '#live-activity' } },
+      { label: 'Leaderboards', to: { name: 'discover', hash: '#leaderboard' } },
+    ],
+  },
+  {
+    title: 'Plan',
+    links: [
+      { label: 'Account Planner', to: { name: 'planner' } },
+      { label: 'Add a skill goal', to: { name: 'planner', hash: '#add-goal' } },
+    ],
+  },
+  {
+    title: 'Site',
+    links: [
+      { label: 'About', to: { name: 'about' } },
+      { label: 'Contact', to: { name: 'contact' } },
+      { label: 'Privacy', to: { name: 'privacy' } },
+    ],
+  },
+]
 </script>

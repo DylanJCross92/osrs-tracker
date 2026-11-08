@@ -5,7 +5,7 @@ import { localDay, addDays, diffDays } from '../utils/dates.js'
 
 // Everything here is derived from data TickGains already stores (latest
 // snapshots, snapshot history, the milestones table) and is cached by
-// discover.service.js — nothing is recomputed per page view.
+// discover.service.js, nothing is recomputed per page view.
 
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
@@ -122,7 +122,7 @@ async function xpAt(timeMs, toleranceMs) {
   )
   const out = new Map()
   for (const r of rows) {
-    // A snapshot far older than the boundary can't speak for it — leave it out.
+    // A snapshot far older than the boundary can't speak for it, leave it out.
     if (timeMs - new Date(r.captured_at).getTime() <= toleranceMs) out.set(r.player_id, Number(r.overall_xp))
   }
   return out
@@ -155,7 +155,7 @@ export function mostImproved(players, h) {
     const a = h.x0.get(p.id)
     const b = h.x7.get(p.id)
     const c = h.x35.get(p.id)
-    // Needs real history across all five weeks — no guessing from sparse data.
+    // Needs real history across all five weeks, no guessing from sparse data.
     if (a == null || b == null || c == null || [h.x14, h.x21, h.x28].some((m) => !m.has(p.id))) continue
     withHistory++
     const current = a - b
@@ -177,7 +177,7 @@ export async function trending(players, h) {
     `SELECT m.player_id, COUNT(*)::int AS n
      FROM player_milestones m
      WHERE m.occurred_at >= now() - interval '7 days'
-       -- only milestones seen within ~2 days of the snapshot before them — one reached across
+       -- only milestones seen within ~2 days of the snapshot before them, one reached across
        -- a long data gap (e.g. before daily tracking) isn't "this week" activity
        AND (SELECT m.occurred_at - MAX(s.captured_at) FROM snapshots s WHERE s.player_id = m.player_id AND s.captured_at < m.occurred_at) <= interval '48 hours'
      GROUP BY m.player_id`,
@@ -216,7 +216,7 @@ export async function trending(players, h) {
 }
 
 // ---------------------------------------------------------------------------
-// 3.2 Player spotlight — one per week, stored so it never changes mid-week
+// 3.2 Player spotlight, one per week, stored so it never changes mid-week
 // ---------------------------------------------------------------------------
 function weekKey(now) {
   // Monday of the current week in the app's timezone.
@@ -271,7 +271,7 @@ export async function pickSpotlight(players, { activity, achievements, improved,
     const g = player.gains.week
     headline = `+${g.xp.toLocaleString()} XP this week`
     reason = 'Highest weekly XP gain'
-    stats = [{ label: 'Top skill', value: g.topSkill ? `${g.topSkill} (+${fmtXp(g.topSkillXp)})` : '—' }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString() }]
+    stats = [{ label: 'Top skill', value: g.topSkill ? `${g.topSkill} (+${fmtXp(g.topSkillXp)})` : '-' }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString() }]
   } else if (category === 'levels') {
     player = candidates.levels
     const n = levelsBy.get(player.id)

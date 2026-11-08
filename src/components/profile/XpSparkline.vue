@@ -2,7 +2,7 @@
   <div class="spark">
     <div class="spark-head">
       <span>XP gained · last 7 days</span>
-      <b :class="{ 'stat-gain': total > 0 }">{{ total > 0 ? `+${total.toLocaleString()}` : '—' }}</b>
+      <b :class="{ 'stat-gain': total > 0 }">{{ total > 0 ? `+${total.toLocaleString()}` : '-' }}</b>
     </div>
     <svg :viewBox="`0 0 ${W} ${H}`" class="spark-svg" role="img" :aria-label="`XP gained per day, last 7 days: ${total.toLocaleString()} total`">
       <defs>
@@ -35,7 +35,7 @@ const padB = 22
 
 const total = computed(() => props.days.reduce((s, d) => s + d.xp, 0))
 // Points sit at the centre of 7 equal columns (like a bar chart), so the gap
-// from the edge to the first/last point is half the gap between points —
+// from the edge to the first/last point is half the gap between points,
 // even spacing all the way across, and the day labels centre under each point.
 const points = computed(() => {
   const max = Math.max(...props.days.map((d) => d.xp), 1)

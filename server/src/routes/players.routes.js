@@ -13,7 +13,7 @@ import { getProfileAchievements } from '../services/milestones.service.js'
 import { searchPlayers } from '../services/discover.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
 
-const importLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many player lookups — try again in a minute.' })
+const importLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many player lookups, try again in a minute.' })
 const searchLimiter = rateLimit({ windowMs: 10_000, max: 20 })
 
 export const playersRouter = Router()
@@ -32,7 +32,7 @@ playersRouter.get('/', async (req, res, next) => {
   }
 })
 
-// Returns as soon as the player's live snapshot is saved — any Wise Old Man
+// Returns as soon as the player's live snapshot is saved, any Wise Old Man
 // history backfill keeps running in the background (see players.service.js)
 // and is reflected in each player's womImportStatus from here on, so the
 // client can show "still importing" without this request blocking on it.
@@ -74,7 +74,7 @@ playersRouter.get('/:id/snapshots', async (req, res, next) => {
 })
 
 // One-time manual trigger for a player who was never auto-checked (e.g.
-// added before this feature existed) — runs in the background same as the
+// added before this feature existed), runs in the background same as the
 // automatic check, see players.service.js.
 playersRouter.post('/:id/check-wom-history', importLimiter, async (req, res, next) => {
   try {
@@ -96,7 +96,7 @@ playersRouter.post('/:id/refresh', rateLimit({ windowMs: 60_000, max: 20 }), asy
   }
 })
 
-// Checks every tracked player for updates — used to sync on page load
+// Checks every tracked player for updates, used to sync on page load
 // instead of waiting for the scheduler. Reuses the same staggered,
 // error-tolerant, tiered sweep as the hourly job (and skips if one is already running).
 playersRouter.post('/sync-all', async (req, res, next) => {

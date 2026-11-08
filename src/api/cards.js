@@ -1,6 +1,6 @@
 import { api, BASE_URL } from './client'
 
-// ?skill= / ?period= — Overall and weekly are the defaults, so they stay out of the URL.
+// ?skill= / ?period=, Overall and weekly are the defaults, so they stay out of the URL.
 function cardQuery(skill, period) {
   const params = new URLSearchParams()
   if (skill && skill !== 'Overall') params.set('skill', skill)

@@ -14,7 +14,7 @@ async function resolvePlayer(req, res) {
   return player
 }
 
-// Live weekly card data — always the trailing 7 days as of the request, for
+// Live weekly card data, always the trailing 7 days as of the request, for
 // whichever skill is selected (?skill=, default 'Overall').
 cardsRouter.get('/players/:username/card/weekly/data', async (req, res, next) => {
   try {
@@ -36,7 +36,7 @@ cardsRouter.get('/players/:username/card/weekly/image.png', async (req, res, nex
     if (!data) return res.status(404).end()
     const png = await renderWeeklyCardPng(data)
     res.set('Content-Type', 'image/png')
-    // Never cache — this is the "live" card, so a reload after refreshing
+    // Never cache, this is the "live" card, so a reload after refreshing
     // hiscores (or just the data moving on) should always show current
     // numbers, not whatever the browser already has for this same URL.
     res.set('Cache-Control', 'no-store')
@@ -76,7 +76,7 @@ cardsRouter.get('/cards/:slug/image.png', async (req, res, next) => {
     if (!card) return res.status(404).end()
     const png = await renderWeeklyCardPng(card)
     res.set('Content-Type', 'image/png')
-    res.set('Cache-Control', 'public, max-age=31536000, immutable') // frozen — never changes
+    res.set('Cache-Control', 'public, max-age=31536000, immutable') // frozen, never changes
     res.send(png)
   } catch (err) {
     next(err)

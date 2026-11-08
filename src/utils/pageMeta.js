@@ -13,12 +13,12 @@ function setMetaTag(selectorAttr, selectorValue, content) {
 
 /**
  * Updates the document title, meta description, OG tags, and canonical
- * link for the current route — this is a client-rendered SPA with no SSR,
+ * link for the current route, this is a client-rendered SPA with no SSR,
  * so these start from index.html's defaults and get overwritten per-page
  * once a view knows what it's showing (e.g. the player's display name).
  */
 export function setPageMeta({ title, description, path = '/' }) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} — OSRS XP & Hiscores Tracker`
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | OSRS XP & Hiscores Tracker`
   document.title = fullTitle
 
   setMetaTag('name', 'description', description)

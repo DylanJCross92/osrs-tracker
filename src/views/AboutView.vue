@@ -3,7 +3,7 @@
     <h1>About TickGains</h1>
     <p>
       TickGains is a free tracker for Old School RuneScape. Enter any OSRS username and it saves a snapshot of that
-      player's public hiscores every hour while they're active (and daily once they've gone quiet), so you can see XP gains, level-ups and milestones over time — no account
+      player's public hiscores every hour while they're active (and daily once they've gone quiet), so you can see XP gains, level-ups and milestones over time, no account
       needed.
     </p>
     <h2>What it does</h2>
@@ -26,7 +26,7 @@
 import { setPageMeta } from '@/utils/pageMeta'
 setPageMeta({
   title: 'About',
-  description: 'TickGains is a free OSRS XP tracker: automatic hiscores snapshots, historical imports, an account planner and player discovery — no sign-up.',
+  description: 'TickGains is a free OSRS XP tracker: automatic hiscores snapshots, historical imports, an account planner and player discovery, no sign-up.',
   path: '/about',
 })
 </script>

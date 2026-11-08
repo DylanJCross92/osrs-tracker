@@ -62,7 +62,7 @@ function plannerQuery(username, skill, currentXp, targetXp) {
 }
 
 /**
- * Auto-generated suggestions (not commitments — there are no owned
+ * Auto-generated suggestions (not commitments, there are no owned
  * profiles yet): next level of the closest-to-leveling skill, the closest
  * 99, the next total-level milestone, and the next big skill-xp milestone.
  */

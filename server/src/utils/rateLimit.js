@@ -1,7 +1,7 @@
 // Tiny in-memory per-IP sliding-window limiter (single instance, so no
 // shared store needed). Protects the endpoints that trigger Hiscores or
 // Wise Old Man lookups and the search box.
-export function rateLimit({ windowMs, max, message = 'Too many requests — please slow down.' }) {
+export function rateLimit({ windowMs, max, message = 'Too many requests, please slow down.' }) {
   const hits = new Map()
   setInterval(() => {
     const cutoff = Date.now() - windowMs

@@ -4,7 +4,7 @@
       <h2>Suggested goals</h2>
       <RouterLink class="btn btn-primary" :to="{ name: 'planner', query: { u: player.username } }">Plan This Player's Goals</RouterLink>
     </div>
-    <p class="profile-note">Auto-generated from {{ player.displayName }}'s current stats — suggestions, not commitments. Custom goals in the planner never change this profile.</p>
+    <p class="profile-note">Auto-generated from {{ player.displayName }}'s current stats, suggestions, not commitments. Custom goals in the planner never change this profile.</p>
     <div class="goal-list">
       <div v-for="g in goals" :key="g.title" class="goal-card">
         <div class="goal-head">
@@ -23,7 +23,7 @@
         <RouterLink class="btn-text" :to="{ name: 'planner', query: g.plannerQuery }">Open in planner →</RouterLink>
       </div>
     </div>
-    <p v-if="!goals.length" class="empty-hint">This player has nothing left to suggest — maxed!</p>
+    <p v-if="!goals.length" class="empty-hint">This player has nothing left to suggest, maxed!</p>
   </div>
 </template>
 

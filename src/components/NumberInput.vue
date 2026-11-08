@@ -15,7 +15,7 @@
 import { ref, watch } from 'vue'
 
 // Whole-number field that groups thousands as you type (1,234,567), strips
-// anything that isn't a digit, and clamps to [min, max] — max immediately,
+// anything that isn't a digit, and clamps to [min, max], max immediately,
 // min on blur so you can still clear the box and retype.
 const props = defineProps({
   modelValue: { type: Number, default: null },

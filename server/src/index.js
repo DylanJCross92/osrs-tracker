@@ -16,7 +16,7 @@ import { formatXp } from './services/cardImage.service.js'
 import { injectCardMeta } from './utils/cardMeta.js'
 
 const app = express()
-// Behind Render's proxy — needed so req.ip is the visitor (rate limiting).
+// Behind Render's proxy, needed so req.ip is the visitor (rate limiting).
 app.set('trust proxy', 1)
 
 app.use(
@@ -68,7 +68,7 @@ app.get('/sitemap.xml', async (req, res) => {
 })
 
 // In production this one service also serves the built frontend (`npm run
-// build` at the repo root outputs to ../dist from here) — no separate static
+// build` at the repo root outputs to ../dist from here), no separate static
 // host or CORS setup needed. In local dev there's no dist/ yet, since the
 // frontend runs through Vite's own dev server instead; both middlewares
 // below just no-op until it exists.
@@ -80,12 +80,12 @@ if (distExists) {
   const indexHtmlTemplate = readFileSync(path.join(distPath, 'index.html'), 'utf-8')
 
   // Share-card pages need their og:image/title/description baked into the
-  // actual HTML bytes, served before any JS runs — link-unfurling bots
+  // actual HTML bytes, served before any JS runs, link-unfurling bots
   // (Discord, Twitter, iMessage, Slack) only ever do a plain GET and read
   // the markup as-is, so setPageMeta()'s client-side DOM updates are
   // invisible to them. These two routes are the only place that happens;
   // everything else still resolves through the plain SPA fallback below.
-  // A plain profile link needs the same treatment — Discord/Twitter/iMessage
+  // A plain profile link needs the same treatment, Discord/Twitter/iMessage
   // unfurl whatever's shared, not just the dedicated card pages, so this is
   // what makes pasting someone's tickgains.com/player/X link show their
   // name, level, and recent gains instead of the generic site description.
@@ -112,7 +112,7 @@ if (distExists) {
 
       let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
       if (latest) {
-        description = `${player.displayName} — Overall ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
+        description = `${player.displayName}, Overall ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
         if (weekly?.xpGained > 0) {
           description += ` +${formatXp(weekly.xpGained)} XP this week.`
         }
@@ -120,7 +120,7 @@ if (distExists) {
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${player.displayName} — OSRS Player Profile | TickGains`,
+          title: `${player.displayName} | OSRS Player Profile | TickGains`,
           description,
           imageUrl,
           pageUrl,
@@ -152,7 +152,7 @@ if (distExists) {
   // marks those noindex).
   app.get('/planner', (req, res) => {
     // A shared plan link names the player and skills in its description;
-    // the bare page keeps the generic one. Query parsing is defensive —
+    // the bare page keeps the generic one. Query parsing is defensive,
     // it's user-controlled text that ends up in HTML meta (escaped by injectCardMeta).
     const who = typeof req.query.u === 'string' ? req.query.u.slice(0, 12).trim() : ''
     const skills = (typeof req.query.g === 'string' ? req.query.g.split(',') : [])
@@ -164,7 +164,7 @@ if (distExists) {
       'Plan your Old School RuneScape skill goals. Calculate XP remaining, training hours, and GP costs using your OSRS username. Free OSRS account planner.'
     if (skills.length) {
       title = `${who ? `${who}'s ` : ''}OSRS Training Plan | TickGains`
-      description = `${who ? `${who}'s` : 'A'} OSRS training plan for ${skills.join(', ')} — XP remaining, training hours, GP and days to finish, built with the TickGains Account Planner.`
+      description = `${who ? `${who}'s` : 'A'} OSRS training plan for ${skills.join(', ')}, XP remaining, training hours, GP and days to finish, built with the TickGains Account Planner.`
     }
     res.send(
       injectCardMeta(indexHtmlTemplate, {
@@ -197,7 +197,7 @@ if (distExists) {
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${player.displayName}'s ${PERIOD_ADJ[period]}${skillLabel} XP Gains — TickGains`,
+          title: `${player.displayName}'s ${PERIOD_ADJ[period]}${skillLabel} XP Gains | TickGains`,
           description,
           imageUrl,
           pageUrl,
@@ -221,7 +221,7 @@ if (distExists) {
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${card.displayName}'s ${PERIOD_ADJ[cardPeriod]}${skillLabel} XP Gains — TickGains`,
+          title: `${card.displayName}'s ${PERIOD_ADJ[cardPeriod]}${skillLabel} XP Gains | TickGains`,
           description,
           imageUrl,
           pageUrl,
@@ -248,7 +248,7 @@ app.use((err, req, res, next) => {
 const port = process.env.PORT || 4000
 app.listen(port, () => {
   console.log(`TickGains API listening on http://localhost:${port}`)
-  if (!distExists) console.log('(no dist/ build found — run `npm run build` at the repo root to serve the frontend too)')
+  if (!distExists) console.log('(no dist/ build found, run `npm run build` at the repo root to serve the frontend too)')
 })
 
 startScheduler()

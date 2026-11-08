@@ -48,7 +48,7 @@ const COLORS = {
   border: '#40361f',
 }
 
-// Inline vector icons — the font has no arrow/star glyphs, and these keep
+// Inline vector icons, the font has no arrow/star glyphs, and these keep
 // the card independent of which characters a font happens to ship.
 function svgIcon(size, color, paths, { stroke = false } = {}) {
   return {
@@ -140,7 +140,7 @@ function buildSkillStats(data) {
     ]),
   ])
 
-  // Always two tiles, even when there's no rank to show — a lone tile
+  // Always two tiles, even when there's no rank to show, a lone tile
   // would otherwise stretch to fill the whole row and look broken.
   const rankTile =
     data.rankGained != null
@@ -195,7 +195,7 @@ function comparisonChip(comparison, period = 'week') {
   )
 }
 
-// Daily xp bars — fills the card's right-hand side and makes every card
+// Daily xp bars, fills the card's right-hand side and makes every card
 // look different. The biggest day is gold.
 function dailyChart(daily) {
   if (!daily || daily.length < 2) return null
@@ -246,7 +246,7 @@ function dailyChart(daily) {
   ])
 }
 
-// Rising-line mark with a TickGains wordmark — deliberately not a bare
+// Rising-line mark with a TickGains wordmark, deliberately not a bare
 // checkmark in a box, which reads as a checkbox.
 function brandBadge() {
   return node(
@@ -311,7 +311,7 @@ async function buildWeeklyCardTree(data) {
               letterSpacing: '0.04em',
               textTransform: 'uppercase',
             },
-            isOverall ? title : `${skill} — ${title}`,
+            isOverall ? title : `${skill}: ${title}`,
           ),
           node('div', { fontSize: 42, fontWeight: 800, color: COLORS.gold, marginTop: 4 }, displayName),
         ]),

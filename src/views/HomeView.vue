@@ -5,6 +5,7 @@
       <h1>Your OSRS Journey. <span class="home-accent">Tracked.</span></h1>
       <p class="home-sub">Track every XP gain, explore your history, and plan your next 99.</p>
 
+      <div class="suggest-wrap home-suggest-wrap">
       <form class="home-search" @submit.prevent="submitAdd">
         <!-- Decoy fields so Firefox/Chrome's login-manager autofill (which
              ignores autocomplete="off" on a field it suspects is a login
@@ -30,10 +31,11 @@
         <li v-for="sg in suggestions" :key="sg.username">
           <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }">
             <span>{{ sg.displayName }}</span>
-            <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString() ?? '—' }}</small>
+            <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString() ?? '-' }}</small>
           </RouterLink>
         </li>
       </ul>
+      </div>
 
       <div v-if="trackedPlayer" class="home-tracked">
         <span><span class="check-icon">✓</span> Now tracking <b>{{ trackedPlayer.displayName }}</b></span>
@@ -47,7 +49,60 @@
         <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5" /></svg>Automatic XP updates</li>
         <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>Historical XP imports</li>
       </ul>
-      <p class="home-nosignup">No registration required — just enter your RSN.</p>
+      <p class="home-nosignup">No registration required, just enter your RSN.</p>
+    </section>
+
+    <!-- Live community ticker -->
+    <section v-if="liveEvents.length" class="home-live" aria-label="Live community activity">
+      <div class="home-live-head">
+        <span class="disc-live-dot" />
+        <b>Live from the community</b>
+        <span class="home-live-count">{{ formatCount(community?.totalPlayers) }} players tracked</span>
+        <RouterLink to="/discover" class="home-live-more" @click="track('home_view_discover')">See all activity →</RouterLink>
+      </div>
+      <div class="home-live-viewport">
+        <div class="home-live-track" :style="{ '--dur': `${liveEvents.length * 14}s` }">
+          <TransitionGroup name="live" tag="ul" class="home-live-list">
+            <li v-for="e in liveEvents" :key="e.id" :class="['home-live-item', `kind-${e.kind}`, { 'is-new': newLive.has(e.id) }]">
+              <RouterLink :to="{ name: 'playerDetail', params: { username: e.username } }">
+                <span class="disc-event-icon">
+                  <img v-if="e.skill" :src="skillIconSrc(e.skill)" :alt="e.skill" width="24" height="24" />
+                  <span v-else-if="e.kind === 'gain'" class="disc-glyph">▲</span>
+                  <span v-else class="disc-glyph">★</span>
+                </span>
+                <span class="disc-event-text">
+                  <b>{{ e.displayName }}</b>
+                  <template v-if="e.kind === 'max'"> hit <em class="gold">level 99 {{ e.skill }}</em></template>
+                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em></template>
+                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
+                  <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
+                </span>
+                <span class="disc-event-time">{{ agoText(e.at) }}</span>
+              </RouterLink>
+            </li>
+          </TransitionGroup>
+          <!-- Second copy makes the slow scroll loop seamlessly. -->
+          <ul class="home-live-list" aria-hidden="true">
+            <li v-for="e in liveEvents" :key="e.id" :class="['home-live-item', `kind-${e.kind}`]">
+              <RouterLink :to="{ name: 'playerDetail', params: { username: e.username } }" tabindex="-1">
+                <span class="disc-event-icon">
+                  <img v-if="e.skill" :src="skillIconSrc(e.skill)" alt="" width="24" height="24" />
+                  <span v-else-if="e.kind === 'gain'" class="disc-glyph">▲</span>
+                  <span v-else class="disc-glyph">★</span>
+                </span>
+                <span class="disc-event-text">
+                  <b>{{ e.displayName }}</b>
+                  <template v-if="e.kind === 'max'"> hit <em class="gold">level 99 {{ e.skill }}</em></template>
+                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em></template>
+                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
+                  <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
+                </span>
+                <span class="disc-event-time">{{ agoText(e.at) }}</span>
+              </RouterLink>
+            </li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <!-- 2. Feature showcase -->
@@ -101,11 +156,11 @@
           <p v-else class="empty-hint">History builds up as snapshots are saved.</p>
         </div>
       </div>
-      <div v-else class="card"><p class="empty-hint">Track a player above and your profile will look like this — charts, milestones and gains.</p></div>
+      <div v-else class="card"><p class="empty-hint">Track a player above and your profile will look like this, charts, milestones and gains.</p></div>
     </section>
 
     <!-- 4. How it works -->
-    <section class="home-section">
+    <section id="how-it-works" class="home-section">
       <h2 class="home-h2">How it works</h2>
       <ol class="home-steps">
         <li v-for="(s, i) in steps" :key="s.title" class="card">
@@ -141,7 +196,7 @@
                 </RouterLink>
               </li>
             </ol>
-            <p v-else class="empty-hint">No XP gained yet — check back after the next update.</p>
+            <p v-else class="empty-hint">No XP gained yet, check back after the next update.</p>
           </div>
           <div class="card">
             <h3>Most trained skills this week</h3>
@@ -169,24 +224,24 @@
                 </RouterLink>
               </li>
             </ul>
-            <p v-else class="empty-hint">Big milestones — 99s, 100M XP — appear here as they're detected.</p>
+            <p v-else class="empty-hint">Big milestones, 99s, 100M XP, appear here as they're detected.</p>
           </div>
         </div>
       </template>
-      <div v-else class="card"><p class="empty-hint">Be the first — track a player above and the community activity starts here.</p></div>
+      <div v-else class="card"><p class="empty-hint">Be the first, track a player above and the community activity starts here.</p></div>
     </section>
 
     <!-- 6. Final CTA -->
     <section class="card home-final">
       <h2>Ready to Track Your Next 99?</h2>
-      <p>Free, no sign-up — just your RSN.</p>
+      <p>Free, no sign-up, just your RSN.</p>
       <button class="btn btn-primary" type="button" @click="focusSearch">Start Tracking Your Player</button>
     </section>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
@@ -207,7 +262,7 @@ const { showToast } = useToast()
 setPageMeta({
   title: 'OSRS XP Tracker & Hiscores History',
   description:
-    'Free OSRS XP tracker. Track XP gains, hiscores history and level progress for any Old School RuneScape player — no sign-up. Import Wise Old Man history and plan your next 99.',
+    'Free OSRS XP tracker. Track XP gains, hiscores history and level progress for any Old School RuneScape player, no sign-up. Import Wise Old Man history and plan your next 99.',
   path: '/',
 })
 
@@ -220,15 +275,43 @@ const trackedName = ref('')
 const home = ref(null)
 const loading = ref(true)
 const error = ref(false)
-onMounted(async () => {
+const now = ref(Date.now())
+const newLive = ref(new Set())
+let seenLive = null
+let pollTimer = null
+let tickTimer = null
+async function loadHome(initial = false) {
   try {
-    home.value = await api.get('/home')
+    const fresh = await api.get('/home')
+    // Anything not seen on the previous poll slides in at the top with a glow.
+    const ids = new Set((fresh.activity || []).map((e) => e.id))
+    if (seenLive) newLive.value = new Set([...ids].filter((id) => !seenLive.has(id)))
+    seenLive = ids
+    home.value = fresh
+    error.value = false
+    if (newLive.value.size) setTimeout(() => (newLive.value = new Set()), 4000)
   } catch {
-    error.value = true
+    if (initial) error.value = true
   } finally {
     loading.value = false
   }
+}
+onMounted(() => {
+  loadHome(true)
+  // Poll while the tab is visible so the ticker keeps moving as people level up.
+  pollTimer = setInterval(() => !document.hidden && loadHome(), 45_000)
+  tickTimer = setInterval(() => (now.value = Date.now()), 30_000)
 })
+onBeforeUnmount(() => {
+  clearInterval(pollTimer)
+  clearInterval(tickTimer)
+})
+const liveEvents = computed(() => (home.value?.activity || []).slice(0, 10))
+const agoText = (iso) => {
+  void now.value
+  return iso ? formatRelative(iso) : ''
+}
+const formatCount = (n) => (n == null ? '' : n.toLocaleString())
 const community = computed(() => home.value?.community || null)
 const example = computed(() => home.value?.example || null)
 const chartPoints = computed(() => (example.value?.series || []).map((p) => ({ x: p.t, y: p.xp })))
@@ -260,13 +343,13 @@ async function submitAdd() {
   try {
     await store.addPlayer(username)
     track('player_added', { source: 'home' })
-    showToast(`Now tracking ${username} — checking Wise Old Man for history in the background.`)
+    showToast(`Now tracking ${username}, checking Wise Old Man for history in the background.`)
     trackedName.value = username
     newUsername.value = ''
   } catch (err) {
     if (err instanceof ApiError && err.status === 409) {
-      // Already tracked — the useful thing is to open their profile.
-      showToast(`${username} is already being tracked — opening their profile.`)
+      // Already tracked, the useful thing is to open their profile.
+      showToast(`${username} is already being tracked, opening their profile.`)
       router.push({ name: 'playerDetail', params: { username } })
     } else {
       showToast(err instanceof ApiError ? err.message : 'Could not add that player.')
@@ -294,7 +377,7 @@ watch(
       showToast(
         player.count > 0
           ? `Finished importing ${player.count.toLocaleString()} historical snapshots for ${player.name}.`
-          : `${player.name} is all set — no extra history found on Wise Old Man.`,
+          : `${player.name} is all set, no extra history found on Wise Old Man.`,
       )
     }
   },

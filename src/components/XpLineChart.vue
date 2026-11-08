@@ -110,7 +110,7 @@ const maxX = computed(() => points.value[points.value.length - 1]?.x ?? 1)
 
 const rawMinY = computed(() => Math.min(...points.value.map((p) => p.y)))
 const rawMaxY = computed(() => Math.max(...points.value.map((p) => p.y)))
-// Zoomed to the data's own range (not zero-based) — xp totals are huge
+// Zoomed to the data's own range (not zero-based), xp totals are huge
 // relative to a week's gains, so a zero baseline would flatten the trend
 // this chart exists to show.
 const yPad = computed(() => Math.max((rawMaxY.value - rawMinY.value) * 0.12, 1))

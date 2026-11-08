@@ -47,7 +47,7 @@ export function createAppRouter() {
   // The GTM container fires its own page view on the first load; this reports
   // every later in-app navigation (the SPA never reloads the page). In GTM,
   // use a Custom Event trigger on "spa_page_view" for the GA4 page_view tag
-  // (or GTM's built-in History Change trigger — not both, to avoid doubles).
+  // (or GTM's built-in History Change trigger, not both, to avoid doubles).
   router.afterEach((to, from, failure) => {
     if (failure || from.name == null) return
     nextTick(() =>
