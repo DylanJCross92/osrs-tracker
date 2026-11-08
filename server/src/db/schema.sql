@@ -89,3 +89,21 @@ CREATE TABLE IF NOT EXISTS discover_spotlights (
   payload JSONB NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Last time we observed this player gain xp. Drives the sync tiers: players
+-- with no gain for a few days are only re-checked daily (see jobs/sync.js).
+-- Backfilled once from snapshot history; NULL = never seen gaining (falls
+-- back to created_at).
+ALTER TABLE players ADD COLUMN IF NOT EXISTS last_xp_gain_at TIMESTAMPTZ;
+UPDATE players p
+SET last_xp_gain_at = sub.t
+FROM (
+  SELECT player_id, MAX(captured_at) FILTER (WHERE overall_xp > prev_xp) AS t
+  FROM (
+    SELECT player_id, captured_at, overall_xp,
+           LAG(overall_xp) OVER (PARTITION BY player_id ORDER BY captured_at) AS prev_xp
+    FROM snapshots
+  ) x
+  GROUP BY player_id
+) sub
+WHERE p.id = sub.player_id AND p.last_xp_gain_at IS NULL AND sub.t IS NOT NULL;

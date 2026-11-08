@@ -98,7 +98,7 @@ playersRouter.post('/:id/refresh', rateLimit({ windowMs: 60_000, max: 20 }), asy
 
 // Checks every tracked player for updates — used to sync on page load
 // instead of waiting for the scheduler. Reuses the same staggered,
-// error-tolerant sweep as the hourly job (and skips if one is already running).
+// error-tolerant, tiered sweep as the hourly job (and skips if one is already running).
 playersRouter.post('/sync-all', async (req, res, next) => {
   try {
     await syncAllPlayers()

@@ -20,6 +20,17 @@ const JITTER_MS = 400
 // worse: after this many in a row, end the run and try again next hour.
 const MAX_CONSECUTIVE_OUTAGES = 3
 
+// --- Sync tiers --------------------------------------------------------
+// Active players (gained xp within ACTIVE_WINDOW_DAYS) are checked on every
+// hourly run; idle ones only about once a day. Both thresholds are env-tunable.
+// A profile view or "Refresh now" also resets a player's last-checked time, so
+// anyone recently looked at isn't re-fetched redundantly.
+const ACTIVE_WINDOW_DAYS = Number(process.env.SYNC_ACTIVE_DAYS) || 3
+const ACTIVE_MIN_GAP_MINUTES = Number(process.env.SYNC_ACTIVE_MIN_GAP_MINUTES) || 45
+// 23.5h rather than 24h: with hourly runs, a check at 10:00:30 is due at the
+// next day's 10:00 run instead of slipping to 11:00.
+const IDLE_RECHECK_MINUTES = Number(process.env.SYNC_IDLE_RECHECK_MINUTES) || 23.5 * 60
+
 // Arbitrary constant key for the Postgres advisory lock that keeps two
 // instances (or two overlapping runs) from syncing at the same time.
 const SYNC_LOCK_KEY = 872_431_001
@@ -27,6 +38,29 @@ const SYNC_LOCK_KEY = 872_431_001
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 let running = false
+
+/**
+ * Which players this run should check. Never-checked players always qualify;
+ * active players qualify unless they were fetched very recently; idle players
+ * (no xp gain seen for ACTIVE_WINDOW_DAYS, falling back to when they were
+ * added) only once their daily re-check is due.
+ */
+export async function selectDuePlayers() {
+  const { rows } = await pool.query(
+    `SELECT id, username,
+            (COALESCE(last_xp_gain_at, created_at) >= now() - ($1::int * interval '1 day')) AS active
+     FROM players
+     WHERE last_checked_at IS NULL
+        OR (COALESCE(last_xp_gain_at, created_at) >= now() - ($1::int * interval '1 day')
+            AND last_checked_at <= now() - ($2::numeric * interval '1 minute'))
+        OR (COALESCE(last_xp_gain_at, created_at) < now() - ($1::int * interval '1 day')
+            AND last_checked_at <= now() - ($3::numeric * interval '1 minute'))
+     ORDER BY id ASC`,
+    [ACTIVE_WINDOW_DAYS, ACTIVE_MIN_GAP_MINUTES, IDLE_RECHECK_MINUTES],
+  )
+  const { rows: total } = await pool.query('SELECT COUNT(*)::int AS n FROM players')
+  return { due: rows, total: total[0].n }
+}
 
 /**
  * One sweep over every tracked player. Never runs concurrently with itself:
@@ -50,8 +84,10 @@ export async function syncAllPlayers() {
     }
 
     const startedAt = Date.now()
-    const { rows: players } = await pool.query('SELECT id, username FROM players ORDER BY id ASC')
-    const summary = { total: players.length, saved: 0, unchanged: 0, notFound: 0, failed: 0, aborted: false }
+    const { due: players, total } = await selectDuePlayers()
+    const idleActive = players.filter((p) => !p.active).length
+    const summary = { total, checked: players.length, skippedUntilDue: total - players.length, saved: 0, unchanged: 0, notFound: 0, failed: 0, aborted: false }
+    console.log(`[sync] ${players.length} of ${total} players due (${players.length - idleActive} active, ${idleActive} idle daily re-checks); ${summary.skippedUntilDue} not due yet`)
     let outages = 0
 
     for (const player of players) {
@@ -85,7 +121,7 @@ export async function syncAllPlayers() {
     }
 
     console.log(
-      `[sync] done in ${Math.round((Date.now() - startedAt) / 1000)}s — ${summary.total} players: ` +
+      `[sync] done in ${Math.round((Date.now() - startedAt) / 1000)}s — checked ${summary.checked}/${summary.total}: ` +
         `${summary.saved} new snapshots, ${summary.unchanged} unchanged, ${summary.notFound} not found, ${summary.failed} failed` +
         (summary.aborted ? ' (run ended early: hiscores unavailable)' : ''),
     )

@@ -239,6 +239,11 @@ export async function recordSnapshot(playerId, stats) {
      VALUES ($1, $2, $3, $4, $5)`,
     [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
   )
+  // Seeing xp go up (or the very first snapshot) is what keeps a player in the
+  // hourly sync tier — see jobs/sync.js.
+  if (prev.rowCount === 0 || stats.overall.xp > Number(prev.rows[0].overall_xp)) {
+    await pool.query('UPDATE players SET last_xp_gain_at = now() WHERE id = $1', [playerId])
+  }
   syncMilestonesSafe(playerId)
   return { saved: true }
 }
@@ -267,7 +272,7 @@ export async function addPlayer(rawUsername) {
   try {
     await client.query('BEGIN')
     const inserted = await client.query(
-      "INSERT INTO players (username, display_name, wom_import_status, last_checked_at) VALUES ($1, $2, 'pending', now()) RETURNING id",
+      "INSERT INTO players (username, display_name, wom_import_status, last_checked_at, last_xp_gain_at) VALUES ($1, $2, 'pending', now(), now()) RETURNING id",
       [username, username],
     )
     playerId = inserted.rows[0].id
