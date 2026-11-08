@@ -24,7 +24,7 @@
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
         <p v-if="latest" class="last-synced">
-          <span title="When the data last changed — new XP, levels or ranks">Last updated {{ formatRelative(latest.capturedAt) }}</span>
+          <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : '— no XP gained yet' }}</span>
           <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
           <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
             {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
@@ -437,6 +437,16 @@ const weekDays = computed(() => {
     days.push({ label: d.toLocaleDateString(undefined, { weekday: 'short' }), xp: byDay.get(key(d)) || 0 })
   }
   return days
+})
+
+// When new XP last arrived: the newest snapshot whose total XP is higher than
+// the one before it. Rank-only changes don't count as an update.
+const lastXpAt = computed(() => {
+  const list = snapshots.value
+  for (let i = list.length - 1; i > 0; i--) {
+    if (list[i].overallXp > list[i - 1].overallXp) return list[i].capturedAt
+  }
+  return null
 })
 
 const topSkill = computed(() => highestSkill(snapshots.value[snapshots.value.length - 1]))
