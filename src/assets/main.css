@@ -1525,3 +1525,8 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
   .app-nav { width: 100%; justify-content: space-between; }
   .app-nav-link { flex: 1; justify-content: center; padding: 8px 6px; font-size: 0.82rem; white-space: nowrap; }
 }
+/* preview stats: two across, Total XP on its own full-width row so long numbers always fit */
+.home-preview-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.home-preview-stats > div { min-width: 0; }
+.home-preview-stats .wide { grid-column: 1 / -1; }
+.home-preview-stats b { font-size: 1.2rem; overflow-wrap: anywhere; }

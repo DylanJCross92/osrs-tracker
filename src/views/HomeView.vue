@@ -77,8 +77,8 @@
           </div>
           <div class="home-preview-stats">
             <div><span>Overall</span><b>{{ example.overallLevel?.toLocaleString() }}</b></div>
-            <div><span>Total XP</span><b>{{ example.overallXp?.toLocaleString() }}</b></div>
             <div v-if="example.weekXp"><span>Gained · 7 days</span><b class="stat-gain">+{{ example.weekXp.toLocaleString() }}</b></div>
+            <div class="wide"><span>Total XP</span><b>{{ example.overallXp?.toLocaleString() }}</b></div>
           </div>
           <div v-if="example.recentSkills.length" class="home-preview-gains">
             <span class="home-preview-label">Recent XP gains</span>
