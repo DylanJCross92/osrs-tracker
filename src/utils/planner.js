@@ -31,10 +31,25 @@ export function levelAtXp(xp, allowVirtual = false) {
 // Best catalog method usable at a given level (null if none). 'fast' picks the
 // highest xp/hr; 'cheap' picks the lowest cost per xp (net gp / xp, so profit
 // methods win), ignoring methods with no trustworthy gp figure.
-function bestMethodAt(skill, level, mode = 'fast') {
+function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE) {
   const usable = methodsForSkill(skill).filter((meth) => meth.minLevel <= level && (meth.maxLevel == null || level <= meth.maxLevel))
   if (!usable.length) return null
   const byFast = (a, b) => b.xpPerHour - a.xpPerHour
+  if (mode === 'balanced') {
+    // Lowest effective cost per xp, where each hour of your time is worth `valuePerHour` gp:
+    // (valuePerHour - gp/hr) / xp/hr. Unpriced methods are skipped when anything is priced.
+    const priced = usable.filter((meth) => meth.gpPerHour != null)
+    if (priced.length) {
+      const score = (meth) => (valuePerHour - meth.gpPerHour) / meth.xpPerHour
+      return priced.sort((a, b) => score(a) - score(b) || byFast(a, b))[0]
+    }
+  }
+  if (mode === 'profit') {
+    // Most gp per hour among methods that actually make money; where nothing does, fall back to the cheapest.
+    const profitable = usable.filter((meth) => meth.gpPerHour != null && meth.gpPerHour > 0)
+    if (profitable.length) return profitable.sort((a, b) => b.gpPerHour - a.gpPerHour || byFast(a, b))[0]
+    mode = 'cheap'
+  }
   if (mode === 'cheap') {
     const priced = usable.filter((meth) => meth.gpPerHour != null)
     if (priced.length) return priced.sort((a, b) => b.gpPerHour / b.xpPerHour - a.gpPerHour / a.xpPerHour || byFast(a, b))[0]
@@ -49,7 +64,7 @@ function bestMethodAt(skill, level, mode = 'fast') {
  * e.g. copper -> iron -> Motherlode -> Blast Mine on the way to granite.
  * Pieces with no catalog method come back with method: null.
  */
-function fillRoute(skill, fromXp, toXp, mode = 'fast') {
+function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE) {
   if (toXp <= fromXp) return []
   const cuts = new Set([fromXp, toXp])
   for (const meth of methodsForSkill(skill)) {
@@ -63,7 +78,7 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast') {
   const points = [...cuts].sort((x, y) => x - y)
   const pieces = []
   for (let i = 0; i < points.length - 1; i++) {
-    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode)
+    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour)
     const last = pieces[pieces.length - 1]
     if (last && last.method === method) last.toXp = points[i + 1]
     else pieces.push({ method, fromXp: points[i], toXp: points[i + 1] })
@@ -90,7 +105,12 @@ function finishSegment(seg, kind) {
 
 export const AUTO_FAST = 'auto-fast'
 export const AUTO_CHEAP = 'auto-cheap'
-export const isAuto = (id) => id === AUTO_FAST || id === AUTO_CHEAP
+export const AUTO_PROFIT = 'auto-profit'
+export const AUTO_BALANCED = 'auto-balanced'
+export const GLOBAL_STRATEGY = 'global'
+export const DEFAULT_GP_VALUE = 2_000_000
+export const isAuto = (id) => id === AUTO_FAST || id === AUTO_CHEAP || id === AUTO_PROFIT || id === AUTO_BALANCED
+export const GLOBAL_STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED]
 
 /**
  * Plans one skill goal as a route of milestones. goal: { skill, currentXp,
@@ -118,8 +138,8 @@ export function planGoal(goal) {
 
   let segments = []
   if (auto) {
-    const mode = auto === AUTO_CHEAP ? 'cheap' : 'fast'
-    segments = fillRoute(goal.skill, startXp, targetXp, mode).map((x) => ({ ...x, kind: 'auto' }))
+    const mode = auto === AUTO_CHEAP ? 'cheap' : auto === AUTO_PROFIT ? 'profit' : auto === AUTO_BALANCED ? 'balanced' : 'fast'
+    segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE).map((x) => ({ ...x, kind: 'auto' }))
   } else if (!chosen) {
     const rate = Math.floor(goal.customXpPerHour || 0)
     if (!rate) return { ...result, complete: false, warning: 'Pick a training method or enter an XP/hour rate.' }
@@ -164,7 +184,16 @@ export function compareStrategies(goal) {
   return {
     fast: planGoal({ ...goal, methodId: AUTO_FAST }),
     cheap: planGoal({ ...goal, methodId: AUTO_CHEAP }),
+    profit: planGoal({ ...goal, methodId: AUTO_PROFIT }),
+    balanced: planGoal({ ...goal, methodId: AUTO_BALANCED }),
   }
+}
+
+/** Methods between two levels that make gp, best first. Empty when the skill has no way to profit there. */
+export function profitableMethods(skill, fromLevel, toLevel) {
+  return relevantMethods(skill, fromLevel, toLevel)
+    .filter((meth) => meth.gpPerHour != null && meth.gpPerHour > 0)
+    .sort((a, b) => b.gpPerHour - a.gpPerHour)
 }
 
 /**
@@ -238,7 +267,8 @@ export function formatGp(gp) {
 }
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
-export function encodePlan({ username, hoursPerDay, goals }) {
+// Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.
+export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget }) {
   const params = new URLSearchParams()
   if (username) params.set('u', username)
   params.set('h', String(hoursPerDay))
@@ -248,6 +278,9 @@ export function encodePlan({ username, hoursPerDay, goals }) {
       .map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.methodId === 'custom' ? g.customXpPerHour || 0 : '', (g.quests || []).join('.')].join('~'))
       .join(','),
   )
+  if (strategy && strategy !== AUTO_FAST) params.set('s', strategy)
+  if (gpValue && gpValue !== DEFAULT_GP_VALUE) params.set('v', String(Math.round(gpValue)))
+  if (budget) params.set('b', String(Math.round(budget)))
   return params
 }
 
@@ -260,11 +293,15 @@ export function decodePlan(query, validSkills) {
       skill,
       currentXp: Math.min(Math.max(parseInt(cur, 10) || 0, 0), MAX_XP),
       targetXp: Math.min(Math.max(parseInt(tgt, 10) || 0, 0), MAX_XP),
-      methodId: methodId === 'custom' || isAuto(methodId) || getMethod(methodId) ? methodId : AUTO_FAST,
+      // Links made before global strategies pinned every goal to a method; the old default (fastest) now means "follow the global strategy".
+      methodId: methodId === GLOBAL_STRATEGY || methodId === AUTO_FAST ? GLOBAL_STRATEGY : methodId === 'custom' || isAuto(methodId) || getMethod(methodId) ? methodId : GLOBAL_STRATEGY,
       customXpPerHour: parseInt(custom, 10) || 0,
       quests: String(quests || '').split('.').filter((id) => getQuest(id)),
     }))
     .slice(0, 24)
   const hours = Math.min(Math.max(parseFloat(query.h) || 2, 0.25), 24)
-  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals }
+  const strategy = GLOBAL_STRATEGIES.includes(query.s) ? query.s : AUTO_FAST
+  const gpValue = Math.min(Math.max(parseInt(query.v, 10) || DEFAULT_GP_VALUE, 0), 1_000_000_000)
+  const budget = Math.min(Math.max(parseInt(query.b, 10) || 0, 0), 100_000_000_000)
+  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null }
 }

@@ -1781,3 +1781,159 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .lb-more:hover, .lb-copy:hover { border-color: var(--gold); color: var(--gold-bright); }
 @media (max-width: 560px) { .lb-meta { display: none; } .lb-search { max-width: none; } }
 .disc-more { font-size: 0.85rem; color: var(--gold-bright); white-space: nowrap; }
+
+/* Planner: profitable method badge */
+.planner-profit-tag { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: rgba(124, 184, 105, 0.15); border: 1px solid rgba(124, 184, 105, 0.45); color: var(--xp-green); font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+
+/* ---------- planner v2: compact header, overview, goal cards, strategy, budget, timeline, saved plans ---------- */
+.planner-top h1 { margin: 0 0 10px; }
+.planner-player-compact { margin-top: 0; }
+.planner-player-compact .btn-text { margin-left: auto; }
+.planner-overview-head, .planner-goals-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.planner-overview-head h2, .planner-goals-head h2 { margin: 0; }
+.planner-calc { color: var(--muted); font-size: 0.8rem; }
+.planner-notice { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: rgba(217, 175, 82, 0.1); border: 1px solid var(--gold); color: var(--text); font-size: 0.9rem; }
+.planner-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 8px 0; }
+.planner-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.planner-table-scroll .planner-table { min-width: 520px; }
+.planner-table .num, .planner-table th.num { text-align: right; white-space: nowrap; }
+.planner-table-note span { display: inline-block; margin-right: 8px; }
+.planner-table-note small { display: block; color: var(--muted); }
+
+/* global strategy */
+.strategy-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 12px 14px; background: var(--panel-alt); border: 1px solid var(--border); border-radius: 12px; }
+.strategy-main { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; }
+.strategy-label { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.strategy-hint, .strategy-overrides { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.strategy-value { display: flex; flex-direction: column; gap: 6px; max-width: 320px; }
+.strategy-value > span { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.strategy-value small { color: var(--muted); }
+
+/* goal cards */
+.goal-list { display: flex; flex-direction: column; gap: 10px; }
+.goal-card { background: linear-gradient(180deg, var(--panel-alt), var(--panel)); border: 1px solid var(--border); border-radius: 12px; box-shadow: inset 3px 0 0 var(--border-strong); overflow: hidden; }
+.goal-card.open { box-shadow: inset 3px 0 0 var(--gold-bright); }
+.goal-card.overridden { box-shadow: inset 3px 0 0 #b98a5a; }
+.goal-card-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 4px; }
+.goal-card-toggle { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 10px; background: none; border: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; border-radius: 10px; }
+.goal-card-toggle:hover { background: rgba(255, 255, 255, 0.03); }
+.goal-card-chevron { color: var(--muted); transition: transform 0.15s; }
+.goal-card-chevron.open { transform: rotate(90deg); color: var(--gold-bright); }
+.goal-card-title { display: flex; flex-direction: column; min-width: 90px; }
+.goal-card-title b { font-size: 1.05rem; }
+.goal-card-title em { font-style: normal; color: var(--muted); font-size: 0.85rem; }
+.goal-card-stats { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 16px; align-items: start; font-size: 0.92rem; }
+.goal-card-stats > span { display: flex; flex-direction: column; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.goal-card-stats small { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.goal-override-tag { margin-left: 6px; padding: 0 6px; border-radius: 999px; border: 1px solid #b98a5a; color: #d9a977; font-size: 0.68rem; font-style: normal; }
+.goal-card-actions { display: flex; align-items: center; gap: 4px; }
+.goal-card-actions .btn-text { padding: 6px 8px; }
+.goal-card-body { padding: 4px 16px 16px; border-top: 1px solid var(--border); }
+.goal-method-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 12px 0 6px; }
+.goal-method-row label { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 220px; }
+.goal-method-row label > span { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.goal-reset { white-space: nowrap; }
+.goal-section-title { margin: 16px 0 0; color: var(--gold-bright); font-size: 0.95rem; }
+.goal-estimate-note { font-size: 0.8rem; }
+.planner-goal-summary { margin-top: 12px; }
+
+/* budget */
+.planner-budget { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+.budget-input { display: flex; flex-direction: column; gap: 6px; max-width: 320px; margin-bottom: 12px; }
+.budget-input > span { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.budget-ok small { display: block; color: var(--muted); }
+.budget-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.budget-actions small { color: var(--muted); }
+
+/* timeline */
+.ptl-finish { margin: 6px 0 12px; }
+.ptl-list { list-style: none; margin: 0 0 14px; padding: 0; position: relative; }
+.ptl-item { position: relative; display: flex; gap: 12px; padding: 0 0 14px 0; }
+.ptl-item::before { content: ''; position: absolute; left: 5px; top: 14px; bottom: 0; width: 2px; background: var(--border-strong); }
+.ptl-item:last-child::before { display: none; }
+.ptl-dot { flex: none; width: 12px; height: 12px; margin-top: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); z-index: 1; }
+.ptl-item.done .ptl-dot { background: var(--xp-green); }
+.ptl-main { flex: 1; min-width: 0; }
+.ptl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ptl-order { color: var(--muted); font-size: 0.8rem; }
+.ptl-hours { margin-left: auto; color: var(--muted); }
+.ptl-dates { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.ptl-dates b { color: var(--text); }
+.ptl-gp, .ptl-balance { margin-left: 10px; }
+.ptl-balance i { font-style: normal; }
+.ptl-milestones { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ptl-chip { padding: 2px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); font-size: 0.76rem; }
+
+/* saved plans */
+.saved-save { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.saved-save input { flex: 1; min-width: 180px; }
+.saved-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.saved-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 14px; background: var(--panel-alt); border: 1px solid var(--border); border-radius: 10px; }
+.saved-list li.current { border-color: var(--gold); }
+.saved-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.saved-meta small { color: var(--muted); }
+.saved-actions { display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.saved-delete { color: #d98a78; }
+.planner-saved textarea { width: 100%; margin: 10px 0; padding: 10px 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 10px; font: inherit; resize: vertical; }
+.saved-import-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.saved-file { position: relative; cursor: pointer; }
+.saved-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* add goal dialog */
+.add-goal-modal { max-width: 640px; width: calc(100% - 32px); }
+.add-goal-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin: 12px 0; }
+.add-goal-strategy { grid-column: 1 / -1; }
+.add-goal-preview { margin: 8px 0; padding: 10px 14px; background: var(--bg); border: 1px dashed var(--border-strong); border-radius: 10px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  .goal-card-toggle { flex-wrap: wrap; }
+  .goal-card-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; flex-basis: 100%; }
+  .goal-card-head { flex-wrap: wrap; }
+  .goal-card-actions { width: 100%; justify-content: flex-end; padding: 0 6px 6px; }
+}
+@media (max-width: 640px) {
+  .planner .btn, .planner select, .planner input[type='text'] { min-height: 44px; }
+  .planner-goals-head .btn, .budget-actions .btn, .saved-save .btn { width: 100%; }
+  .goal-method-row label { min-width: 100%; }
+  .strategy-tabs { width: 100%; display: flex; }
+  .strategy-tabs button { flex: 1; }
+  .ptl-hours { margin-left: 0; width: 100%; }
+}
+
+/* planner v2 polish */
+.goal-card-body .planner-compare { margin-top: 18px; padding: 16px 0 0; background: none; border: 0; border-top: 1px solid var(--border); border-radius: 0; }
+.goal-card-body .planner-quests { margin-top: 14px; }
+.goal-card-body .planner-route { margin-top: 8px; }
+.goal-estimate-note { margin: 12px 0 0; }
+.planner-table-note { white-space: normal; }
+.planner-table-note span + span { margin-left: 4px; }
+.goal-add-bottom { display: block; width: 100%; margin-top: 12px; padding: 14px; background: transparent; border: 1px dashed var(--gold); border-radius: 12px; color: var(--gold-bright); font: inherit; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.goal-add-bottom:hover { background: rgba(217, 175, 82, 0.08); }
+.ptl-list { padding-left: 0; }
+.ptl-item { padding-left: 0; }
+.ptl-item::before { left: 5px; top: 20px; }
+.goal-card-stats { grid-template-columns: minmax(84px, 1fr) minmax(110px, 1.5fr) minmax(60px, 0.8fr) minmax(92px, 1.1fr); }
+.goal-card-stats > span { overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
+.goal-card-actions .btn { padding: 6px 12px; font-size: 0.82rem; }
+.goal-card-title { min-width: 78px; }
+@media (max-width: 760px) { .goal-card-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.goal-card-actions { flex: none; }
+.goal-card-chevron { flex: none; font-size: 0.9rem; }
+.goal-card-stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 0.7fr) minmax(0, 1fr); gap: 8px 12px; min-width: 0; }
+.goal-card-title { min-width: 0; flex: none; }
+.goal-card-stats { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.goal-card-stats > span:nth-child(1), .goal-card-stats > span:nth-child(3), .goal-card-stats > span:nth-child(4) { white-space: nowrap; overflow-wrap: normal; }
+@media (max-width: 760px) { .goal-card-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.goal-card-strategy { align-items: flex-start; }
+.goal-card-strategy .goal-override-tag { align-self: flex-start; margin: 3px 0 0; padding: 1px 8px; line-height: 1.4; }
+.goal-card-strategy .goal-override-tag { background: rgba(185, 138, 90, 0.16); border: 1px solid rgba(185, 138, 90, 0.55); color: #e0b080; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* planner materials */
+.planner-materials { margin-top: 4px; }
+.mat-totals { list-style: none; margin: 10px 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.mat-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px 4px 6px; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; font-size: 0.88rem; }
+.mat-chip b { color: var(--gold-bright); }
+.mat-chip img, .mat-inline img { object-fit: contain; image-rendering: pixelated; }
+.mat-inline { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+.mat-scroll { max-height: 340px; overflow: auto; }
