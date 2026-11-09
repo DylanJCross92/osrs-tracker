@@ -74,6 +74,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { skillIconSrc, SKILL_NAMES } from '@/utils/osrsSkills'
+import { gameDay, formatGameDay } from '@/utils/gameDay'
 
 const props = defineProps({
   profile: { type: Object, default: null },
@@ -90,10 +91,11 @@ const shownDays = ref(10)
 watch([skill, category, view], () => (shownDays.value = 10))
 
 const skills = SKILL_NAMES
-const fmt = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-const fmtShort = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-const sameYear = (a, b) => new Date(a).getFullYear() === new Date(b).getFullYear()
-const dayKey = (d) => new Date(d).toLocaleDateString('en-CA') // YYYY-MM-DD in the viewer's zone
+// Days are 6 AM to 6 AM Eastern, so a snapshot at 3 AM still belongs to the previous day.
+const fmt = (d) => formatGameDay(gameDay(d), { month: 'short', day: 'numeric', year: 'numeric' })
+const fmtShort = (d) => formatGameDay(gameDay(d), { month: 'short', day: 'numeric' })
+const sameYear = (a, b) => gameDay(a).slice(0, 4) === gameDay(b).slice(0, 4)
+const dayKey = (d) => gameDay(d)
 
 // When two consecutive snapshots are further apart than this, whatever changed
 // between them can't be pinned to a day, it happened *somewhere in the gap*

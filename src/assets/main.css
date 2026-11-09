@@ -1937,3 +1937,14 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .mat-chip img, .mat-inline img { object-fit: contain; image-rendering: pixelated; }
 .mat-inline { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
 .mat-scroll { max-height: 340px; overflow: auto; }
+
+/* mobile: recent achievements and quest shortcuts no longer squeeze their text into a narrow column */
+@media (max-width: 760px) {
+  .disc-achievements .disc-ach-list a { flex-wrap: wrap; row-gap: 4px; }
+  .disc-achievements .disc-event-text { flex: 1 1 0; min-width: 0; }
+  .disc-achievements .disc-event-time { flex: 1 1 100%; padding-left: 44px; text-align: left; font-size: 0.78rem; }
+  .planner-quest { grid-template-columns: auto minmax(0, 1fr); }
+  .planner-quest-xp { grid-column: 2; white-space: normal; }
+  .planner-quest-xp small { display: block; color: var(--muted); font-size: 0.75rem; }
+  .planner-quest-hours { grid-column: 2; display: block; text-align: left; }
+}

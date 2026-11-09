@@ -91,10 +91,10 @@ function mapSnapshotRow(row) {
 // snapshot taken before it (snapshots are only saved when XP changes, so the
 // newest one before the cutoff is still the current state at that moment), or
 // the very first snapshot ever if the player wasn't tracked yet,
-// "day" is pinned to local midnight so it means the calendar day, not a
+// "day" runs from 6:00 AM to 6:00 AM in the app timezone, not a
 // rolling 24h window; "week"/"month" are plain rolling windows.
 const BASELINE_CUTOFF_SQL = {
-  day: `date_trunc('day', now() AT TIME ZONE $1) AT TIME ZONE $1`,
+  day: `(date_trunc('day', (now() AT TIME ZONE $1) - interval '6 hours') + interval '6 hours') AT TIME ZONE $1`,
   week: `now() - interval '7 days'`,
   month: `now() - interval '30 days'`,
 }

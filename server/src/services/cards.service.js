@@ -30,7 +30,7 @@ function nextLevelProgress(xp, level) {
 
 // Card timeframes. Baselines match the stats table / Player Gains exactly
 // (see BASELINE_CUTOFF_SQL in players.service.js): the oldest snapshot inside
-// the window, for 'day' that's the first snapshot since local midnight,
+// the window, for 'day' that's the first snapshot since 6 AM,
 // so a card never disagrees with the numbers shown on the profile.
 const PERIODS = { day: { days: 1 }, week: { days: 7 }, month: { days: 30 } }
 export function normalizePeriod(period) {
@@ -181,7 +181,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
       (
         SELECT overall_xp, skills, captured_at
         FROM snapshots
-        WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1) AND ${period === 'day' ? "captured_at < (date_trunc('day', now() AT TIME ZONE $2) AT TIME ZONE $2)" : "captured_at < now() - ($2::int * interval '1 day')"}
+        WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1) AND ${period === 'day' ? "captured_at < ((date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') + interval '6 hours') AT TIME ZONE $2)" : "captured_at < now() - ($2::int * interval '1 day')"}
         ORDER BY captured_at DESC LIMIT 1
       )
       UNION ALL

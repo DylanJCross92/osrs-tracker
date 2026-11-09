@@ -312,6 +312,7 @@ import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { playersApi } from '@/api/players'
 import { highestSkill } from '@/utils/profile'
 import { track } from '@/utils/analytics'
+import { gameDay, startOfGameDay, recentGameDays, formatGameDay, gameMonthKey } from '@/utils/gameDay'
 import XpSparkline from '@/components/profile/XpSparkline.vue'
 import {
   SKILL_NAMES,
@@ -422,29 +423,23 @@ watch(
   { immediate: true },
 )
 
-// XP gained per calendar day over the last 7 days (oldest first). Uses the same
-// baseline as the weekly total elsewhere, the first snapshot inside the 7-day
-// window, and credits each later snapshot's gain to its own day, so a gap in
-// older data can never be dumped onto one day.
+// XP gained per game day (6 AM to 6 AM Eastern) over the last 7 days, oldest first. Each snapshot's gain is
+// credited to its own day, starting from the newest snapshot before the window, so the days add up to the
+// same 7-day total as the stats table and a gap in older data can never be dumped onto one day.
 const weekDays = computed(() => {
-  const list = snapshots.value
-  const cutoff = Date.now() - 7 * 86_400_000
-  const windowSnaps = list.filter((s) => new Date(s.capturedAt).getTime() >= cutoff)
+  const list = trackedSnapshots.value
+  const days = recentGameDays(7)
+  const cutoff = startOfGameDay(Date.now() - 6 * 86_400_000)
+  const firstInside = list.findIndex((s) => new Date(s.capturedAt).getTime() >= cutoff)
+  if (firstInside < 0) return []
+  const windowSnaps = list.slice(Math.max(firstInside - 1, 0))
   if (windowSnaps.length < 2) return []
-  const key = (t) => new Date(t).toLocaleDateString('en-CA')
   const byDay = new Map()
   for (let i = 1; i < windowSnaps.length; i++) {
-    const k = key(windowSnaps[i].capturedAt)
+    const k = gameDay(windowSnaps[i].capturedAt)
     byDay.set(k, (byDay.get(k) || 0) + Math.max(windowSnaps[i].overallXp - windowSnaps[i - 1].overallXp, 0))
   }
-  const days = []
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date()
-    d.setHours(12, 0, 0, 0)
-    d.setDate(d.getDate() - i)
-    days.push({ label: d.toLocaleDateString(undefined, { weekday: 'short' }), xp: byDay.get(key(d)) || 0 })
-  }
-  return days
+  return days.map((d) => ({ label: d.label, xp: byDay.get(d.key) || 0 }))
 })
 
 // When new XP last arrived: the newest snapshot whose total XP is higher than
@@ -533,7 +528,7 @@ const targetSkillLevel = computed(() =>
 )
 
 // Dropdown above the hiscores table, which window its per-skill deltas
-// show. "day" means the calendar day (resets at local midnight), "week"/
+// show. "day" means the calendar day (resets at 6 AM Eastern), "week"/
 // "month" are rolling 7/30-day windows. Shared across pages for the session.
 const { period } = useGainPeriod()
 watch(period, (p) => track('profile_gain_period', { period: p }))
@@ -548,10 +543,18 @@ const periodXpGains = computed(() => buildGainMap(xpGain))
 const periodLevelGains = computed(() => buildGainMap(levelGain))
 const periodRankGains = computed(() => buildGainMap(rankGain))
 
+// Gains only look at snapshots TickGains tracked itself. Imported history before the player was added is
+// months apart and would turn a 7-day window into the whole gap.
+const trackedSnapshots = computed(() => {
+  const created = player.value?.createdAt ? new Date(player.value.createdAt).getTime() - 60_000 : null
+  const list = created == null ? snapshots.value : snapshots.value.filter((s) => new Date(s.capturedAt).getTime() >= created)
+  return list.length ? list : snapshots.value
+})
+
 function buildGainMap(gainFn) {
   const map = {}
   for (const skill of HISCORES_SKILL_ORDER) {
-    map[skill] = gainFn(snapshots.value, skill, period.value)
+    map[skill] = gainFn(trackedSnapshots.value, skill, period.value)
   }
   return map
 }
@@ -561,7 +564,7 @@ function rankLabel(rank) {
 }
 
 function gain(gainPeriod) {
-  return xpGain(snapshots.value, selectedSkill.value, gainPeriod)
+  return xpGain(trackedSnapshots.value, selectedSkill.value, gainPeriod)
 }
 
 // Same "no-gain snapshots dropped" rule as snapshotRows below, so the chart
@@ -606,13 +609,12 @@ const groupedSnapshotRows = computed(() => {
   const groups = []
   const byDay = new Map()
   for (const row of snapshotRows.value) {
-    const date = new Date(row.capturedAt)
-    const key = date.toLocaleDateString('en-CA')
+    const key = gameDay(row.capturedAt)
     let group = byDay.get(key)
     if (!group) {
       group = {
         key,
-        label: date.toLocaleDateString(undefined, withYearIfNotCurrent(date, { weekday: 'short', month: 'short', day: 'numeric' })),
+        label: formatGameDay(key, withYearIfNotCurrent(new Date(`${key}T12:00:00Z`), { weekday: 'short', month: 'short', day: 'numeric' })),
         rows: [],
         rank: row.rank,
         level: row.level,
@@ -648,13 +650,12 @@ const monthGroups = computed(() => {
   const groups = []
   const byMonth = new Map()
   for (const day of groupedSnapshotRows.value) {
-    const date = new Date(day.rows[0].capturedAt)
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const key = gameMonthKey(day.key)
     let group = byMonth.get(key)
     if (!group) {
       group = {
         key,
-        label: date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
+        label: formatGameDay(`${key}-01`, { month: 'long', year: 'numeric' }),
         days: [],
         rank: day.rank,
         level: day.level,
@@ -678,9 +679,7 @@ const showMonthGrouping = computed(() => {
   if (monthGroups.value.length > 1) return true
   const onlyMonth = monthGroups.value[0]
   if (!onlyMonth) return false
-  const now = new Date()
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  return onlyMonth.key !== currentMonthKey
+  return onlyMonth.key !== gameMonthKey(gameDay(Date.now()))
 })
 
 const expandedMonths = ref(new Set())

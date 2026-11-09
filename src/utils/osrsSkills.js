@@ -1,3 +1,5 @@
+import { startOfGameDay } from '@/utils/gameDay'
+
 // Mirrors server/src/services/osrsHiscores.service.js's SKILL_NAMES.
 export const SKILL_NAMES = [
   'Attack',
@@ -126,25 +128,16 @@ const PERIODS = {
   month: 30 * 24 * 60 * 60 * 1000,
 }
 
-/** Midnight today in the browser's own local timezone. */
-function startOfToday() {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.getTime()
-}
-
 /**
- * Baseline snapshot for a trailing window, the newest snapshot from before
- * it began, or the very first snapshot if the player hasn't been tracked
- * that long yet. "day" is pinned to local midnight (the calendar day), not
- * a rolling 24h window, "week"/"month" are plain rolling windows.
+ * Baseline snapshot for a window: the player's state when it began, the newest snapshot from before it,
+ * or the very first snapshot if the player hasn't been tracked that long. Snapshots are only saved when
+ * xp changes, so the newest earlier one is still the current state at that moment. Callers should pass
+ * only snapshots TickGains tracked itself: sparse imported history (months apart) is not a valid window
+ * start. "day" runs from 6:00 AM Eastern to the next 6:00 AM Eastern; "week"/"month" are rolling windows.
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
-  const cutoff = period === 'day' ? startOfToday() : Date.now() - PERIODS[period]
-  // Use the last snapshot taken before the cutoff, so xp earned between that
-  // snapshot and the first one inside the window still counts. If the player
-  // has no snapshot that old, fall back to their first one.
+  const cutoff = period === 'day' ? startOfGameDay() : Date.now() - PERIODS[period]
   let baseline = snapshots[0]
   for (const s of snapshots) {
     if (new Date(s.capturedAt).getTime() < cutoff) baseline = s

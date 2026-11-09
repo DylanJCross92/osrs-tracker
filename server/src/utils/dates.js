@@ -3,10 +3,20 @@
 // timezone the server process happens to run in.
 export const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
 
-const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: APP_TIMEZONE }) // YYYY-MM-DD
+// A "day" runs from 6:00 AM in the app timezone to the next 6:00 AM, not midnight to midnight.
+// Keep in step with src/utils/gameDay.js and the SQL day cutoffs in players.service.js / cards.service.js.
+export const DAY_START_HOUR = 6
 
+const dayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: APP_TIMEZONE }) // YYYY-MM-DD
+const hourFmt = new Intl.DateTimeFormat('en-US', { timeZone: APP_TIMEZONE, hourCycle: 'h23', hour: '2-digit' })
+
+/** The 6 AM-to-6 AM day an instant belongs to, as 'YYYY-MM-DD' (the date the day started on). */
 export function localDay(date) {
-  return dayFmt.format(new Date(date))
+  const d = new Date(date)
+  const hour = Number(hourFmt.format(d))
+  const calendarDay = dayFmt.format(d)
+  if (hour >= DAY_START_HOUR) return calendarDay
+  return new Date(Date.parse(`${calendarDay}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
 }
 
 function dayToUtcMs(day) {
