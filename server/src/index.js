@@ -89,6 +89,7 @@ app.get('/sitemap.xml', async (req, res) => {
     { path: '/', changefreq: 'daily', priority: '1.0', lastmod: today },
     { path: '/discover', changefreq: 'hourly', priority: '0.9', lastmod: today },
     { path: '/leaderboard', changefreq: 'hourly', priority: '0.9', lastmod: today },
+    { path: '/compare', changefreq: 'weekly', priority: '0.6' },
     { path: '/planner', changefreq: 'weekly', priority: '0.9' },
     { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
     ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
@@ -176,6 +177,57 @@ if (distExists) {
             '@type': 'ProfilePage',
             mainEntity: { '@type': 'Person', name: player.displayName, url: pageUrl, description },
           },
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // Player comparison. The landing page is indexable; a specific pairing is an endless set of user-chosen URLs, so
+  // those carry noindex (they still unfurl nicely in Discord and X, which is what they are shared for).
+  const compareDescription = 'Compare two Old School RuneScape players side by side: XP gained, levels, rank movement and how consistently each one trains.'
+  app.get('/compare', (req, res) => {
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'Compare OSRS Players | TickGains',
+        description: compareDescription,
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl: `${SITE_URL}/compare`,
+      }),
+    )
+  })
+
+  app.get('/compare/:a/:b?', async (req, res, next) => {
+    try {
+      const { a, b } = req.params
+      if (!b) {
+        return res.send(
+          injectCardMeta(indexHtmlTemplate, {
+            title: 'Compare OSRS Players | TickGains',
+            description: compareDescription,
+            imageUrl: `${SITE_URL}/og-default.png`,
+            pageUrl: `${SITE_URL}/compare`,
+            noindex: true,
+          }),
+        )
+      }
+      const [pa, pb] = await Promise.all([getPlayerByUsername(a), getPlayerByUsername(b)])
+      const [wa, wb] = await Promise.all([
+        pa ? getWeeklyCardData(pa.id, 'Overall').catch(() => null) : null,
+        pb ? getWeeklyCardData(pb.id, 'Overall').catch(() => null) : null,
+      ])
+      const nameA = (pa?.displayName || a).slice(0, 12)
+      const nameB = (pb?.displayName || b).slice(0, 12)
+      let description = `${nameA} vs ${nameB} in Old School RuneScape: XP gained, levels, rank movement and training consistency, side by side on TickGains.`
+      if (wa && wb) description = `${nameA} gained ${formatXp(wa.xpGained)} XP and ${nameB} gained ${formatXp(wb.xpGained)} XP in the last 7 days. See the full head-to-head on TickGains.`
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${nameA} vs ${nameB} | OSRS XP Comparison | TickGains`,
+          description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}/compare/${encodeURIComponent(nameA)}/${encodeURIComponent(nameB)}`,
+          noindex: true,
         }),
       )
     } catch (err) {

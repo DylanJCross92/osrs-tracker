@@ -84,6 +84,7 @@ const footerCols = [
     links: [
       { label: 'Live activity', to: { name: 'discover', hash: '#live-activity' } },
       { label: 'Leaderboards', to: { name: 'leaderboard' } },
+      { label: 'Compare players', to: { name: 'compare' } },
     ],
   },
   {

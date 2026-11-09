@@ -25,7 +25,7 @@ function setLinkHref(html, rel, newHref) {
  * template: the raw index.html string. { title, description, imageUrl,
  * pageUrl }: all plain text/URLs, escaped here, callers don't need to.
  */
-export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd, bodyHtml }) {
+export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd, bodyHtml, noindex }) {
   let html = template
   html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)
   html = setMetaContent(html, 'description', description)
@@ -38,6 +38,7 @@ export function injectCardMeta(template, { title, description, imageUrl, pageUrl
   html = setMetaContent(html, 'twitter:description', description)
   html = setMetaContent(html, 'twitter:image', imageUrl)
   html = setLinkHref(html, 'canonical', pageUrl)
+  if (noindex) html = html.replace('</head>', '<meta name="robots" content="noindex, follow"></head>')
   if (jsonLd) {
     // "<" is escaped so user-controlled text can never close the script tag.
     const json = JSON.stringify(jsonLd).replace(/</g, '\\u003c')

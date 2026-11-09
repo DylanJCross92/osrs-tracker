@@ -24,6 +24,7 @@ const routes = [
     name: 'leaderboard',
     component: () => import('@/views/LeaderboardView.vue'),
   },
+  { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {
     path: '/planner',
     name: 'planner',

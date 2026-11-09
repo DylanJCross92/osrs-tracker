@@ -11,6 +11,10 @@
           >
             {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
           </button>
+          <RouterLink v-if="player" class="btn btn-ghost" :to="compareLink" @click="track('compare_open', { source: 'profile' })">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
+            Compare
+          </RouterLink>
           <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
             Share
@@ -304,6 +308,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
+import { useRivals } from '@/composables/useRivals'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
@@ -364,6 +369,16 @@ watch(
   },
   { immediate: true },
 )
+
+// Compare opens against your saved name when you have one (and this is not you), otherwise with this player first.
+const { me: myName } = useRivals()
+const compareLink = computed(() => {
+  const name = player.value?.username || usernameParam.value
+  const mine = myName.value
+  return mine && mine.toLowerCase() !== name.toLowerCase()
+    ? `/compare/${encodeURIComponent(mine)}/${encodeURIComponent(name)}`
+    : `/compare/${encodeURIComponent(name)}`
+})
 
 const isImportingWomHistory = computed(
   () => player.value?.womImportStatus === 'pending' || player.value?.womImportStatus === 'running',
