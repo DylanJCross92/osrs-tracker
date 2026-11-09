@@ -2108,3 +2108,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .goal-method-row .goal-method-picker { display: flex; flex-direction: column; gap: 6px; flex: 1 1 100%; min-width: 0; }
 .goal-method-row .goal-method-picker > span { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .mpick-trigger, .mpick-panel { overflow-anchor: none; }
+
+/* live activity fills the full height of its card (the list scrolls inside instead of leaving empty space) */
+.disc-feed .disc-events { flex: 1 1 0; min-height: 320px; max-height: none; }
+@media (max-width: 860px) { .disc-feed .disc-events { flex: none; min-height: 0; max-height: 380px; } }
