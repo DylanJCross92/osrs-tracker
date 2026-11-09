@@ -68,11 +68,35 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Failed to build sitemap.xml', err)
   }
 
-  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, `${SITE_URL}/leaderboard`, `${SITE_URL}/calculators`, ...calculators.map((c) => `${SITE_URL}/calculators/${c.slug}`), ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-    .map((url) => `  <url><loc>${url}</loc></url>`)
+  // Every public, indexable page with how often it changes and how important it is. Player pages carry the date
+  // of their latest snapshot as lastmod. Share cards and parameterised planner links are left out on purpose.
+  const today = new Date().toISOString().slice(0, 10)
+  const esc = (v) => String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  const entries = [
+    { path: '/', changefreq: 'daily', priority: '1.0', lastmod: today },
+    { path: '/discover', changefreq: 'hourly', priority: '0.9', lastmod: today },
+    { path: '/leaderboard', changefreq: 'hourly', priority: '0.9', lastmod: today },
+    { path: '/planner', changefreq: 'weekly', priority: '0.9' },
+    { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
+    ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
+    ...players.map((p) => ({
+      path: `/player/${encodeURIComponent(p.username)}`,
+      changefreq: 'daily',
+      priority: '0.6',
+      lastmod: p.latest?.capturedAt ? new Date(p.latest.capturedAt).toISOString().slice(0, 10) : undefined,
+    })),
+    { path: '/about', changefreq: 'monthly', priority: '0.3' },
+    { path: '/contact', changefreq: 'monthly', priority: '0.3' },
+    { path: '/privacy', changefreq: 'yearly', priority: '0.2' },
+  ]
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries
+    .map(
+      (e) =>
+        `  <url><loc>${esc(SITE_URL + e.path)}</loc>${e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : ''}<changefreq>${e.changefreq}</changefreq><priority>${e.priority}</priority></url>`,
+    )
     .join('\n')}\n</urlset>\n`
 
+  res.set('Cache-Control', 'public, max-age=3600')
   res.type('application/xml').send(xml)
 })
 
