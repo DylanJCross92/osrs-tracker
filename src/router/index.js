@@ -16,6 +16,8 @@ const routes = [
     name: 'discover',
     component: () => import('@/views/DiscoverView.vue'),
   },
+  { path: '/calculators', name: 'calculators', component: () => import('@/views/CalculatorsView.vue') },
+  { path: '/calculators/:skill', name: 'skillCalculator', component: () => import('@/views/SkillCalculatorView.vue') },
   {
     path: '/leaderboard',
     name: 'leaderboard',

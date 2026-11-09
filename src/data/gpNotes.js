@@ -5,6 +5,16 @@
 // profit, a cost, or roughly break-even.
 
 const SPECIFIC = {
+  'agility-draynor': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-al-kharid': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-varrock': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-canifis': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-falador': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-seers': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-pollnivneach': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-rellekka': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-ardougne': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-prifddinas': 'Crystal shards are not counted, and the course uses no supplies, so it breaks even.',
   'construction-gnome-benches': 'Six mahogany planks go into every bench and are used up when you remove it.',
   'prayer-superior': 'Superior dragon bones cost a fortune and every one is used up.',
   'thieving-rogues-castle': 'The chests hold valuable loot, though Wilderness deaths can cost you.',

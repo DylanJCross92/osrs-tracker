@@ -13,7 +13,7 @@ import { getDiscover } from './services/discover.service.js'
 import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
-import { injectCardMeta } from './utils/cardMeta.js'
+import { injectCardMeta, escapeHtml } from './utils/cardMeta.js'
 
 const app = express()
 // Behind Render's proxy, needed so req.ip is the visitor (rate limiting).
@@ -49,6 +49,15 @@ const PERIOD_PHRASE_PAST = { day: 'that day', week: 'that week', month: 'over 30
 
 const SITE_URL = process.env.SITE_URL || 'https://tickgains.com'
 
+// Calculator page text, written next to the frontend bundle at build time (see vite.config.js). Empty in local
+// dev, where there is no dist/ yet.
+let calculators = []
+try {
+  calculators = JSON.parse(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../dist/calculators.json'), 'utf-8'))
+} catch {
+  calculators = []
+}
+
 // Generated from the live player list rather than a static file, so newly
 // tracked (or removed) players show up without a redeploy.
 app.get('/sitemap.xml', async (req, res) => {
@@ -59,7 +68,7 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Failed to build sitemap.xml', err)
   }
 
-  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, `${SITE_URL}/leaderboard`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
+  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, `${SITE_URL}/leaderboard`, `${SITE_URL}/calculators`, ...calculators.map((c) => `${SITE_URL}/calculators/${c.slug}`), ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((url) => `  <url><loc>${url}</loc></url>`)
     .join('\n')}\n</urlset>\n`
@@ -143,6 +152,73 @@ if (distExists) {
         description: 'OSRS XP leaderboard: top XP gains today, this week and this month, plus all-time total XP and total level for every tracked player.',
         imageUrl: `${SITE_URL}/og-default.png`,
         pageUrl: `${SITE_URL}/leaderboard`,
+      }),
+    )
+  })
+
+  // Calculator pages: unique title, description, canonical, structured data and crawler-readable text per skill.
+  const calcLinks = (skip) =>
+    calculators
+      .filter((c) => c.slug !== skip)
+      .map((c) => `<a href="/calculators/${c.slug}">${escapeHtml(c.name)} calculator</a>`)
+      .join(' ')
+
+  app.get('/calculators', (req, res) => {
+    const description = 'Free OSRS skill calculators for every skill. Work out the XP, training hours and gp needed to reach your next level, or level 99, with real training methods.'
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'OSRS Skill Calculators | TickGains',
+        description,
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl: `${SITE_URL}/calculators`,
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'OSRS Skill Calculators',
+          url: `${SITE_URL}/calculators`,
+          description,
+          hasPart: calculators.map((c) => ({ '@type': 'WebApplication', name: `OSRS ${c.name} Calculator`, url: `${SITE_URL}/calculators/${c.slug}` })),
+        },
+        bodyHtml: `<main><h1>OSRS Skill Calculators</h1><p>${escapeHtml(description)}</p><nav>${calcLinks('')}</nav><p><a href="/planner">Account Planner</a></p></main>`,
+      }),
+    )
+  })
+
+  app.get('/calculators/:slug', (req, res) => {
+    const slug = req.params.slug
+    const calc = calculators.find((c) => c.slug === slug.toLowerCase())
+    if (!calc) return res.sendFile(path.join(distPath, 'index.html'))
+    // One canonical URL per calculator: other casings redirect.
+    if (slug !== calc.slug) return res.redirect(301, `/calculators/${calc.slug}`)
+    const pageUrl = `${SITE_URL}/calculators/${calc.slug}`
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: calc.title,
+        description: calc.description,
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl,
+        jsonLd: [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: `OSRS ${calc.name} Calculator`,
+            url: pageUrl,
+            description: calc.description,
+            applicationCategory: 'UtilitiesApplication',
+            operatingSystem: 'Any',
+            isAccessibleForFree: true,
+            offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Calculators', item: `${SITE_URL}/calculators` },
+              { '@type': 'ListItem', position: 2, name: calc.name, item: pageUrl },
+            ],
+          },
+        ],
+        bodyHtml: `<main><h1>OSRS ${escapeHtml(calc.name)} Calculator</h1><p>${escapeHtml(calc.lead)}</p>${calc.guide.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}<nav>${calcLinks(calc.slug)}</nav><p><a href="/calculators">All calculators</a> · <a href="/planner">Account Planner</a></p></main>`,
       }),
     )
   })

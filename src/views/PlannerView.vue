@@ -14,7 +14,7 @@
         <button class="btn-text" type="button" @click="startChangePlayer">Change player</button>
       </div>
       <template v-else>
-        <p class="planner-intro">Load your stats by username (or enter them by hand), then add skill goals and compare ways to reach them.</p>
+        <p class="planner-intro">Load your stats by username (or enter them by hand), then add skill goals and compare ways to reach them. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
         <div class="suggest-wrap">
           <form class="add-player-form" @submit.prevent="loadPlayer">
             <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
@@ -373,7 +373,7 @@ function memo(cache, key, fn) {
   cache.set(key, value)
   return value
 }
-const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour])
+const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.allowedMethodIds || null])
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 const compares = computed(() => resolved.value.map((g) => memo(compareCache, goalKey(g, false), () => compareStrategies(g))))
 const totals = computed(() => planTotals(plans.value, hoursPerDay.value))

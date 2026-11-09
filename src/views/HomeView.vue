@@ -324,6 +324,7 @@ const features = computed(() => [
   { key: 'tracking', title: 'Automatic XP Tracking', text: 'Track skill XP, levels, and progress with automatic updates every hour while a player is active.', cta: 'See a live profile', to: exampleTo('stats'), icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
   { key: 'history', title: 'Historical XP Data', text: 'Import available Wise Old Man history to view previous progress.', cta: 'Browse history', to: exampleTo('history'), icon: svg('<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />') },
   { key: 'planner', title: 'Account Planner', text: 'Calculate XP requirements, training methods, and estimated hours to reach goals.', cta: 'Plan a goal', to: { path: '/planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
+  { key: 'calculators', title: 'Skill Calculators', text: 'Quick XP, time and gp calculators for every skill, with training methods and shareable links.', cta: 'Open calculators', to: { path: '/calculators' }, icon: svg('<rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2" />') },
   { key: 'discover', title: 'Player Discovery', text: 'Explore leaderboards, player achievements, and recent activity.', cta: 'Open Discover', to: { path: '/discover' }, icon: svg('<circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />') },
 ])
 const steps = [

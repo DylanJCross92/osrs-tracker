@@ -1,6 +1,6 @@
 <template>
   <div v-if="data.rows.length" class="planner-materials">
-    <h4 class="goal-section-title">Materials needed</h4>
+    <h4 class="goal-section-title">{{ title }}</h4>
     <ul class="mat-totals">
       <li v-for="t in data.totals" :key="t.name" class="mat-chip">
         <img :src="itemIconUrl(t.name)" :alt="t.name" width="28" height="28" loading="lazy" @error="hide" />
@@ -36,7 +36,7 @@ import { itemIconUrl } from '@/data/methodMaterials'
 import { materialsForPlan } from '@/utils/plannerTools'
 import { formatNum } from '@/utils/planner'
 
-const props = defineProps({ plan: { type: Object, required: true } })
+const props = defineProps({ plan: { type: Object, required: true }, title: { type: String, default: 'Materials needed' } })
 const data = computed(() => materialsForPlan(props.plan))
 const hide = (e) => (e.target.style.visibility = 'hidden')
 </script>

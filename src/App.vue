@@ -89,6 +89,7 @@ const footerCols = [
     title: 'Plan',
     links: [
       { label: 'Account Planner', to: { name: 'planner' } },
+      { label: 'Skill calculators', to: { name: 'calculators' } },
       { label: 'Add a skill goal', to: { name: 'planner', hash: '#add-goal' } },
     ],
   },

@@ -31,8 +31,8 @@ export function levelAtXp(xp, allowVirtual = false) {
 // Best catalog method usable at a given level (null if none). 'fast' picks the
 // highest xp/hr; 'cheap' picks the lowest cost per xp (net gp / xp, so profit
 // methods win), ignoring methods with no trustworthy gp figure.
-function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE) {
-  const usable = methodsForSkill(skill).filter((meth) => meth.minLevel <= level && (meth.maxLevel == null || level <= meth.maxLevel))
+function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null) {
+  const usable = methodsForSkill(skill).filter((meth) => meth.minLevel <= level && (meth.maxLevel == null || level <= meth.maxLevel) && (!allowed || allowed.has(meth.id)))
   if (!usable.length) return null
   const byFast = (a, b) => b.xpPerHour - a.xpPerHour
   if (mode === 'balanced') {
@@ -64,7 +64,7 @@ function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VAL
  * e.g. copper -> iron -> Motherlode -> Blast Mine on the way to granite.
  * Pieces with no catalog method come back with method: null.
  */
-function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE) {
+function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null) {
   if (toXp <= fromXp) return []
   const cuts = new Set([fromXp, toXp])
   for (const meth of methodsForSkill(skill)) {
@@ -78,7 +78,7 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
   const points = [...cuts].sort((x, y) => x - y)
   const pieces = []
   for (let i = 0; i < points.length - 1; i++) {
-    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour)
+    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour, allowed)
     const last = pieces[pieces.length - 1]
     if (last && last.method === method) last.toXp = points[i + 1]
     else pieces.push({ method, fromXp: points[i], toXp: points[i + 1] })
@@ -132,6 +132,8 @@ export function planGoal(goal) {
   const remainingXp = Math.max(targetXp - startXp, 0)
   const auto = isAuto(goal.methodId) ? goal.methodId : null
   const chosen = goal.methodId === 'custom' || auto ? null : getMethod(goal.methodId)
+  // Optional: only route through these methods (a list of method ids). Empty or missing means any method.
+  const allowedSet = Array.isArray(goal.allowedMethodIds) && goal.allowedMethodIds.length ? new Set(goal.allowedMethodIds) : null
 
   const result = { currentXp, startXp, questXp, targetXp, remainingXp, method: chosen, segments: [], hours: null, netGp: null, gpPartial: false, warning: null, complete: true }
   if (remainingXp === 0) return { ...result, hours: 0, netGp: 0 }
@@ -139,21 +141,21 @@ export function planGoal(goal) {
   let segments = []
   if (auto) {
     const mode = auto === AUTO_CHEAP ? 'cheap' : auto === AUTO_PROFIT ? 'profit' : auto === AUTO_BALANCED ? 'balanced' : 'fast'
-    segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE).map((x) => ({ ...x, kind: 'auto' }))
+    segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'auto' }))
   } else if (!chosen) {
     const rate = Math.floor(goal.customXpPerHour || 0)
     if (!rate) return { ...result, complete: false, warning: 'Pick a training method or enter an XP/hour rate.' }
-    segments = [{ method: { name: 'Custom rate', xpPerHour: rate, gpPerHour: null }, fromXp: startXp, toXp: targetXp, kind: 'main' }]
+    segments = [{ method: { name: 'Custom rate', xpPerHour: rate, gpPerHour: Number.isFinite(goal.customGpPerHour) ? goal.customGpPerHour : null }, fromXp: startXp, toXp: targetXp, kind: 'main' }]
   } else {
     const mainStart = xpAtLevel(chosen.minLevel)
     const mainEnd = chosen.maxLevel == null ? Infinity : xpAtLevel(chosen.maxLevel + 1)
     const prepEnd = Math.min(targetXp, mainStart)
-    segments.push(...fillRoute(chosen.skill, startXp, prepEnd).map((x) => ({ ...x, kind: 'prep' })))
+    segments.push(...fillRoute(chosen.skill, startXp, prepEnd, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'prep' })))
     const mainFrom = Math.max(startXp, mainStart)
     const mainTo = Math.min(targetXp, mainEnd)
     if (mainTo > mainFrom) segments.push({ method: chosen, fromXp: mainFrom, toXp: mainTo, kind: 'main' })
     if (targetXp > mainEnd) {
-      segments.push(...fillRoute(chosen.skill, Math.max(mainEnd, startXp), targetXp).map((x) => ({ ...x, kind: 'post' })))
+      segments.push(...fillRoute(chosen.skill, Math.max(mainEnd, startXp), targetXp, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'post' })))
     }
   }
 

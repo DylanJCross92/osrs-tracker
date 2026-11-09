@@ -25,7 +25,7 @@ function setLinkHref(html, rel, newHref) {
  * template: the raw index.html string. { title, description, imageUrl,
  * pageUrl }: all plain text/URLs, escaped here, callers don't need to.
  */
-export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd }) {
+export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd, bodyHtml }) {
   let html = template
   html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)
   html = setMetaContent(html, 'description', description)
@@ -43,5 +43,11 @@ export function injectCardMeta(template, { title, description, imageUrl, pageUrl
     const json = JSON.stringify(jsonLd).replace(/</g, '\\u003c')
     html = html.replace('</head>', `<script type="application/ld+json">${json}</script></head>`)
   }
+  if (bodyHtml) {
+    // Crawler-visible content: the app replaces the contents of #app when it mounts. Callers escape their text.
+    html = html.replace('<div id="app"></div>', `<div id="app">${bodyHtml}</div>`)
+  }
   return html
 }
+
+export { escapeHtml }

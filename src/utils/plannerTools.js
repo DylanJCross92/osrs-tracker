@@ -228,6 +228,7 @@ export function snapshotPlan(state, name, existing = {}) {
       methodId: g.methodId,
       customXpPerHour: g.customXpPerHour || 0,
       quests: [...(g.quests || [])],
+      ...(g.allowedMethodIds?.length ? { allowedMethodIds: [...g.allowedMethodIds] } : {}),
     })),
   }
 }
@@ -318,6 +319,7 @@ export function validatePlan(raw) {
       methodId,
       customXpPerHour: Math.floor(num(g.customXpPerHour, 0, 10_000_000, 0)),
       quests: Array.isArray(g.quests) ? g.quests.filter((id) => getQuest(id)) : [],
+      ...(Array.isArray(g.allowedMethodIds) ? { allowedMethodIds: g.allowedMethodIds.filter((id) => getMethod(id)?.skill === g.skill) } : {}),
     })
   }
   if (!goals.length) return { error: 'That plan has no usable goals.' }
@@ -359,6 +361,7 @@ export function importPlan(raw) {
 export function materialsForPlan(plan) {
   const rows = []
   const totals = new Map()
+  let actions = 0
   for (const seg of plan.segments || []) {
     const list = seg.method && MATERIALS[seg.method.id]
     if (!list) continue
@@ -370,14 +373,15 @@ export function materialsForPlan(plan) {
       const usable = list.filter((it) => it.level <= lvl)
       if (!usable.length) continue
       const best = usable.reduce((a, b) => (b.xp > a.xp ? b : a))
-      const actions = need / best.xp
-      const items = [{ name: best.name, qty: Math.ceil(actions * best.qty) }]
-      for (const e of best.extra) items.push({ name: e.name, qty: Math.ceil(actions * e.qty) })
+      const count = need / best.xp
+      actions += count
+      const items = [{ name: best.name, qty: Math.ceil(count * best.qty) }]
+      for (const e of best.extra) items.push({ name: e.name, qty: Math.ceil(count * e.qty) })
       rows.push({ level: lvl + 1, method: seg.method.name, items })
       for (const it of items) totals.set(it.name, (totals.get(it.name) || 0) + it.qty)
     }
   }
-  return { rows, totals: [...totals].map(([name, qty]) => ({ name, qty })) }
+  return { rows, totals: [...totals].map(([name, qty]) => ({ name, qty })), actions: Math.ceil(actions) }
 }
 
 /** Combine several plans' materials into one shopping list. */

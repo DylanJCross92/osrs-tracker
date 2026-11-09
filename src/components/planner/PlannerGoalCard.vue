@@ -28,6 +28,11 @@
         <button class="btn-text" type="button" @click="$emit('refresh')">Refresh this goal</button>
       </div>
 
+      <div v-if="goal.allowedMethodIds?.length" class="planner-notice">
+        This goal only uses {{ goal.allowedMethodIds.length }} chosen method{{ goal.allowedMethodIds.length === 1 ? '' : 's' }} (set in the skill calculator).
+        <button class="btn-text" type="button" @click="$emit('patch', { allowedMethodIds: null })">Use all methods</button>
+      </div>
+
       <div class="goal-method-row">
         <label>
           <span>Training strategy / method</span>
