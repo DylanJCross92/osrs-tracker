@@ -67,23 +67,16 @@
       <div class="calc-strategy">
         <span class="strategy-label">Training strategy</span>
         <div class="range-tabs strategy-tabs" role="group" aria-label="Training strategy">
-          <button v-for="st in STRATEGIES" :key="st" type="button" :class="{ active: methodChoice === 'strategy' && strategy === st }" :title="STRATEGY_HINTS[st]" @click="setStrategy(st)">{{ STRATEGY_LABELS[st] }}</button>
+          <button v-for="st in STRATEGIES" :key="st" type="button" :class="{ active: methodChoice === 'strategy' && strategy === st }" :title="STRATEGY_HINTS[st]" @click="setStrategy(st)">{{ TAB_LABELS[st] }}</button>
         </div>
       </div>
       <p class="planner-hint">{{ methodChoice === 'strategy' ? STRATEGY_HINTS[strategy] : 'You picked a specific method below. Choose a strategy above to let the calculator pick the route.' }}</p>
 
       <div class="calc-method-row">
-        <label>
+        <div class="calc-method-picker">
           <span>Training method</span>
-          <select v-model="methodChoice">
-            <option value="strategy">Best route ({{ STRATEGY_LABELS[strategy] }})</option>
-            <option v-if="hasProfit" :value="AUTO_PROFIT">Most profitable route</option>
-            <optgroup label="Specific method">
-              <option v-for="meth in methods" :key="meth.id" :value="meth.id">{{ methodLabel(meth, methods) }}</option>
-              <option value="custom">Custom XP/hour</option>
-            </optgroup>
-          </select>
-        </label>
+          <MethodPicker v-model="methodChoice" :methods="methods" :routes="methodRoutes" />
+        </div>
         <template v-if="methodChoice === 'custom'">
           <label><span>XP per hour</span><NumberInput v-model="customXp" :min="1" :max="10000000" /></label>
           <label><span>GP per hour (optional)</span><NumberInput v-model="customGp" :min="0" :max="1000000000" /></label>
@@ -212,6 +205,7 @@ import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerQuests from '@/components/planner/PlannerQuests.vue'
 import PlannerCompare from '@/components/planner/PlannerCompare.vue'
 import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
+import MethodPicker from '@/components/planner/MethodPicker.vue'
 import CalcPlayerLookup from '@/components/calculators/CalcPlayerLookup.vue'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
@@ -247,12 +241,14 @@ const router = useRouter()
 const { showToast } = useToast()
 
 const skill = props.info.name
-const STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED]
+const BASE_STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED]
 const STRATEGY_HINTS = {
   [AUTO_FAST]: 'Minimises training time, whatever it costs.',
   [AUTO_CHEAP]: 'Minimises net gp spent, even if it is slower.',
   [AUTO_BALANCED]: 'A middle ground between speed and cost.',
+  [AUTO_PROFIT]: 'Uses whichever method makes the most gp per hour at each level, and the cheapest one where nothing makes money.',
 }
+const TAB_LABELS = { [AUTO_FAST]: 'Fastest', [AUTO_CHEAP]: 'Cheapest', [AUTO_BALANCED]: 'Balanced', [AUTO_PROFIT]: 'Profitable' }
 const PLANNER_KEY = 'tickgains-planner-v1'
 
 // --- Inputs (validated from the URL so shared links restore the same calculation) ---
@@ -291,7 +287,7 @@ if (intParam(q.targetXp, 1, MAX_XP) != null) {
 const methodParam = strParam(q.method)
 const STRATEGY_BY_NAME = { fastest: AUTO_FAST, cheapest: AUTO_CHEAP, balanced: AUTO_BALANCED }
 if (STRATEGY_BY_NAME[methodParam]) strategy.value = STRATEGY_BY_NAME[methodParam]
-else if (methodParam === 'profitable') methodChoice.value = AUTO_PROFIT
+else if (methodParam === 'profitable') strategy.value = AUTO_PROFIT
 else if (methodParam === 'custom') methodChoice.value = 'custom'
 else if (methodParam) {
   // Accept "prifddinas" or the full id "agility-prifddinas".
@@ -343,6 +339,9 @@ const inputError = computed(() => {
 // --- Methods and calculation (the Account Planner's engine) ---
 const methods = computed(() => relevantMethods(skill, levelAtXp(currentXpNum.value, true), levelAtXp(targetXpNum.value, true)))
 const method = computed(() => (isAuto(resolvedId.value) || resolvedId.value === 'custom' ? null : getMethod(resolvedId.value)))
+const methodRoutes = computed(() => [{ value: 'strategy', label: `Best route (${STRATEGY_LABELS[strategy.value]})`, sub: 'Picks the best method at every level' }])
+// The Profitable strategy only appears when something can actually make gp between your levels.
+const STRATEGIES = computed(() => (hasProfit.value ? [...BASE_STRATEGIES, AUTO_PROFIT] : BASE_STRATEGIES))
 const hasProfit = computed(() => profitableMethods(skill, levelAtXp(currentXpNum.value, true), levelAtXp(targetXpNum.value, true)).length > 0)
 const resolvedId = computed(() => (methodChoice.value === 'strategy' ? strategy.value : methodChoice.value))
 const goal = computed(() => ({
@@ -379,11 +378,15 @@ const strategyPlans = computed(() => (inputError.value ? null : compareStrategie
 
 // A method that no longer applies after the levels change falls back to the best route.
 watch(methods, (list) => {
-  if (methodChoice.value !== 'strategy' && methodChoice.value !== 'custom' && methodChoice.value !== AUTO_PROFIT && !list.some((m) => m.id === methodChoice.value)) methodChoice.value = 'strategy'
+  if (methodChoice.value !== 'strategy' && methodChoice.value !== 'custom' && !list.some((m) => m.id === methodChoice.value)) methodChoice.value = 'strategy'
 })
-watch(hasProfit, (v) => {
-  if (!v && methodChoice.value === AUTO_PROFIT) methodChoice.value = 'strategy'
-})
+watch(
+  hasProfit,
+  (v) => {
+    if (!v && strategy.value === AUTO_PROFIT) strategy.value = AUTO_FAST
+  },
+  { immediate: true },
+)
 
 function setStrategy(st) {
   strategy.value = st
@@ -391,8 +394,7 @@ function setStrategy(st) {
   track('calc_strategy', { skill, strategy: st })
 }
 function pickRoute(id) {
-  if (id === AUTO_PROFIT) methodChoice.value = AUTO_PROFIT
-  else if (STRATEGIES.includes(id)) setStrategy(id)
+  if (id === AUTO_PROFIT || BASE_STRATEGIES.includes(id)) setStrategy(id)
   else methodChoice.value = id
 }
 
@@ -442,7 +444,7 @@ function shareParams() {
   p.set('currentXp', String(currentXpNum.value))
   if (targetMode.value === 'level') p.set('targetLevel', String(targetLevel.value))
   else p.set('targetXp', String(targetXpNum.value))
-  const idParam = methodChoice.value === 'strategy' ? { [AUTO_FAST]: 'fastest', [AUTO_CHEAP]: 'cheapest', [AUTO_BALANCED]: 'balanced' }[strategy.value] : methodChoice.value === AUTO_PROFIT ? 'profitable' : methodChoice.value === 'custom' ? 'custom' : methodChoice.value.replace(`${props.info.slug}-`, '')
+  const idParam = methodChoice.value === 'strategy' ? { [AUTO_FAST]: 'fastest', [AUTO_CHEAP]: 'cheapest', [AUTO_BALANCED]: 'balanced', [AUTO_PROFIT]: 'profitable' }[strategy.value] : methodChoice.value === 'custom' ? 'custom' : methodChoice.value.replace(`${props.info.slug}-`, '')
   p.set('method', idParam)
   if (methodChoice.value === 'custom') {
     p.set('rate', String(customXp.value))

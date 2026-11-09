@@ -34,22 +34,10 @@
       </div>
 
       <div class="goal-method-row">
-        <label>
+        <div class="goal-method-picker">
           <span>Training strategy / method</span>
-          <select :value="goal.methodId" @change="$emit('patch', { methodId: $event.target.value })">
-            <option :value="GLOBAL_STRATEGY">Follow global strategy ({{ STRATEGY_LABELS[globalStrategy] }})</option>
-            <optgroup label="Best route">
-              <option :value="AUTO_FAST">Fastest route</option>
-              <option :value="AUTO_CHEAP">Cheapest route</option>
-              <option :value="AUTO_BALANCED">Balanced route</option>
-              <option v-if="profitable.length" :value="AUTO_PROFIT">Most profitable route</option>
-            </optgroup>
-            <optgroup label="Specific method">
-              <option v-for="meth in methods" :key="meth.id" :value="meth.id">{{ methodLabel(meth, methods) }}</option>
-              <option value="custom">Custom XP/hour</option>
-            </optgroup>
-          </select>
-        </label>
+          <MethodPicker :model-value="goal.methodId" :methods="methods" :routes="methodRoutes" @update:model-value="$emit('patch', { methodId: $event })" />
+        </div>
         <label v-if="goal.methodId === 'custom'">
           <span>XP/hour</span>
           <NumberInput :model-value="goal.customXpPerHour" :min="1" :max="10000000" @update:model-value="$emit('patch', { customXpPerHour: $event })" />
@@ -111,6 +99,7 @@ import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerQuests from '@/components/planner/PlannerQuests.vue'
 import PlannerCompare from '@/components/planner/PlannerCompare.vue'
 import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
+import MethodPicker from '@/components/planner/MethodPicker.vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { getMethod } from '@/data/trainingMethods'
@@ -155,6 +144,13 @@ const methods = computed(() => {
   const picked = getMethod(props.goal.methodId)
   return picked && !list.some((x) => x.id === picked.id) ? [...list, picked] : list
 })
+const methodRoutes = computed(() => [
+  { value: GLOBAL_STRATEGY, label: `Follow global strategy`, sub: STRATEGY_LABELS[props.globalStrategy] },
+  { value: AUTO_FAST, label: 'Fastest route' },
+  { value: AUTO_CHEAP, label: 'Cheapest route' },
+  { value: AUTO_BALANCED, label: 'Balanced route' },
+  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Most profitable route' }] : []),
+])
 const profitable = computed(() => profitableMethods(props.goal.skill, startLevel.value, endLevel.value))
 const strategyText = computed(() => {
   const id = resolvedId.value
