@@ -111,10 +111,13 @@
     <section id="features" class="home-section">
       <div class="home-features">
         <RouterLink v-for="f in features" :key="f.title" :to="f.to" class="card home-feature" @click="track('home_feature', { feature: f.key })">
-          <span class="home-feature-icon" v-html="f.icon" />
+          <div class="home-feature-top">
+            <span class="home-feature-icon" v-html="f.icon" />
+            <FeatureArt :kind="f.key" />
+          </div>
           <h3>{{ f.title }}</h3>
           <p>{{ f.text }}</p>
-          <span class="home-feature-link">{{ f.cta }} →</span>
+          <span class="home-feature-link">{{ f.cta }}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
         </RouterLink>
       </div>
     </section>
@@ -257,6 +260,7 @@ import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
 import { track } from '@/utils/analytics'
 import CheerPill from '@/components/CheerPill.vue'
+import FeatureArt from '@/components/home/FeatureArt.vue'
 
 const router = useRouter()
 const store = usePlayersStore()
