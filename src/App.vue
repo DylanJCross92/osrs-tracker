@@ -60,7 +60,7 @@ const footerCols = [
     title: 'Discover',
     links: [
       { label: 'Live activity', to: { name: 'discover', hash: '#live-activity' } },
-      { label: 'Leaderboards', to: { name: 'discover', hash: '#leaderboard' } },
+      { label: 'Leaderboards', to: { name: 'leaderboard' } },
     ],
   },
   {

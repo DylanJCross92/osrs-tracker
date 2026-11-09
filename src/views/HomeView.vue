@@ -31,7 +31,7 @@
         <li v-for="sg in suggestions" :key="sg.username">
           <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }">
             <span>{{ sg.displayName }}</span>
-            <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString() ?? '-' }}</small>
+            <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small>
           </RouterLink>
         </li>
       </ul>
@@ -131,9 +131,9 @@
             </div>
           </div>
           <div class="home-preview-stats">
-            <div><span>Overall</span><b>{{ example.overallLevel?.toLocaleString() }}</b></div>
-            <div v-if="example.weekXp"><span>Gained · 7 days</span><b class="stat-gain">+{{ example.weekXp.toLocaleString() }}</b></div>
-            <div class="wide"><span>Total XP</span><b>{{ example.overallXp?.toLocaleString() }}</b></div>
+            <div><span>Overall</span><b>{{ example.overallLevel?.toLocaleString('en-US') }}</b></div>
+            <div v-if="example.weekXp"><span>Gained · 7 days</span><b class="stat-gain">+{{ example.weekXp.toLocaleString('en-US') }}</b></div>
+            <div class="wide"><span>Total XP</span><b>{{ example.overallXp?.toLocaleString('en-US') }}</b></div>
           </div>
           <div v-if="example.recentSkills.length" class="home-preview-gains">
             <span class="home-preview-label">Recent XP gains</span>
@@ -181,7 +181,7 @@
       <p v-else-if="error" class="card empty-hint">Community activity isn't available right now.</p>
       <template v-else-if="community && community.totalPlayers">
         <div class="home-tiles">
-          <div class="card home-tile"><span>Players tracked</span><b>{{ community.totalPlayers.toLocaleString() }}</b></div>
+          <div class="card home-tile"><span>Players tracked</span><b>{{ community.totalPlayers.toLocaleString('en-US') }}</b></div>
           <div class="card home-tile"><span>XP gained {{ community.xpToday ? 'today' : 'this week' }}</span><b class="stat-gain">+{{ formatXp(community.xpToday || community.xpWeek) }}</b></div>
         </div>
         <div class="home-community">
@@ -205,7 +205,7 @@
                 <span class="home-list-row">
                   <img :src="skillIconSrc(s.skill)" :alt="s.skill" width="22" height="22" />
                   <span class="home-list-name">{{ s.skill }}</span>
-                  <small>{{ s.players }} player{{ s.players === 1 ? '' : 's' }}</small>
+                  <small>{{ s.players.toLocaleString('en-US') }} player{{ s.players === 1 ? '' : 's' }}</small>
                   <span class="stat-gain">+{{ formatXp(s.xp) }}</span>
                 </span>
               </li>
@@ -311,7 +311,7 @@ const agoText = (iso) => {
   void now.value
   return iso ? formatRelative(iso) : ''
 }
-const formatCount = (n) => (n == null ? '' : n.toLocaleString())
+const formatCount = (n) => (n == null ? '' : n.toLocaleString('en-US'))
 const community = computed(() => home.value?.community || null)
 const example = computed(() => home.value?.example || null)
 const chartPoints = computed(() => (example.value?.series || []).map((p) => ({ x: p.t, y: p.xp })))
@@ -376,7 +376,7 @@ watch(
       if (!wasImporting || player.status !== 'done') continue
       showToast(
         player.count > 0
-          ? `Finished importing ${player.count.toLocaleString()} historical snapshots for ${player.name}.`
+          ? `Finished importing ${player.count.toLocaleString('en-US')} historical snapshots for ${player.name}.`
           : `${player.name} is all set, no extra history found on Wise Old Man.`,
       )
     }

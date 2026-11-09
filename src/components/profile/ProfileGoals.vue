@@ -16,9 +16,9 @@
         <div class="level-progress-track"><div class="level-progress-fill" :style="{ width: `${Math.min(g.percent, 100)}%` }" /></div>
         <div class="goal-stats">
           <span>{{ g.percent }}%</span>
-          <span v-if="g.remainingXp != null">{{ g.remainingXp.toLocaleString() }} XP to go</span>
-          <span v-else>{{ g.remainingLevels }} levels to go</span>
-          <span v-if="g.hours">≈ {{ g.hours < 100 ? Math.round(g.hours * 10) / 10 : Math.round(g.hours) }} h</span>
+          <span v-if="g.remainingXp != null">{{ g.remainingXp.toLocaleString('en-US') }} XP to go</span>
+          <span v-else>{{ g.remainingLevels.toLocaleString('en-US') }} levels to go</span>
+          <span v-if="g.hours">≈ {{ g.hours < 100 ? Math.round(g.hours * 10) / 10 : Math.round(g.hours).toLocaleString('en-US') }} h</span>
         </div>
         <RouterLink class="btn-text" :to="{ name: 'planner', query: g.plannerQuery }">Open in planner →</RouterLink>
       </div>

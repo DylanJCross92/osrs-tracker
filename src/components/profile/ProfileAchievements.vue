@@ -102,11 +102,11 @@ function tip(a) {
   if (a.completed) {
     return a.dateKnown ? `${a.title}: detected ${new Date(a.achievedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : `${a.title}: complete`
   }
-  return `${a.title}: ${a.current.toLocaleString()} / ${a.value.toLocaleString()} (${pct(a)}%)`
+  return `${a.title}: ${a.current.toLocaleString('en-US')} / ${a.value.toLocaleString('en-US')} (${pct(a)}%)`
 }
 
 const totalRows = computed(() => {
-  const levels = achievements.value.filter((a) => a.type === 'total_level').map((a) => ({ ...a, label: a.value >= 2376 ? `Maxed ${a.value.toLocaleString()}` : a.value.toLocaleString() }))
+  const levels = achievements.value.filter((a) => a.type === 'total_level').map((a) => ({ ...a, label: a.value >= 2376 ? `Maxed ${a.value.toLocaleString('en-US')}` : a.value.toLocaleString('en-US') }))
   const xp = achievements.value
     .filter((a) => a.type === 'total_xp')
     .map((a) => ({ ...a, label: a.value >= 1e9 ? `${a.value / 1e9}B` : `${a.value / 1e6}M` }))

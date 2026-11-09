@@ -112,10 +112,10 @@ export function suggestedGoals(snapshot, username) {
   const nextTotal = totalTargets.find((t) => t > snapshot.overallLevel)
   if (nextTotal) {
     goals.push({
-      title: `Next Overall: ${nextTotal.toLocaleString()}`,
+      title: `Next Overall: ${nextTotal.toLocaleString('en-US')}`,
       skill: null,
-      currentLabel: `${snapshot.overallLevel.toLocaleString()} Overall`,
-      targetLabel: `${nextTotal.toLocaleString()} Overall`,
+      currentLabel: `${snapshot.overallLevel.toLocaleString('en-US')} Overall`,
+      targetLabel: `${nextTotal.toLocaleString('en-US')} Overall`,
       currentXp: snapshot.overallLevel,
       targetXp: nextTotal,
       remainingXp: null,

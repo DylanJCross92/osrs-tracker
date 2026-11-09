@@ -20,7 +20,7 @@ function card(p, featured = null) {
   }
 }
 
-const gainText = (g) => (g ? { kind: 'gain', skill: g.topSkill, xp: g.xp, text: `+${Math.round(g.xp).toLocaleString()} XP` } : null)
+const gainText = (g) => (g ? { kind: 'gain', skill: g.topSkill, xp: g.xp, text: `+${Math.round(g.xp).toLocaleString('en-US')} XP` } : null)
 
 // Compact per-player record the client uses for interactive leaderboards.
 function compact(p) {

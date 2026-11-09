@@ -218,13 +218,13 @@ export function planTotals(plans, hoursPerDay) {
 }
 
 export function formatNum(n) {
-  return Math.round(n).toLocaleString()
+  return Math.round(n).toLocaleString('en-US')
 }
 
 export function formatHours(h) {
   if (h == null) return '-'
   if (h < 1) return `${Math.max(Math.round(h * 60), 1)} min`
-  return `${h >= 100 ? Math.round(h) : Math.round(h * 10) / 10} h`
+  return `${h >= 100 ? Math.round(h).toLocaleString('en-US') : Math.round(h * 10) / 10} h`
 }
 
 export function formatGp(gp) {

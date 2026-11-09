@@ -1,12 +1,12 @@
 <template>
   <div class="profile-overview">
     <div class="profile-stat-grid">
-      <div class="card profile-stat"><span>Overall</span><b>{{ latest.overallLevel.toLocaleString() }}</b></div>
-      <div class="card profile-stat"><span>Total XP</span><b>{{ latest.overallXp.toLocaleString() }}</b></div>
-      <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString() : '-' }}</b></div>
+      <div class="card profile-stat"><span>Overall</span><b>{{ latest.overallLevel.toLocaleString('en-US') }}</b></div>
+      <div class="card profile-stat"><span>Total XP</span><b>{{ latest.overallXp.toLocaleString('en-US') }}</b></div>
+      <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString('en-US') : '-' }}</b></div>
       <div class="card profile-stat"><span>Level 99 skills</span><b>{{ n99 }}</b></div>
-      <div class="card profile-stat"><span>XP · last 7 days</span><b :class="{ 'stat-gain': weekGain }">{{ weekGain ? `+${weekGain.toLocaleString()}` : '-' }}</b></div>
-      <div class="card profile-stat"><span>XP · last 30 days</span><b :class="{ 'stat-gain': monthGain }">{{ monthGain ? `+${monthGain.toLocaleString()}` : '-' }}</b></div>
+      <div class="card profile-stat"><span>XP · last 7 days</span><b :class="{ 'stat-gain': weekGain }">{{ weekGain ? `+${weekGain.toLocaleString('en-US')}` : '-' }}</b></div>
+      <div class="card profile-stat"><span>XP · last 30 days</span><b :class="{ 'stat-gain': monthGain }">{{ monthGain ? `+${monthGain.toLocaleString('en-US')}` : '-' }}</b></div>
     </div>
 
     <div class="card">
@@ -71,7 +71,7 @@ const monthGain = computed(() => props.player.gains?.month?.xp || 0)
 const showcase = computed(() => {
   const list = []
   const hi = highestSkill(latest.value)
-  if (hi) list.push({ label: 'Highest level', skill: hi.skill, meta: `Level ${hi.level} · ${formatXp(hi.xp)} XP${hi.rank > 0 ? ` · Rank ${hi.rank.toLocaleString()}` : ''}` })
+  if (hi) list.push({ label: 'Highest level', skill: hi.skill, meta: `Level ${hi.level} · ${formatXp(hi.xp)} XP${hi.rank > 0 ? ` · Rank ${hi.rank.toLocaleString('en-US')}` : ''}` })
   const top = mostXpSkill(latest.value)
   if (top) list.push({ label: 'Most XP', skill: top.skill, meta: `${formatXp(top.xp)} XP · Level ${top.level}` })
   const w = props.player.gains?.week
@@ -98,8 +98,16 @@ const chartPoints = computed(() => {
   const cutoff = r.days ? Date.now() - r.days * 86_400_000 : 0
   const all = props.snapshots.map((s) => ({ x: new Date(s.capturedAt).getTime(), y: s.overallXp }))
   const inRange = all.filter((p) => p.x >= cutoff)
-  // Keep the point just before the window so the line starts at the true value.
+  if (!r.days) return inRange
+  // The line starts exactly at the window's left edge, at the value the player had then
+  // (interpolated from the snapshot just before the window), so a short range really is short
+  // even when the previous snapshot is months old.
   const before = all.filter((p) => p.x < cutoff).pop()
-  return before && r.days ? [before, ...inRange] : inRange
+  if (!before) return inRange
+  const next = inRange[0]
+  const edge = next ? { x: cutoff, y: before.y + ((next.y - before.y) * (cutoff - before.x)) / (next.x - before.x) } : { x: cutoff, y: before.y }
+  const now = Date.now()
+  // With no snapshot inside the window, hold the last known value to today.
+  return next ? [edge, ...inRange] : [edge, { x: now, y: before.y }]
 })
 </script>

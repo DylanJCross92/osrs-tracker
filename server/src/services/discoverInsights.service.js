@@ -57,7 +57,7 @@ export function nearMilestones(players) {
     }
     const nextTotal = TOTAL_LEVEL_TARGETS.find((t) => t > p.latest.overallLevel)
     if (nextTotal && p.latest.overallLevel / nextTotal >= MIN_PROGRESS) {
-      candidates.push({ skill: null, label: `${nextTotal.toLocaleString()} Overall`, kind: 'total', target: nextTotal, progress: p.latest.overallLevel / nextTotal, remainingLevels: nextTotal - p.latest.overallLevel, currentLevel: p.latest.overallLevel })
+      candidates.push({ skill: null, label: `${nextTotal.toLocaleString('en-US')} Overall`, kind: 'total', target: nextTotal, progress: p.latest.overallLevel / nextTotal, remainingLevels: nextTotal - p.latest.overallLevel, currentLevel: p.latest.overallLevel })
     }
     if (!candidates.length) continue
     // Closest to completing = highest progress; tie → fewer XP/levels left.
@@ -269,21 +269,21 @@ export async function pickSpotlight(players, { activity, achievements, improved,
   if (category === 'xp') {
     player = candidates.xp
     const g = player.gains.week
-    headline = `+${g.xp.toLocaleString()} XP this week`
+    headline = `+${g.xp.toLocaleString('en-US')} XP this week`
     reason = 'Highest weekly XP gain'
-    stats = [{ label: 'Top skill', value: g.topSkill ? `${g.topSkill} (+${fmtXp(g.topSkillXp)})` : '-' }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString() }]
+    stats = [{ label: 'Top skill', value: g.topSkill ? `${g.topSkill} (+${fmtXp(g.topSkillXp)})` : '-' }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString('en-US') }]
   } else if (category === 'levels') {
     player = candidates.levels
     const n = levelsBy.get(player.id)
     headline = `${n} skill level${n === 1 ? '' : 's'} gained this week`
     reason = 'Most skill levels gained'
-    stats = [{ label: 'Weekly XP', value: `+${fmtXp(player.gains?.week?.xp || 0)}` }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString() }]
+    stats = [{ label: 'Weekly XP', value: `+${fmtXp(player.gains?.week?.xp || 0)}` }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString('en-US') }]
   } else if (category === 'achievement') {
     const a = candidates.achievement
     player = byId.get(a.id)
     headline = a.title
     reason = 'Most notable recent achievement'
-    stats = [{ label: 'Detected', value: new Date(a.detectedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString() }]
+    stats = [{ label: 'Detected', value: new Date(a.detectedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) }, { label: 'Overall', value: player.latest.overallLevel.toLocaleString('en-US') }]
   } else {
     const i = candidates.improved
     player = byId.get(i.id)

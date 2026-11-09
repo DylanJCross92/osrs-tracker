@@ -59,7 +59,7 @@ app.get('/sitemap.xml', async (req, res) => {
     console.error('Failed to build sitemap.xml', err)
   }
 
-  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
+  const urls = [`${SITE_URL}/`, `${SITE_URL}/planner`, `${SITE_URL}/discover`, `${SITE_URL}/leaderboard`, ...players.map((p) => `${SITE_URL}/player/${encodeURIComponent(p.username)}`)]
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
     .map((url) => `  <url><loc>${url}</loc></url>`)
     .join('\n')}\n</urlset>\n`
@@ -112,7 +112,7 @@ if (distExists) {
 
       let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
       if (latest) {
-        description = `${player.displayName}, Overall ${latest.overallLevel.toLocaleString()} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
+        description = `${player.displayName}, Overall ${latest.overallLevel.toLocaleString('en-US')} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
         if (weekly?.xpGained > 0) {
           description += ` +${formatXp(weekly.xpGained)} XP this week.`
         }
@@ -134,6 +134,17 @@ if (distExists) {
     } catch (err) {
       next(err)
     }
+  })
+
+  app.get('/leaderboard', (req, res) => {
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'OSRS Leaderboard | TickGains',
+        description: 'OSRS XP leaderboard: top XP gains today, this week and this month, plus all-time total XP and total level for every tracked player.',
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl: `${SITE_URL}/leaderboard`,
+      }),
+    )
   })
 
   app.get('/discover', (req, res) => {

@@ -148,7 +148,7 @@ function buildSkillStats(data) {
           node(
             'div',
             { fontSize: 26, fontWeight: 700, color: data.rankGained > 0 ? COLORS.green : COLORS.cream },
-            `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString()}`,
+            `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString('en-US')}`,
           ),
         ])
       : statTile(null, 'Rank', [node('div', { fontSize: 26, fontWeight: 700, color: COLORS.muted }, 'Unranked')])

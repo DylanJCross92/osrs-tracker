@@ -10,7 +10,7 @@
         <div v-if="players.length" class="disc-stat-tiles">
           <div class="disc-stat-tile">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
-            <span><b>{{ players.length }}</b><small>players</small></span>
+            <span><b>{{ players.length.toLocaleString('en-US') }}</b><small>players</small></span>
           </div>
           <div class="disc-stat-tile">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
@@ -29,7 +29,7 @@
         </label>
         <ul v-if="suggestions.length" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString() ?? '-' }}</small></RouterLink>
+            <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></RouterLink>
           </li>
         </ul>
         <p v-else-if="query.trim().length >= 2 && searched" class="disc-nomatch">No tracked player matches. <RouterLink to="/">Track them →</RouterLink></p>
@@ -42,7 +42,7 @@
           <span v-if="spotlight.topSkill" class="disc-spot-avatar"><img :src="skillIconSrc(spotlight.topSkill)" :alt="spotlight.topSkill" width="34" height="34" /></span>
           <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" /></span>
         </span>
-        <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString() }} <small>XP</small></span>
+        <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString('en-US') }} <small>XP</small></span>
         <span v-if="spotlight.topSkill" class="disc-spot-chip">mostly {{ spotlight.topSkill }} <b>+{{ formatXp(spotlight.topSkillXp) }}</b></span>
         <span class="disc-spot-cta">View profile →</span>
       </RouterLink>
@@ -86,7 +86,7 @@
 
       <!-- Leaderboard -->
       <section id="leaderboard" class="card disc-board">
-        <div class="disc-head"><h2>Leaderboard</h2></div>
+        <div class="disc-head"><h2>Leaderboard</h2><RouterLink class="disc-more" :to="{ name: 'leaderboard', query: { mode: 'gains', period, skill } }">Full leaderboard &rarr;</RouterLink></div>
         <div class="range-tabs disc-chips">
           <button v-for="p in periods" :key="p.key" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
         </div>
@@ -160,11 +160,11 @@
             <span class="disc-spotlight-name">{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" /></span>
             <span class="disc-spotlight-headline">
               <img v-if="sp.topSkill" :src="skillIconSrc(sp.topSkill)" :alt="sp.topSkill" width="28" height="28" />
-              +{{ sp.xp.toLocaleString() }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
+              +{{ sp.xp.toLocaleString('en-US') }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
             </span>
             <span class="disc-spotlight-stats">
               <span v-if="sp.topSkill"><small>Top skill</small><b>{{ sp.topSkill }} (+{{ formatXp(sp.topSkillXp) }})</b></span>
-              <span><small>Overall</small><b>{{ sp.p.overallLevel?.toLocaleString() ?? '-' }}</b></span>
+              <span><small>Overall</small><b>{{ sp.p.overallLevel?.toLocaleString('en-US') ?? '-' }}</b></span>
             </span>
           </RouterLink>
           <p v-if="!spotlights.length" class="empty-hint">Spotlights appear once someone has gained XP.</p>
@@ -262,9 +262,9 @@
         <RouterLink v-for="p in data[rail.key]" :key="`a${p.id}`" :to="profileTo(p.username)" class="card discover-card">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
           <span class="discover-card-stats">
-            <span>Overall {{ p.overallLevel?.toLocaleString() }}</span>
+            <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
-            <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString() }}</span>
+            <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString('en-US') }}</span>
           </span>
           <span v-if="p.featured" :class="['discover-card-featured', p.featured.kind === 'gain' ? '' : 'neutral']">
             <img v-if="p.featured.skill" :src="skillIconSrc(p.featured.skill)" :alt="p.featured.skill" width="16" height="16" />
@@ -278,9 +278,9 @@
         <RouterLink v-for="p in data[rail.key]" :key="`b${p.id}`" :to="profileTo(p.username)" class="card discover-card" tabindex="-1">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
           <span class="discover-card-stats">
-            <span>Overall {{ p.overallLevel?.toLocaleString() }}</span>
+            <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
-            <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString() }}</span>
+            <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString('en-US') }}</span>
           </span>
           <span v-if="p.featured" :class="['discover-card-featured', p.featured.kind === 'gain' ? '' : 'neutral']">
             <img v-if="p.featured.skill" :src="skillIconSrc(p.featured.skill)" :alt="p.featured.skill" width="16" height="16" />

@@ -29,7 +29,7 @@ export function achievementDefinitions() {
   }
   for (const value of TOTAL_LEVEL_TARGETS) {
     const isMax = value === MAX_TOTAL_LEVEL
-    defs.push({ key: `total_level::${value}`, category: 'Overall', type: 'total_level', skill: '', value, title: isMax ? `Maxed (${value.toLocaleString()} Overall)` : `${value.toLocaleString()} Overall`, description: `Reach ${value.toLocaleString()} Overall.` })
+    defs.push({ key: `total_level::${value}`, category: 'Overall', type: 'total_level', skill: '', value, title: isMax ? `Maxed (${value.toLocaleString('en-US')} Overall)` : `${value.toLocaleString('en-US')} Overall`, description: `Reach ${value.toLocaleString('en-US')} Overall.` })
   }
   for (const value of TOTAL_XP_TARGETS) {
     defs.push({ key: `total_xp::${value}`, category: 'Total XP', type: 'total_xp', skill: '', value, title: `${fmtXp(value)} Total XP`, description: `Earn ${fmtXp(value)} total XP.` })

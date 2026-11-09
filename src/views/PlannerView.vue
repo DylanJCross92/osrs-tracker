@@ -20,7 +20,7 @@
       </form>
       <ul v-if="suggestions.length" class="search-suggest">
         <li v-for="sg in suggestions" :key="sg.username">
-          <a href="#" @click.prevent="pickSuggestion(sg)"><span>{{ sg.displayName }}</span><small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString() ?? '-' }}</small></a>
+          <a href="#" @click.prevent="pickSuggestion(sg)"><span>{{ sg.displayName }}</span><small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></a>
         </li>
       </ul>
       </div>
@@ -29,7 +29,7 @@
 
       <div v-if="player" class="planner-player">
         <b>{{ player.displayName }}</b>
-        <span>Overall {{ player.latest.overallLevel.toLocaleString() }}</span>
+        <span>Overall {{ player.latest.overallLevel.toLocaleString('en-US') }}</span>
         <span>{{ formatNum(player.latest.overallXp) }} XP</span>
         <span>Updated {{ formatRelative(player.latest.capturedAt) }}</span>
         <RouterLink :to="{ name: 'playerDetail', params: { username: player.username } }">View TickGains profile →</RouterLink>
@@ -187,7 +187,7 @@
         </div>
         <div class="plan-tile plan-tile-finish">
           <span>Finish in</span>
-          <b>{{ totals.days == null ? '-' : `${totals.days.toLocaleString()} day${totals.days === 1 ? '' : 's'}` }}</b>
+          <b>{{ totals.days == null ? '-' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'}` }}</b>
           <small v-if="totals.completionDate">≈ {{ totals.completionDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }} at {{ hoursPerDay }} h/day</small>
         </div>
       </div>
@@ -412,7 +412,7 @@ function goalMethods(g) {
 function daysFor(hours) {
   if (hours == null || !(hoursPerDay.value > 0)) return ''
   const d = Math.ceil(hours / hoursPerDay.value)
-  return `${d.toLocaleString()} day${d === 1 ? '' : 's'} at ${hoursPerDay.value} h/day`
+  return `${d.toLocaleString('en-US')} day${d === 1 ? '' : 's'} at ${hoursPerDay.value} h/day`
 }
 
 function gpClass(gp) {
@@ -567,7 +567,7 @@ function copySummary() {
   const text = [
     `${player.value ? player.value.displayName + "'s " : ''}OSRS plan | TickGains Account Planner`,
     ...lines,
-    `Total: ${formatNum(t.totalXp)} xp · ${formatHours(t.totalHours)}${t.netGp != null ? ` · ${formatGp(t.netGp)}` : ''}${t.days != null ? ` · ~${t.days} days at ${hoursPerDay.value}h/day` : ''}`,
+    `Total: ${formatNum(t.totalXp)} xp · ${formatHours(t.totalHours)}${t.netGp != null ? ` · ${formatGp(t.netGp)}` : ''}${t.days != null ? ` · ~${t.days.toLocaleString('en-US')} days at ${hoursPerDay.value}h/day` : ''}`,
     planUrl(),
   ].join('\n')
   copy(text, 'Summary copied')

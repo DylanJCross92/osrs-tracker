@@ -57,7 +57,7 @@
 
     <div v-if="hoverPoint" class="xp-chart-tooltip" :style="tooltipStyle">
       <div class="xp-chart-tooltip-date">{{ fullDate(hoverPoint.x) }}</div>
-      <div class="xp-chart-tooltip-value"><strong>{{ Math.round(hoverPoint.y).toLocaleString() }}</strong> xp</div>
+      <div class="xp-chart-tooltip-value"><strong>{{ Math.round(hoverPoint.y).toLocaleString('en-US') }}</strong> xp</div>
     </div>
 
     <p v-if="!points.length" class="empty-hint">Not enough data yet.</p>

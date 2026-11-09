@@ -17,6 +17,11 @@ const routes = [
     component: () => import('@/views/DiscoverView.vue'),
   },
   {
+    path: '/leaderboard',
+    name: 'leaderboard',
+    component: () => import('@/views/LeaderboardView.vue'),
+  },
+  {
     path: '/planner',
     name: 'planner',
     component: () => import('@/views/PlannerView.vue'),

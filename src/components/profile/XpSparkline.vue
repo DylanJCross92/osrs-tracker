@@ -2,9 +2,9 @@
   <div class="spark">
     <div class="spark-head">
       <span>XP gained · last 7 days</span>
-      <b :class="{ 'stat-gain': total > 0 }">{{ total > 0 ? `+${total.toLocaleString()}` : '-' }}</b>
+      <b :class="{ 'stat-gain': total > 0 }">{{ total > 0 ? `+${total.toLocaleString('en-US')}` : '-' }}</b>
     </div>
-    <svg :viewBox="`0 0 ${W} ${H}`" class="spark-svg" role="img" :aria-label="`XP gained per day, last 7 days: ${total.toLocaleString()} total`">
+    <svg :viewBox="`0 0 ${W} ${H}`" class="spark-svg" role="img" :aria-label="`XP gained per day, last 7 days: ${total.toLocaleString('en-US')} total`">
       <defs>
         <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stop-color="#7cb869" stop-opacity="0.35" />
@@ -15,7 +15,7 @@
       <path v-if="points.length > 1" :d="areaPath" fill="url(#sparkFill)" />
       <path v-if="points.length > 1" :d="linePath" class="spark-line" />
       <g v-for="p in points" :key="p.label">
-        <circle :cx="p.x" :cy="p.y" r="3.5" class="spark-dot"><title>{{ p.label }}: +{{ p.xp.toLocaleString() }} XP</title></circle>
+        <circle :cx="p.x" :cy="p.y" r="3.5" class="spark-dot"><title>{{ p.label }}: +{{ p.xp.toLocaleString('en-US') }} XP</title></circle>
         <text :x="p.x" :y="H - 4" text-anchor="middle" class="spark-label">{{ p.label }}</text>
       </g>
     </svg>

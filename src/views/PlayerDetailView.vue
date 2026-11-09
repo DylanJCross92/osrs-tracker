@@ -34,9 +34,9 @@
           </span>
         </p>
         <div v-if="latest" class="profile-chips">
-          <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <b>{{ latest.overallLevel.toLocaleString() }}</b></span>
-          <span>Total XP <b>{{ latest.overallXp.toLocaleString() }}</b></span>
-          <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString() }}</b></span>
+          <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <b>{{ latest.overallLevel.toLocaleString('en-US') }}</b></span>
+          <span>Total XP <b>{{ latest.overallXp.toLocaleString('en-US') }}</b></span>
+          <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString('en-US') }}</b></span>
           <span v-if="topSkill"><img :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="16" height="16" />Highest <b>{{ topSkill.skill }} {{ topSkill.level }}</b></span>
         </div>
       </div>
@@ -107,7 +107,7 @@
               <span
                 v-if="periodRankGains[skill] > 0"
                 class="xp-delta"
-                :title="`Climbed ${periodRankGains[skill].toLocaleString()} ranks ${periodPhrase}`"
+                :title="`Climbed ${periodRankGains[skill].toLocaleString('en-US')} ranks ${periodPhrase}`"
               >
                 +{{ formatXp(periodRankGains[skill]) }}
               </span>
@@ -117,13 +117,13 @@
               <span v-if="periodLevelGains[skill] > 0" class="xp-delta" :title="`+${periodLevelGains[skill]} levels ${periodPhrase}`">
                 +{{ periodLevelGains[skill] }}
               </span>
-              {{ levelForSkill(latest, skill).toLocaleString() }}
+              {{ levelForSkill(latest, skill).toLocaleString('en-US') }}
             </td>
             <td class="hs-xp-col">
-              <span v-if="periodXpGains[skill] > 0" class="xp-delta" :title="`+${periodXpGains[skill].toLocaleString()} xp ${periodPhrase}`">
+              <span v-if="periodXpGains[skill] > 0" class="xp-delta" :title="`+${periodXpGains[skill].toLocaleString('en-US')} xp ${periodPhrase}`">
                 +{{ formatXp(periodXpGains[skill]) }}
               </span>
-              {{ xpForSkill(latest, skill).toLocaleString() }}
+              {{ xpForSkill(latest, skill).toLocaleString('en-US') }}
             </td>
           </tr>
         </tbody>
@@ -141,7 +141,7 @@
           <div class="level-progress-fill" :style="{ width: levelProgressPercent + '%' }"></div>
         </div>
         <p class="level-progress-caption">
-          {{ levelProgressPercent.toFixed(1) }}%, {{ xpToNextLevel.toLocaleString() }} xp to go
+          {{ levelProgressPercent.toFixed(1) }}%, {{ xpToNextLevel.toLocaleString('en-US') }} xp to go
         </p>
       </template>
       <p v-else class="level-progress-caption">Max level reached, nice work.</p>
@@ -153,8 +153,8 @@
           <span class="advice-text">
             {{ trainingAdvice.fastest }}
             <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
-              ~{{ trainingAdvice.actionsToNext.toLocaleString() }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
-              {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString() }} xp to go).
+              ~{{ trainingAdvice.actionsToNext.toLocaleString('en-US') }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
+              {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString('en-US') }} xp to go).
             </span>
             <span v-else class="advice-eta">You're already at the max level (99)!</span>
           </span>
@@ -164,7 +164,7 @@
           <span class="advice-text">
             {{ trainingAdvice.alt.fastest }}
             <span class="advice-eta">
-              ~{{ trainingAdvice.alt.actionsToNext.toLocaleString() }} {{ trainingAdvice.alt.actionLabel }} (~{{ trainingAdvice.alt.timeToNext }}) to reach level
+              ~{{ trainingAdvice.alt.actionsToNext.toLocaleString('en-US') }} {{ trainingAdvice.alt.actionLabel }} (~{{ trainingAdvice.alt.timeToNext }}) to reach level
               {{ trainingAdvice.nextLevel }}.
             </span>
           </span>
@@ -237,9 +237,9 @@
                 <td>{{ month.label }} <span class="day-row-count">({{ month.days.length }} day{{ month.days.length === 1 ? '' : 's' }})</span></td>
                 <td>{{ rankLabel(month.rank) }}</td>
                 <td :class="{ 'stat-gain': month.rankGain > 0 }">{{ month.rankGain != null ? formatSignedXp(month.rankGain) : '--' }}</td>
-                <td>{{ month.level }}</td>
+                <td>{{ month.level?.toLocaleString('en-US') }}</td>
                 <td :class="{ 'stat-gain': month.levelGain > 0 }">{{ month.levelGain != null ? formatSignedXp(month.levelGain) : '--' }}</td>
-                <td>{{ month.xp.toLocaleString() }}</td>
+                <td>{{ month.xp.toLocaleString('en-US') }}</td>
                 <td :class="{ 'stat-gain': month.xpGain > 0 }">{{ month.xpGain != null ? formatSignedXp(month.xpGain) : '--' }}</td>
               </tr>
               <template v-if="!showMonthGrouping || expandedMonths.has(month.key)">
@@ -260,9 +260,9 @@
                     <td>{{ group.label }} <span class="day-row-count">({{ group.rows.length }})</span></td>
                     <td>{{ rankLabel(group.rank) }}</td>
                     <td :class="{ 'stat-gain': group.rankGain > 0 }">{{ group.rankGain != null ? formatSignedXp(group.rankGain) : '--' }}</td>
-                    <td>{{ group.level }}</td>
+                    <td>{{ group.level?.toLocaleString('en-US') }}</td>
                     <td :class="{ 'stat-gain': group.levelGain > 0 }">{{ group.levelGain != null ? formatSignedXp(group.levelGain) : '--' }}</td>
-                    <td>{{ group.xp.toLocaleString() }}</td>
+                    <td>{{ group.xp.toLocaleString('en-US') }}</td>
                     <td :class="{ 'stat-gain': group.xpGain > 0 }">{{ group.xpGain != null ? formatSignedXp(group.xpGain) : '--' }}</td>
                   </tr>
                   <template v-if="expandedDays.has(group.key)">
@@ -271,9 +271,9 @@
                       <td>{{ new Date(row.capturedAt).toLocaleString(undefined, { timeStyle: 'short' }) }}</td>
                       <td>{{ rankLabel(row.rank) }}</td>
                       <td :class="{ 'stat-gain': row.rankGain > 0 }">{{ row.rankGain != null ? formatSignedXp(row.rankGain) : '--' }}</td>
-                      <td>{{ row.level }}</td>
+                      <td>{{ row.level?.toLocaleString('en-US') }}</td>
                       <td :class="{ 'stat-gain': row.levelGain > 0 }">{{ row.levelGain != null ? formatSignedXp(row.levelGain) : '--' }}</td>
-                      <td>{{ row.xp.toLocaleString() }}</td>
+                      <td>{{ row.xp.toLocaleString('en-US') }}</td>
                       <td :class="{ 'stat-gain': row.xpGain > 0 }">{{ row.xpGain != null ? formatSignedXp(row.xpGain) : '--' }}</td>
                     </tr>
                   </template>
@@ -548,7 +548,7 @@ function buildGainMap(gainFn) {
 }
 
 function rankLabel(rank) {
-  return rank ? rank.toLocaleString() : '--'
+  return rank ? rank.toLocaleString('en-US') : '--'
 }
 
 function gain(gainPeriod) {
