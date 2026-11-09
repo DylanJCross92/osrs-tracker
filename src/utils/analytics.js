@@ -3,6 +3,8 @@
 // is a safe no-op if the tag is blocked (ad blockers, privacy settings).
 export function track(event, params = {}) {
   try {
+    // Browsers marked as internal (visit /?internal=1, see index.html) send no custom events at all.
+    if (localStorage.getItem('tickgains-internal') === '1') return
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({ event, ...params })
   } catch {

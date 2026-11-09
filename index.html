@@ -1,6 +1,27 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Internal traffic flag: visit /?internal=1 once in a browser to mark it as yours (/?internal=0 clears it).
+         Runs before Tag Manager so the very first pageview is already tagged traffic_type=internal. -->
+    <script>
+      (function () {
+        try {
+          var q = new URLSearchParams(location.search);
+          var v = q.get('internal');
+          if (v === '1') localStorage.setItem('tickgains-internal', '1');
+          else if (v === '0') localStorage.removeItem('tickgains-internal');
+          if (v === '1' || v === '0') {
+            q.delete('internal');
+            var rest = q.toString();
+            history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+          }
+          if (localStorage.getItem('tickgains-internal') === '1') {
+            window.dataLayer = window.dataLayer || [];
+            window.dataLayer.push({ traffic_type: 'internal' });
+          }
+        } catch (e) {}
+      })();
+    </script>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
