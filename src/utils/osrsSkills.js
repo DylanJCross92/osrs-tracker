@@ -77,10 +77,11 @@ export function skillIconSrc(skill) {
   return `/icons/skills/${SKILL_ICON_FILES[skill]}.gif`
 }
 
-/** 4_200_000 -> "4.2M", 12_000 -> "12K", 850 -> "850". Trailing zeros are dropped. */
+/** 3_746_000_000 -> "3.75B", 4_200_000 -> "4.2M", 12_000 -> "12K", 850 -> "850". Trailing zeros are dropped. */
 export function formatXp(xp) {
   const n = Number(xp) || 0
   const abs = Math.abs(n)
+  if (abs >= 1_000_000_000) return `${parseFloat((n / 1_000_000_000).toFixed(2))}B`
   if (abs >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2))}M`
   if (abs >= 1_000) return `${parseFloat((n / 1_000).toFixed(1))}K`
   return String(n)

@@ -7,6 +7,11 @@ describe('formatXp', () => {
     expect(formatXp(12_345_678)).toBe('12.3M')
   })
 
+  it('compacts billions with 2 decimals', () => {
+    expect(formatXp(3_746_000_000)).toBe('3.75B')
+    expect(formatXp(1_000_000_000)).toBe('1B')
+  })
+
   it('compacts thousands with 1 decimal', () => {
     expect(formatXp(12_000)).toBe('12K')
     expect(formatXp(12_500)).toBe('12.5K')

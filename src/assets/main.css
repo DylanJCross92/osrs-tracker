@@ -2505,3 +2505,28 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 @media (max-width: 720px) {
   .cmp-suggest, .cmp-suggest-right { left: 0; right: 0; width: auto; min-width: 0; }
 }
+
+/* player suggestions (Discover, Home, Compare search): avatar, two lines of detail, weekly gain on the right */
+.search-suggest { padding: 8px; border-radius: 16px; }
+.search-suggest li { list-style: none; }
+.suggest-head { padding: 6px 12px 6px; color: var(--muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+.search-suggest a.suggest-row { justify-content: flex-start; gap: 12px; padding: 9px 12px; border-radius: 12px; }
+.sg-avatar { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); }
+.sg-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; line-height: 1.2; text-align: left; }
+.sg-name { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-suggest .sg-sub { color: var(--muted); font-size: 0.78rem; }
+.sg-gain { flex: none; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; text-align: right; }
+.sg-gain b { color: var(--xp-green); font-size: 0.98rem; font-variant-numeric: tabular-nums; }
+.search-suggest .sg-gain small { font-size: 0.7rem; }
+.sg-gain.is-none small { font-size: 0.74rem; opacity: 0.7; }
+.search-suggest .suggest-new { justify-content: flex-start; gap: 12px; margin-top: 6px; padding: 12px; border-top: 1px solid var(--border); }
+.sg-avatar-new { color: var(--gold-bright); border-style: dashed; font-size: 1.15rem; font-weight: 700; }
+@media (max-width: 480px) {
+  .sg-gain.is-none { display: none; }
+  .sg-avatar { width: 34px; height: 34px; }
+}
+
+/* compare suggestions share the row design above */
+.cmp-suggest-item { gap: 12px; padding: 9px 12px; border-radius: 12px; }
+.cmp-suggest { width: min(400px, 100%); }
+.search-suggest .sg-sub, .cmp-suggest .sg-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -28,16 +28,19 @@
           <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" />
         </label>
         <ul v-if="suggestions.length || showNewRow" class="search-suggest">
+          <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
           <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' })"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></RouterLink>
+            <RouterLink class="suggest-row" :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' })"><PlayerSuggestRow :player="sg" /></RouterLink>
           </li>
           <li v-if="showNewRow" class="suggest-new">
             <template v-if="addedPlayer">
-              <span>Now tracking <b>{{ addedPlayer.displayName }}</b></span>
+              <span class="sg-avatar sg-avatar-new" aria-hidden="true">&#10003;</span>
+              <span class="sg-main"><span class="sg-name">{{ addedPlayer.displayName }}</span><small class="sg-sub">Now tracking, history is importing</small></span>
               <RouterLink :to="profileTo(addedPlayer.username)" class="disc-track-btn">View profile</RouterLink>
             </template>
             <template v-else>
-              <span>{{ query.trim() }}<small v-if="addError" class="suggest-new-error">{{ addError }}</small></span>
+              <span class="sg-avatar sg-avatar-new" aria-hidden="true">+</span>
+              <span class="sg-main"><span class="sg-name">{{ query.trim() }}</span><small class="sg-sub" :class="{ 'suggest-new-error': addError }">{{ addError || 'Not tracked yet. Track them to see gains and history.' }}</small></span>
               <button class="disc-track-btn" type="button" :disabled="addingPlayer" @click="trackNew">{{ addingPlayer ? 'Adding…' : 'Track' }}</button>
             </template>
           </li>
@@ -310,6 +313,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import CheerPill from '@/components/CheerPill.vue'
 import { playersApi } from '@/api/players'
 import { ApiError } from '@/api/client'

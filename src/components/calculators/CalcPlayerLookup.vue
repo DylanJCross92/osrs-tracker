@@ -16,8 +16,9 @@
         <button v-if="player" class="btn btn-ghost" type="button" @click="editing = false">Cancel</button>
       </form>
       <ul v-if="suggestions.length" class="search-suggest">
+        <li class="suggest-head">Already tracked</li>
         <li v-for="sg in suggestions" :key="sg.username">
-          <a href="#" @click.prevent="pick(sg)"><span>{{ sg.displayName }}</span><small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></a>
+          <a href="#" class="suggest-row" @click.prevent="pick(sg)"><PlayerSuggestRow :player="sg" /></a>
         </li>
       </ul>
       <p v-if="error" class="planner-error">{{ error }} You can still enter your XP by hand.</p>
@@ -30,6 +31,7 @@
 import { computed, ref, watch } from 'vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
+import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import { track } from '@/utils/analytics'
 import { formatRelative } from '@/utils/time'
 import { levelAtXp, formatNum } from '@/utils/planner'

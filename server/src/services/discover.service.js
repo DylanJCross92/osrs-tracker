@@ -209,19 +209,37 @@ async function buildDiscover() {
   }
 }
 
-/** Case-insensitive partial RSN match among tracked players. */
+/** Case-insensitive partial RSN match among tracked players, with enough detail to show a useful suggestion row. */
 export async function searchPlayers(rawQuery) {
   const q = String(rawQuery || '').trim().slice(0, 12)
   if (q.length < 2) return []
   const escaped = q.replace(/[\\%_]/g, (c) => `\\${c}`)
   const { rows } = await pool.query(
-    `SELECT p.username, p.display_name, p.badge, s.overall_level
+    `SELECT p.id, p.username, p.display_name, p.badge
      FROM players p
-     LEFT JOIN LATERAL (SELECT overall_level FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) s ON true
      WHERE p.username ILIKE $1 ESCAPE '\\'
      ORDER BY (lower(p.username) = lower($2)) DESC, (p.username ILIKE $3 ESCAPE '\\') DESC, p.username ASC
      LIMIT 8`,
     [`%${escaped}%`, q, `${escaped}%`],
   )
-  return rows.map((r) => ({ username: r.username, displayName: r.display_name, badge: r.badge, overallLevel: r.overall_level }))
+  if (!rows.length) return []
+  // Level, XP, rank and this week's gain come from the same query the rest of the site uses, so a suggestion can
+  // never disagree with the player's own page.
+  const detail = new Map((await listPlayers({ ids: rows.map((r) => r.id) })).map((p) => [p.id, p]))
+  return rows.map((r) => {
+    const d = detail.get(r.id)
+    const latest = d?.latest
+    // The skill icon for the avatar: highest level, ties broken by XP (same rule as the profile page).
+    const top = Object.entries(latest?.skills || {}).sort((a, b) => b[1].level - a[1].level || b[1].xp - a[1].xp)[0]
+    return {
+      username: r.username,
+      displayName: r.display_name,
+      badge: r.badge,
+      overallLevel: latest?.overallLevel ?? null,
+      overallXp: latest?.overallXp ?? null,
+      overallRank: latest?.overallRank > 0 ? latest.overallRank : null,
+      topSkill: top ? top[0] : null,
+      weekGain: d?.gains?.week?.xp > 0 ? d.gains.week.xp : 0,
+    }
+  })
 }

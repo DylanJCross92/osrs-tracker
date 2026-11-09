@@ -173,9 +173,11 @@ const asOption = (p) => {
   return {
     username: p.username,
     displayName: p.displayName || p.username,
+    badge: p.badge ?? tracked?.badge ?? null,
     overallLevel: p.overallLevel ?? tracked?.latest?.overallLevel ?? null,
-    weekGain: tracked?.gains?.week?.xp || 0,
-    icon: skillIconSrc('Overall'),
+    overallXp: p.overallXp ?? tracked?.latest?.overallXp ?? null,
+    topSkill: p.topSkill ?? (tracked?.latest ? highestSkill(tracked.latest)?.skill : null) ?? null,
+    weekGain: p.weekGain ?? tracked?.gains?.week?.xp ?? 0,
   }
 }
 const recommended = computed(() =>

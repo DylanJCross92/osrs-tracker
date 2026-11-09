@@ -129,7 +129,7 @@ function baselineJoinSql(period) {
   `
 }
 
-export async function listPlayers({ skillGains = false } = {}) {
+export async function listPlayers({ skillGains = false, ids = null } = {}) {
   const baselineColumns = GAIN_PERIODS.map(
     (period) =>
       `b_${period}.captured_at AS baseline_captured_at_${period}, ` +
@@ -152,9 +152,10 @@ export async function listPlayers({ skillGains = false } = {}) {
       LIMIT 1
     ) s ON true
     ${GAIN_PERIODS.map(baselineJoinSql).join('\n')}
+    ${ids ? 'WHERE p.id = ANY($2::int[])' : ''}
     ORDER BY p.display_name ASC
   `,
-    [APP_TIMEZONE],
+    ids ? [APP_TIMEZONE, ids] : [APP_TIMEZONE],
   )
   const players = result.rows.map((row) => mapPlayerRow(row, { skillGains }))
   // Most xp gained today first; players with no gain (or no data to

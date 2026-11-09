@@ -28,10 +28,10 @@
         </button>
       </form>
       <ul v-if="suggestions.length" class="search-suggest home-suggest">
+        <li class="suggest-head">Already tracked</li>
         <li v-for="sg in suggestions" :key="sg.username">
-          <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' })">
-            <span>{{ sg.displayName }}</span>
-            <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small>
+          <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' })">
+            <PlayerSuggestRow :player="sg" />
           </RouterLink>
         </li>
       </ul>
@@ -255,6 +255,7 @@ import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import XpLineChart from '@/components/XpLineChart.vue'
 import { playersApi } from '@/api/players'
 import { api } from '@/api/client'

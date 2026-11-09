@@ -24,8 +24,9 @@
             <button v-if="player" class="btn btn-ghost" type="button" @click="editingPlayer = false">Cancel</button>
           </form>
           <ul v-if="suggestions.length" class="search-suggest">
+            <li class="suggest-head">Already tracked</li>
             <li v-for="sg in suggestions" :key="sg.username">
-              <a href="#" @click.prevent="pickSuggestion(sg)"><span>{{ sg.displayName }}</span><small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></a>
+              <a href="#" class="suggest-row" @click.prevent="pickSuggestion(sg)"><PlayerSuggestRow :player="sg" /></a>
             </li>
           </ul>
         </div>
@@ -196,6 +197,7 @@ import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
 import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
+import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
