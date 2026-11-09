@@ -6,6 +6,28 @@ import { localDay, addDays, diffDays, weekdayShort, APP_TIMEZONE } from '../util
 
 const DAY_MS = 86_400_000
 
+// Total xp needed to reach a level, via the game's own formula.
+function xpForLevel(level) {
+  let points = 0
+  let xp = 0
+  for (let lvl = 1; lvl < level; lvl++) {
+    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
+    xp = Math.floor(points / 4)
+  }
+  return xp
+}
+const MAX_XP = 200_000_000
+
+/** Progress toward the next level (or the 200M goal once a skill is 99). */
+function nextLevelProgress(xp, level) {
+  if (level >= 99) {
+    return { nextLabel: '200M XP', xpToNext: Math.max(MAX_XP - xp, 0), progressPct: Math.min(Math.floor((xp / MAX_XP) * 100), 100), goalIs200m: true }
+  }
+  const lo = xpForLevel(level)
+  const hi = xpForLevel(level + 1)
+  return { nextLevel: level + 1, nextLabel: `Level ${level + 1}`, xpToNext: Math.max(hi - xp, 0), progressPct: Math.max(0, Math.min(Math.floor(((xp - lo) / (hi - lo)) * 100), 99)) }
+}
+
 // Card timeframes. Baselines match the stats table / Player Gains exactly
 // (see BASELINE_CUTOFF_SQL in players.service.js): the oldest snapshot inside
 // the window, for 'day' that's the first snapshot since local midnight,
@@ -55,6 +77,29 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained, period
   // counts, the history simply begins a little late.
   const baseAt = (t) => xpAt(t) ?? (series[0].t <= t + 1.5 * DAY_MS ? series[0].xp : null)
 
+  // Like baseAt, but only trusts a reading when snapshots exist close on both sides of t. Sparse
+  // history (one snapshot months ago, the next just now) would otherwise lump the whole gap's xp
+  // into whichever period it lands in and make comparisons wildly wrong.
+  const MAX_GAP = 2 * DAY_MS
+  const xpNear = (t) => {
+    let lo = 0
+    let hi = series.length - 1
+    let idx = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      if (series[mid].t <= t) {
+        idx = mid
+        lo = mid + 1
+      } else hi = mid - 1
+    }
+    if (idx < 0) return series[0].t - t <= 1.5 * DAY_MS ? series[0].xp : null
+    const before = series[idx]
+    const after = series[idx + 1]
+    if (t - before.t > MAX_GAP) return null
+    if (after && after.t - t > MAX_GAP) return null
+    return before.xp
+  }
+
   const start = new Date(startIso).getTime()
   const end = new Date(endIso).getTime()
 
@@ -79,15 +124,17 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained, period
     daily = days.slice(-windowDays)
   }
 
-  // Previous-period comparison + personal best, full-week cards only.
+  // Previous-period comparison + personal best. A partial period (a player tracked for 4 days on a
+  // 7-day card) is compared with the equally long stretch before it, when that history exists.
+  const cmpDays = period === 'day' ? 1 : Math.min(windowDays, spanDays)
   let comparison = null
-  if (period === 'day' || spanDays >= windowDays) {
+  if (cmpDays >= 2 || period === 'day') {
     const gains = []
     for (let j = 1; j <= 52; j++) {
-      const endT = start - windowDays * (j - 1) * DAY_MS
-      const beginT = start - windowDays * j * DAY_MS
-      const e = j === 1 ? xpAt(start) : xpAt(endT)
-      const b = baseAt(beginT)
+      const endT = start - cmpDays * (j - 1) * DAY_MS
+      const beginT = start - cmpDays * j * DAY_MS
+      const e = xpNear(j === 1 ? start : endT)
+      const b = xpNear(beginT)
       if (e == null || b == null) break
       gains.push(e - b)
     }
@@ -96,6 +143,7 @@ async function computeExtras(playerId, skill, startIso, endIso, xpGained, period
       const bestPrior = gains.length >= 3 ? Math.max(...gains) : null
       comparison = {
         prevXp: prev,
+        days: cmpDays,
         pct: prev > 0 ? Math.round(((xpGained - prev) / prev) * 100) : null,
         personalBest: bestPrior != null && xpGained > 0 && xpGained > bestPrior,
       }
@@ -125,7 +173,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
   const result = await pool.query(
     `
     WITH latest AS (
-      SELECT overall_xp, skills, captured_at
+      SELECT overall_xp, overall_level, skills, captured_at
       FROM snapshots WHERE player_id = $1
       ORDER BY captured_at DESC LIMIT 1
     ),
@@ -144,7 +192,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
       )
       LIMIT 1
     )
-    SELECT latest.overall_xp, latest.skills, latest.captured_at,
+    SELECT latest.overall_xp, latest.overall_level, latest.skills, latest.captured_at,
            baseline.overall_xp AS baseline_overall_xp, baseline.skills AS baseline_skills,
            baseline.captured_at AS baseline_captured_at
     FROM latest, baseline
@@ -161,6 +209,8 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
     period,
     periodStart: row.baseline_captured_at,
     periodEnd: row.captured_at,
+    overallXp: Number(row.overall_xp),
+    overallLevel: row.overall_level != null ? Number(row.overall_level) : null,
   }
 
   if (skill === 'Overall') {
@@ -189,7 +239,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
   const rankGained = current.rank != null && baseline.rank != null ? baseline.rank - current.rank : null
 
   const extras = await computeExtras(playerId, skill, row.baseline_captured_at, row.captured_at, xpGained, period)
-  return { ...base, xpGained, level: current.level, levelStart: baseline.level, levelGained, rankGained, ...extras }
+  return { ...base, xpGained, level: current.level, levelStart: baseline.level, levelGained, rankGained, totalXp: current.xp, ...nextLevelProgress(current.xp, current.level), ...extras }
 }
 
 /**

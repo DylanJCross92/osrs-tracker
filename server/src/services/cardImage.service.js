@@ -138,22 +138,29 @@ function buildSkillStats(data) {
     node('div', { display: 'flex', fontSize: 26, fontWeight: 700 }, [
       levelProgress(data.levelStart ?? data.level - (data.levelGained || 0), data.level, 20, COLORS.cream),
     ]),
+    ...(data.totalXp != null ? [node('div', { fontSize: 17, color: COLORS.muted, marginTop: 2 }, `${Math.round(data.totalXp).toLocaleString('en-US')} XP total`)] : []),
   ])
 
-  // Always two tiles, even when there's no rank to show, a lone tile
-  // would otherwise stretch to fill the whole row and look broken.
-  const rankTile =
-    data.rankGained != null
-      ? statTile(null, 'Rank climbed', [
-          node(
-            'div',
-            { fontSize: 26, fontWeight: 700, color: data.rankGained > 0 ? COLORS.green : COLORS.cream },
-            `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString('en-US')}`,
-          ),
-        ])
-      : statTile(null, 'Rank', [node('div', { fontSize: 26, fontWeight: 700, color: COLORS.muted }, 'Unranked')])
+  // Always two tiles. Older frozen cards have no progress data, so they fall back to a plain rank tile.
+  if (data.progressPct == null) {
+    const rankTile =
+      data.rankGained != null
+        ? statTile(null, 'Rank climbed', [node('div', { fontSize: 26, fontWeight: 700, color: data.rankGained > 0 ? COLORS.green : COLORS.cream }, `${data.rankGained > 0 ? '+' : ''}${data.rankGained.toLocaleString('en-US')}`)])
+        : statTile(null, 'Rank', [node('div', { fontSize: 26, fontWeight: 700, color: COLORS.muted }, 'Unranked')])
+    return [levelTile, rankTile]
+  }
 
-  return [levelTile, rankTile]
+  const pct = data.progressPct
+  const progressTile = statTile(null, data.goalIs200m ? 'Progress to 200M' : `Progress to ${data.nextLabel}`, [
+    node('div', { display: 'flex', alignItems: 'baseline', gap: 12 }, [
+      node('div', { fontSize: 26, fontWeight: 700, color: COLORS.gold }, `${pct}%`),
+      node('div', { fontSize: 17, color: COLORS.muted }, `${Math.round(data.xpToNext).toLocaleString('en-US')} XP to go`),
+    ]),
+    node('div', { display: 'flex', width: '100%', height: 8, borderRadius: 999, backgroundColor: '#352d1d', marginTop: 8 }, [
+      node('div', { display: 'flex', width: `${Math.max(pct, 2)}%`, height: 8, borderRadius: 999, backgroundColor: COLORS.gold }, []),
+    ]),
+  ])
+  return [levelTile, progressTile]
 }
 
 // One chip under the headline: a personal best, or how this period moved
@@ -172,7 +179,10 @@ function comparisonChip(comparison, period = 'week') {
     const up = comparison.pct > 0
     icon = svgIcon(18, up ? COLORS.green : COLORS.red, [up ? ICON.up : ICON.down])
     color = up ? COLORS.green : COLORS.red
-    text = `${Math.abs(comparison.pct)}% ${COMPARE_LABEL[period] || COMPARE_LABEL.week}`
+    // A shortened week or month compares with the equally long stretch before it.
+    const full = period === 'week' ? 7 : period === 'month' ? 30 : 1
+    const label = comparison.days && comparison.days < full ? `vs. previous ${comparison.days} days` : COMPARE_LABEL[period] || COMPARE_LABEL.week
+    text = `${Math.abs(comparison.pct)}% ${label}`
   } else {
     return null
   }
@@ -270,12 +280,26 @@ function brandBadge() {
   )
 }
 
+// Header line under the player name: [overall icon] Level 2,238  XP: 220,982,542
+// Labels are regular weight, the numbers are bold.
+function overallLine(data, iconUri) {
+  const label = (t) => node('div', { color: COLORS.muted, fontWeight: 400 }, t)
+  const value = (t) => node('div', { color: COLORS.cream, fontWeight: 700 }, t)
+  return node('div', { display: 'flex', alignItems: 'center', gap: 8, fontSize: 20, marginTop: 6 }, [
+    ...(iconUri ? [image(iconUri, 22, 22)] : []),
+    ...(data.overallLevel ? [label('Level'), value(data.overallLevel.toLocaleString('en-US')), node('div', { width: 10, display: 'flex' }, [])] : []),
+    label('XP:'),
+    value(Math.round(data.overallXp).toLocaleString('en-US')),
+  ])
+}
+
 async function buildWeeklyCardTree(data) {
   const { displayName, skill, xpGained, periodStart, periodEnd } = data
   const isOverall = skill === 'Overall'
 
-  const [skillIconUri, statTiles] = await Promise.all([
+  const [skillIconUri, overallIconUri, statTiles] = await Promise.all([
     isOverall ? Promise.resolve(null) : skillIconDataUri(skill),
+    skillIconDataUri('Overall'),
     isOverall ? buildOverallStats(data.topSkills || []) : Promise.resolve(buildSkillStats(data)),
   ])
 
@@ -314,6 +338,7 @@ async function buildWeeklyCardTree(data) {
             isOverall ? title : `${skill}: ${title}`,
           ),
           node('div', { fontSize: 42, fontWeight: 800, color: COLORS.gold, marginTop: 4 }, displayName),
+          ...(data.overallXp != null ? [overallLine(data, overallIconUri)] : []),
         ]),
         brandBadge(),
       ]),
