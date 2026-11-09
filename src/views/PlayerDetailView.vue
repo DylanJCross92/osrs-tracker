@@ -11,7 +11,7 @@
           >
             {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
           </button>
-          <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true">
+          <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
             Share
           </button>
@@ -93,7 +93,7 @@
             tabindex="0"
             role="button"
             :aria-pressed="selectedSkill === skill"
-            @click="selectedSkill = skill"
+            @click="selectedSkill = skill; track('profile_chart_skill', { skill })"
             @keydown.enter="selectedSkill = skill"
             @keydown.space.prevent="selectedSkill = skill"
           >
@@ -202,7 +202,7 @@
         <h2>{{ selectedSkill }} XP over time</h2>
       </div>
       <XpLineChart :points="chartPoints" :aria-label="`${selectedSkill} experience over time`" />
-      <button class="btn-text table-toggle" @click="showTable = !showTable">
+      <button class="btn-text table-toggle" @click="showTable = !showTable; track('profile_table_toggle', { open: showTable })">
         {{ showTable ? 'Hide' : 'Show' }} data table
       </button>
       <div v-if="showTable" class="table-wrap">
@@ -413,6 +413,14 @@ async function loadProfile() {
   }
 }
 watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true })
+// One event per profile opened (not per refresh).
+watch(
+  playerId,
+  (id, prev) => {
+    if (id && id !== prev) track('profile_view', { tab: tab.value, source: document.referrer ? 'referrer' : 'direct' })
+  },
+  { immediate: true },
+)
 
 // XP gained per calendar day over the last 7 days (oldest first). Uses the same
 // baseline as the weekly total elsewhere, the first snapshot inside the 7-day
@@ -528,6 +536,7 @@ const targetSkillLevel = computed(() =>
 // show. "day" means the calendar day (resets at local midnight), "week"/
 // "month" are rolling 7/30-day windows. Shared across pages for the session.
 const { period } = useGainPeriod()
+watch(period, (p) => track('profile_gain_period', { period: p }))
 const periodPhrase = computed(
   () => ({ day: 'today', week: 'in the last 7 days', month: 'in the last 30 days' })[period.value],
 )
@@ -683,6 +692,7 @@ function toggleMonth(key) {
 }
 
 async function refresh() {
+  track('profile_refresh')
   refreshing.value = true
   try {
     await store.refreshPlayer(playerId.value)
@@ -696,6 +706,7 @@ async function refresh() {
 }
 
 async function checkWomHistory() {
+  track('profile_check_history')
   checkingWomHistory.value = true
   try {
     await store.checkWomHistory(playerId.value)

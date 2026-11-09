@@ -18,7 +18,7 @@
         </tr>
       </tbody>
     </table>
-    <details class="planner-all-methods" @toggle="open = $event.target.open">
+    <details class="planner-all-methods" @toggle="open = $event.target.open; if (open) track('planner_compare_opened', { skill: goal.skill })">
       <summary>Compare other methods for {{ goal.skill }}</summary>
       <table v-if="open && methodRows.length" class="planner-table">
         <thead>
@@ -40,6 +40,7 @@
 </template>
 
 <script setup>
+import { track } from '@/utils/analytics'
 import { computed, ref } from 'vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import { AUTO_FAST, AUTO_CHEAP, compareMethods, tradeoff, tradeoffText, formatHours, formatGp } from '@/utils/planner'

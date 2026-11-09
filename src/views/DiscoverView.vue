@@ -29,10 +29,10 @@
         </label>
         <ul v-if="suggestions.length" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink :to="profileTo(sg.username)"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></RouterLink>
+            <RouterLink :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' })"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></RouterLink>
           </li>
         </ul>
-        <p v-else-if="query.trim().length >= 2 && searched" class="disc-nomatch">No tracked player matches. <RouterLink to="/">Track them →</RouterLink></p>
+        <p v-else-if="query.trim().length >= 2 && searched" class="disc-nomatch">No tracked player matches. <RouterLink to="/" @click="track('discover_track_new_player')">Track them →</RouterLink></p>
         </div>
       </div>
 
@@ -432,10 +432,15 @@ const query = ref('')
 const suggestions = ref([])
 const searched = ref(false)
 let searchTimer = null
+let typedTracked = false
 watch(query, (q) => {
   clearTimeout(searchTimer)
   searched.value = false
   const term = q.trim()
+  if (term && !typedTracked) {
+    typedTracked = true
+    track('search_started', { source: 'discover' })
+  }
   if (term.length < 2) {
     suggestions.value = []
     return
@@ -443,7 +448,10 @@ watch(query, (q) => {
   searchTimer = setTimeout(async () => {
     try {
       const rows = await playersApi.search(term)
-      if (query.value.trim() === term) suggestions.value = rows
+      if (query.value.trim() === term) {
+        suggestions.value = rows
+        track('player_search', { source: 'discover', username_length: term.length, matches: rows.length })
+      }
     } catch {
       suggestions.value = []
     } finally {

@@ -328,6 +328,7 @@ watch(username, (q) => {
   }, 250)
 })
 function pickSuggestion(sg) {
+  track('search_suggestion_selected', { source: 'planner' })
   suggestions.value = []
   username.value = sg.displayName
   loadPlayer()
@@ -498,6 +499,7 @@ function addGoal() {
 }
 
 function removeGoal(i) {
+  track('planner_goal_removed', { skill: goals.value[i]?.skill })
   goals.value.splice(i, 1)
 }
 
@@ -513,14 +515,20 @@ async function loadPlayer() {
   }
   lookingUp.value = true
   lookupError.value = ''
+  track('player_search', { source: 'planner', username_length: name.length })
   try {
     if (!store.loaded) await store.loadPlayers()
     const find = () => store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
     // Existing TickGains players load straight from the database; unknown
     // ones are added through the normal tracking flow (Hiscores lookup +
     // history import), so searching here also starts tracking them.
-    if (!find()) await store.addPlayer(name)
+    const wasNew = !find()
+    if (wasNew) {
+      await store.addPlayer(name)
+      track('player_added', { source: 'planner', is_new_player: true })
+    }
     const found = find()
+    track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     player.value = found
     username.value = found.displayName
@@ -533,6 +541,7 @@ async function loadPlayer() {
   } catch (err) {
     player.value = null
     lookupError.value = err?.message || 'Could not find that player on the OSRS Hiscores.'
+    track('player_search_result', { source: 'planner', result: 'error' })
   } finally {
     lookingUp.value = false
   }

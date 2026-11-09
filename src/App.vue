@@ -32,7 +32,7 @@
         </div>
         <nav v-for="col in footerCols" :key="col.title" :aria-label="col.title" class="app-footer-col">
           <h4>{{ col.title }}</h4>
-          <component :is="link.to ? 'RouterLink' : 'a'" v-for="link in col.links" :key="link.label" :to="link.to" :href="link.href" :target="link.href ? '_blank' : undefined" :rel="link.href ? 'noopener' : undefined">{{ link.label }}</component>
+          <component :is="link.to ? 'RouterLink' : 'a'" v-for="link in col.links" :key="link.label" :to="link.to" :href="link.href" :target="link.href ? '_blank' : undefined" :rel="link.href ? 'noopener' : undefined" @click="track('footer_link', { section: col.title, label: link.label })">{{ link.label }}</component>
         </nav>
       </div>
       <p class="app-footer-note">TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd. Old School RuneScape is a trademark of Jagex Ltd.</p>
@@ -42,10 +42,32 @@
 </template>
 
 <script setup>
+import { track } from '@/utils/analytics'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 
 const route = useRoute()
+
+// One delegated listener for clicks that appear all over the site: any link to a
+// player profile (with the page section it was in) and links that leave the site.
+function onDocClick(e) {
+  const a = e.target instanceof Element ? e.target.closest('a[href]') : null
+  if (!a) return
+  const href = a.getAttribute('href') || ''
+  if (href.startsWith('/player/')) {
+    const holder = a.closest('[id]') || a.closest('section')
+    track('player_link_click', { page: String(route.name || ''), section: holder?.id || holder?.classList?.[0] || 'other' })
+  } else if (/^https?:\/\//.test(href) && !href.startsWith(window.location.origin)) {
+    try {
+      track('outbound_click', { host: new URL(href).hostname, page: String(route.name || '') })
+    } catch {
+      /* ignore malformed links */
+    }
+  }
+}
+onMounted(() => document.addEventListener('click', onDocClick))
+onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 const footerCols = [
   {

@@ -19,6 +19,7 @@
 </template>
 
 <script setup>
+import { track } from '@/utils/analytics'
 import { computed } from 'vue'
 import { questsForSkill } from '@/data/quests'
 import { AUTO_FAST, planGoal, levelAtXp, formatNum, formatHours } from '@/utils/planner'
@@ -54,6 +55,7 @@ const options = computed(() => {
 })
 
 function toggle(id) {
+  track('planner_quest_toggled', { quest: id, skill: props.skill, enabled: !props.modelValue.includes(id) })
   const next = props.modelValue.includes(id) ? props.modelValue.filter((x) => x !== id) : [...props.modelValue, id]
   emit('update:modelValue', next)
 }

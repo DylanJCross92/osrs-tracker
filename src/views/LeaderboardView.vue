@@ -36,7 +36,7 @@
       <template v-else>
         <ol class="disc-board-list lb-list">
           <li v-for="r in shown" :key="r.p.id" :class="{ 'lb-me': r.p.username === highlight }">
-            <RouterLink :to="{ name: 'playerDetail', params: { username: r.p.username } }">
+            <RouterLink :to="{ name: 'playerDetail', params: { username: r.p.username } }" @click="track('leaderboard_player_click', { rank: r.rank, mode })">
               <span class="disc-rank" :class="`r${r.rank}`">{{ r.rank.toLocaleString('en-US') }}</span>
               <span class="disc-board-main">
                 <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
@@ -50,7 +50,7 @@
         <p v-if="!shown.length" class="empty-hint">No players match "{{ query }}".</p>
         <p v-else-if="mode === 'gains' && !ranked[0]?.value" class="empty-hint">Nobody has gained {{ skill === 'Overall' ? '' : skill + ' ' }}XP in this window yet.</p>
         <div class="lb-foot">
-          <button v-if="shown.length < rows.length" class="lb-more" @click="limit += 25">Show more ({{ rows.length - shown.length }} left)</button>
+          <button v-if="shown.length < rows.length" class="lb-more" @click="limit += 25; track('leaderboard_show_more')">Show more ({{ rows.length - shown.length }} left)</button>
         </div>
       </template>
     </section>
@@ -99,6 +99,11 @@ let periodTouched = !!route.query.period
 
 watch(period, () => (periodTouched = true))
 watch([mode, period, skill, query], () => (limit.value = 25))
+let searchTimer = null
+watch(query, (q) => {
+  clearTimeout(searchTimer)
+  if (q) searchTimer = setTimeout(() => track('leaderboard_search', { username_length: q.length }), 800)
+})
 watch([mode, period, skill], () => {
   const q = { mode: mode.value, skill: skill.value }
   if (mode.value === 'gains') q.period = period.value

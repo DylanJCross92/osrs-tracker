@@ -29,7 +29,7 @@
       </form>
       <ul v-if="suggestions.length" class="search-suggest home-suggest">
         <li v-for="sg in suggestions" :key="sg.username">
-          <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }">
+          <RouterLink :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' })">
             <span>{{ sg.displayName }}</span>
             <small>Already tracked · Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small>
           </RouterLink>
@@ -340,18 +340,22 @@ async function submitAdd() {
   const username = newUsername.value.trim()
   if (!username) return
   adding.value = true
+  track('player_search', { source: 'home', username_length: username.length })
   try {
     await store.addPlayer(username)
-    track('player_added', { source: 'home' })
+    // A 201 from the API means this name was not tracked on the site before.
+    track('player_added', { source: 'home', is_new_player: true })
     showToast(`Now tracking ${username}, checking Wise Old Man for history in the background.`)
     trackedName.value = username
     newUsername.value = ''
   } catch (err) {
     if (err instanceof ApiError && err.status === 409) {
       // Already tracked, the useful thing is to open their profile.
+      track('player_search_result', { source: 'home', result: 'already_tracked' })
       showToast(`${username} is already being tracked, opening their profile.`)
       router.push({ name: 'playerDetail', params: { username } })
     } else {
+      track('player_search_result', { source: 'home', result: 'error', status: err instanceof ApiError ? err.status : 0 })
       showToast(err instanceof ApiError ? err.message : 'Could not add that player.')
     }
   } finally {
@@ -386,9 +390,14 @@ watch(
 // Typeahead: partial, case-insensitive matches among already-tracked players.
 const suggestions = ref([])
 let suggestTimer = null
+let typedTracked = false
 watch(newUsername, (q) => {
   clearTimeout(suggestTimer)
   const term = (q || '').trim()
+  if (term && !typedTracked) {
+    typedTracked = true
+    track('search_started', { source: 'home' })
+  }
   if (term.length < 2) {
     suggestions.value = []
     return
@@ -396,7 +405,10 @@ watch(newUsername, (q) => {
   suggestTimer = setTimeout(async () => {
     try {
       const rows = await playersApi.search(term)
-      if ((newUsername.value || '').trim() === term) suggestions.value = rows
+      if ((newUsername.value || '').trim() === term) {
+        suggestions.value = rows
+        if (rows.length) track('search_suggestions_shown', { source: 'home', count: rows.length })
+      }
     } catch {
       suggestions.value = []
     }
