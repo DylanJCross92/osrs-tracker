@@ -1,10 +1,19 @@
 <template>
   <div class="calc-dir planner">
-    <section class="card">
-      <h1>OSRS Skill Calculators</h1>
-      <p class="calc-lead">Pick a skill to calculate the XP, hours and gp it takes to reach your goal. No account needed, and you can load your stats by username.</p>
+    <section class="card calc-dir-hero">
+      <div class="calc-dir-hero-main">
+        <span class="calc-eyebrow">{{ total }} calculators</span>
+        <h1>OSRS <span class="home-accent">Skill</span> Calculators</h1>
+        <p class="calc-lead">Pick a skill to work out the XP, hours and gp it takes to reach your goal. Compare fastest, cheapest and balanced routes, share your result, and load your stats by username.</p>
+        <ul class="calc-chips">
+          <li>Free, no sign-up</li>
+          <li>Real training methods</li>
+          <li>Profit and cost per method</li>
+        </ul>
+      </div>
       <label class="calc-dir-search">
         <span class="sr-only">Search skills</span>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
         <input v-model.trim="query" type="search" placeholder="Search skills (for example Agility)" autocomplete="off" data-1p-ignore />
       </label>
     </section>
@@ -43,6 +52,7 @@ setPageMeta({
 })
 
 const query = ref('')
+const total = SKILL_INFO.length
 const groups = computed(() => {
   const q = query.value.toLowerCase()
   return CALCULATOR_CATEGORIES.map((name) => ({

@@ -24,7 +24,7 @@ export const CALCULATOR_CATEGORIES = ['Combat', 'Gathering', 'Artisan', 'Support
 
 export const SKILL_INFO = [
   // --- Combat ---
-  s('Attack', 'Combat', 'XP, kills and hours to your Attack goal.', 'Time & GP', 'Work out the XP and hours left to your next Attack level, from crabs to maniacal monkeys.',
+  s('Attack', 'Combat', 'XP and hours to your Attack goal, by method.', 'Time & GP', 'Work out the XP and hours left to your next Attack level, from crabs to maniacal monkeys.',
     [
       'Attack is trained by choosing the Accurate or Aggressive style while you fight. The methods here run from idle options such as crabs and the Gemstone Crab to faster ones like Sulphur Naguas and maniacal monkeys, plus the Nightmare Zone for fully AFK xp. Quest rewards such as Tree Gnome Village and Waterfall Quest give a big early chunk and are offered as shortcuts.',
       'Combat xp rates depend heavily on your gear, prayers and potions, so the xp per hour shown is a typical figure for each method, not a promise. Gp per hour is net of food, potions and the value of drops, which is why idle crab methods read as break-even.',
@@ -54,7 +54,7 @@ export const SKILL_INFO = [
       'Prayer xp comes from burying bones or offering them at an altar. The multiplier matters most: a Gilded Altar with both burners lit gives 3.5 times the xp of burying, and the Chaos Altar saves half your bones. The bone counts below already include that multiplier.',
       'Bones are the cost, so the fastest methods are also the most expensive, for example superior dragon bones. The libation bowl and urium remains are listed without a gp figure because their cost depends on how you gather the materials.',
     ], 'Bones and items needed'),
-  s('Magic', 'Combat', 'XP, runes and cost to your Magic goal.', 'Time & GP', 'Estimate the hours and gp to reach your Magic goal, from splashing to Ice Barrage.',
+  s('Magic', 'Combat', 'XP, hours and gp to your Magic goal.', 'Time & GP', 'Estimate the hours and gp to reach your Magic goal, from splashing to Ice Barrage.',
     [
       'Magic training ranges from splashing and enchanting jewellery to alchemy, Lunar spells and Ice Burst or Barrage on maniacal monkeys. Barrage is the fastest option and the most expensive, since every cast uses blood, death and water runes.',
       'Rune prices move constantly, so the gp estimates here are rough averages. Profitable options such as Tan Leather and Superglass Make are flagged, and routes that rely on enchanting bolts are marked unpriced because their cost depends on the bolt type.',
