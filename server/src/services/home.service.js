@@ -14,22 +14,14 @@ export function invalidateHomeCache() {
 
 const positive = (n) => (Number.isFinite(n) && n > 0 ? n : 0)
 
-// Pick a profile that shows off the product: lots of history first, then most XP.
-async function pickExample(players) {
-  const { rows } = await pool.query(
-    `SELECT player_id, COUNT(*)::int AS n, MIN(captured_at) AS first
-     FROM snapshots GROUP BY player_id`,
-  )
-  const stats = new Map(rows.map((r) => [r.player_id, { n: r.n, spanDays: (Date.now() - new Date(r.first).getTime()) / 86_400_000 }]))
+// The example profile is always the player with the most XP gained in the last 7 days (the same number the
+// card shows). If nobody gained anything, it falls back to the 30-day gain, then to total XP.
+function pickExample(players) {
+  const gain = (p, period) => positive(p.gains?.[period]?.xp)
   const ranked = players
-    .map((p) => ({ p, s: stats.get(p.id) || { n: 0, spanDays: 0 } }))
-    .filter(({ p }) => p.overallXp != null)
-    .sort((a, b) => {
-      const richA = a.s.n >= 10 && a.s.spanDays >= 14 ? 1 : 0
-      const richB = b.s.n >= 10 && b.s.spanDays >= 14 ? 1 : 0
-      return richB - richA || b.p.overallXp - a.p.overallXp
-    })
-  return ranked[0]?.p || null
+    .filter((p) => p.overallXp != null)
+    .sort((a, b) => gain(b, 'week') - gain(a, 'week') || gain(b, 'month') - gain(a, 'month') || b.overallXp - a.overallXp)
+  return ranked[0] || null
 }
 
 // Total-XP series for the preview chart, thinned to ~60 points.
@@ -82,7 +74,7 @@ async function build() {
     key: a.key, username: a.username, displayName: a.displayName, badge: a.badge, skill: a.skill, title: a.title, detectedAt: a.detectedAt,
   }))
 
-  const ex = await pickExample(players)
+  const ex = pickExample(players)
   let example = null
   if (ex) {
     const series = await exampleSeries(ex.id)
