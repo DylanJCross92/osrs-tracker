@@ -2112,3 +2112,11 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 /* live activity fills the full height of its card (the list scrolls inside instead of leaving empty space) */
 .disc-feed .disc-events { flex: 1 1 0; min-height: 320px; max-height: none; }
 @media (max-width: 860px) { .disc-feed .disc-events { flex: none; min-height: 0; max-height: 380px; } }
+
+/* calculator goal pages */
+.goal-content { display: flex; flex-direction: column; gap: 16px; }
+.goal-answer > p { line-height: 1.65; }
+.goal-faq-item + .goal-faq-item { margin-top: 14px; }
+.goal-faq-item h3 { margin: 0 0 4px; font-size: 1rem; color: var(--gold-bright); }
+.goal-faq-item p { margin: 0; color: var(--muted); line-height: 1.65; }
+.calc-related a.is-current { color: var(--gold-bright); font-weight: 600; pointer-events: none; }

@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig, createServer } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs'
 
@@ -24,6 +24,23 @@ function calculatorMeta() {
       const dir = fileURLToPath(new URL('./dist', import.meta.url))
       if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
       writeFileSync(`${dir}/calculators.json`, JSON.stringify(out))
+
+      // Goal pages (/calculators/agility/1-to-99) need the planner engine, which imports through the "@" alias,
+      // so they are computed through a throwaway module loader rather than a plain import.
+      const loader = await createServer({
+        configFile: false,
+        root: fileURLToPath(new URL('.', import.meta.url)),
+        appType: 'custom',
+        logLevel: 'silent',
+        server: { middlewareMode: true, hmr: false, watch: null },
+        resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+      })
+      try {
+        const goals = await loader.ssrLoadModule('/src/data/calculatorGoals.js')
+        writeFileSync(`${dir}/calculator-goals.json`, JSON.stringify(goals.allGoalPages()))
+      } finally {
+        await loader.close()
+      }
     },
   }
 }

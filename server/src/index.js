@@ -57,6 +57,19 @@ try {
 } catch {
   calculators = []
 }
+// Goal pages such as /calculators/agility/1-to-99 (computed at build time, see vite.config.js).
+let goalPages = []
+try {
+  goalPages = JSON.parse(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '../../dist/calculator-goals.json'), 'utf-8'))
+} catch {
+  goalPages = []
+}
+const goalPagesBySkill = new Map()
+for (const g of goalPages) {
+  if (!goalPagesBySkill.has(g.slug)) goalPagesBySkill.set(g.slug, [])
+  goalPagesBySkill.get(g.slug).push(g)
+}
+const goalPageByPath = new Map(goalPages.map((g) => [g.path, g]))
 
 // Generated from the live player list rather than a static file, so newly
 // tracked (or removed) players show up without a redeploy.
@@ -79,6 +92,7 @@ app.get('/sitemap.xml', async (req, res) => {
     { path: '/planner', changefreq: 'weekly', priority: '0.9' },
     { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
     ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
+    ...goalPages.map((g) => ({ path: g.path, changefreq: 'monthly', priority: g.from === 1 && g.to === 99 ? '0.8' : '0.7' })),
     ...players.map((p) => ({
       path: `/player/${encodeURIComponent(p.username)}`,
       changefreq: 'daily',
@@ -187,6 +201,12 @@ if (distExists) {
       .map((c) => `<a href="/calculators/${c.slug}">${escapeHtml(c.name)} calculator</a>`)
       .join(' ')
 
+  // Links to every goal page of one skill, skipping the page being shown.
+  const goalLinksHtml = (slug, skipGoal) => {
+    const list = (goalPagesBySkill.get(slug) || []).filter((g) => g.path.split('/').pop() !== skipGoal)
+    return list.length ? `<nav><h2>Popular goals</h2>${list.map((g) => `<a href="${g.path}">${escapeHtml(g.skill)} ${escapeHtml(g.label)}</a>`).join(' ')}</nav>` : ''
+  }
+
   app.get('/calculators', (req, res) => {
     const description = 'Free OSRS skill calculators for every skill. Work out the XP, training hours and gp needed to reach your next level, or level 99, with real training methods.'
     res.send(
@@ -242,7 +262,72 @@ if (distExists) {
             ],
           },
         ],
-        bodyHtml: `<main><h1>OSRS ${escapeHtml(calc.name)} Calculator</h1><p>${escapeHtml(calc.lead)}</p>${calc.guide.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}<nav>${calcLinks(calc.slug)}</nav><p><a href="/calculators">All calculators</a> · <a href="/planner">Account Planner</a></p></main>`,
+        bodyHtml: `<main><h1>OSRS ${escapeHtml(calc.name)} Calculator</h1><p>${escapeHtml(calc.lead)}</p>${calc.guide.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}${goalLinksHtml(calc.slug, '')}<nav>${calcLinks(calc.slug)}</nav><p><a href="/calculators">All calculators</a> · <a href="/planner">Account Planner</a></p></main>`,
+      }),
+    )
+  })
+
+  // Per-goal pages: the quick answer, route and method tables, milestones and FAQ, in HTML a crawler can read
+  // before any script runs, plus FAQPage and breadcrumb structured data.
+  app.get('/calculators/:slug/:goal', (req, res) => {
+    const { slug, goal } = req.params
+    const page = goalPageByPath.get(`/calculators/${slug.toLowerCase()}/${goal.toLowerCase()}`)
+    if (!page) {
+      // Unknown goal: fall back to the skill page (or the directory), never a soft 404.
+      const calc = calculators.find((c) => c.slug === slug.toLowerCase())
+      return res.redirect(302, calc ? `/calculators/${calc.slug}` : '/calculators')
+    }
+    if (slug !== page.slug || goal !== page.path.split('/').pop()) return res.redirect(301, page.path)
+    const pageUrl = `${SITE_URL}${page.path}`
+    const table = (head, rows) =>
+      `<table><thead><tr>${head.map((h) => `<th>${escapeHtml(h)}</th>`).join('')}</tr></thead><tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+    const fast = page.routes.find((r) => r.id === 'fast')
+    const sameGoal = goalPages.filter((g) => g.from === page.from && g.to === page.to && g.slug !== page.slug && g.category === page.category).slice(0, 8)
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: page.title,
+        description: page.description,
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl,
+        jsonLd: [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebPage',
+            name: page.title.replace(' | TickGains', ''),
+            url: pageUrl,
+            description: page.description,
+            isPartOf: { '@type': 'WebSite', name: 'TickGains', url: SITE_URL },
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: page.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: 'Calculators', item: `${SITE_URL}/calculators` },
+              { '@type': 'ListItem', position: 2, name: page.skill, item: `${SITE_URL}/calculators/${page.slug}` },
+              { '@type': 'ListItem', position: 3, name: page.label, item: pageUrl },
+            ],
+          },
+        ],
+        bodyHtml: `<main><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><h2>Quick answer</h2><p>${escapeHtml(page.summary)}</p>${table(
+          ['Route', 'Time', 'Net GP'],
+          page.routes.map((r) => [r.label, r.hoursText, r.gpText]),
+        )}<h2>Fastest route, level by level</h2>${table(
+          ['Levels', 'Method', 'XP', 'XP per hour', 'Time'],
+          fast.steps.map((s) => [`${s.from} to ${s.to}`, s.method, s.xp.toLocaleString('en-US'), s.xpPerHour.toLocaleString('en-US'), s.hoursText]),
+        )}<h2>${escapeHtml(page.skill)} methods</h2>${table(
+          ['Method', 'Levels', 'XP per hour', 'GP per hour'],
+          page.methods.map((m) => [m.name, `${m.minLevel}${m.maxLevel != null ? ` to ${m.maxLevel}` : '+'}`, m.xpPerHour.toLocaleString('en-US'), m.gpText]),
+        )}<h2>XP milestones</h2>${table(
+          ['Level', 'Total XP', `XP from level ${page.from}`],
+          page.milestones.map((m) => [String(m.level), m.totalXp.toLocaleString('en-US'), m.fromStart.toLocaleString('en-US')]),
+        )}<h2>Common questions</h2>${page.faq.map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`).join('')}${goalLinksHtml(page.slug, page.path.split('/').pop())}<nav>${sameGoal
+          .map((g) => `<a href="${g.path}">${escapeHtml(g.skill)} ${escapeHtml(g.label)}</a>`)
+          .join(' ')}</nav><p><a href="/calculators/${page.slug}">${escapeHtml(page.skill)} calculator</a> · <a href="/calculators">All calculators</a> · <a href="/planner">Account Planner</a></p></main>`,
       }),
     )
   })

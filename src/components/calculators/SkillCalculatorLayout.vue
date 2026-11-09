@@ -3,15 +3,19 @@
     <!-- Header -->
     <section class="card calc-hero">
       <div class="calc-hero-main">
-        <nav class="calc-crumbs" aria-label="Breadcrumb"><RouterLink to="/calculators">Calculators</RouterLink> <span aria-hidden="true">/</span> <span>{{ skill }}</span></nav>
+        <nav class="calc-crumbs" aria-label="Breadcrumb">
+          <RouterLink to="/calculators">Calculators</RouterLink> <span aria-hidden="true">/</span>
+          <template v-if="goalPage"><RouterLink :to="`/calculators/${info.slug}`">{{ skill }}</RouterLink> <span aria-hidden="true">/</span> <span>{{ goalPage.label }}</span></template>
+          <span v-else>{{ skill }}</span>
+        </nav>
         <div class="calc-title">
           <span class="calc-icon"><img :src="skillIconSrc(skill)" :alt="`${skill} icon`" width="52" height="52" /></span>
           <div>
             <span class="calc-eyebrow">{{ info.category }} skill</span>
-            <h1>OSRS <span class="home-accent">{{ skill }}</span> Calculator</h1>
+            <h1>OSRS <span class="home-accent">{{ skill }}</span> {{ goalPage ? `${goalPage.label} ` : '' }}Calculator</h1>
           </div>
         </div>
-        <p class="calc-lead">{{ info.lead }}</p>
+        <p class="calc-lead">{{ goalPage ? goalPage.lead : info.lead }}</p>
         <ul class="calc-chips">
           <li>Free, no sign-up</li>
           <li>{{ allCount }} training methods</li>
@@ -182,11 +186,18 @@
       </section>
     </template>
 
+    <!-- Goal pages add their quick answer, tables and FAQ here -->
+    <slot name="after-results" />
+
     <!-- Guide -->
     <section class="card calc-guide">
       <h2>How the {{ skill }} calculator works</h2>
       <p v-for="(para, i) in info.guide" :key="i">{{ para }}</p>
       <p>XP remaining comes from your current XP, not just your level, using the game's own XP table. Time is XP divided by each method's XP per hour, and the route switches method whenever a better one unlocks at a higher level. <RouterLink to="/planner">Combine several skills in the Account Planner</RouterLink> to see the total time for a whole account.</p>
+      <div class="calc-related">
+        <b>Popular {{ skill }} goals</b>
+        <RouterLink v-for="g in goalLinks" :key="g.slug" :to="`/calculators/${info.slug}/${g.slug}`" :class="{ 'is-current': goalPage && goalPage.slug === g.slug }">{{ skill }} {{ g.label }}</RouterLink>
+      </div>
       <div class="calc-related">
         <b>More calculators</b>
         <RouterLink v-for="r in related" :key="r.slug" :to="`/calculators/${r.slug}`">{{ r.name }}</RouterLink>
@@ -213,6 +224,7 @@ import { skillIconSrc } from '@/utils/osrsSkills'
 import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 import { questsForSkill } from '@/data/quests'
 import { SKILL_INFO } from '@/data/skillInfo'
+import { goalsForSkill } from '@/data/calculatorGoals'
 import {
   MAX_XP,
   AUTO_FAST,
@@ -235,7 +247,11 @@ import {
 import { STRATEGY_LABELS, materialsForPlan } from '@/utils/plannerTools'
 import { agilityLaps, METHOD_PRESETS } from '@/utils/calculatorExtras'
 
-const props = defineProps({ info: { type: Object, required: true } })
+const props = defineProps({
+  info: { type: Object, required: true },
+  // Set on /calculators/<skill>/<from>-to-<to>: { from, to, label, lead, slug } preloads that goal.
+  goalPage: { type: Object, default: null },
+})
 const route = useRoute()
 const router = useRouter()
 const { showToast } = useToast()
@@ -259,10 +275,10 @@ const intParam = (v, lo, hi) => {
 }
 const strParam = (v) => (typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : '')
 
-const currentXp = ref(intParam(q.currentXp, 0, MAX_XP) ?? 0)
+const currentXp = ref(intParam(q.currentXp, 0, MAX_XP) ?? (props.goalPage ? xpAtLevel(props.goalPage.from) : 0))
 const targetMode = ref('level')
-const targetLevel = ref(99)
-const targetXpInput = ref(xpAtLevel(99))
+const targetLevel = ref(props.goalPage ? props.goalPage.to : 99)
+const targetXpInput = ref(xpAtLevel(targetLevel.value))
 const hoursPerDay = ref(intParam(q.hours, 1, 24) ?? 2)
 const strategy = ref(AUTO_FAST)
 const methodChoice = ref('strategy')
@@ -276,7 +292,7 @@ const excluded = ref(new Set())
 const filterOpen = ref(false)
 
 // Past 99, aim at the next level instead of a target you already have.
-if (levelAtXp(currentXp.value, true) >= 99) targetLevel.value = Math.min(levelAtXp(currentXp.value, true) + 1, 126)
+if (levelAtXp(currentXp.value, true) >= targetLevel.value && levelAtXp(currentXp.value, true) >= 99) targetLevel.value = Math.min(levelAtXp(currentXp.value, true) + 1, 126)
 if (intParam(q.targetXp, 1, MAX_XP) != null) {
   targetMode.value = intParam(q.targetXp, 1, MAX_XP) >= MAX_XP ? 'max' : 'xp'
   targetXpInput.value = intParam(q.targetXp, 1, MAX_XP)
@@ -455,11 +471,12 @@ function shareParams() {
   if (excluded.value.size) p.set('skip', [...excluded.value].map((id) => id.replace(`${props.info.slug}-`, '')).join(','))
   return p
 }
-const shareUrl = () => `${window.location.origin}/calculators/${props.info.slug}?${shareParams().toString()}`
+const pagePath = props.goalPage ? `/calculators/${props.info.slug}/${props.goalPage.slug}` : `/calculators/${props.info.slug}`
+const shareUrl = () => `${window.location.origin}${pagePath}?${shareParams().toString()}`
 
 watch(
   [currentXpNum, targetXpNum, targetMode, targetLevel, methodChoice, strategy, customXp, customGp, hoursPerDay, quests, excluded],
-  () => window.history.replaceState(window.history.state, '', `/calculators/${props.info.slug}?${shareParams().toString()}`),
+  () => window.history.replaceState(window.history.state, '', `${pagePath}?${shareParams().toString()}`),
   { deep: true },
 )
 
@@ -506,7 +523,8 @@ function addToPlanner() {
   router.push('/planner')
 }
 
+const goalLinks = goalsForSkill(props.info)
 const related = computed(() => SKILL_INFO.filter((x) => x.category === props.info.category && x.slug !== props.info.slug).slice(0, 6))
 
-onMounted(() => track('calc_view', { skill }))
+onMounted(() => track('calc_view', { skill, goal: props.goalPage ? props.goalPage.label : 'default' }))
 </script>

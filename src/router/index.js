@@ -18,6 +18,7 @@ const routes = [
   },
   { path: '/calculators', name: 'calculators', component: () => import('@/views/CalculatorsView.vue') },
   { path: '/calculators/:skill', name: 'skillCalculator', component: () => import('@/views/SkillCalculatorView.vue') },
+  { path: '/calculators/:skill/:goal', name: 'skillGoalCalculator', component: () => import('@/views/SkillGoalView.vue') },
   {
     path: '/leaderboard',
     name: 'leaderboard',
