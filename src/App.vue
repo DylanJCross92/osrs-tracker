@@ -43,6 +43,7 @@
 
 <script setup>
 import { track } from '@/utils/analytics'
+import { DISCORD_URL } from '@/config'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
@@ -97,6 +98,7 @@ const footerCols = [
     title: 'Site',
     links: [
       { label: 'About', to: { name: 'about' } },
+      { label: 'Join our Discord', href: DISCORD_URL },
       { label: 'Contact', to: { name: 'contact' } },
       { label: 'Privacy', to: { name: 'privacy' } },
     ],
