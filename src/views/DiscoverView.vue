@@ -25,14 +25,23 @@
         <div class="suggest-wrap">
         <label class="disc-search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-          <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="goFirst" />
+          <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" />
         </label>
-        <ul v-if="suggestions.length" class="search-suggest">
+        <ul v-if="suggestions.length || showNewRow" class="search-suggest">
           <li v-for="sg in suggestions" :key="sg.username">
             <RouterLink :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' })"><span>{{ sg.displayName }}</span><small>Overall {{ sg.overallLevel?.toLocaleString('en-US') ?? '-' }}</small></RouterLink>
           </li>
+          <li v-if="showNewRow" class="suggest-new">
+            <template v-if="addedPlayer">
+              <span>Now tracking <b>{{ addedPlayer.displayName }}</b></span>
+              <RouterLink :to="profileTo(addedPlayer.username)" class="disc-track-btn">View profile</RouterLink>
+            </template>
+            <template v-else>
+              <span>{{ query.trim() }}<small v-if="addError" class="suggest-new-error">{{ addError }}</small></span>
+              <button class="disc-track-btn" type="button" :disabled="addingPlayer" @click="trackNew">{{ addingPlayer ? 'Adding…' : 'Track' }}</button>
+            </template>
+          </li>
         </ul>
-        <p v-else-if="query.trim().length >= 2 && searched" class="disc-nomatch">No tracked player matches. <RouterLink to="/" @click="track('discover_track_new_player')">Track them →</RouterLink></p>
         </div>
       </div>
 
@@ -301,6 +310,9 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import { playersApi } from '@/api/players'
+import { ApiError } from '@/api/client'
+import { usePlayersStore } from '@/stores/players'
+import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { skillIconSrc, formatXp, SKILL_NAMES } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
@@ -313,6 +325,8 @@ setPageMeta({
 })
 
 const router = useRouter()
+const store = usePlayersStore()
+const { showToast } = useToast()
 const data = ref({ players: [], activity: [] })
 const loading = ref(true)
 const error = ref('')
@@ -459,6 +473,53 @@ watch(query, (q) => {
     }
   }, 250)
 })
+const addingPlayer = ref(false)
+const addedPlayer = ref(null)
+const addError = ref('')
+const validName = computed(() => /^[A-Za-z0-9 _-]{1,12}$/.test(query.value.trim()))
+watch(query, () => {
+  addedPlayer.value = null
+  addError.value = ''
+})
+const exactMatch = computed(() => {
+  const q = query.value.trim().toLowerCase()
+  return suggestions.value.find((s) => s.displayName.toLowerCase() === q || s.username.toLowerCase() === q) || null
+})
+// The typed name, offered for tracking right in the dropdown unless it is already tracked.
+const showNewRow = computed(() => !!addedPlayer.value || (query.value.trim().length >= 2 && validName.value && searched.value && !exactMatch.value))
+function onEnter() {
+  if (exactMatch.value) return router.push(profileTo(exactMatch.value.username))
+  if (addedPlayer.value) return router.push(profileTo(addedPlayer.value.username))
+  if (validName.value && !addingPlayer.value) trackNew()
+  else if (suggestions.value[0]) goFirst()
+}
+// Adds a name that isn't tracked yet right here (same call the homepage uses), no page change.
+async function trackNew() {
+  const name = query.value.trim()
+  if (!validName.value || addingPlayer.value) return
+  addingPlayer.value = true
+  addError.value = ''
+  track('player_search', { source: 'discover', username_length: name.length })
+  try {
+    if (!store.loaded) await store.loadPlayers()
+    await store.addPlayer(name)
+    const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
+    addedPlayer.value = { username: found?.username || name, displayName: found?.displayName || name }
+    track('player_added', { source: 'discover', is_new_player: true })
+    showToast(`Now tracking ${addedPlayer.value.displayName}, checking Wise Old Man for history in the background.`)
+    load()
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 409) {
+      const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
+      addedPlayer.value = { username: found?.username || name, displayName: found?.displayName || name }
+    } else {
+      addError.value = err instanceof ApiError ? err.message : 'Could not add that player.'
+      track('player_search_result', { source: 'discover', result: 'error', status: err instanceof ApiError ? err.status : 0 })
+    }
+  } finally {
+    addingPlayer.value = false
+  }
+}
 function goFirst() {
   if (suggestions.value[0]) router.push(profileTo(suggestions.value[0].username))
 }
