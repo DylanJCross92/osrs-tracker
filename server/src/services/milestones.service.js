@@ -1,4 +1,5 @@
 import { pool } from '../db.js'
+import crypto from 'node:crypto'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
 
 // Achievements are defined here in code (version-controlled, no registration
@@ -166,4 +167,61 @@ export async function getProfileAchievements(playerId) {
     .filter((t) => t.key)
 
   return { achievements, timeline, trackingStartedAt: firstRes.rows[0]?.first || null }
+}
+
+// --- Congratulations -----------------------------------------------------------------------------------------
+
+// Only big, fresh moments are celebrated: a new 99 or 200M XP in a skill seen in the last 7 days.
+const CELEBRATION_DAYS = 7
+const celebrationWhere = `((m.milestone_type = 'skill_level' AND m.value = 99) OR (m.milestone_type = 'skill_xp' AND m.value = 200000000))
+  AND m.occurred_at IS NOT NULL AND m.occurred_at >= now() - interval '${CELEBRATION_DAYS} days'`
+
+/** Anonymous visitor id: a salted hash of the IP, so repeat clicks can be blocked without storing the address. */
+export function visitorHash(ip) {
+  return crypto.createHash('sha256').update(`${process.env.CHEER_SALT || 'tickgains-cheer'}|${ip || ''}`).digest('hex').slice(0, 32)
+}
+
+/** Recent 99s / 200M milestones for a player, with congratulation counts and whether this visitor already clicked. */
+export async function getCelebrations(playerId, visitor) {
+  const { rows } = await pool.query(
+    `SELECT m.milestone_type, m.skill, m.value, m.occurred_at,
+            (SELECT COUNT(*)::int FROM milestone_cheers c WHERE c.player_id = m.player_id AND c.milestone_type = m.milestone_type AND c.skill = m.skill AND c.value = m.value) AS cheers,
+            EXISTS (SELECT 1 FROM milestone_cheers c WHERE c.player_id = m.player_id AND c.milestone_type = m.milestone_type AND c.skill = m.skill AND c.value = m.value AND c.visitor_hash = $2) AS cheered
+     FROM player_milestones m
+     WHERE m.player_id = $1 AND ${celebrationWhere}
+     ORDER BY m.occurred_at DESC`,
+    [playerId, visitor || ''],
+  )
+  const defs = achievementDefinitions()
+  return rows.map((r) => {
+    const d = defs.find((x) => x.type === r.milestone_type && x.skill === r.skill && x.value === Number(r.value))
+    return {
+      type: r.milestone_type,
+      skill: r.skill,
+      value: Number(r.value),
+      title: d?.title || `${r.value} ${r.skill}`,
+      occurredAt: r.occurred_at,
+      cheers: r.cheers,
+      cheered: r.cheered,
+    }
+  })
+}
+
+/** Record one congratulation. Returns the new count, or null if that milestone is not currently celebrated. */
+export async function addCheer(playerId, { type, skill, value }, visitor) {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM player_milestones m WHERE m.player_id = $1 AND m.milestone_type = $2 AND m.skill = $3 AND m.value = $4 AND ${celebrationWhere}`,
+    [playerId, type, skill || '', value],
+  )
+  if (!rows.length) return null
+  await pool.query(
+    `INSERT INTO milestone_cheers (player_id, milestone_type, skill, value, visitor_hash) VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT DO NOTHING`,
+    [playerId, type, skill || '', value, visitor],
+  )
+  const count = await pool.query(
+    `SELECT COUNT(*)::int AS n FROM milestone_cheers WHERE player_id = $1 AND milestone_type = $2 AND skill = $3 AND value = $4`,
+    [playerId, type, skill || '', value],
+  )
+  return count.rows[0].n
 }

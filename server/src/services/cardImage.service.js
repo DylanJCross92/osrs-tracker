@@ -94,7 +94,7 @@ function levelProgress(start, end, size, baseColor) {
   return node('div', { display: 'flex', alignItems: 'center', gap: 8 }, parts)
 }
 
-function statTile(iconUri, label, children) {
+function statTile(iconUri, label, children, highlight = false) {
   return node(
     'div',
     {
@@ -105,7 +105,7 @@ function statTile(iconUri, label, children) {
       padding: '16px 22px',
       borderRadius: 16,
       backgroundColor: COLORS.panel,
-      border: `1px solid ${COLORS.border}`,
+      border: `1px solid ${highlight ? COLORS.gold : COLORS.border}`,
     },
     [
       iconUri ? image(iconUri, 40, 40) : null,
@@ -133,13 +133,36 @@ async function buildOverallStats(topSkills) {
   )
 }
 
+// A skill that reached 99 during this period (a card for a skill you were already 99 in is not celebrated).
+const reachedNew99 = (data) => data.skill !== 'Overall' && data.level >= 99 && (data.levelStart ?? data.level - (data.levelGained || 0)) < 99
+
+function celebrationChip() {
+  return node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 14,
+      padding: '7px 16px',
+      borderRadius: 999,
+      backgroundColor: 'rgba(240, 201, 118, 0.12)',
+      border: `1px solid ${COLORS.gold}`,
+      fontSize: 20,
+      fontWeight: 700,
+      color: COLORS.gold,
+    },
+    [svgIcon(20, COLORS.gold, [ICON.star]), node('div', {}, 'New 99!')],
+  )
+}
+
 function buildSkillStats(data) {
   const levelTile = statTile(null, 'Level', [
     node('div', { display: 'flex', fontSize: 26, fontWeight: 700 }, [
       levelProgress(data.levelStart ?? data.level - (data.levelGained || 0), data.level, 20, COLORS.cream),
     ]),
     ...(data.totalXp != null ? [node('div', { fontSize: 17, color: COLORS.muted, marginTop: 2 }, `${Math.round(data.totalXp).toLocaleString('en-US')} XP total`)] : []),
-  ])
+  ], reachedNew99(data))
 
   // Always two tiles. Older frozen cards have no progress data, so they fall back to a plain rank tile.
   if (data.progressPct == null) {
@@ -358,7 +381,9 @@ async function buildWeeklyCardTree(data) {
             ].filter(Boolean),
           ),
           node('div', { fontSize: 24, color: COLORS.muted, marginTop: 6 }, (data.period === 'day' ? formatRange(periodEnd, periodEnd) : formatRange(periodStart, periodEnd))),
-          ...(chip ? [chip] : []),
+          ...(chip || reachedNew99(data)
+            ? [node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [...(reachedNew99(data) ? [celebrationChip()] : []), ...(chip ? [chip] : [])])]
+            : []),
         ]),
         ...(chart ? [chart] : []),
       ]),

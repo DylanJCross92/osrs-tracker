@@ -86,6 +86,7 @@
                 <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
                 <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
               </span>
+              <CheerPill v-if="e.cheer" :player-id="e.playerId" :skill="e.skill || ''" :type="e.cheer.type" :value="e.cheer.value" :count="e.cheer.count || 0" />
               <span class="disc-event-time">{{ ago(e.at) }}</span>
             </RouterLink>
           </li>
@@ -309,6 +310,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import CheerPill from '@/components/CheerPill.vue'
 import { playersApi } from '@/api/players'
 import { ApiError } from '@/api/client'
 import { usePlayersStore } from '@/stores/players'

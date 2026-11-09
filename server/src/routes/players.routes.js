@@ -9,7 +9,7 @@ import {
   startWomImport,
 } from '../services/players.service.js'
 import { syncAllPlayers } from '../jobs/sync.js'
-import { getProfileAchievements } from '../services/milestones.service.js'
+import { getProfileAchievements, getCelebrations, addCheer, visitorHash } from '../services/milestones.service.js'
 import { searchPlayers } from '../services/discover.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
 
@@ -48,7 +48,24 @@ playersRouter.get('/:id/profile', async (req, res, next) => {
   try {
     const player = await getPlayer(req.params.id)
     if (!player) return res.status(404).json({ error: 'Player not found.' })
-    res.json(await getProfileAchievements(player.id))
+    const [profile, celebrations] = await Promise.all([getProfileAchievements(player.id), getCelebrations(player.id, visitorHash(req.ip))])
+    res.json({ ...profile, celebrations })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Congratulate a player on a fresh 99 / 200M. Anonymous, one per visitor per milestone.
+const cheerLimiter = rateLimit({ windowMs: 3_600_000, max: 40, message: 'That is a lot of congratulations, try again later.' })
+playersRouter.post('/:id/cheer', cheerLimiter, async (req, res, next) => {
+  try {
+    const player = await getPlayer(req.params.id)
+    if (!player) return res.status(404).json({ error: 'Player not found.' })
+    const { type, skill, value } = req.body || {}
+    if (!['skill_level', 'skill_xp'].includes(type) || !Number.isFinite(Number(value))) return res.status(400).json({ error: 'Invalid milestone.' })
+    const cheers = await addCheer(player.id, { type, skill: typeof skill === 'string' ? skill : '', value: Number(value) }, visitorHash(req.ip))
+    if (cheers == null) return res.status(404).json({ error: 'That milestone is no longer being celebrated.' })
+    res.json({ cheers, cheered: true })
   } catch (err) {
     next(err)
   }

@@ -46,7 +46,9 @@
     </div>
   </div>
 
-  <ShareCardModal v-if="shareModalOpen && player" :username="player.username" @close="shareModalOpen = false" />
+  <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
+
+  <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" @share="openShare" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />
@@ -101,6 +103,7 @@
               <span class="skill-cell">
                 <img class="skill-icon" :src="skillIconSrc(skill)" :alt="skill" width="16" height="16" />
                 <span class="skill-name">{{ skill }}</span>
+                <span v-if="newMilestones[skill]" class="new-milestone" :title="`Reached ${newMilestones[skill].title} in the last 2 days`">New {{ newMilestones[skill].short }}</span>
               </span>
             </td>
             <td>
@@ -304,6 +307,7 @@ import { useGainPeriod } from '@/composables/useGainPeriod'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
+import ProfileCelebrations from '@/components/profile/ProfileCelebrations.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import ProfileOverview from '@/components/profile/ProfileOverview.vue'
 import ProfileAchievements from '@/components/profile/ProfileAchievements.vue'
@@ -458,6 +462,22 @@ const loading = ref(true)
 const refreshing = ref(false)
 const checkingWomHistory = ref(false)
 const shareModalOpen = ref(false)
+const shareSkill = ref('Overall')
+function openShare(skill) {
+  shareSkill.value = skill || 'Overall'
+  shareModalOpen.value = true
+  track('share_card_open', { source: 'celebration' })
+}
+// Skills with a 99 (or 200M XP) reached in the last 2 days get a small badge in the stats table.
+const newMilestones = computed(() => {
+  const out = {}
+  for (const c of profile.value?.celebrations || []) {
+    if (!c.skill || out[c.skill]) continue
+    if (Date.now() - new Date(c.occurredAt).getTime() > 2 * 86_400_000) continue
+    out[c.skill] = { title: c.title, short: c.type === 'skill_xp' ? '200M' : String(c.value) }
+  }
+  return out
+})
 const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')

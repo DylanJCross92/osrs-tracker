@@ -77,6 +77,7 @@
                   <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
                   <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
                 </span>
+                <CheerPill v-if="e.cheer" :player-id="e.playerId" :skill="e.skill || ''" :type="e.cheer.type" :value="e.cheer.value" :count="e.cheer.count || 0" />
                 <span class="disc-event-time">{{ agoText(e.at) }}</span>
               </RouterLink>
             </li>
@@ -97,6 +98,7 @@
                   <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
                   <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
                 </span>
+                <CheerPill v-if="e.cheer" inert :player-id="e.playerId" :skill="e.skill || ''" :type="e.cheer.type" :value="e.cheer.value" :count="e.cheer.count || 0" />
                 <span class="disc-event-time">{{ agoText(e.at) }}</span>
               </RouterLink>
             </li>
@@ -254,6 +256,7 @@ import XpLineChart from '@/components/XpLineChart.vue'
 import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
 import { track } from '@/utils/analytics'
+import CheerPill from '@/components/CheerPill.vue'
 
 const router = useRouter()
 const store = usePlayersStore()

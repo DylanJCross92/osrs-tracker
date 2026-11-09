@@ -59,6 +59,7 @@ import { SKILL_NAMES } from '@/utils/osrsSkills'
 
 const props = defineProps({
   username: { type: String, required: true },
+  initialSkill: { type: String, default: 'Overall' },
 })
 defineEmits(['close'])
 
@@ -70,7 +71,7 @@ const PERIODS = [
   { key: 'month', label: 'Monthly' },
 ]
 const period = ref('week')
-const skill = ref('Overall')
+const skill = ref(props.initialSkill || 'Overall')
 const imageLoading = ref(true)
 const copyingLive = ref(false)
 const freezing = ref(false)

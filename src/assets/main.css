@@ -2032,3 +2032,26 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .calc-dir-hero .calc-dir-search input { width: 100%; max-width: none; margin: 0; padding: 16px 16px 16px 46px; font-size: 1rem; background: rgba(10, 8, 5, 0.55); border: 1px solid var(--border-strong); border-radius: 14px; }
 .calc-dir-hero .calc-dir-search input:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); }
 @media (max-width: 900px) { .calc-dir-hero { grid-template-columns: 1fr; padding: 22px; } }
+
+/* congratulations: a quiet strip for fresh 99s, and a small badge in the stats table */
+.congrats { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; animation: congratsIn 0.4s ease both; }
+.congrats-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 14px; border-radius: 12px; background: linear-gradient(90deg, rgba(217, 175, 82, 0.12), rgba(217, 175, 82, 0.03)); border: 1px solid rgba(217, 175, 82, 0.35); }
+.congrats-text { flex: 1 1 220px; min-width: 0; font-size: 0.92rem; }
+.congrats-gold { color: var(--gold-bright); }
+.congrats-time { color: var(--muted); font-size: 0.82rem; }
+.congrats-actions { display: flex; align-items: center; gap: 4px 10px; }
+.congrats-btn { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px; border-radius: 999px; border: 1px solid var(--gold); background: rgba(217, 175, 82, 0.12); color: var(--gold-bright); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.congrats-btn:hover:not(:disabled) { background: rgba(217, 175, 82, 0.24); }
+.congrats-btn.done { border-color: var(--border-strong); background: transparent; color: var(--muted); cursor: default; }
+.congrats-count { padding: 0 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.3); color: var(--text); font-size: 0.75rem; font-weight: 500; }
+.congrats-share, .congrats-dismiss { font-size: 0.85rem; }
+.congrats-dismiss { color: var(--muted); }
+.new-milestone { margin-left: 8px; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(217, 175, 82, 0.5); background: rgba(217, 175, 82, 0.12); color: var(--gold-bright); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+@keyframes congratsIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .congrats { animation: none; } }
+
+/* feed congratulate pill */
+.cheer-pill { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 1px 10px; border-radius: 999px; border: 1px solid rgba(217, 175, 82, 0.5); background: rgba(217, 175, 82, 0.1); color: var(--gold-bright); font: inherit; font-size: 0.72rem; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.cheer-pill:hover:not(:disabled) { background: rgba(217, 175, 82, 0.22); }
+.cheer-pill.done { border-color: var(--border-strong); background: transparent; color: var(--muted); cursor: default; }
+.cheer-pill-count { padding: 0 6px; border-radius: 999px; background: rgba(0, 0, 0, 0.3); color: var(--text); font-weight: 500; }

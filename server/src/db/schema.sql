@@ -107,3 +107,18 @@ FROM (
   GROUP BY player_id
 ) sub
 WHERE p.id = sub.player_id AND p.last_xp_gain_at IS NULL AND sub.t IS NOT NULL;
+
+
+-- "Congratulate" clicks on a recent 99 or 200M milestone. One per visitor per milestone; the visitor is stored only
+-- as a salted hash of their IP address (never the address itself), purely to stop repeat clicks.
+CREATE TABLE IF NOT EXISTS milestone_cheers (
+  id SERIAL PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  milestone_type TEXT NOT NULL,
+  skill TEXT NOT NULL DEFAULT '',
+  value BIGINT NOT NULL,
+  visitor_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (player_id, milestone_type, skill, value, visitor_hash)
+);
+CREATE INDEX IF NOT EXISTS milestone_cheers_lookup_idx ON milestone_cheers (player_id, milestone_type, skill, value);

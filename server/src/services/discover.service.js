@@ -72,7 +72,7 @@ async function getActivity(byId) {
       for (const [skill, s] of Object.entries(row.skills || {})) {
         const before = prev.skills?.[skill]?.level
         if (before != null && s.level > before) {
-          events.push({ id: `lvl:${row.player_id}:${skill}:${s.level}`, kind: s.level >= 99 ? 'max' : 'levelup', playerId: p.id, skill, from: before, to: s.level, at })
+          events.push({ id: `lvl:${row.player_id}:${skill}:${s.level}`, kind: s.level >= 99 ? 'max' : 'levelup', playerId: p.id, skill, from: before, to: s.level, at, ...(s.level >= 99 ? { cheer: { type: 'skill_level', value: 99 } } : {}) })
         }
       }
       const gained = Number(row.overall_xp) - Number(prev.overall_xp)
@@ -97,16 +97,30 @@ async function getActivity(byId) {
       skill: r.skill || null,
       title: titles.get(`${r.milestone_type}|${r.skill}|${Number(r.value)}`) || 'Milestone',
       at: r.occurred_at,
+      ...(r.milestone_type === 'skill_xp' && Number(r.value) === 200_000_000 ? { cheer: { type: 'skill_xp', value: 200_000_000 } } : {}),
     })
   }
 
-  return events
+  const feed = events
     .sort((a, b) => new Date(b.at) - new Date(a.at))
     .slice(0, 60)
     .map((e) => {
       const p = byId.get(e.playerId)
       return { ...e, username: p.username, displayName: p.displayName, badge: p.badge }
     })
+
+  // Congratulation counts for the 99s and 200M milestones in the feed (visitors can congratulate right from it).
+  const cheerable = feed.filter((e) => e.cheer)
+  if (cheerable.length) {
+    const counts = await pool.query(
+      `SELECT player_id, milestone_type, skill, value, COUNT(*)::int AS n FROM milestone_cheers
+       WHERE player_id = ANY($1) GROUP BY player_id, milestone_type, skill, value`,
+      [[...new Set(cheerable.map((e) => e.playerId))]],
+    )
+    const byKey = new Map(counts.rows.map((r) => [`${r.player_id}|${r.milestone_type}|${r.skill}|${Number(r.value)}`, r.n]))
+    for (const e of cheerable) e.cheer.count = byKey.get(`${e.playerId}|${e.cheer.type}|${e.skill || ''}|${e.cheer.value}`) || 0
+  }
+  return feed
 }
 
 // Cached: live pieces for 45s (the page polls every minute), the heavier

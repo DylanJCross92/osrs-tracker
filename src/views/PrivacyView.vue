@@ -21,6 +21,12 @@
       tools may set cookies and collect technical information such as pages visited, device and approximate location.
       You can block them with your browser's privacy settings or an extension.
     </p>
+    <h2>Congratulations</h2>
+    <p>
+      When someone reaches a new 99, visitors can click a "Congratulate" button. To allow one click per visitor per achievement,
+      TickGains stores a salted, one-way hash of the visitor's IP address with the click. The address itself is never stored,
+      and the hash can't be turned back into it.
+    </p>
     <h2>Your browser</h2>
     <p>Some preferences (like your selected gains period or a saved plan in the planner) are kept in your browser's local storage on your own device.</p>
     <h2>Questions or removal requests</h2>
