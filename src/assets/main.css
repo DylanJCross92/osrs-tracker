@@ -3088,3 +3088,16 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .acct-profiles { padding: 4px 4px 6px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
 .acct-profile { display: block; padding: 8px 10px; border-radius: 8px; color: var(--gold-bright); font-size: 0.98rem; font-weight: 700; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
 .acct-profile:hover { background: var(--panel-alt); text-decoration: none; }
+/* Admin claims: space the result and error lines away from the code box above and the card edge below. */
+.adm-lookup ~ .auth-error, .adm-lookup ~ .auth-done { margin: 16px 0 4px; padding: 10px 14px; border-radius: 10px; line-height: 1.5; }
+.adm-lookup ~ .auth-done { background: rgba(124, 184, 105, 0.1); border: 1px solid rgba(124, 184, 105, 0.35); }
+.adm-lookup ~ .auth-error { background: rgba(217, 138, 120, 0.1); border: 1px solid rgba(217, 138, 120, 0.35); }
+.adm-found + .auth-done { margin-top: 16px; }
+.acc h2 + .acc-empty { margin-top: 10px; }
+
+/* The claimed-profile tick: green, round, nothing like the gold founder shield. */
+.player-badge.is-claimed { color: var(--xp-green); margin-left: 4px; }
+.player-badge.is-claimed svg { filter: drop-shadow(0 0 5px rgba(124, 184, 105, 0.4)); }
+.player-badge.is-claimed::after { border-color: var(--xp-green); color: var(--xp-green); }
+.detail-name .player-badge.is-claimed { margin-left: 8px; }
+.detail-name .player-badge.is-claimed svg { width: 26px; height: 26px; }

@@ -34,7 +34,7 @@
         <PlayerAvatar :name="player?.username || usernameParam" />
       </div>
       <div class="detail-info">
-        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /><span v-if="claim?.claimed" class="claim-pill" :class="{ 'is-mine': claim.mine === 'owner' }" :title="claim.mine === 'owner' ? 'You own this profile' : 'This profile has been claimed by its owner'">{{ claim.mine === 'owner' ? 'Your profile' : 'Claimed' }}</span></h1>
+        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
         <p v-if="latest" class="last-synced">
           <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
           <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>

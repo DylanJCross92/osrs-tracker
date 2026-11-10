@@ -137,7 +137,7 @@
             <span class="home-preview-avatar"><PlayerAvatar :name="example.username || example.displayName" /></span>
             <div>
               <span class="home-preview-label">Example profile</span>
-              <h3>{{ example.displayName }}<PlayerBadge :label="example.badge" /></h3>
+              <h3>{{ example.displayName }}<PlayerBadge :label="example.badge" :claimed="example.claimed" /></h3>
             </div>
           </div>
           <div class="home-preview-stats">
@@ -201,7 +201,7 @@
               <li v-for="(g, i) in community.topGainers" :key="g.username">
                 <RouterLink :to="{ name: 'playerDetail', params: { username: g.username } }">
                   <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-                  <span class="home-list-name">{{ g.displayName }}<PlayerBadge :label="g.badge" /></span>
+                  <span class="home-list-name">{{ g.displayName }}<PlayerBadge :label="g.badge" :claimed="g.claimed" /></span>
                   <span class="stat-gain">+{{ formatXp(g.xp) }}</span>
                 </RouterLink>
               </li>

@@ -39,7 +39,7 @@
             <RouterLink :to="{ name: 'playerDetail', params: { username: r.p.username } }" @click="track('leaderboard_player_click', { rank: r.rank, mode })">
               <span class="disc-rank" :class="`r${r.rank}`">{{ r.rank.toLocaleString('en-US') }}</span>
               <span class="disc-board-main">
-                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
+                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /></span>
                 <span class="disc-bar"><span :style="{ width: `${(r.value / max) * 100}%` }" /></span>
               </span>
               <span class="lb-meta">{{ r.meta }}</span>

@@ -13,6 +13,7 @@ function card(p, featured = null) {
     username: p.username,
     displayName: p.displayName,
     badge: p.badge,
+    claimed: p.claimed,
     overallLevel: p.latest?.overallLevel ?? null,
     overallXp: p.latest?.overallXp ?? null,
     overallRank: p.latest?.overallRank ?? null,
@@ -31,6 +32,7 @@ function compact(p) {
     username: p.username,
     displayName: p.displayName,
     badge: p.badge,
+    claimed: p.claimed,
     overallLevel: l?.overallLevel ?? null,
     overallXp: l?.overallXp ?? null,
     overallRank: l?.overallRank ?? null,
@@ -106,7 +108,7 @@ async function getActivity(byId) {
     .slice(0, 60)
     .map((e) => {
       const p = byId.get(e.playerId)
-      return { ...e, username: p.username, displayName: p.displayName, badge: p.badge }
+      return { ...e, username: p.username, displayName: p.displayName, badge: p.badge, claimed: p.claimed }
     })
 
   // Congratulation counts for the 99s and 200M milestones in the feed (visitors can congratulate right from it).
@@ -235,6 +237,7 @@ export async function searchPlayers(rawQuery) {
       username: r.username,
       displayName: r.display_name,
       badge: r.badge,
+      claimed: Boolean(d?.claimed),
       overallLevel: latest?.overallLevel ?? null,
       overallXp: latest?.overallXp ?? null,
       overallRank: latest?.overallRank > 0 ? latest.overallRank : null,

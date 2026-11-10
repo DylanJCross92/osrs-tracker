@@ -67,11 +67,11 @@ async function build() {
     .filter((p) => p.gains?.[period]?.xp > 0)
     .sort((a, b) => b.gains[period].xp - a.gains[period].xp)
     .slice(0, 5)
-    .map((p) => ({ username: p.username, displayName: p.displayName, badge: p.badge, xp: p.gains[period].xp, topSkill: p.gains[period].topSkill }))
+    .map((p) => ({ username: p.username, displayName: p.displayName, badge: p.badge, claimed: p.claimed, xp: p.gains[period].xp, topSkill: p.gains[period].topSkill }))
 
   const achievements = discover.insights?.achievements || []
   const recentMilestones = achievements.slice(0, 4).map((a) => ({
-    key: a.key, username: a.username, displayName: a.displayName, badge: a.badge, skill: a.skill, title: a.title, detectedAt: a.detectedAt,
+    key: a.key, username: a.username, displayName: a.displayName, badge: a.badge, claimed: a.claimed, skill: a.skill, title: a.title, detectedAt: a.detectedAt,
   }))
 
   const ex = pickExample(players)
@@ -84,6 +84,7 @@ async function build() {
       username: ex.username,
       displayName: ex.displayName,
       badge: ex.badge,
+      claimed: ex.claimed,
       overallLevel: ex.overallLevel,
       overallXp: ex.overallXp,
       overallRank: ex.overallRank,

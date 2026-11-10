@@ -53,7 +53,7 @@
         <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'day' ? 'today' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
         <span class="disc-spot-top">
           <span class="disc-spot-avatar" aria-hidden="true"><PlayerAvatar :name="spotlight.p.username" /></span>
-          <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" /></span>
+          <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" :claimed="spotlight.p.claimed" /></span>
         </span>
         <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString('en-US') }} <small>XP</small></span>
         <span v-if="spotlight.topSkills.length" class="disc-spot-skills">
@@ -118,7 +118,7 @@
             <RouterLink :to="profileTo(r.p.username)">
               <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
               <span class="disc-board-main">
-                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
+                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /></span>
                 <span class="disc-bar"><span :style="{ width: `${(r.xp / boardMax) * 100}%` }" /></span>
               </span>
               <span class="disc-board-xp" :class="{ dim: !r.xp }">{{ r.xp ? `+${formatXp(r.xp)}` : '-' }}</span>
@@ -137,7 +137,7 @@
         <ol v-if="trendingList.length" class="disc-rank-list">
           <li v-for="(t, i) in trendingList" :key="t.id"><RouterLink :to="profileTo(t.username)">
             <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>{{ t.reason }}</small></span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" :claimed="t.claimed" /></span><small>{{ t.reason }}</small></span>
           </RouterLink></li>
         </ol>
         <p v-else class="empty-hint">Nothing is trending yet, players show up here with fresh gains or milestones.</p>
@@ -148,7 +148,7 @@
         <ol v-if="improvedList.length" class="disc-rank-list">
           <li v-for="(t, i) in improvedList" :key="t.id"><RouterLink :to="profileTo(t.username)">
             <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" :claimed="t.claimed" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
             <span class="disc-board-xp">+{{ t.pct }}%</span>
           </RouterLink></li>
         </ol>
@@ -173,7 +173,7 @@
         <div class="disc-spotlights">
           <RouterLink v-for="sp in spotlights" :key="sp.period" :to="profileTo(sp.p.username)" class="disc-spotlight">
             <span class="disc-spotlight-reason">{{ sp.label }}</span>
-            <span class="disc-spotlight-name"><span class="disc-spotlight-avatar" aria-hidden="true"><PlayerAvatar :name="sp.p.username" /></span>{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" /></span>
+            <span class="disc-spotlight-name"><span class="disc-spotlight-avatar" aria-hidden="true"><PlayerAvatar :name="sp.p.username" /></span>{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" :claimed="sp.p.claimed" /></span>
             <span class="disc-spotlight-headline">
               +{{ sp.xp.toLocaleString('en-US') }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
             </span>
@@ -231,7 +231,7 @@
           <RouterLink :to="profileTo(r.p.username)">
             <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
             <span class="disc-board-main">
-              <span class="disc-board-name"><span class="disc-board-avatar" aria-hidden="true"><PlayerAvatar :name="r.p.username" /></span>{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
+              <span class="disc-board-name"><span class="disc-board-avatar" aria-hidden="true"><PlayerAvatar :name="r.p.username" /></span>{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /></span>
               <span class="disc-bar gold"><span :style="{ width: `${r.progress}%` }" /></span>
               <small class="disc-explore-meta">Level {{ r.level }} · {{ formatXp(r.xp) }} XP · next: {{ r.nextLabel }} ({{ r.progress }}%)</small>
             </span>
@@ -275,7 +275,7 @@
         <div class="disc-rail-track">
           <div class="disc-rail-list">
         <RouterLink v-for="p in data[rail.key]" :key="`a${p.id}`" :to="profileTo(p.username)" class="card discover-card">
-          <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
+          <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
           <span class="discover-card-stats">
             <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
@@ -291,7 +291,7 @@
           <!-- Second copy makes the slow scroll loop seamlessly. -->
           <div class="disc-rail-list" aria-hidden="true">
         <RouterLink v-for="p in data[rail.key]" :key="`b${p.id}`" :to="profileTo(p.username)" class="card discover-card" tabindex="-1">
-          <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" /></span>
+          <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
           <span class="discover-card-stats">
             <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
             <span>{{ formatXp(p.overallXp) }} XP</span>

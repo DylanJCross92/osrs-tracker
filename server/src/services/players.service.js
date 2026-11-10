@@ -63,6 +63,8 @@ function mapPlayerRow(row, { skillGains = false } = {}) {
     username: row.username,
     displayName: row.display_name,
     badge: row.badge || null,
+    // True when a verified owner has claimed this profile (see claims.service.js). Never says by whom.
+    claimed: Boolean(row.claimed),
     createdAt: row.created_at,
     lastCheckedAt: row.last_checked_at,
     latest: row.captured_at
@@ -144,6 +146,7 @@ export async function listPlayers({ skillGains = false, ids = null } = {}) {
   const result = await pool.query(
     `
     SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at,
+           EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed,
            p.wom_import_status, p.wom_imported_count,
            s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
            ${baselineColumns}

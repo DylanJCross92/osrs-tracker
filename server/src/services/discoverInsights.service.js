@@ -27,7 +27,7 @@ const fmtXp = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${pars
 
 /** The player summary every featured card shares. */
 function who(p) {
-  return { id: p.id, username: p.username, displayName: p.displayName, badge: p.badge }
+  return { id: p.id, username: p.username, displayName: p.displayName, badge: p.badge, claimed: p.claimed }
 }
 
 // ---------------------------------------------------------------------------
