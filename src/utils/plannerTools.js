@@ -26,7 +26,7 @@ export const STRATEGY_LABELS = {
   [AUTO_FAST]: 'Fastest',
   [AUTO_CHEAP]: 'Cheapest',
   [AUTO_BALANCED]: 'Balanced',
-  [AUTO_PROFIT]: 'Most profitable',
+  [AUTO_PROFIT]: 'Best gp per hour',
 }
 
 /** A goal with "follow the global strategy" swapped for the real strategy, ready for planGoal. */

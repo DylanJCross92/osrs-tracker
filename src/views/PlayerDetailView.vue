@@ -45,11 +45,12 @@
         </div>
       </div>
       <div class="detail-side">
-        <XpSparkline v-if="weekDays.length" :days="weekDays" />
+        <XpSparkline v-if="weekDays.length" :days="weekDays" @select="(d) => (recapDay = d)" />
       </div>
     </div>
   </div>
 
+  <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" @share="openShare" />
@@ -276,6 +277,7 @@ import { highestSkill } from '@/utils/profile'
 import { track } from '@/utils/analytics'
 import { gameDay, startOfGameDay, recentGameDays, formatGameDay, gameMonthKey } from '@/utils/gameDay'
 import XpSparkline from '@/components/profile/XpSparkline.vue'
+import DayRecapModal from '@/components/profile/DayRecapModal.vue'
 import {
   SKILL_NAMES,
   skillIconSrc,
@@ -407,11 +409,32 @@ const weekDays = computed(() => {
   const windowSnaps = list.slice(Math.max(firstInside - 1, 0))
   if (windowSnaps.length < 2) return []
   const byDay = new Map()
+  const skillsByDay = new Map()
   for (let i = 1; i < windowSnaps.length; i++) {
     const k = gameDay(windowSnaps[i].capturedAt)
     byDay.set(k, (byDay.get(k) || 0) + Math.max(windowSnaps[i].overallXp - windowSnaps[i - 1].overallXp, 0))
+    const per = skillsByDay.get(k) || {}
+    for (const name of SKILL_NAMES) {
+      if (name === 'Overall') continue
+      const gained = xpForSkill(windowSnaps[i], name) - xpForSkill(windowSnaps[i - 1], name)
+      const levels = Math.max(levelForSkill(windowSnaps[i], name) - levelForSkill(windowSnaps[i - 1], name), 0)
+      if (gained <= 0 && levels <= 0) continue
+      const cur = per[name] || { skill: name, xp: 0, levels: 0 }
+      cur.xp += Math.max(gained, 0)
+      cur.levels += levels
+      // Level and total XP as of the day's last snapshot (this loop runs oldest to newest, so the last write wins).
+      cur.level = levelForSkill(windowSnaps[i], name)
+      cur.total = xpForSkill(windowSnaps[i], name)
+      per[name] = cur
+    }
+    skillsByDay.set(k, per)
   }
-  return days.map((d) => ({ label: d.label, xp: byDay.get(d.key) || 0 }))
+  // Every skill that gained that day, biggest first. The chart's hover box shows the top two, the day recap all of them.
+  const skillsOf = (k) => Object.values(skillsByDay.get(k) || {}).filter((x) => x.xp > 0 || x.levels > 0).sort((a, b) => b.xp - a.xp)
+  return days.map((d) => {
+    const skills = skillsOf(d.key)
+    return { key: d.key, label: d.label, xp: byDay.get(d.key) || 0, skills, topSkills: skills.slice(0, 2) }
+  })
 })
 
 // When new XP last arrived: the newest snapshot whose total XP is higher than
@@ -450,6 +473,7 @@ const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')
 // Clicking a skill in the hiscores opens its quick planner in a modal; nothing else on the page changes.
+const recapDay = ref(null)
 const plannerSkill = ref('')
 function openPlanner(skill) {
   if (skill === 'Overall') return

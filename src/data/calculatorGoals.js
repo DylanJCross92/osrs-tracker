@@ -107,7 +107,7 @@ export function buildGoalContent(info, from, to) {
 
   const profit = profitableMethods(skill, from, to)
   const routes = [routeRow('fast', 'Fastest', plans.fast), routeRow('cheap', 'Cheapest', plans.cheap), routeRow('balanced', 'Balanced', plans.balanced)]
-  if (profit.length && complete(plans.profit)) routes.push(routeRow('profit', 'Most profitable', plans.profit))
+  if (profit.length && complete(plans.profit)) routes.push(routeRow('profit', 'Best gp per hour', plans.profit))
 
   const methods = relevantMethods(skill, from, to)
     .slice()
@@ -153,12 +153,12 @@ export function buildGoalContent(info, from, to) {
     const best = profit[0]
     faq.push({
       q: `Can you make money training ${skill} from ${from} to ${to}?`,
-      a: `Yes. ${best.name} makes about ${formatGp(best.gpPerHour).replace(/^\+/, '')} per hour in this range, and the most profitable route ${gpPhrase(plans.profit)} over the whole goal.`,
+      a: `Yes. ${best.name} makes about ${formatGp(best.gpPerHour).replace(/^\+/, '')} per hour in this range, and the best gp-per-hour route ${gpPhrase(plans.profit)} over the whole goal.`,
     })
   }
 
   const path = `/calculators/${info.slug}/${goalSlug(from, to)}`
-  const gpClause = routes.some((r) => r.id === 'profit') ? ', cheapest and most profitable' : ' and cheapest'
+  const gpClause = routes.some((r) => r.id === 'profit') ? ', cheapest and best gp per hour' : ' and cheapest'
   return {
     skill,
     slug: info.slug,

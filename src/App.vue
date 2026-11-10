@@ -5,6 +5,7 @@
         <RouterLink :to="{ name: 'players' }" class="app-logo">
           <img src="/logo.svg?v=2" alt="TickGains" class="app-logo-img" />
         </RouterLink>
+        <NavSearch />
         <nav class="app-nav" aria-label="Main">
           <RouterLink :to="{ name: 'players' }" class="app-nav-link" :class="{ 'is-active': route.name === 'players' || route.name === 'playerDetail' || route.name === 'weeklyShareCard' }">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" /></svg>
@@ -47,6 +48,7 @@ import { DISCORD_URL } from '@/config'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
+import NavSearch from '@/components/NavSearch.vue'
 
 const route = useRoute()
 

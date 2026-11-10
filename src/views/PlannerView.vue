@@ -396,7 +396,7 @@ const strategyRows = computed(() => {
     { id: AUTO_CHEAP, label: 'Cheapest routes', totals: st.cheap },
     { id: AUTO_BALANCED, label: 'Balanced routes', totals: st.balanced },
   ]
-  if (goals.value.some((g) => profitableMethods(g.skill, levelAtXp(g.currentXp, true), levelAtXp(g.targetXp, true)).length)) rows.push({ id: AUTO_PROFIT, label: 'Most profitable routes', totals: st.profit })
+  if (goals.value.some((g) => profitableMethods(g.skill, levelAtXp(g.currentXp, true), levelAtXp(g.targetXp, true)).length)) rows.push({ id: AUTO_PROFIT, label: 'Best gp per hour routes', totals: st.profit })
   return rows
 })
 const strategyVerdict = computed(() => {

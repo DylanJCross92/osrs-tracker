@@ -149,7 +149,7 @@ const methodRoutes = computed(() => [
   { value: AUTO_FAST, label: 'Fastest route' },
   { value: AUTO_CHEAP, label: 'Cheapest route' },
   { value: AUTO_BALANCED, label: 'Balanced route' },
-  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Most profitable route' }] : []),
+  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Best gp per hour route' }] : []),
 ])
 const profitable = computed(() => profitableMethods(props.goal.skill, startLevel.value, endLevel.value))
 const strategyText = computed(() => {

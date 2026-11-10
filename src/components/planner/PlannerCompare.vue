@@ -104,7 +104,7 @@ const rows = computed(() => {
     { id: AUTO_CHEAP, label: 'Cheapest', plan: props.plans.cheap },
     { id: AUTO_BALANCED, label: 'Balanced', plan: props.plans.balanced },
   ]
-  if (profitable.value.length) list.push({ id: AUTO_PROFIT, label: 'Most profitable', plan: props.plans.profit })
+  if (profitable.value.length) list.push({ id: AUTO_PROFIT, label: 'Best gp per hour', plan: props.plans.profit })
   // A hand-picked method or custom rate gets its own row so it can be weighed against the strategies.
   if (!list.some((r) => r.id === props.selectedId)) list.push({ id: props.selectedId, label: props.plan.method ? props.plan.method.name : 'Custom rate', plan: props.plan })
   return list.map((r) => ({ ...r, diff: diffOf(r.plan) }))

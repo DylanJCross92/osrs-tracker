@@ -82,7 +82,7 @@ const STRATEGIES = [
   { key: AUTO_FAST, label: 'Fastest', note: 'The quickest method at every level on the way.' },
   { key: AUTO_BALANCED, label: 'Balanced', note: 'Weighs gp costs against your time, so it avoids methods that burn gold for little speed.' },
   { key: AUTO_CHEAP, label: 'Cheapest', note: 'The lowest gp cost per XP, even when it takes longer.' },
-  { key: AUTO_PROFIT, label: 'Most profit', note: 'Methods that make gp while you train, where the skill has any.' },
+  { key: AUTO_PROFIT, label: 'Best gp/hour', note: 'The method that earns the most gp for each hour you play. Cheapest keeps more gp over the whole goal, but this one pays best per hour.' },
 ]
 const MILESTONE_LEVELS = [50, 60, 70, 75, 80, 85, 90, 92, 95, 99]
 const MILESTONE_XP = [10_000_000, 25_000_000, 50_000_000, 100_000_000, 200_000_000]
