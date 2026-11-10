@@ -96,13 +96,13 @@
             v-for="skill in HISCORES_SKILL_ORDER"
             :key="skill"
             class="hiscores-row"
-            :class="{ active: selectedSkill === skill }"
-            tabindex="0"
-            role="button"
-            :aria-pressed="selectedSkill === skill"
-            @click="selectedSkill = skill; track('profile_chart_skill', { skill })"
-            @keydown.enter="selectedSkill = skill"
-            @keydown.space.prevent="selectedSkill = skill"
+            :class="{ 'hiscores-row-static': skill === 'Overall' }"
+            :tabindex="skill === 'Overall' ? -1 : 0"
+            :role="skill === 'Overall' ? undefined : 'button'"
+            :aria-haspopup="skill === 'Overall' ? undefined : 'dialog'"
+            @click="openPlanner(skill)"
+            @keydown.enter="openPlanner(skill)"
+            @keydown.space.prevent="openPlanner(skill)"
           >
             <td class="hs-skill-col">
               <span class="skill-cell">
@@ -138,57 +138,7 @@
       </table>
     </div>
 
-    <div v-if="selectedSkill !== 'Overall'" class="card skill-progress-card">
-      <div class="skill-progress-head">
-        <img class="skill-progress-icon" :src="skillIconSrc(selectedSkill)" :alt="selectedSkill" width="28" height="28" />
-        <h2 class="skill-progress-name">{{ selectedSkill }}</h2>
-        <span class="skill-progress-level">Level {{ targetSkillLevel }}</span>
-      </div>
-      <template v-if="selectedSkillLevel < 99">
-        <div class="level-progress-track">
-          <div class="level-progress-fill" :style="{ width: levelProgressPercent + '%' }"></div>
-        </div>
-        <p class="level-progress-caption">
-          {{ levelProgressPercent.toFixed(1) }}%, {{ xpToNextLevel.toLocaleString('en-US') }} xp to go
-        </p>
-      </template>
-      <p v-else class="level-progress-caption">Max level reached, nice work.</p>
-
-      <template v-if="trainingAdvice">
-        <h3 class="training-advice-heading">Training tips</h3>
-        <div class="advice-row">
-          <span class="advice-label">⚡ Fastest</span>
-          <span class="advice-text">
-            {{ trainingAdvice.fastest }}
-            <span v-if="trainingAdvice.actionsToNext" class="advice-eta">
-              ~{{ trainingAdvice.actionsToNext.toLocaleString('en-US') }} {{ trainingAdvice.actionLabel }} (~{{ trainingAdvice.timeToNext }}) to reach level
-              {{ trainingAdvice.nextLevel }} ({{ trainingAdvice.xpToNext.toLocaleString('en-US') }} xp to go).
-            </span>
-            <span v-else class="advice-eta">You're already at the max level (99)!</span>
-          </span>
-        </div>
-        <div v-if="trainingAdvice.alt" class="advice-row">
-          <span class="advice-label">🌱 Skiller-friendly</span>
-          <span class="advice-text">
-            {{ trainingAdvice.alt.fastest }}
-            <span class="advice-eta">
-              ~{{ trainingAdvice.alt.actionsToNext.toLocaleString('en-US') }} {{ trainingAdvice.alt.actionLabel }} (~{{ trainingAdvice.alt.timeToNext }}) to reach level
-              {{ trainingAdvice.nextLevel }}.
-            </span>
-          </span>
-        </div>
-        <div class="advice-row">
-          <span class="advice-label">💰 Best money maker</span>
-          <span class="advice-text">
-            <template v-if="trainingAdvice.money">{{ trainingAdvice.money }}</template>
-            <template v-else-if="trainingAdvice.moneyUnlocksAt">
-              No reliable money-making method yet, that opens up at level {{ trainingAdvice.moneyUnlocksAt }}.
-            </template>
-            <template v-else>No reliable money-making method for this skill, it's a pure xp (and gp) investment.</template>
-          </span>
-        </div>
-      </template>
-    </div>
+    <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
 
     <div class="gain-tiles">
       <div class="card gain-tile">
@@ -332,14 +282,13 @@ import {
   formatXp,
   formatSignedXp,
   xpForSkill,
-  xpForLevel,
   levelForSkill,
   rankForSkill,
   xpGain,
   levelGain,
   rankGain,
 } from '@/utils/osrsSkills'
-import { getTrainingAdvice } from '@/utils/trainingGuide'
+import QuickPlannerModal from '@/components/profile/QuickPlannerModal.vue'
 import { setPageMeta } from '@/utils/pageMeta'
 
 // Same order (and the same "Overall" row first) as the official OSRS
@@ -500,6 +449,13 @@ const newMilestones = computed(() => {
 const checkingForUpdates = ref(false)
 const showTable = ref(false)
 const selectedSkill = ref('Overall')
+// Clicking a skill in the hiscores opens its quick planner in a modal; nothing else on the page changes.
+const plannerSkill = ref('')
+function openPlanner(skill) {
+  if (skill === 'Overall') return
+  track('profile_skill_planner', { skill })
+  plannerSkill.value = skill
+}
 
 async function load() {
   loading.value = true
@@ -539,32 +495,6 @@ onMounted(load)
 watch(() => route.params.username, load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
-
-const selectedSkillLevel = computed(() => (latest.value ? levelForSkill(latest.value, selectedSkill.value) : 1))
-const selectedSkillXp = computed(() => (latest.value ? xpForSkill(latest.value, selectedSkill.value) : 0))
-const trainingAdvice = computed(() =>
-  getTrainingAdvice(selectedSkill.value, selectedSkillLevel.value, selectedSkillXp.value),
-)
-
-// How far into the current level the player is, for the progress bar, xp
-// is not evenly distributed between levels, so this is relative to the
-// actual xp window for this specific level, not a flat percentage.
-const levelProgressPercent = computed(() => {
-  if (selectedSkillLevel.value >= 99) return 100
-  const lo = xpForLevel(selectedSkillLevel.value)
-  const hi = xpForLevel(selectedSkillLevel.value + 1)
-  const pct = ((selectedSkillXp.value - lo) / (hi - lo)) * 100
-  return Math.min(Math.max(pct, 0), 100)
-})
-const xpToNextLevel = computed(() => {
-  if (selectedSkillLevel.value >= 99) return 0
-  return xpForLevel(selectedSkillLevel.value + 1) - selectedSkillXp.value
-})
-// The badge shows the level you're progressing toward, not the current one
-//, already at 99 (or total-level "Overall"), there's no next level to show.
-const targetSkillLevel = computed(() =>
-  selectedSkillLevel.value < 99 ? selectedSkillLevel.value + 1 : selectedSkillLevel.value,
-)
 
 // Dropdown above the hiscores table, which window its per-skill deltas
 // show. "day" means the calendar day (resets at 6 AM Eastern), "week"/
