@@ -56,6 +56,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError } from '@/api/client'
 import { claimsApi } from '@/api/claims'
+import { refreshNotifications } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
 
@@ -84,6 +85,7 @@ async function start() {
   error.value = ''
   try {
     emit('update', await claimsApi.start(props.username))
+    refreshNotifications()
     track('claim_started')
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Something went wrong, please try again.'
@@ -96,6 +98,7 @@ async function cancel() {
   busy.value = true
   try {
     emit('update', await claimsApi.cancel(props.username))
+    refreshNotifications()
     track('claim_cancelled')
   } catch {
     showToast('Could not cancel the claim, please try again.')

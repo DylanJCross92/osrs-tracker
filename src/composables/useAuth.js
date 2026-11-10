@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { authApi } from '@/api/auth'
 import { claimsApi } from '@/api/claims'
+import { notificationsApi } from '@/api/notifications'
 import { useRivals } from '@/composables/useRivals'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 
@@ -13,6 +14,8 @@ const ready = ref(false)
 const syncState = ref('idle')
 // Profiles this account owns (verified claims): [{ username, displayName }]. Shown in the account menu.
 const profiles = ref([])
+// Things that need this account's attention (see the avatar's red badge): { items, total }.
+const notifications = ref({ items: [], total: 0 })
 
 const { me, rivals } = useRivals()
 const { period } = useGainPeriod()
@@ -76,13 +79,28 @@ export async function refreshProfiles() {
   }
 }
 
+/** Asks the server what needs attention. Quiet on failure: the badge just keeps its last value. */
+export async function refreshNotifications() {
+  if (!user.value) {
+    notifications.value = { items: [], total: 0 }
+    return
+  }
+  try {
+    notifications.value = await notificationsApi.get()
+  } catch {
+    // Keep whatever we had.
+  }
+}
+
 function setUser(u) {
   user.value = u
   if (u) {
     reconcile(u.settings)
     refreshProfiles()
+    refreshNotifications()
   } else {
     profiles.value = []
+    notifications.value = { items: [], total: 0 }
   }
 }
 
@@ -130,6 +148,7 @@ export async function logOut() {
     clearTimeout(timer)
     user.value = null
     profiles.value = []
+    notifications.value = { items: [], total: 0 }
     syncState.value = 'idle'
     // Leave nothing of this account behind on a shared computer: back to the defaults.
     me.value = ''
@@ -144,5 +163,5 @@ export const authReady = () => initAuth()
 
 export function useAuth() {
   const isAdmin = computed(() => !!user.value?.roles?.some((r) => r === 'admin' || r === 'owner'))
-  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles }
+  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles, notifications }
 }

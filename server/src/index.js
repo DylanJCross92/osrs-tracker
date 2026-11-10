@@ -10,6 +10,7 @@ import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { claimsRouter } from './routes/claims.routes.js'
+import { notificationsRouter } from './routes/notifications.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
@@ -40,6 +41,7 @@ app.use('/api', recordsRouter)
 app.use('/api/newsletter', subscribersRouter)
 app.use('/api/auth', authRouter)
 app.use('/api', claimsRouter)
+app.use('/api', notificationsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
