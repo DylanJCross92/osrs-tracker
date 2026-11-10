@@ -20,6 +20,7 @@
             Account Planner
           </RouterLink>
         </nav>
+        <AccountMenu />
       </div>
     </header>
     <main class="app-main">
@@ -46,13 +47,18 @@
 <script setup>
 import { track } from '@/utils/analytics'
 import { DISCORD_URL } from '@/config'
-import { onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
+import AccountMenu from '@/components/AccountMenu.vue'
+import { initAuth, useAuth } from '@/composables/useAuth'
 
 const route = useRoute()
+const { loggedIn } = useAuth()
+// Find out right away whether this browser is signed in (the answer also restores saved settings).
+initAuth()
 
 // One delegated listener for clicks that appear all over the site: any link to a
 // player profile (with the page section it was in) and links that leave the site.
@@ -74,7 +80,7 @@ function onDocClick(e) {
 onMounted(() => document.addEventListener('click', onDocClick))
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
-const footerCols = [
+const footerCols = computed(() => [
   {
     title: 'Track',
     links: [
@@ -106,7 +112,8 @@ const footerCols = [
       { label: 'Join our Discord', href: DISCORD_URL },
       { label: 'Contact', to: { name: 'contact' } },
       { label: 'Privacy', to: { name: 'privacy' } },
+      loggedIn.value ? { label: 'Your account', to: { name: 'account' } } : { label: 'Log in or sign up', to: { name: 'login' } },
     ],
   },
-]
+])
 </script>

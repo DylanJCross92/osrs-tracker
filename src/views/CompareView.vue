@@ -36,7 +36,7 @@
           <button type="button" :aria-label="`Remove ${r} from your rivals`" @click="removeRival(r)">×</button>
         </span>
       </div>
-      <p v-else-if="!hasNames" class="cmp-hint">Save a player as a rival after comparing and they will show up here next time. Rivals are kept in this browser only.</p>
+      <p v-else-if="!hasNames" class="cmp-hint">Save a player as a rival after comparing and they will show up here next time. Rivals are kept in this browser<template v-if="!loggedIn">. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create an account</RouterLink> to keep them on every device.</template><template v-else> and saved to your account.</template></p>
 
       <div v-if="!hasNames && suggestedPairs.length" class="cmp-rivals">
         <span class="cmp-rivals-label">Try a matchup</span>
@@ -122,6 +122,7 @@ import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { useRivals } from '@/composables/useRivals'
+import { useAuth } from '@/composables/useAuth'
 import { ApiError } from '@/api/client'
 import { skillIconSrc, formatXp, formatSignedXp } from '@/utils/osrsSkills'
 import { highestSkill } from '@/utils/profile'
@@ -141,6 +142,7 @@ const router = useRouter()
 const store = usePlayersStore()
 const { showToast } = useToast()
 const { period } = useGainPeriod()
+const { loggedIn } = useAuth()
 const { me, rivals, isMe, isRival, setMe, addRival, removeRival } = useRivals()
 
 const PERIODS = [

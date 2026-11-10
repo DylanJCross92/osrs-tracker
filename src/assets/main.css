@@ -2868,7 +2868,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .signup-row input[type='email'] { flex: 1 1 160px; min-width: 0; height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); color: var(--text); font-family: inherit; font-size: 0.9rem; }
 .signup-row input[type='email']:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); }
 .signup-row .btn { height: 40px; padding: 0 16px; white-space: nowrap; }
-.signup .signup-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.signup .signup-hp, .auth-form .signup-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .signup-fine, .app-footer-about .signup-fine { margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.45; max-width: none; }
 .signup-fine a { text-decoration: underline; }
 .signup-error, .app-footer-about .signup-error { margin: 0; color: #d98a78; font-size: 0.8rem; max-width: none; }
@@ -2922,3 +2922,116 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
   .share-actions.is-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .share-actions.is-pair > .btn:last-child:nth-child(even) { grid-column: auto; }
 }
+
+/* ---------- accounts ---------- */
+.acct { display: flex; align-items: center; gap: 8px; flex: none; }
+.acct .btn { height: 40px; display: inline-flex; align-items: center; padding: 0 16px; white-space: nowrap; font-size: 0.9rem; text-decoration: none; }
+.acct-wrap { position: relative; }
+.acct-avatar { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border-strong); background: linear-gradient(135deg, var(--gold), #a8802f); color: var(--gold-ink); font: inherit; font-weight: 800; cursor: pointer; }
+.acct-avatar:hover { box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.25); }
+.acct-menu { position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; min-width: 220px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: var(--shadow-sm), 0 14px 34px rgba(0, 0, 0, 0.5); }
+.acct-email { margin: 0; padding: 8px 10px 10px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 0.8rem; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.acct-item { display: block; width: 100%; box-sizing: border-box; padding: 9px 10px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; font-size: 0.92rem; text-align: left; text-decoration: none; cursor: pointer; }
+.acct-item:hover { background: var(--panel-alt); text-decoration: none; }
+@media (max-width: 760px) {
+  .acct { order: 2; }
+  .acct .btn { padding: 0 12px; }
+}
+
+.auth-page { display: flex; justify-content: center; padding: 20px 0 40px; }
+.auth-card { width: 100%; max-width: 420px; padding: 26px 26px 22px; }
+.auth-card h1 { margin: 0 0 6px; font-size: 1.5rem; color: var(--gold-bright); }
+.auth-sub { margin: 0 0 18px; color: var(--muted); font-size: 0.95rem; max-width: none; }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.auth-field input, .auth-pw input, .acc-inline input, .acc-row select { width: 100%; box-sizing: border-box; height: 44px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(14, 12, 9, 0.6); color: var(--text); font: inherit; font-size: 0.95rem; }
+.auth-field input:focus, .auth-pw input:focus, .acc-inline input:focus, .acc-row select:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); background: var(--bg); }
+.auth-pw { position: relative; display: block; }
+.auth-pw input { padding-right: 64px; }
+.auth-pw-toggle { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); padding: 6px 10px; border: 0; border-radius: 8px; background: none; color: var(--gold-bright); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.auth-pw-toggle:hover { background: var(--panel-alt); }
+.auth-check { display: flex; align-items: flex-start; gap: 10px; color: var(--muted); font-size: 0.84rem; line-height: 1.4; cursor: pointer; }
+.auth-check input { margin-top: 2px; accent-color: var(--gold); }
+.auth-submit { height: 46px; font-size: 1rem; }
+.auth-error { margin: 0; color: #d98a78; font-size: 0.88rem; max-width: none; }
+.auth-done { margin: 0; color: var(--text); font-size: 0.92rem; max-width: none; }
+.auth-done span { color: var(--xp-green); font-weight: 700; margin-right: 4px; }
+.auth-links, .auth-switch { margin: 14px 0 0; text-align: center; font-size: 0.9rem; color: var(--muted); max-width: none; }
+.auth-links { margin-top: 12px; }
+.auth-links a, .auth-switch a, .auth-fine a { color: var(--gold-bright); text-decoration: underline; }
+.auth-fine { margin: 14px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.5; max-width: none; }
+
+.acc { max-width: 720px; margin: 0 auto; }
+.acc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.acc-head h1 { margin: 0; font-size: 1.5rem; color: var(--gold-bright); }
+.acc-sub { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; max-width: none; overflow-wrap: anywhere; }
+.acc h2 { margin: 0; font-size: 1.1rem; }
+.acc-title { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.acc-status { min-height: 1.2em; font-size: 0.82rem; color: var(--muted); }
+.acc-status.is-saved { color: var(--xp-green); }
+.acc-status.is-error { color: #d98a78; }
+.acc-note { margin: 6px 0 12px; color: var(--muted); font-size: 0.88rem; max-width: none; }
+.acc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 10px 20px; align-items: center; padding: 14px 0; border-top: 1px solid var(--border); }
+.acc-row > label, .acc-row > div:first-child { display: flex; flex-direction: column; gap: 2px; }
+.acc-row small { color: var(--muted); font-size: 0.8rem; font-weight: 400; }
+.acc-row .auth-error { grid-column: 1 / -1; }
+.acc-inline { display: flex; gap: 8px; }
+.acc-inline .btn { height: 44px; flex: none; }
+.acc-empty { margin: 0; color: var(--muted); font-size: 0.88rem; max-width: none; }
+.acc-rivals { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.acc-rivals li { display: inline-flex; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel-alt); font-size: 0.88rem; }
+.acc-rivals a { color: var(--text); }
+.acc-rivals button { width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: var(--muted); font-size: 1rem; line-height: 1; cursor: pointer; }
+.acc-rivals button:hover { background: var(--border); color: var(--text); }
+.acc-pw { max-width: 380px; margin-top: 12px; }
+.acc-danger { border-color: rgba(217, 138, 120, 0.35); }
+.acc-delete { background: #a24a3a; border: 1px solid #c9604c; color: #fff; }
+.acc-delete:hover { background: #b85644; }
+.acc-delete-open { color: #d98a78; border-color: rgba(217, 138, 120, 0.4); }
+@media (max-width: 620px) {
+  .acc-row { grid-template-columns: 1fr; }
+  .auth-card { padding: 22px 18px 18px; }
+}
+
+.auth-pending { display: flex; flex-direction: column; gap: 12px; }
+.auth-pending .auth-done span { font-size: 1.1rem; }
+.auth-restart { align-self: center; color: var(--gold-bright); text-decoration: underline; font-size: 0.9rem; }
+/* The labels are bold; the fields inside them should not inherit that. */
+.auth-field input, .auth-pw input, .acc-inline input { font-weight: 400; }
+.auth-field input::placeholder, .auth-pw input::placeholder, .acc-inline input::placeholder { font-weight: 400; color: var(--muted); opacity: 0.75; }
+/* Checkbox that matches the dark and gold theme. */
+.auth-check input[type='checkbox'] { appearance: none; -webkit-appearance: none; flex: none; width: 20px; height: 20px; margin: 1px 0 0; border: 1px solid var(--border-strong); border-radius: 6px; background: rgba(14, 12, 9, 0.6); cursor: pointer; display: inline-grid; place-content: center; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; }
+.auth-check input[type='checkbox']::after { content: ''; width: 5px; height: 10px; margin-top: -2px; border: solid var(--gold-ink); border-width: 0 2.2px 2.2px 0; transform: rotate(45deg) scale(0); transition: transform 0.12s ease-out; }
+.auth-check input[type='checkbox']:hover { border-color: var(--gold-bright); }
+.auth-check input[type='checkbox']:checked { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border-color: var(--gold-bright); }
+.auth-check input[type='checkbox']:checked::after { transform: rotate(45deg) scale(1); }
+.auth-check input[type='checkbox']:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.3); border-color: var(--gold-bright); }
+.auth-check:has(input:checked) span { color: var(--text); }
+
+.acc-pw-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.acc-pw-row .acc-note { margin: 4px 0 0; }
+.cpw-modal { max-width: 440px; }
+.cpw-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+/* The account page dropdown uses the same look as the other period dropdowns on the site. */
+.acc-row select { width: auto; height: auto; justify-self: start; box-sizing: border-box; padding: 7px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); font-family: inherit; font-size: 0.82rem; font-weight: 500; cursor: pointer; }
+.acc-row select:hover { border-color: var(--gold); }
+.acc-row select:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); background: var(--panel); }
+
+/* Settings: the controls sit on the right of each row (stacked and left-aligned on narrow screens). */
+@media (min-width: 621px) {
+  .acc-row select { justify-self: end; }
+  .acc-row .acc-empty { text-align: right; }
+  .acc-row .acc-rivals { justify-content: flex-end; }
+}
+/* Browser autofill paints fields pale yellow; keep them dark like the rest of the form. */
+.auth-field input:-webkit-autofill, .auth-field input:-webkit-autofill:hover, .auth-field input:-webkit-autofill:focus,
+.auth-pw input:-webkit-autofill, .auth-pw input:-webkit-autofill:hover, .auth-pw input:-webkit-autofill:focus,
+.acc-inline input:-webkit-autofill, .signup-row input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px #16130e inset;
+  box-shadow: 0 0 0 1000px #16130e inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  border-color: var(--border-strong);
+  transition: background-color 9999s ease-out 0s;
+}
+.auth-field input:autofill, .auth-pw input:autofill { box-shadow: 0 0 0 1000px #16130e inset; -webkit-text-fill-color: var(--text); }

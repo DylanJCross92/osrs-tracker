@@ -47,6 +47,39 @@ export async function notifyNewSubscriber({ email, source = '', total = null }) 
   }
 }
 
+/**
+ * Tell the owner about an account: once when someone signs up (confirmed: false, they still have to click the link in
+ * their email) and once more when they confirm it. Same rules as notifyNewSubscriber: never throws, capped per hour.
+ */
+export async function notifyNewAccount({ email, total = null, confirmed = false }) {
+  if (!notifyConfigured()) return false
+  if (!underHourlyCap()) return false
+  const lines = [
+    confirmed ? `${email} confirmed their email. Their TickGains account is ready.` : `${email} signed up for a TickGains account. They still need to confirm their email.`,
+    total != null ? `Accounts now: ${total}` : null,
+  ].filter(Boolean)
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.NOTIFY_FROM || DEFAULT_FROM,
+        to: [process.env.NOTIFY_EMAIL],
+        subject: confirmed ? 'TickGains account confirmed' : 'New TickGains signup',
+        text: lines.join('\n'),
+      }),
+    })
+    if (!res.ok) {
+      console.error(`Account notification failed: Resend answered ${res.status}`)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Account notification failed:', err.message)
+    return false
+  }
+}
+
 // For tests.
 export function _resetNotifyCap() {
   sent.length = 0

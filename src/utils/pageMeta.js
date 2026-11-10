@@ -17,7 +17,7 @@ function setMetaTag(selectorAttr, selectorValue, content) {
  * so these start from index.html's defaults and get overwritten per-page
  * once a view knows what it's showing (e.g. the player's display name).
  */
-export function setPageMeta({ title, description, path = '/' }) {
+export function setPageMeta({ title, description, path = '/', noindex = false }) {
   const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | OSRS XP & Hiscores Tracker`
   document.title = fullTitle
 
@@ -25,6 +25,11 @@ export function setPageMeta({ title, description, path = '/' }) {
   setMetaTag('property', 'og:title', fullTitle)
   setMetaTag('property', 'og:description', description)
   setMetaTag('property', 'og:url', `${SITE_URL}${path}`)
+
+  // Private pages (log in, account) ask search engines to skip them. Every other call clears it again.
+  const robots = document.querySelector('meta[name="robots"]')
+  if (noindex) setMetaTag('name', 'robots', 'noindex, follow')
+  else if (robots) robots.remove()
 
   let canonical = document.querySelector('link[rel="canonical"]')
   if (!canonical) {

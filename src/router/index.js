@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 import { track } from '@/utils/analytics'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
 import { useRivals } from '@/composables/useRivals'
+import { authReady, useAuth } from '@/composables/useAuth'
 
 const routes = [
   {
@@ -39,6 +40,13 @@ const routes = [
       return { name: 'compare', query: { vs: them, from: 'challenge' } }
     },
   },
+  // Accounts. Logging in, signing up and resetting a password share one view; the account page needs a login.
+  { path: '/login', name: 'login', component: () => import('@/views/AuthView.vue'), props: { mode: 'login' }, meta: { guestOnly: true } },
+  { path: '/signup', name: 'signup', component: () => import('@/views/AuthView.vue'), props: { mode: 'signup' }, meta: { guestOnly: true } },
+  { path: '/forgot-password', name: 'forgotPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'forgot' } },
+  { path: '/reset-password', name: 'resetPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'reset' } },
+  { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
+  { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {
     path: '/planner',
@@ -71,6 +79,17 @@ export function createAppRouter() {
       if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
       return { top: 0 }
     },
+  })
+
+  // Account pages wait for the "who is signed in?" answer so they never flash the wrong state. Only those pages wait;
+  // the rest of the site does not depend on it.
+  router.beforeEach(async (to) => {
+    if (!to.meta.requiresAuth && !to.meta.guestOnly) return true
+    await authReady()
+    const { loggedIn } = useAuth()
+    if (to.meta.requiresAuth && !loggedIn.value) return { name: 'login', query: { next: to.fullPath } }
+    if (to.meta.guestOnly && loggedIn.value) return { name: 'account' }
+    return true
   })
 
   // The GTM container fires its own page view on the first load; this reports

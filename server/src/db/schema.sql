@@ -137,3 +137,46 @@ CREATE TABLE IF NOT EXISTS email_subscribers (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS email_subscribers_email_idx ON email_subscribers (lower(email));
 CREATE UNIQUE INDEX IF NOT EXISTS email_subscribers_token_idx ON email_subscribers (unsub_token);
+
+-- Accounts. Email and password only for now; the account is how someone keeps their settings across devices. Profile
+-- claiming will hang off users.id later, so nothing about OSRS names lives here beyond the synced preferences.
+-- password_hash is "scrypt$salt$hash" (see utils/password.js). settings is a small JSON object of preferences.
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  password_hash TEXT NOT NULL,
+  settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+  email_verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_login_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (lower(email));
+
+-- Only a SHA-256 of the session token is stored, so a copy of this table cannot be used to sign in.
+CREATE TABLE IF NOT EXISTS user_sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS user_sessions_user_idx ON user_sessions (user_id);
+
+-- One-hour, single-use links for choosing a new password (token stored hashed, like sessions).
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS password_resets_user_idx ON password_resets (user_id);
+
+-- A new account cannot be used until its email address is confirmed. The link in the confirmation email carries a
+-- token (stored hashed); newsletter remembers the "email me news" box from the sign-up form until then.
+CREATE TABLE IF NOT EXISTS email_verifications (
+  token_hash TEXT PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  newsletter BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX IF NOT EXISTS email_verifications_user_idx ON email_verifications (user_id);

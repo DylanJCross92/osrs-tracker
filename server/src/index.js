@@ -8,6 +8,7 @@ import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
 import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
+import { authRouter } from './routes/auth.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
@@ -25,6 +26,9 @@ app.set('trust proxy', 1)
 app.use(
   cors({
     origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    // The sign-in cookie must travel with requests from the dev server (another port). In production the app and the
+    // API share one origin, so this changes nothing there.
+    credentials: true,
   }),
 )
 app.use(express.json())
@@ -33,6 +37,7 @@ app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
 app.use('/api', recordsRouter)
 app.use('/api/newsletter', subscribersRouter)
+app.use('/api/auth', authRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -239,6 +244,22 @@ if (distExists) {
       next(err)
     }
   })
+
+  // Account pages are for one person each, so they are left out of search results. (The SPA also sets this once it
+  // loads; this is what a crawler sees on the very first byte.)
+  for (const [route, title] of [['/login', 'Log in'], ['/signup', 'Create an account'], ['/forgot-password', 'Reset your password'], ['/reset-password', 'Choose a new password'], ['/verify-email', 'Confirm your email'], ['/account', 'Your account']]) {
+    app.get(route, (req, res) => {
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${title} | TickGains`,
+          description: 'Log in or create a TickGains account to keep your settings on every device.',
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}${route}`,
+          noindex: true,
+        }),
+      )
+    })
+  }
 
   // Player comparison. The landing page is indexable; a specific pairing is an endless set of user-chosen URLs, so
   // those carry noindex (they still unfurl nicely in Discord and X, which is what they are shared for).

@@ -12,9 +12,17 @@
     </ul>
     <h2>What we don't do</h2>
     <ul>
-      <li>There are no accounts or passwords, and TickGains never asks for your OSRS login. The optional email list is the only thing you can sign up for.</li>
+      <li>You never need an account to track players, and TickGains never asks for your OSRS login. Accounts are optional and only keep your own settings (see "Accounts" below). The optional email list is separate.</li>
       <li>Searching or tracking a name doesn't change anything on the OSRS account.</li>
     </ul>
+    <h2>Accounts</h2>
+    <p>
+      You can create an account with an email address and a password. We store the email, a salted one-way hash of the password
+      (never the password itself), when the account was made, and a few settings you choose to sync: your OSRS name, your rivals and
+      your preferred gain period. Signed-in browsers keep a cookie so you stay logged in for 30 days. Nothing else is tied to your account
+      yet, and an account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
+      and you can ask us to delete your account and its saved settings from the contact page. Password reset emails are sent through Resend.
+    </p>
     <h2>Usage analytics</h2>
     <p>
       TickGains uses Google Tag Manager and Google Analytics to understand which pages and features are used. These
@@ -43,5 +51,5 @@
 
 <script setup>
 import { setPageMeta } from '@/utils/pageMeta'
-setPageMeta({ title: 'Privacy', description: 'How TickGains handles data: public OSRS hiscores snapshots, no accounts, an optional email list, and usage analytics.', path: '/privacy' })
+setPageMeta({ title: 'Privacy', description: 'How TickGains handles data: public OSRS hiscores snapshots, optional accounts, an optional email list, and usage analytics.', path: '/privacy' })
 </script>
