@@ -5,8 +5,8 @@
       <RouterLink class="btn btn-primary" :to="{ name: 'planner', query: { u: player.username } }">Plan This Player's Goals</RouterLink>
     </div>
     <p class="profile-note">Auto-generated from {{ player.displayName }}'s current stats, suggestions, not commitments. Custom goals in the planner never change this profile.</p>
-    <div class="goal-list">
-      <div v-for="g in goals" :key="g.title" class="goal-card">
+    <div class="profile-goal-grid">
+      <div v-for="g in goals" :key="g.title" class="profile-goal">
         <div class="goal-head">
           <img v-if="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="28" height="28" />
           <span v-else class="achievement-total-icon">★</span>

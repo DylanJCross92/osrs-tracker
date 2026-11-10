@@ -173,9 +173,8 @@
         <div class="disc-spotlights">
           <RouterLink v-for="sp in spotlights" :key="sp.period" :to="profileTo(sp.p.username)" class="disc-spotlight">
             <span class="disc-spotlight-reason">{{ sp.label }}</span>
-            <span class="disc-spotlight-name">{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" /></span>
+            <span class="disc-spotlight-name"><span class="disc-spotlight-avatar" aria-hidden="true"><PlayerAvatar :name="sp.p.username" /></span>{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" /></span>
             <span class="disc-spotlight-headline">
-              <img v-if="sp.topSkill" :src="skillIconSrc(sp.topSkill)" :alt="sp.topSkill" width="28" height="28" />
               +{{ sp.xp.toLocaleString('en-US') }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
             </span>
             <span class="disc-spotlight-stats">
@@ -195,7 +194,7 @@
         <ul v-if="nearList.length" class="disc-near-list">
           <li v-for="n in nearList" :key="n.id + n.milestone + n.skill">
             <RouterLink :to="profileTo(n.username)">
-              <img :src="skillIconSrc(n.skill || 'Overall')" :alt="n.skill || 'Overall'" width="26" height="26" />
+              <span class="disc-near-avatar" aria-hidden="true"><PlayerAvatar :name="n.username" /></span>
               <span class="disc-near-main">
                 <span class="disc-near-top"><b>{{ n.displayName }}</b><span>{{ n.milestone }}<template v-if="n.skill"> · {{ n.skill }}</template></span></span>
                 <span class="disc-bar gold"><span :style="{ width: `${n.progress}%` }" /></span>
@@ -232,7 +231,7 @@
           <RouterLink :to="profileTo(r.p.username)">
             <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
             <span class="disc-board-main">
-              <span class="disc-board-name"><img :src="skillIconSrc(exSkill)" :alt="exSkill" width="18" height="18" />{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
+              <span class="disc-board-name"><span class="disc-board-avatar" aria-hidden="true"><PlayerAvatar :name="r.p.username" /></span>{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" /></span>
               <span class="disc-bar gold"><span :style="{ width: `${r.progress}%` }" /></span>
               <small class="disc-explore-meta">Level {{ r.level }} · {{ formatXp(r.xp) }} XP · next: {{ r.nextLabel }} ({{ r.progress }}%)</small>
             </span>
