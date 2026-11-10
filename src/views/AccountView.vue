@@ -4,6 +4,7 @@
       <div>
         <h1>Your account</h1>
         <p class="acc-sub">{{ user?.email }}<span v-if="since"> · Member since {{ since }}</span></p>
+        <RoleBadges class="acc-roles" :roles="user?.roles || []" />
       </div>
       <button class="btn btn-ghost" type="button" @click="doLogout">Log out</button>
     </section>
@@ -52,6 +53,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
+import RoleBadges from '@/components/RoleBadges.vue'
 import { logOut, useAuth } from '@/composables/useAuth'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { MAX_RIVALS, useRivals } from '@/composables/useRivals'

@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { sendMail, mailConfigured } from '../utils/mailer.js'
+import { renderEmail } from '../utils/emailTemplate.js'
+import { hasRole } from '../utils/roles.js'
 import { subscribe } from '../services/subscribers.service.js'
 import { notifyNewAccount } from '../services/notify.service.js'
 import {
@@ -42,7 +44,7 @@ function setSession(res, token) {
 const clearSession = (res) => res.clearCookie(COOKIE, { httpOnly: true, sameSite: 'lax', secure: isProd, path: '/' })
 
 // Puts the signed-in account (if any) on req.user. Never an error: no cookie just means a visitor.
-async function attachUser(req, res, next) {
+export async function attachUser(req, res, next) {
   try {
     req.sessionToken = readCookie(req, COOKIE)
     req.user = req.sessionToken ? await getUserBySession(req.sessionToken) : null
@@ -52,6 +54,8 @@ async function attachUser(req, res, next) {
   }
 }
 const requireUser = (req, res, next) => (req.user ? next() : res.status(401).json({ error: 'Please log in first.' }))
+// For admin-only endpoints: use after attachUser. Answers 404 to everyone else so the endpoint is not advertised.
+export const requireRole = (...roles) => (req, res, next) => (req.user && hasRole(req.user.roles, ...roles) ? next() : res.status(404).end())
 
 const signupLimiter = rateLimit({ windowMs: 3_600_000, max: 10, message: 'Too many sign-ups from here, please try again later.' })
 const loginLimiter = rateLimit({ windowMs: 15 * 60_000, max: 20, message: 'Too many log-in attempts, please wait a few minutes.' })
@@ -88,7 +92,13 @@ async function sendVerification({ email, token }) {
     return sendMail({
       to: email,
       subject: 'Confirm your TickGains email',
-      text: `Welcome to TickGains!\n\nConfirm your email address to finish creating your account (the link works for 24 hours):\n${link}\n\nIf you did not sign up, you can ignore this email and nothing will happen.`,
+      ...renderEmail({
+        preheader: 'One click to finish creating your account.',
+        title: 'Welcome to TickGains!',
+        paragraphs: ['Confirm your email address to finish creating your account. The link works for 24 hours.'],
+        button: { label: 'Confirm my email', url: link },
+        note: 'If you did not sign up, you can ignore this email and nothing will happen.',
+      }),
     })
   }
   if (!isProd) console.log(`[auth] Confirmation link for ${email}: ${link}`)
@@ -185,7 +195,13 @@ authRouter.post(
         sendMail({
           to: reset.email,
           subject: 'Reset your TickGains password',
-          text: `Someone asked to reset the password for your TickGains account.\n\nChoose a new password here (the link works once and expires in an hour):\n${link}\n\nIf this was not you, ignore this email and your password stays the same.`,
+          ...renderEmail({
+            preheader: 'Choose a new password. The link expires in an hour.',
+            title: 'Reset your password',
+            paragraphs: ['Someone asked to reset the password for your TickGains account. The link works once and expires in an hour.'],
+            button: { label: 'Choose a new password', url: link },
+            note: 'If this was not you, ignore this email and your password stays the same.',
+          }),
         }).catch(() => {})
       } else if (!isProd) {
         console.log(`[auth] Password reset link for ${reset.email}: ${link}`)

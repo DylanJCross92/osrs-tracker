@@ -3,6 +3,8 @@ import { Router } from 'express'
 import { normalizeEmail, cleanSource } from '../utils/email.js'
 import { subscribe, unsubscribeByToken, listActiveSubscribers } from '../services/subscribers.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
+import { attachUser } from './auth.routes.js'
+import { hasRole } from '../utils/roles.js'
 
 export const subscribersRouter = Router()
 
@@ -36,17 +38,20 @@ subscribersRouter.post('/unsubscribe', unsubLimiter, async (req, res, next) => {
   }
 })
 
-// The owner's export. Off unless ADMIN_TOKEN is set on the server; send it as the x-admin-token header.
+// The owner's export. Open to a signed-in admin or owner (just visit the address while logged in), or with the
+// ADMIN_TOKEN set on the server sent as the x-admin-token header.
 const safeEqual = (a, b) => {
   const x = Buffer.from(String(a))
   const y = Buffer.from(String(b))
   return x.length === y.length && crypto.timingSafeEqual(x, y)
 }
 const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
-subscribersRouter.get('/subscribers.csv', rateLimit({ windowMs: 60_000, max: 10 }), async (req, res, next) => {
+subscribersRouter.get('/subscribers.csv', rateLimit({ windowMs: 60_000, max: 10 }), attachUser, async (req, res, next) => {
   try {
     const token = process.env.ADMIN_TOKEN
-    if (!token || !safeEqual(req.get('x-admin-token') || '', token)) return res.status(404).end()
+    const byRole = req.user && hasRole(req.user.roles, 'admin', 'owner')
+    const byToken = token && safeEqual(req.get('x-admin-token') || '', token)
+    if (!byRole && !byToken) return res.status(404).end()
     const rows = await listActiveSubscribers()
     const site = process.env.SITE_URL || 'https://tickgains.com'
     const lines = ['email,source,signed_up,unsubscribe_link', ...rows.map((r) => [r.email, r.source, new Date(r.created_at).toISOString(), `${site}/unsubscribe?t=${r.unsub_token}`].map(csvCell).join(','))]

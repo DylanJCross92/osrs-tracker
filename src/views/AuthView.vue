@@ -13,7 +13,7 @@
       <!-- Account created (or found unconfirmed): waiting for the email link. -->
       <div v-else-if="pending" class="auth-pending">
         <p class="auth-done" role="status">
-          <span aria-hidden="true">✉</span>
+          <svg class="auth-mail-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg>
           <template v-if="pending.emailSent">We sent a confirmation link to <b>{{ pending.email }}</b>. Open it to finish creating your account. It can take a minute, and it may land in spam.</template>
           <template v-else>We could not send the confirmation email to <b>{{ pending.email }}</b> just now. Try the button below in a minute.</template>
         </p>
@@ -51,7 +51,7 @@
 
         <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
 
-        <button class="btn btn-primary auth-submit" type="submit" :disabled="busy">{{ busy ? 'One moment…' : copy.button }}</button>
+        <button class="btn btn-primary auth-submit" type="submit" :disabled="busy || !canSubmit">{{ busy ? 'One moment…' : copy.button }}</button>
       </form>
 
       <p v-else class="auth-done" role="status"><span aria-hidden="true">✓</span> If there is an account for that email, a reset link is on its way. It works once and expires in an hour.</p>
@@ -113,6 +113,17 @@ const resendNote = ref('')
 const cooldown = ref(0)
 const verifyError = ref('')
 
+// Every field on the form has to be filled in before it can be sent (pressing Enter is blocked too).
+const canSubmit = computed(() => {
+  const hasEmail = email.value.trim() !== ''
+  const hasPassword = password.value !== ''
+  if (props.mode === 'login') return hasEmail && hasPassword
+  if (props.mode === 'signup') return hasEmail && hasPassword && confirmPassword.value !== ''
+  if (props.mode === 'forgot') return hasEmail
+  if (props.mode === 'reset') return hasPassword && confirmPassword.value !== ''
+  return false
+})
+
 const heading = computed(() => (pending.value ? 'Check your email' : copy.value.title))
 const subheading = computed(() => (pending.value ? 'One more step before your account is ready.' : copy.value.sub))
 
@@ -150,7 +161,7 @@ onMounted(async () => {
 })
 
 async function submit() {
-  if (busy.value) return
+  if (busy.value || !canSubmit.value) return
   error.value = ''
   if ((props.mode === 'signup' || props.mode === 'reset') && password.value !== confirmPassword.value) {
     error.value = 'The two passwords do not match.'

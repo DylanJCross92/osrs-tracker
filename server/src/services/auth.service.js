@@ -3,6 +3,7 @@ import { pool } from '../db.js'
 import { normalizeEmail } from '../utils/email.js'
 import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from '../utils/password.js'
 import { sanitizeSettings } from '../utils/settings.js'
+import { OWNER_ROLES, hasRole, isOwnerEmail, normalizeRoles } from '../utils/roles.js'
 
 export const SESSION_DAYS = 30
 const RESET_MINUTES = 60
@@ -20,8 +21,19 @@ export class AuthError extends Error {
 const sha256 = (value) => crypto.createHash('sha256').update(value).digest('hex')
 const newToken = () => crypto.randomBytes(32).toString('base64url')
 
+/**
+ * The owner's account (the address in OWNER_EMAIL) is an admin and the owner. Granted only to a confirmed account, so
+ * nobody can get it by signing up with that address without being able to read its inbox.
+ */
+async function ensureOwnerRoles(row) {
+  if (!row || !row.email_verified_at || !isOwnerEmail(row.email)) return row
+  if (hasRole(row.roles, 'owner') && hasRole(row.roles, 'admin')) return row
+  const { rows } = await pool.query('UPDATE users SET roles = $2::text[] WHERE id = $1 RETURNING *', [row.id, OWNER_ROLES])
+  return rows[0] || row
+}
+
 // What the browser is allowed to know about an account.
-const publicUser = (row) => ({ id: row.id, email: row.email, settings: row.settings || {}, createdAt: row.created_at, emailVerified: Boolean(row.email_verified_at) })
+const publicUser = (row) => ({ id: row.id, email: row.email, settings: row.settings || {}, createdAt: row.created_at, emailVerified: Boolean(row.email_verified_at), roles: normalizeRoles(row.roles) })
 const VERIFY_HOURS = 24
 const RESEND_COOLDOWN_SECONDS = 60
 
@@ -41,7 +53,7 @@ export async function getUserBySession(token) {
     `SELECT u.* FROM user_sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [sha256(token)],
   )
-  return rows[0] ? publicUser(rows[0]) : null
+  return rows[0] ? publicUser(await ensureOwnerRoles(rows[0])) : null
 }
 
 export async function deleteSession(token) {
@@ -119,7 +131,7 @@ export async function verifyEmail(token) {
     'UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()), last_login_at = now() WHERE id = $1 RETURNING *',
     [rows[0].user_id],
   )
-  return { user: publicUser(users[0]), newsletter: rows[0].newsletter }
+  return { user: publicUser(await ensureOwnerRoles(users[0])), newsletter: rows[0].newsletter }
 }
 
 export async function logIn(rawEmail, password) {
@@ -132,7 +144,7 @@ export async function logIn(rawEmail, password) {
   // Only said after the right password, so it does not reveal which addresses have accounts.
   if (!row.email_verified_at) throw new AuthError('Please confirm your email address first. We sent you a link when you signed up.', 403, 'email_not_verified')
   await pool.query('UPDATE users SET last_login_at = now() WHERE id = $1', [row.id])
-  return publicUser(row)
+  return publicUser(await ensureOwnerRoles(row))
 }
 
 // --- settings -----------------------------------------------------------------------------------------------------
@@ -178,7 +190,7 @@ export async function finishPasswordReset(token, password) {
     const { rows: users } = await client.query('UPDATE users SET password_hash = $2, last_login_at = now(), email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1 RETURNING *', [userId, hash])
     await client.query('DELETE FROM user_sessions WHERE user_id = $1', [userId])
     await client.query('COMMIT')
-    return publicUser(users[0])
+    return publicUser(await ensureOwnerRoles(users[0]))
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
     throw err

@@ -180,3 +180,7 @@ CREATE TABLE IF NOT EXISTS email_verifications (
   expires_at TIMESTAMPTZ NOT NULL
 );
 CREATE INDEX IF NOT EXISTS email_verifications_user_idx ON email_verifications (user_id);
+
+-- Account roles. Everyone starts as a plain "user"; "admin" and "owner" are only ever granted on the server (the owner's
+-- email is set in the OWNER_EMAIL environment variable), never from anything a visitor sends.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS roles TEXT[] NOT NULL DEFAULT '{user}';
