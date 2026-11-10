@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { getPlayerByUsername } from '../services/players.service.js'
 import { getWeeklyCardData, freezeWeeklyCard, getFrozenCard } from '../services/cards.service.js'
-import { renderWeeklyCardPng } from '../services/cardImage.service.js'
+import { renderWeeklyCardPng, renderChallengeCardPng } from '../services/cardImage.service.js'
 
 export const cardsRouter = Router()
 
@@ -23,6 +23,22 @@ cardsRouter.get('/players/:username/card/weekly/data', async (req, res, next) =>
     const data = await getWeeklyCardData(player.id, req.query.skill, req.query.period)
     if (!data) return res.status(404).json({ error: 'Nothing to show yet for this player.' })
     res.json(data)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// The picture a challenge link unfurls into: this player's week, drawn from live numbers.
+cardsRouter.get('/players/:username/challenge/image.png', async (req, res, next) => {
+  try {
+    const player = await resolvePlayer(req, res)
+    if (!player) return
+    const data = await getWeeklyCardData(player.id, 'Overall', 'week')
+    if (!data) return res.status(404).end()
+    const png = await renderChallengeCardPng(data)
+    res.set('Content-Type', 'image/png')
+    res.set('Cache-Control', 'public, max-age=300')
+    res.send(png)
   } catch (err) {
     next(err)
   }

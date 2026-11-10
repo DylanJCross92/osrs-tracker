@@ -15,6 +15,10 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
             Compare
           </RouterLink>
+          <button class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5L18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" /></svg>
+            Challenge
+          </button>
           <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
             Share
@@ -52,6 +56,7 @@
 
   <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
   <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
+  <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" @share="openShare" />
@@ -67,7 +72,7 @@
     <nav class="profile-tabs" aria-label="Profile sections">
       <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
-    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" />
+    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" @challenge="openChallenge('overview')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileRecords v-else-if="tab === 'records'" :player="player" />
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
@@ -265,6 +270,7 @@ import { useRivals } from '@/composables/useRivals'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
+import ChallengeModal from '@/components/profile/ChallengeModal.vue'
 import ProfileCelebrations from '@/components/profile/ProfileCelebrations.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import ProfileOverview from '@/components/profile/ProfileOverview.vue'
@@ -454,6 +460,14 @@ const refreshing = ref(false)
 const checkingWomHistory = ref(false)
 const shareModalOpen = ref(false)
 const shareSkill = ref('Overall')
+const challengeOpen = ref(false)
+const challengeSource = ref('header')
+function openChallenge(source) {
+  challengeSource.value = source
+  challengeOpen.value = true
+}
+// The last 7 game days of XP, the same numbers the week strip shows.
+const weekGainXp = computed(() => weekDays.value.reduce((sum, d) => sum + d.xp, 0))
 function openShare(skill) {
   shareSkill.value = skill || 'Overall'
   shareModalOpen.value = true

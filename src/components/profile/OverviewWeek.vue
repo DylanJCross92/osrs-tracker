@@ -37,6 +37,11 @@
         </div>
       </div>
     </div>
+    <button type="button" class="ov-challenge" @click="$emit('challenge')">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5L18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" /></svg>
+      <span><b>Challenge a friend</b><small>Send them your week and see who gained more</small></span>
+      <span class="ov-challenge-go" aria-hidden="true">→</span>
+    </button>
   </section>
 </template>
 
@@ -45,7 +50,7 @@ import { computed } from 'vue'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { RECORD_ICONS } from '@/utils/recordText'
 
-defineEmits(['day'])
+defineEmits(['day', 'challenge'])
 const props = defineProps({
   // The chart's 7 days, oldest first: { key, label, xp, skills }.
   days: { type: Array, required: true },

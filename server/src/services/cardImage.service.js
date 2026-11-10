@@ -515,3 +515,100 @@ async function buildRecordCardTree({ displayName, record }) {
 export async function renderRecordCardPng(data) {
   return renderPng(await buildRecordCardTree(data))
 }
+
+// --- Challenge card ----------------------------------------------------------------------------------------------
+
+const SWORDS = [
+  'M14.5 17.5L3 6V3h3l11.5 11.5',
+  'M13 19l6-6',
+  'M16 16l4 4',
+  'M19 21l2-2',
+  'M14.5 6.5L18 3h3v3l-3.5 3.5',
+  'M5 14l4 4',
+  'M7 17l-3 3',
+  'M3 19l2 2',
+]
+
+/** The skills a challenger trained most this week, as icon + name + gain chips. */
+async function buildChallengeCardTree({ displayName, xpGained, overallLevel, topSkills }) {
+  const gained = Number(xpGained) > 0
+  const skills = (topSkills || []).slice(0, 3)
+  const icons = await Promise.all(skills.map((s) => skillIconDataUri(s.skill)))
+
+  const chips = skills.map((s, i) =>
+    node(
+      'div',
+      { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 22, color: COLORS.cream },
+      [
+        icons[i] ? image(icons[i], 26, 26) : null,
+        node('div', { display: 'flex' }, s.skill),
+        node('div', { display: 'flex', color: COLORS.green, fontWeight: 700 }, `+${formatXp(s.xp)}`),
+      ].filter(Boolean),
+    ),
+  )
+
+  const badge = node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 300,
+      height: 300,
+      borderRadius: 150,
+      backgroundColor: '#2a2314',
+      border: `4px solid ${COLORS.gold}`,
+      boxShadow: '0 0 80px rgba(240, 201, 118, 0.35)',
+    },
+    [svgIcon(170, COLORS.gold, SWORDS, { stroke: true })],
+  )
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 82% 45%, #3a2e14 0%, #1d1810 42%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
+          svgIcon(34, COLORS.gold, SWORDS, { stroke: true }),
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'Challenge'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
+          node('div', { fontSize: 44, fontWeight: 800, color: COLORS.gold }, `${displayName} challenges you`),
+          node('div', { fontSize: 32, fontWeight: 700, color: COLORS.cream, marginTop: 2 }, gained ? 'Beat my week' : 'Beat my total level'),
+          node('div', { display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 14 }, [
+            node('div', { fontSize: 150, fontWeight: 800, color: gained ? COLORS.green : COLORS.gold, lineHeight: 1 }, gained ? `+${formatXp(xpGained)}` : Number(overallLevel || 0).toLocaleString('en-US')),
+            node('div', { fontSize: 36, fontWeight: 700, color: COLORS.muted }, gained ? 'XP in 7 days' : 'total level'),
+          ]),
+          ...(chips.length ? [node('div', { display: 'flex', gap: 12, marginTop: 24 }, chips)] : []),
+        ]),
+        badge,
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 32, fontWeight: 800, color: COLORS.gold }, 'Think you can beat it?'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** getWeeklyCardData (Overall) -> PNG Buffer. */
+export async function renderChallengeCardPng(data) {
+  return renderPng(await buildChallengeCardTree(data))
+}

@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { nextTick } from 'vue'
 import { track } from '@/utils/analytics'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
+import { useRivals } from '@/composables/useRivals'
 
 const routes = [
   {
@@ -25,6 +26,18 @@ const routes = [
     path: '/leaderboard',
     name: 'leaderboard',
     component: () => import('@/views/LeaderboardView.vue'),
+  },
+  // A challenge link from a friend. With your own name saved it opens the head-to-head straight away, otherwise
+  // Compare opens with the challenger filled in and your box waiting.
+  {
+    path: '/challenge/:username',
+    redirect: (to) => {
+      const them = to.params.username
+      const { me } = useRivals()
+      if (me.value && me.value.toLowerCase() === String(them).toLowerCase()) return { name: 'playerDetail', params: { username: them } }
+      if (me.value) return { name: 'compare', params: { a: me.value, b: them }, query: { from: 'challenge' } }
+      return { name: 'compare', query: { vs: them, from: 'challenge' } }
+    },
   },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {

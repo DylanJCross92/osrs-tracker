@@ -1,6 +1,10 @@
 <template>
   <div class="cmp">
     <section class="card cmp-intro" :class="{ 'is-compact': hasNames }">
+      <p v-if="challenger" class="cmp-challenge" role="status">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="d in SWORDS" :key="d" :d="d" /></svg>
+        <span><b>{{ challenger }}</b> challenged you. {{ hasNames ? 'Here is how the week stacks up.' : 'Enter your RSN to see who gained more this week.' }}</span>
+      </p>
       <h1>Compare OSRS players</h1>
       <p class="cmp-sub">Put two accounts side by side: XP gained, levels, rank movement and how consistently each one trains.</p>
       <form class="cmp-form" @submit.prevent="submit">
@@ -112,7 +116,7 @@
 
 <script setup>
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
@@ -151,12 +155,26 @@ const nameA = computed(() => String(route.params.a || '').trim())
 const nameB = computed(() => String(route.params.b || '').trim())
 const hasNames = computed(() => !!(nameA.value && nameB.value))
 
+// Arriving from a friend's challenge link: they are filled in as player two and your own box is next.
+const fromChallenge = computed(() => route.query.from === 'challenge')
+const challenger = computed(() => (fromChallenge.value ? String(route.query.vs || nameB.value || '').trim() : ''))
+const SWORDS = ['M14.5 17.5L3 6V3h3l11.5 11.5', 'M13 19l6-6', 'M16 16l4 4', 'M19 21l2-2', 'M14.5 6.5L18 3h3v3l-3.5 3.5', 'M5 14l4 4', 'M7 17l-3 3', 'M3 19l2 2']
+
 const inputA = ref(nameA.value || me.value || '')
-const inputB = ref(nameB.value)
+const inputB = ref(nameB.value || String(route.query.vs || ''))
 const canSubmit = computed(() => {
   const a = inputA.value.trim()
   const b = inputB.value.trim()
   return !!a && !!b && a.toLowerCase() !== b.toLowerCase()
+})
+
+// The challenge is about the week, so open on the 7-day view. If the link came without your name, start in your box.
+if (fromChallenge.value) period.value = 'week'
+watch(() => route.query.vs, (v) => {
+  if (v && !hasNames.value) inputB.value = String(v)
+})
+onMounted(() => {
+  if (fromChallenge.value && !hasNames.value && !inputA.value) nextTick(() => elA.value?.focus())
 })
 
 // --- player suggestions ---------------------------------------------------------------------------------------------
@@ -277,13 +295,15 @@ function swapInputs() {
 function submit() {
   if (!canSubmit.value) return
   track('compare_submit', { source: 'form' })
+  // Close any open suggestion list, the results are what you want to see.
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   for (const k of ['a', 'b']) {
     if (!typed[k]) continue
     const hit = store.players.find((x) => x.username.toLowerCase() === termOf(k).toLowerCase())
     if (hit) recordRecent(hit)
     typed[k] = false
   }
-  router.push(pairLink(inputA.value.trim(), inputB.value.trim()))
+  router.push({ path: pairLink(inputA.value.trim(), inputB.value.trim()), query: fromChallenge.value ? { from: 'challenge' } : {} })
 }
 
 // A few real matchups for first-time visitors: the biggest recent gainers, paired off.
@@ -359,7 +379,7 @@ watch(
   [nameA, nameB],
   () => {
     inputA.value = nameA.value || inputA.value
-    inputB.value = nameB.value
+    inputB.value = nameB.value || String(route.query.vs || '')
     loadBoth()
   },
   { immediate: true },

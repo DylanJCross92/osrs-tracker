@@ -20,30 +20,14 @@
       </label>
       </div>
 
-      <div class="share-modal-preview">
-        <p v-if="imageLoading" class="empty-hint">Loading preview…</p>
-        <img
-          v-show="!imageLoading"
-          :src="previewUrl"
-          :alt="`${username}'s weekly card`"
-          @load="imageLoading = false"
-          @error="imageLoading = false"
-        />
-      </div>
+      <SharePreview :src="previewUrl" :alt="`${username}'s ${period}ly card`" :filename="`${username}-${skill}-${period}.png`" loading-text="Loading preview…" @download="track('share_card', { method: 'download', period, skill })" />
 
-      <div class="share-modal-actions">
-        <button class="btn btn-primary" :disabled="copyingLive" @click="copyLiveLink">
-          {{ copyingLive ? 'Copying…' : 'Live' }}
-        </button>
-        <button class="btn btn-ghost" :disabled="freezing" @click="copySnapshotLink">
-          {{ freezing ? 'Creating…' : 'Current snapshot' }}
-        </button>
-        <a class="btn btn-ghost" :href="previewUrl" target="_blank" rel="noopener" @click="track('share_card', { method: 'download', period, skill })">
-          Download Image
-        </a>
+      <div class="share-actions is-pair">
+        <button class="btn btn-primary" type="button" :disabled="copyingLive" @click="copyLiveLink"><ShareIcon name="live" />{{ copyingLive ? 'Copying…' : 'Copy live link' }}</button>
+        <button class="btn btn-ghost" type="button" :disabled="freezing" @click="copySnapshotLink"><ShareIcon name="snapshot" />{{ freezing ? 'Creating…' : 'Copy snapshot link' }}</button>
       </div>
       <p class="empty-hint share-modal-hint">
-        <strong>Live</strong> always reflects {{ periodPhrase }}. <strong>Current snapshot</strong> freezes today's numbers
+        <strong>Live link</strong> always reflects {{ periodPhrase }}. <strong>Snapshot link</strong> freezes today's numbers
         permanently, so the link never changes.
       </p>
     </div>
@@ -51,7 +35,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
+import SharePreview from '@/components/SharePreview.vue'
+import ShareIcon from '@/components/ShareIcon.vue'
 import { cardsApi } from '@/api/cards'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
@@ -72,16 +58,11 @@ const PERIODS = [
 ]
 const period = ref('week')
 const skill = ref(props.initialSkill || 'Overall')
-const imageLoading = ref(true)
 const copyingLive = ref(false)
 const freezing = ref(false)
 
 const periodPhrase = computed(() => ({ day: 'today so far', week: 'the last 7 days', month: 'the last 30 days' })[period.value])
 const previewUrl = computed(() => cardsApi.weeklyImageUrl(props.username, skill.value, period.value))
-
-watch([skill, period], () => {
-  imageLoading.value = true
-})
 
 async function copyToClipboard(url) {
   try {

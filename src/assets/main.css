@@ -2882,3 +2882,37 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .signup-card .signup-fine, .signup-card .signup-error { flex: 1 1 100%; }
 .signup-card.is-done { justify-content: flex-start; }
 .home-news { padding: 22px 24px; }
+
+/* ---------- challenge a friend ---------- */
+.ov-challenge { display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 16px; padding: 12px 16px; border: 1px dashed var(--border-strong); border-radius: 12px; background: rgba(0, 0, 0, 0.18); color: var(--gold-bright); font: inherit; text-align: left; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+.ov-challenge:hover { background: rgba(240, 201, 118, 0.08); border-color: var(--gold); }
+.ov-challenge svg { flex: none; }
+.ov-challenge span { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.ov-challenge b { color: var(--text); font-size: 0.95rem; }
+.ov-challenge small { color: var(--muted); font-size: 0.82rem; }
+.ov-challenge .ov-challenge-go { flex: none; display: block; font-size: 1.2rem; color: var(--gold); }
+.cmp-challenge { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(240, 201, 118, 0.08); color: var(--text); font-size: 0.95rem; }
+.cmp-challenge svg { flex: none; color: var(--gold); }
+.cmp-challenge b { color: var(--gold-bright); }
+
+/* ---------- share sheets: preview with a corner download, tidy action grid ---------- */
+.share-preview { position: relative; margin-bottom: 14px; }
+.share-preview .share-modal-preview { margin-bottom: 0; }
+/* Straddles the card's top right corner so it never covers anything drawn on the card. */
+.share-dl { position: absolute; top: -12px; right: -12px; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; border: 1px solid rgba(240, 201, 118, 0.45); background: rgba(14, 12, 9, 0.72); color: var(--gold-bright); cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s; }
+.share-dl:hover { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); transform: translateY(-1px); }
+.share-dl:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+.share-dl:disabled { opacity: 0.6; cursor: progress; }
+.share-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.share-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0; white-space: nowrap; }
+.share-actions .share-wide { grid-column: 1 / -1; padding-block: 12px; font-size: 1rem; }
+.share-actions .share-x { background: #000; border: 1px solid #3a3a3a; color: #fff; }
+.share-actions .share-x:hover { background: #151515; text-decoration: none; }
+.share-actions-label { margin: 14px 0 8px; color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+@media (min-width: 560px) { .share-actions.is-three { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.share-actions > .btn:last-child:nth-child(even) { grid-column: 1 / -1; }
+.share-actions.is-pair { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 560px) {
+  .share-actions.is-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .share-actions.is-pair > .btn:last-child:nth-child(even) { grid-column: auto; }
+}

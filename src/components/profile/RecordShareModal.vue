@@ -6,23 +6,16 @@
         <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
       </div>
 
-      <div class="share-modal-preview">
-        <p v-if="imageLoading" class="empty-hint">Drawing your record card…</p>
-        <img v-show="!imageLoading" :src="imageUrl" :alt="`${displayName}'s record: ${record.headline}`" @load="imageLoading = false" @error="imageLoading = false" />
-      </div>
+      <SharePreview :src="imageUrl" :alt="`${displayName}'s record: ${record.headline}`" :filename="`${username}-${record.key}.png`" loading-text="Drawing your record card…" @download="sent('download')" />
 
       <p class="rec-share-text">{{ text }}</p>
 
-      <div class="rec-share-actions">
-        <a class="btn rec-share-x" :href="xUrl" target="_blank" rel="noopener" @click="sent('x')">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.2-8.3L1.8 3h6.4l4.4 5.8L17.8 3zm-1.1 16.2h1.7L7.2 4.7H5.4l11.3 14.5z" /></svg>
-          Post on X
-        </a>
-        <a class="btn btn-ghost" :href="redditUrl" target="_blank" rel="noopener" @click="sent('reddit')">Reddit</a>
-        <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare">Share…</button>
-        <button class="btn btn-ghost" type="button" @click="copyLink">Copy link</button>
-        <button v-if="canCopyImage" class="btn btn-ghost" type="button" :disabled="copyingImage" @click="copyImage">{{ copyingImage ? 'Copying…' : 'Copy image' }}</button>
-        <a class="btn btn-ghost" :href="imageUrl" :download="`${username}-${record.key}.png`" @click="sent('download')">Download image</a>
+      <div class="share-actions">
+        <button class="btn btn-primary share-wide" type="button" @click="copyLink"><ShareIcon name="link" />Copy link</button>
+        <a class="btn share-x" :href="xUrl" target="_blank" rel="noopener" @click="sent('x')"><ShareIcon name="x" />Post on X</a>
+        <a class="btn btn-ghost" :href="redditUrl" target="_blank" rel="noopener" @click="sent('reddit')"><ShareIcon name="reddit" />Reddit</a>
+        <button v-if="canCopyImage" class="btn btn-ghost" type="button" :disabled="copyingImage" @click="copyImage"><ShareIcon name="image" />{{ copyingImage ? 'Copying…' : 'Copy image' }}</button>
+        <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare"><ShareIcon name="share" />More…</button>
       </div>
       <p class="empty-hint share-modal-hint">The link shows this card when you paste it into Discord, X or Reddit. If someone beats the record, the card updates.</p>
     </div>
@@ -31,6 +24,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import SharePreview from '@/components/SharePreview.vue'
+import ShareIcon from '@/components/ShareIcon.vue'
 import { recordsApi } from '@/api/records'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
@@ -43,7 +38,6 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 const { showToast } = useToast()
 
-const imageLoading = ref(true)
 const copyingImage = ref(false)
 
 const imageUrl = computed(() => recordsApi.imageUrl(props.username, props.record.key))
@@ -74,7 +68,7 @@ async function copyImage() {
     await navigator.clipboard.write([new window.ClipboardItem({ 'image/png': blob })])
     showToast('Image copied! Paste it anywhere.')
   } catch {
-    showToast('Could not copy the image. Try Download image instead.')
+    showToast('Could not copy the image. Use the download button on the card instead.')
   } finally {
     copyingImage.value = false
   }

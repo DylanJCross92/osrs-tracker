@@ -215,6 +215,31 @@ if (distExists) {
     }
   })
 
+  // A challenge link ("beat my week"). The SPA sends the visitor on to Compare; this gives the link its preview.
+  // Challenge pages are noindex, they exist to be sent to a friend.
+  app.get('/challenge/:username', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      const weekly = await getWeeklyCardData(player.id, 'Overall', 'week').catch(() => null)
+      const name = player.displayName
+      const gained = weekly?.xpGained > 0
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${name} challenges you | TickGains`,
+          description: gained
+            ? `${name} gained ${formatXp(weekly.xpGained)} XP in Old School RuneScape this week. Think you can beat it? Compare your week head to head on TickGains, no sign-up needed.`
+            : `${name} is challenging you in Old School RuneScape. Compare your stats head to head on TickGains, no sign-up needed.`,
+          imageUrl: weekly ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/challenge/image.png` : `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}/challenge/${encodeURIComponent(player.username)}`,
+          noindex: true,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
   // Player comparison. The landing page is indexable; a specific pairing is an endless set of user-chosen URLs, so
   // those carry noindex (they still unfurl nicely in Discord and X, which is what they are shared for).
   const compareDescription = 'Compare two Old School RuneScape players side by side: XP gained, levels, rank movement and how consistently each one trains.'

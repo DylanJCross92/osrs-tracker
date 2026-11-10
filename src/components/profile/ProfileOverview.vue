@@ -1,6 +1,6 @@
 <template>
   <div class="profile-overview">
-    <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" @day="(d) => $emit('day', d)" />
+    <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" @day="(d) => $emit('day', d)" @challenge="$emit('challenge')" />
     <OverviewRecords :records="records" :today="recordsToday" :loading="recordsLoading" :name="player.displayName" @records="$emit('records')" />
     <OverviewSkillBoard :snapshot="latest" :days="weekDays" @skill="(s) => $emit('skill', s)" />
     <OverviewRoadToMax :snapshot="latest" />
@@ -57,7 +57,7 @@ import { recordsApi } from '@/api/records'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { highestSkill, mostXpSkill, featuredAchievements } from '@/utils/profile'
 
-defineEmits(['view-history', 'day', 'skill', 'records'])
+defineEmits(['view-history', 'day', 'skill', 'records', 'challenge'])
 const props = defineProps({
   player: { type: Object, required: true },
   snapshots: { type: Array, required: true },
