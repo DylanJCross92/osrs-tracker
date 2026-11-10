@@ -35,6 +35,11 @@ const routes = [
     name: 'playerDetail',
     component: () => import('@/views/PlayerDetailView.vue'),
   },
+  // A shared record link: the server gives it a link preview, then it lands on the profile's Records tab.
+  {
+    path: '/player/:username/records/:key?',
+    redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username }, query: { tab: 'records', ...(to.params.key ? { record: to.params.key } : {}) } }),
+  },
   {
     path: '/player/:username/card/weekly/:slug?',
     name: 'weeklyShareCard',

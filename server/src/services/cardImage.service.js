@@ -410,3 +410,108 @@ export async function renderWeeklyCardPng(data) {
   const tree = await buildWeeklyCardTree(data)
   return renderPng(tree)
 }
+
+// --- Personal record card ---------------------------------------------------------------------------------------
+
+const TROPHY = ['M8 21h8M12 17v4M7 4h10v6a5 5 0 01-10 0V4z', 'M17 6h3v2a3 3 0 01-3 3', 'M7 6H4v2a3 3 0 003 3']
+
+const dayLabel = (key, withYear = true) =>
+  new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) })
+
+function recordWhen(record) {
+  if (!record.start || !record.end) return ''
+  if (record.start === record.end) return `Set ${dayLabel(record.end)}`
+  const sameYear = record.start.slice(0, 4) === record.end.slice(0, 4)
+  return `${dayLabel(record.start, !sameYear)} to ${dayLabel(record.end)}`
+}
+
+const RECORD_UNITS = { xp: 'XP', days: 'days in a row', levels: 'levels', skills: 'skills' }
+
+async function buildRecordCardTree({ displayName, record }) {
+  const isXp = record.unit === 'xp'
+  const valueText = isXp ? formatXp(record.value) : record.value.toLocaleString('en-US')
+  const valueColor = isXp ? COLORS.green : COLORS.gold
+  const [skillUri, detailUri] = await Promise.all([
+    record.skill ? skillIconDataUri(record.skill) : Promise.resolve(null),
+    record.detail?.skill ? skillIconDataUri(record.detail.skill) : Promise.resolve(null),
+  ])
+
+  // A big badge on the right: the skill icon for a skill record, a trophy for everything else.
+  const badge = node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 300,
+      height: 300,
+      borderRadius: 150,
+      backgroundColor: '#2a2314',
+      border: `4px solid ${COLORS.gold}`,
+      boxShadow: '0 0 80px rgba(240, 201, 118, 0.35)',
+    },
+    [skillUri ? image(skillUri, 150, 150) : svgIcon(170, COLORS.gold, TROPHY, { stroke: true })],
+  )
+
+  const chip = record.detail?.skill
+    ? node(
+        'div',
+        { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 22, color: COLORS.cream },
+        [
+          detailUri ? image(detailUri, 26, 26) : null,
+          node('div', { display: 'flex' }, `Mostly ${record.detail.skill}`),
+          node('div', { display: 'flex', color: COLORS.green, fontWeight: 700 }, `+${formatXp(record.detail.xp)}`),
+        ].filter(Boolean),
+      )
+    : null
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 82% 45%, #3a2e14 0%, #1d1810 42%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
+          svgIcon(34, COLORS.gold, TROPHY, { stroke: true }),
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'Personal record'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
+          node('div', { fontSize: 44, fontWeight: 800, color: COLORS.gold }, displayName),
+          node('div', { fontSize: 32, fontWeight: 700, color: COLORS.cream, marginTop: 2 }, record.title),
+          node('div', { display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 14 }, [
+            node('div', { fontSize: 150, fontWeight: 800, color: valueColor, lineHeight: 1 }, valueText),
+            node('div', { fontSize: 36, fontWeight: 700, color: COLORS.muted }, RECORD_UNITS[record.unit] || ''),
+          ]),
+          node('div', { fontSize: 26, color: COLORS.muted, marginTop: 12 }, recordWhen(record)),
+          ...(chip ? [node('div', { display: 'flex', marginTop: 16 }, [chip])] : []),
+        ]),
+        badge,
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 32, fontWeight: 800, color: COLORS.gold }, 'Think you can beat it?'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** { displayName, record } (see utils/records.js) -> PNG Buffer. */
+export async function renderRecordCardPng(data) {
+  return renderPng(await buildRecordCardTree(data))
+}

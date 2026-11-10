@@ -67,6 +67,7 @@
     </nav>
     <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" @view-history="setTab('history')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
+    <ProfileRecords v-else-if="tab === 'records'" :player="player" />
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
     <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
     <template v-else>
@@ -318,6 +319,7 @@ import PlayerBadge from '@/components/PlayerBadge.vue'
 import ProfileOverview from '@/components/profile/ProfileOverview.vue'
 import ProfileAchievements from '@/components/profile/ProfileAchievements.vue'
 import ProfileGoals from '@/components/profile/ProfileGoals.vue'
+import ProfileRecords from '@/components/profile/ProfileRecords.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { playersApi } from '@/api/players'
 import { highestSkill } from '@/utils/profile'
@@ -411,6 +413,7 @@ const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'stats', label: 'Stats' },
   { key: 'achievements', label: 'Achievements' },
+  { key: 'records', label: 'Records' },
   { key: 'goals', label: 'Goals' },
   { key: 'history', label: 'History' },
 ]

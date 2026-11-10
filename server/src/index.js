@@ -6,10 +6,12 @@ import express from 'express'
 import cors from 'cors'
 import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
+import { recordsRouter } from './routes/records.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
+import { getPlayerRecords } from './services/records.service.js'
 import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
@@ -28,6 +30,7 @@ app.use(express.json())
 
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
+app.use('/api', recordsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -179,6 +182,32 @@ if (distExists) {
           },
         }),
       )
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // A shared personal record. The SPA sends the visitor on to the profile's Records tab; this only gives link
+  // previews (Discord, X, iMessage) the record's own title and image. Pages for single records are noindex.
+  app.get('/player/:username/records/:key?', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      const key = req.params.key || ''
+      const { records } = await getPlayerRecords(player)
+      const record = records.find((r) => r.key === key && !r.locked) || null
+      const base = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      const pageUrl = record ? `${base}/records/${encodeURIComponent(record.key)}` : `${base}?tab=records`
+      const title = record
+        ? `${player.displayName}'s record: ${record.headline} | TickGains`
+        : `${player.displayName}'s OSRS Personal Records | TickGains`
+      const description = record
+        ? `${player.displayName} set a personal record in Old School RuneScape: ${record.headline}. Think you can beat it? Track your own records on TickGains.`
+        : `${player.displayName}'s biggest days, longest streaks and best skill sessions in Old School RuneScape, tracked on TickGains.`
+      const imageUrl = record
+        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/records/${encodeURIComponent(record.key)}/image.png`
+        : `${SITE_URL}/og-default.png`
+      res.send(injectCardMeta(indexHtmlTemplate, { title, description, imageUrl, pageUrl, noindex: true }))
     } catch (err) {
       next(err)
     }

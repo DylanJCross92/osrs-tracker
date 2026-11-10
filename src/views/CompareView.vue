@@ -21,6 +21,10 @@
         <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit">Compare</button>
       </form>
 
+      <div v-if="hasNames" class="cmp-period range-tabs" role="group" aria-label="Gain period">
+        <button v-for="p in PERIODS" :key="p.key" type="button" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
+      </div>
+
       <div v-if="rivals.length" class="cmp-rivals">
         <span class="cmp-rivals-label">Your rivals{{ me ? ` vs ${me}` : '' }}</span>
         <span v-for="r in rivals" :key="r" class="cmp-rival">
@@ -89,10 +93,6 @@
               <button v-if="!isMe(sideB.player.username)" class="btn btn-ghost" @click="toggleRival(sideB.player.displayName)">{{ isRival(sideB.player.username) ? `Remove ${sideB.player.displayName} as rival` : `Save ${sideB.player.displayName} as rival` }}</button>
             </div>
           </section>
-
-          <div class="cmp-period range-tabs" role="group" aria-label="Gain period">
-            <button v-for="p in PERIODS" :key="p.key" :class="{ active: period === p.key }" @click="period = p.key">{{ p.label }}</button>
-          </div>
 
           <CompareTape :rows="headline" :name-a="sideA.player.displayName" :name-b="sideB.player.displayName" />
 
