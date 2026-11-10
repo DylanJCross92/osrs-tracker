@@ -521,7 +521,7 @@ async function trackNew() {
     const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
     addedPlayer.value = { username: found?.username || name, displayName: found?.displayName || name }
     recordRecent(addedPlayer.value)
-    track('player_added', { source: 'discover', is_new_player: true })
+    track('player_added', { source: 'discover', is_new_player: true, player_name: name })
     showToast(`Now tracking ${addedPlayer.value.displayName}, checking Wise Old Man for history in the background.`)
     load()
   } catch (err) {

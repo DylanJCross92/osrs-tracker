@@ -19,7 +19,7 @@
     <p>
       TickGains uses Google Tag Manager and Google Analytics to understand which pages and features are used. These
       tools may set cookies and collect technical information such as pages visited, device and approximate location.
-      You can block them with your browser's privacy settings or an extension.
+      When a new player is added to the tracker, the name that was added is sent along as an event, so TickGains can see which players are being looked up. Player names are public OSRS names, and visitors are never tied to a name or an account. You can block these tools with your browser's privacy settings or an extension.
     </p>
     <h2>Congratulations</h2>
     <p>

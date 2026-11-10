@@ -2895,14 +2895,20 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .cmp-challenge svg { flex: none; color: var(--gold); }
 .cmp-challenge b { color: var(--gold-bright); }
 
-/* ---------- share sheets: preview with a corner download, tidy action grid ---------- */
-.share-preview { position: relative; margin-bottom: 14px; }
-.share-preview .share-modal-preview { margin-bottom: 0; }
-/* Straddles the card's top right corner so it never covers anything drawn on the card. */
-.share-dl { position: absolute; top: -12px; right: -12px; display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; border-radius: 50%; border: 1px solid rgba(240, 201, 118, 0.45); background: rgba(14, 12, 9, 0.72); color: var(--gold-bright); cursor: pointer; backdrop-filter: blur(4px); transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s; }
-.share-dl:hover { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); transform: translateY(-1px); }
-.share-dl:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
-.share-dl:disabled { opacity: 0.6; cursor: progress; }
+/* ---------- share sheets: hover the card to download it, tidy action grid ---------- */
+.share-preview { position: relative; display: block; width: 100%; margin: 0 0 14px; padding: 0; border: 0; background: none; font: inherit; color: inherit; text-align: inherit; cursor: pointer; border-radius: 10px; }
+.share-preview:disabled { cursor: progress; }
+.share-preview .share-modal-preview { display: flex; margin-bottom: 0; }
+.share-dl { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; background: rgba(10, 8, 5, 0.8); color: var(--gold-bright); opacity: 0; transition: opacity 0.15s; pointer-events: none; }
+.share-dl b { font-size: 0.95rem; font-weight: 700; }
+.share-preview:hover .share-dl, .share-preview:focus-visible .share-dl { opacity: 1; }
+.share-preview:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 3px; }
+/* No hover on touch screens: keep a small badge in the corner so the card still reads as tappable. */
+@media (hover: none) {
+  .share-dl { inset: auto 10px 10px auto; flex-direction: row; padding: 7px 12px; border: 1px solid rgba(240, 201, 118, 0.45); border-radius: 999px; background: rgba(14, 12, 9, 0.78); opacity: 1; }
+  .share-dl b { font-size: 0.8rem; }
+  .share-dl svg { width: 16px; height: 16px; }
+}
 .share-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .share-actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 0; white-space: nowrap; }
 .share-actions .share-wide { grid-column: 1 / -1; padding-block: 12px; font-size: 1rem; }

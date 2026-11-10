@@ -367,7 +367,7 @@ async function submitAdd() {
   try {
     await store.addPlayer(username)
     // A 201 from the API means this name was not tracked on the site before.
-    track('player_added', { source: 'home', is_new_player: true })
+    track('player_added', { source: 'home', is_new_player: true, player_name: username })
     showToast(`Now tracking ${username}, checking Wise Old Man for history in the background.`)
     trackedName.value = username
     newUsername.value = ''

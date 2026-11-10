@@ -1,13 +1,14 @@
 <template>
-  <div class="share-preview">
-    <div class="share-modal-preview">
-      <p v-if="loading" class="empty-hint">{{ loadingText }}</p>
+  <button type="button" class="share-preview" :disabled="loading || busy" :title="loading ? '' : 'Download image'" :aria-label="loading ? loadingText : 'Download image'" @click="download">
+    <span class="share-modal-preview">
+      <span v-if="loading" class="empty-hint">{{ loadingText }}</span>
       <img v-show="!loading" :src="src" :alt="alt" @load="loading = false" @error="loading = false" />
-    </div>
-    <button v-if="!loading" type="button" class="share-dl" title="Download image" aria-label="Download image" :disabled="busy" @click="download">
-      <ShareIcon name="download" :size="18" />
-    </button>
-  </div>
+    </span>
+    <span v-if="!loading" class="share-dl" aria-hidden="true">
+      <ShareIcon name="download" :size="22" />
+      <b>{{ busy ? 'Saving…' : 'Download image' }}</b>
+    </span>
+  </button>
 </template>
 
 <script setup>

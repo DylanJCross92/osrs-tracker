@@ -96,7 +96,7 @@ async function find() {
     // Unknown names go through the normal tracking flow (Hiscores lookup and history import).
     if (!lookup()) {
       await store.addPlayer(rsn)
-      track('player_added', { source: 'calculator', is_new_player: true })
+      track('player_added', { source: 'calculator', is_new_player: true, player_name: rsn })
     }
     const found = lookup()
     if (!found?.latest) throw new Error('No stats found for that player yet.')
