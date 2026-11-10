@@ -51,6 +51,7 @@
   </div>
 
   <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
+  <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" @share="openShare" />
@@ -66,7 +67,7 @@
     <nav class="profile-tabs" aria-label="Profile sections">
       <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
-    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" @view-history="setTab('history')" />
+    <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileRecords v-else-if="tab === 'records'" :player="player" />
     <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
@@ -139,7 +140,6 @@
       </table>
     </div>
 
-    <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
 
     <div class="gain-tiles">
       <div class="card gain-tile">

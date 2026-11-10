@@ -120,26 +120,15 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { recordsApi } from '@/api/records'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
-import { formatGameDay, addGameDays } from '@/utils/gameDay'
+import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordDayText, recordWhenText, recordGapText, recordChaseText } from '@/utils/recordText'
 import { track } from '@/utils/analytics'
 import RecordShareModal from '@/components/profile/RecordShareModal.vue'
 
 const props = defineProps({ player: { type: Object, required: true } })
 const route = useRoute()
 
-const ICONS = {
-  trophy: ['M8 21h8M12 17v4M7 4h10v6a5 5 0 01-10 0V4z', 'M17 6h3v2a3 3 0 01-3 3', 'M7 6H4v2a3 3 0 003 3'],
-  flame: ['M12 3c1 3 4 4.5 4 8.5a4 4 0 01-8 0c0-1.7.8-2.8 1.6-3.8.3 1.2 1 1.8 1.6 1.8C11 7.5 11 5 12 3z'],
-  star: ['M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z'],
-  layers: ['M12 3l9 5-9 5-9-5 9-5z', 'M3 13l9 5 9-5'],
-  calendar: ['M4 6h16v14H4z', 'M4 10h16', 'M9 3v4', 'M15 3v4'],
-  lock: ['M6 11h12v9H6z', 'M8 11V8a4 4 0 018 0v3'],
-  share: ['M4 12v7h16v-7', 'M12 16V3', 'M7 8l5-5 5 5'],
-}
-const iconFor = (r) =>
-  r.locked
-    ? ICONS.lock
-    : ({ 'best-day': ICONS.trophy, 'best-week': ICONS.calendar, 'best-month': ICONS.calendar, 'longest-streak': ICONS.flame, 'most-levels-day': ICONS.star, 'most-skills-day': ICONS.layers })[r.key] || ICONS.trophy
+const ICONS = RECORD_ICONS
+const iconFor = iconForRecord
 
 const loading = ref(true)
 const error = ref(false)
@@ -175,41 +164,13 @@ const chasing = computed(() =>
 const onFire = computed(() => records.value.filter((r) => !r.locked && r.fresh && r.end === data.value.today && r.current && r.current.value >= r.value))
 const target = computed(() => (typeof route.query.record === 'string' ? route.query.record : ''))
 
-// --- wording ---------------------------------------------------------------------------------------------------
-const dayText = (key, withYear = false) => {
-  if (!key) return ''
-  const sameYear = key.slice(0, 4) === (data.value.today || '').slice(0, 4)
-  return formatGameDay(key, { month: 'short', day: 'numeric', ...(withYear && !sameYear ? { year: 'numeric' } : {}) })
-}
-function whenText(r) {
-  if (!r.end) return ''
-  if (r.start === r.end) {
-    if (r.end === data.value.today) return 'Set today'
-    if (r.end === addGameDays(data.value.today, -1)) return 'Set yesterday'
-    return `Set ${dayText(r.end, true)}`
-  }
-  return `${dayText(r.start)} to ${dayText(r.end, true)}`
-}
-const valueText = (r) => (r.unit === 'xp' ? formatXp(r.value) : r.value.toLocaleString('en-US'))
-const unitText = (r) => ({ xp: 'XP', days: r.value === 1 ? 'day' : 'days', levels: r.value === 1 ? 'level' : 'levels', skills: 'skills' })[r.unit] || ''
-// Just the distance to the record: "+468K XP to beat it".
-function gapText(r) {
-  const c = r.current
-  if (!c) return ''
-  if (c.value >= r.value) return 'Record in progress, keep going'
-  const gap = r.value - c.value + 1
-  return r.unit === 'xp' ? `+${formatXp(gap)} XP to beat it` : `${gap} more to beat it`
-}
-// How far off the record you are, in the record's own unit.
-function chaseText(r) {
-  const c = r.current
-  if (!c) return ''
-  if (c.value >= r.value) return r.key === 'longest-streak' ? 'Streak record in progress' : 'Record in progress, keep going'
-  const gap = r.value - c.value + 1
-  if (r.key === 'longest-streak') return `${c.value} ${c.value === 1 ? 'day' : 'days'} now, ${gap} more to beat it`
-  if (r.unit === 'xp') return `${formatXp(c.value)} ${c.label}, +${formatXp(gap)} to beat it`
-  return `${c.value} ${c.label}, ${gap} more to beat it`
-}
+// --- wording (shared with the profile overview) ----------------------------------------------------------------
+const dayText = (key, withYear = false) => recordDayText(key, data.value.today, withYear)
+const whenText = (r) => recordWhenText(r, data.value.today)
+const valueText = recordValueText
+const unitText = recordUnitText
+const gapText = recordGapText
+const chaseText = recordChaseText
 
 // --- the big number counts up when the tab opens ---------------------------------------------------------------
 const shownHero = ref(0)

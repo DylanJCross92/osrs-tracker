@@ -1,16 +1,12 @@
 <template>
   <div class="profile-overview">
-    <div class="profile-stat-grid">
-      <div class="card profile-stat"><span>Overall</span><b>{{ latest.overallLevel.toLocaleString('en-US') }}</b></div>
-      <div class="card profile-stat"><span>Total XP</span><b>{{ latest.overallXp.toLocaleString('en-US') }}</b></div>
-      <div class="card profile-stat"><span>Overall rank</span><b>{{ latest.overallRank > 0 ? latest.overallRank.toLocaleString('en-US') : '-' }}</b></div>
-      <div class="card profile-stat"><span>Level 99 skills</span><b>{{ n99 }}</b></div>
-      <div class="card profile-stat"><span>XP · last 7 days</span><b :class="{ 'stat-gain': weekGain }">{{ weekGain ? `+${weekGain.toLocaleString('en-US')}` : '-' }}</b></div>
-      <div class="card profile-stat"><span>XP · last 30 days</span><b :class="{ 'stat-gain': monthGain }">{{ monthGain ? `+${monthGain.toLocaleString('en-US')}` : '-' }}</b></div>
-    </div>
+    <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" @day="(d) => $emit('day', d)" />
+    <OverviewRecords :records="records" :today="recordsToday" :loading="recordsLoading" :name="player.displayName" @records="$emit('records')" />
+    <OverviewSkillBoard :snapshot="latest" :days="weekDays" @skill="(s) => $emit('skill', s)" />
+    <OverviewRoadToMax :snapshot="latest" />
 
     <div class="card">
-      <h2>Skill showcase</h2>
+      <h2>Skill highlights</h2>
       <div class="showcase-grid">
         <div v-for="s in showcase" :key="s.label" class="showcase-card">
           <img :src="skillIconSrc(s.skill)" :alt="s.skill" width="32" height="32" />
@@ -50,23 +46,53 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
+import OverviewWeek from '@/components/profile/OverviewWeek.vue'
+import OverviewRecords from '@/components/profile/OverviewRecords.vue'
+import OverviewSkillBoard from '@/components/profile/OverviewSkillBoard.vue'
+import OverviewRoadToMax from '@/components/profile/OverviewRoadToMax.vue'
+import { recordsApi } from '@/api/records'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
-import { highestSkill, mostXpSkill, count99s, featuredAchievements } from '@/utils/profile'
+import { highestSkill, mostXpSkill, featuredAchievements } from '@/utils/profile'
 
-defineEmits(['view-history'])
+defineEmits(['view-history', 'day', 'skill', 'records'])
 const props = defineProps({
   player: { type: Object, required: true },
   snapshots: { type: Array, required: true },
   profile: { type: Object, default: null },
+  // The last 7 game days with per-skill gains (same numbers as the header chart and day recaps).
+  weekDays: { type: Array, default: () => [] },
 })
 
 const latest = computed(() => props.snapshots[props.snapshots.length - 1])
-const n99 = computed(() => count99s(latest.value))
-const weekGain = computed(() => props.player.gains?.week?.xp || 0)
 const monthGain = computed(() => props.player.gains?.month?.xp || 0)
+
+// Personal records, loaded once here and shared with the records section and the streak.
+const records = ref([])
+const recordsToday = ref('')
+const recordsLoading = ref(true)
+watch(
+  () => props.player.username,
+  async (name) => {
+    recordsLoading.value = true
+    try {
+      const data = await recordsApi.get(name)
+      records.value = data.records || []
+      recordsToday.value = data.today || ''
+    } catch {
+      records.value = []
+    } finally {
+      recordsLoading.value = false
+    }
+  },
+  { immediate: true },
+)
+const streakInfo = computed(() => {
+  const r = records.value.find((x) => x.key === 'longest-streak')
+  return r ? { current: r.current?.value ?? 0, longest: r.value } : null
+})
 
 const showcase = computed(() => {
   const list = []
