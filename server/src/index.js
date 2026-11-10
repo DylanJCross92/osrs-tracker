@@ -509,10 +509,25 @@ if (distExists) {
     }
   })
 
-  app.use(express.static(distPath))
+  // Built files have a hash in their name, so they never change and can be cached for good. index.html is the one
+  // file that points at the current hashes, so it must always be re-checked, otherwise a browser keeps asking for
+  // files from an older deploy.
+  app.use(
+    express.static(distPath, {
+      index: false,
+      setHeaders(res, filePath) {
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) res.set('Cache-Control', 'public, max-age=31536000, immutable')
+        else if (filePath.endsWith('.html')) res.set('Cache-Control', 'no-cache')
+      },
+    }),
+  )
+  // A missing built file (an old tab asking for last deploy's chunk) must be a real 404. Answering with index.html and
+  // a 200 makes the browser treat HTML as JavaScript and hides the cause from the app.
+  app.get(/^\/assets\/.*/, (req, res) => res.status(404).type('text/plain').send('Not found'))
   // SPA fallback: any non-API GET (e.g. /players/3) resolves client-side,
   // so it all serves the same index.html.
   app.get(/^(?!\/api\/).*/, (req, res) => {
+    res.set('Cache-Control', 'no-cache')
     res.sendFile(path.join(distPath, 'index.html'))
   })
 }

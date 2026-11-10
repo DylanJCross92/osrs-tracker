@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { nextTick } from 'vue'
 import { track } from '@/utils/analytics'
+import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
 
 const routes = [
   {
@@ -67,6 +68,10 @@ export function createAppRouter() {
     nextTick(() =>
       setTimeout(() => track('spa_page_view', { page_path: to.fullPath, page_title: document.title, route_name: String(to.name || '') }), 0),
     )
+  })
+  // A page whose file is gone after a deploy: load it fresh instead of leaving the tab stuck.
+  router.onError((err, to) => {
+    if (isStaleChunkError(err)) reloadForNewVersion(to?.fullPath)
   })
   return router
 }
