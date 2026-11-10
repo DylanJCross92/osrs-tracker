@@ -310,7 +310,6 @@ import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { useRivals } from '@/composables/useRivals'
-import { recordRecent } from '@/composables/useRecentPlayers'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
@@ -358,8 +357,6 @@ const player = computed(
   () => store.players.find((p) => p.username.toLowerCase() === usernameParam.value.toLowerCase()) ?? null,
 )
 const playerId = computed(() => player.value?.id ?? null)
-// Opening a real profile puts the player at the top of the recent-players lists in the search boxes.
-watch(player, (p) => p && recordRecent(p), { immediate: true })
 
 watch(
   [player, usernameParam],

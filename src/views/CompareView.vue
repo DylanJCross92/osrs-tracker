@@ -6,7 +6,7 @@
       <form class="cmp-form" @submit.prevent="submit">
         <label class="cmp-field cmp-field-a">
           <i class="cmp-key cmp-key-a" aria-hidden="true" />
-          <input ref="elA" v-model="inputA" type="text" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @keydown="onKey('a', $event)" />
+          <input ref="elA" v-model="inputA" type="text" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
           <CompareSuggest v-if="focused === 'a' && options.length" :options="options" :heading="heading" :active="hi" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button type="button" class="cmp-swap" aria-label="Swap the two players" title="Swap players" @click="swapInputs">
@@ -15,7 +15,7 @@
         </button>
         <label class="cmp-field cmp-field-b">
           <i class="cmp-key cmp-key-b" aria-hidden="true" />
-          <input ref="elB" v-model="inputB" type="text" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @keydown="onKey('b', $event)" />
+          <input ref="elB" v-model="inputB" type="text" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true" @keydown="onKey('b', $event)" />
           <CompareSuggest v-if="focused === 'b' && options.length" :options="options" :heading="heading" :active="hi" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit">Compare</button>
@@ -234,7 +234,12 @@ function onType(k) {
 watch(inputA, () => onType('a'))
 watch(inputB, () => onType('b'))
 
+// Only names typed into a box (or picked from the search results / recent list) count as searches, a link to a
+// matchup or a recommended pick does not. `input` events come from the keyboard only, never from picking.
+const typed = { a: false, b: false }
 function pick(k, o) {
+  if (typing.value || o.recent) recordRecent(o)
+  typed[k] = false
   inputOf(k).value = o.displayName
   found.value = []
   focused.value = ''
@@ -272,6 +277,12 @@ function swapInputs() {
 function submit() {
   if (!canSubmit.value) return
   track('compare_submit', { source: 'form' })
+  for (const k of ['a', 'b']) {
+    if (!typed[k]) continue
+    const hit = store.players.find((x) => x.username.toLowerCase() === termOf(k).toLowerCase())
+    if (hit) recordRecent(hit)
+    typed[k] = false
+  }
   router.push(pairLink(inputA.value.trim(), inputB.value.trim()))
 }
 
@@ -313,7 +324,6 @@ async function loadSide(key, name, id) {
     return
   }
   side.player = player
-  recordRecent(player)
   try {
     applySnapshots(side, await store.fetchSnapshots(player.id))
   } catch {

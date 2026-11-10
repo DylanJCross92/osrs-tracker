@@ -31,7 +31,7 @@
         <ul v-if="suggestions.length || showNewRow" class="search-suggest">
           <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
           <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink class="suggest-row" :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' })"><PlayerSuggestRow :player="sg" /></RouterLink>
+            <RouterLink class="suggest-row" :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' }); recordRecent(sg)"><PlayerSuggestRow :player="sg" /></RouterLink>
           </li>
           <li v-if="showNewRow" class="suggest-new">
             <template v-if="addedPlayer">
@@ -500,7 +500,10 @@ const exactMatch = computed(() => {
 // The typed name, offered for tracking right in the dropdown unless it is already tracked.
 const showNewRow = computed(() => !!addedPlayer.value || (query.value.trim().length >= 2 && validName.value && searched.value && !exactMatch.value))
 function onEnter() {
-  if (exactMatch.value) return router.push(profileTo(exactMatch.value.username))
+  if (exactMatch.value) {
+    recordRecent(exactMatch.value)
+    return router.push(profileTo(exactMatch.value.username))
+  }
   if (addedPlayer.value) return router.push(profileTo(addedPlayer.value.username))
   if (validName.value && !addingPlayer.value) trackNew()
   else if (suggestions.value[0]) goFirst()
@@ -535,6 +538,7 @@ async function trackNew() {
   }
 }
 function goFirst() {
+  if (suggestions.value[0]) recordRecent(suggestions.value[0])
   if (suggestions.value[0]) router.push(profileTo(suggestions.value[0].username))
 }
 

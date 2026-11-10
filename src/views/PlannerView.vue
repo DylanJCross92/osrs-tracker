@@ -16,7 +16,7 @@
       <template v-else>
         <p class="planner-intro">Load your stats by username (or enter them by hand), then add skill goals and compare ways to reach them. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
         <div class="suggest-wrap">
-          <form class="add-player-form" @submit.prevent="loadPlayer">
+          <form class="add-player-form" @submit.prevent="loadPlayer({ typed: true })">
             <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
             <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
             <input v-model="username" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
@@ -309,10 +309,11 @@ function pickSuggestion(sg) {
   track('search_suggestion_selected', { source: 'planner' })
   suggestions.value = []
   username.value = sg.displayName
-  loadPlayer()
+  loadPlayer({ typed: true })
 }
 
-async function loadPlayer() {
+// `typed` is true when the user searched for this name; restoring a saved plan loads the player without it.
+async function loadPlayer({ typed = false } = {}) {
   suggestions.value = []
   const name = username.value.trim()
   if (!name) return
@@ -338,7 +339,7 @@ async function loadPlayer() {
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     player.value = found
-    recordRecent(found)
+    if (typed) recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
     // Goals keep the stats they were created with. Newer stats are offered through "Refresh from player stats".

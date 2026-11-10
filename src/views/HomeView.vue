@@ -35,7 +35,7 @@
       <ul v-if="suggestions.length" class="search-suggest home-suggest">
         <li class="suggest-head">Already tracked</li>
         <li v-for="sg in suggestions" :key="sg.username">
-          <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' })">
+          <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' }); recordRecent(sg)">
             <PlayerSuggestRow :player="sg" />
           </RouterLink>
         </li>
@@ -371,6 +371,8 @@ async function submitAdd() {
       // Already tracked, the useful thing is to open their profile.
       track('player_search_result', { source: 'home', result: 'already_tracked' })
       showToast(`${username} is already being tracked, opening their profile.`)
+      const known = store.players.find((x) => x.username.toLowerCase() === username.toLowerCase())
+      if (known) recordRecent(known)
       router.push({ name: 'playerDetail', params: { username } })
     } else {
       track('player_search_result', { source: 'home', result: 'error', status: err instanceof ApiError ? err.status : 0 })

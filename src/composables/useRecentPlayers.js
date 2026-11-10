@@ -2,9 +2,10 @@ import { computed, ref, watch } from 'vue'
 import { usePlayersStore } from '@/stores/players'
 import { highestSkill } from '@/utils/profile'
 
-// The players you looked at last, kept in this browser's localStorage (no account needed). Search boxes show the
-// latest few when you focus them, so getting back to a player is one tap.
-const KEY = 'tickgains:recent-players'
+// The players you searched for last, kept in this browser's localStorage (no account needed). Only names you typed
+// into a search box land here, never pages you merely opened. Search boxes show the latest few when you focus them,
+// so getting back to a player is one tap.
+const KEY = 'tickgains:recent-searches'
 // Stored a little deeper than shown, so a name that no longer exists on the site can drop out without leaving the
 // list short.
 const KEEP = 10
@@ -36,7 +37,7 @@ watch(
 
 const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase()
 
-/** Remember a player that exists on the site (call it only with a real, tracked player). */
+/** Remember a player the user searched for (call it only with a real, tracked player, and only for typed searches). */
 export function recordRecent(player) {
   if (!player?.username) return
   const entry = { username: player.username, displayName: player.displayName || player.username }
