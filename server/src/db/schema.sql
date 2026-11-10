@@ -184,3 +184,22 @@ CREATE INDEX IF NOT EXISTS email_verifications_user_idx ON email_verifications (
 -- Account roles. Everyone starts as a plain "user"; "admin" and "owner" are only ever granted on the server (the owner's
 -- email is set in the OWNER_EMAIL environment variable), never from anything a visitor sends.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS roles TEXT[] NOT NULL DEFAULT '{user}';
+
+-- Profile claims. A signed-in account asks to claim a tracked OSRS name, gets a short code, and sends it in game to the
+-- site owner, who types it in to approve. The one 'verified' row for a player IS the ownership record (the unique index
+-- below allows only one owner per profile). Codes are only unique among pending claims, so they can be short.
+CREATE TABLE IF NOT EXISTS profile_claims (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'rejected', 'cancelled', 'revoked')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  decided_at TIMESTAMPTZ,
+  decided_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_code_pending_idx ON profile_claims (code) WHERE status = 'pending';
+CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_user_player_pending_idx ON profile_claims (user_id, player_id) WHERE status = 'pending';
+CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_player_owner_idx ON profile_claims (player_id) WHERE status = 'verified';
+CREATE INDEX IF NOT EXISTS profile_claims_user_idx ON profile_claims (user_id);

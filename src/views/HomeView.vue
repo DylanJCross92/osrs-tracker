@@ -242,7 +242,7 @@
     </section>
 
     <!-- 6. Stay in the loop -->
-    <section class="card home-news" aria-label="Email updates">
+    <section v-if="showNews" class="card home-news" aria-label="Email updates">
       <EmailSignup source="home" variant="card" heading="Be first to hear what's next" blurb="New features are on the way, including claiming your profile. Leave your email and we'll let you know when they land." />
     </section>
 
@@ -266,6 +266,7 @@ import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import { useAuth } from '@/composables/useAuth'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import RecentPlayers from '@/components/RecentPlayers.vue'
 import { recordRecent } from '@/composables/useRecentPlayers'
@@ -278,6 +279,9 @@ import EmailSignup from '@/components/EmailSignup.vue'
 import FeatureArt from '@/components/home/FeatureArt.vue'
 
 const router = useRouter()
+// The email sign-up card is for visitors without an account; signed-in accounts already gave us their email.
+const { ready: authReady, loggedIn } = useAuth()
+const showNews = computed(() => authReady.value && !loggedIn.value)
 const store = usePlayersStore()
 const { showToast } = useToast()
 

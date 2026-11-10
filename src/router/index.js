@@ -46,6 +46,7 @@ const routes = [
   { path: '/forgot-password', name: 'forgotPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'forgot' } },
   { path: '/reset-password', name: 'resetPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'reset' } },
   { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
+  { path: '/admin/claims', name: 'adminClaims', component: () => import('@/views/AdminClaimsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {
@@ -86,8 +87,9 @@ export function createAppRouter() {
   router.beforeEach(async (to) => {
     if (!to.meta.requiresAuth && !to.meta.guestOnly) return true
     await authReady()
-    const { loggedIn } = useAuth()
+    const { loggedIn, isAdmin } = useAuth()
     if (to.meta.requiresAuth && !loggedIn.value) return { name: 'login', query: { next: to.fullPath } }
+    if (to.meta.requiresAdmin && !isAdmin.value) return { name: 'players' }
     if (to.meta.guestOnly && loggedIn.value) return { name: 'account' }
     return true
   })

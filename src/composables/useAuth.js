@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { authApi } from '@/api/auth'
+import { claimsApi } from '@/api/claims'
 import { useRivals } from '@/composables/useRivals'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 
@@ -10,6 +11,8 @@ const user = ref(null)
 const ready = ref(false)
 // 'idle' | 'saving' | 'saved' | 'error', for the little status line on the account page.
 const syncState = ref('idle')
+// Profiles this account owns (verified claims): [{ username, displayName }]. Shown in the account menu.
+const profiles = ref([])
 
 const { me, rivals } = useRivals()
 const { period } = useGainPeriod()
@@ -59,9 +62,28 @@ watch(
   { deep: true },
 )
 
+/** Reloads the list of profiles this account owns. Quiet on failure, the menu just falls back to the email. */
+export async function refreshProfiles() {
+  if (!user.value) {
+    profiles.value = []
+    return
+  }
+  try {
+    const res = await claimsApi.mine()
+    profiles.value = res.claims.filter((c) => c.status === 'verified').map((c) => c.player)
+  } catch {
+    // Keep whatever we had.
+  }
+}
+
 function setUser(u) {
   user.value = u
-  if (u) reconcile(u.settings)
+  if (u) {
+    reconcile(u.settings)
+    refreshProfiles()
+  } else {
+    profiles.value = []
+  }
 }
 
 /** Called once when the app starts: finds out whether this browser is already signed in. */
@@ -107,6 +129,7 @@ export async function logOut() {
   } finally {
     clearTimeout(timer)
     user.value = null
+    profiles.value = []
     syncState.value = 'idle'
     // Leave nothing of this account behind on a shared computer: back to the defaults.
     me.value = ''
@@ -120,5 +143,6 @@ export async function logOut() {
 export const authReady = () => initAuth()
 
 export function useAuth() {
-  return { user, ready, loggedIn: computed(() => !!user.value), syncState }
+  const isAdmin = computed(() => !!user.value?.roles?.some((r) => r === 'admin' || r === 'owner'))
+  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles }
 }

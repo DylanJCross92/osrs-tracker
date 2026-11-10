@@ -23,6 +23,14 @@
       yet, and an account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
       and you can ask us to delete your account and its saved settings from the contact page. Password reset emails are sent through Resend.
     </p>
+    <h2>Profile claims</h2>
+    <p>
+      A signed-in account can ask to claim a tracked OSRS name. We create a short one-time code and store it with the link between
+      your account and that name. To verify the claim you send the code to the site owner in a private message in the game, and the
+      owner enters it to approve it. A claimed profile shows a "Claimed" label to everyone, but never says which account owns it. If you
+      delete your account (ask us on the contact page), your claims are removed and the profile becomes unclaimed. Claiming does not
+      change anything on the OSRS account, and we never ask for your OSRS password.
+    </p>
     <h2>Usage analytics</h2>
     <p>
       TickGains uses Google Tag Manager and Google Analytics to understand which pages and features are used. These

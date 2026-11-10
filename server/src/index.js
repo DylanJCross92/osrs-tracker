@@ -9,6 +9,7 @@ import { cardsRouter } from './routes/cards.routes.js'
 import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
 import { authRouter } from './routes/auth.routes.js'
+import { claimsRouter } from './routes/claims.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
@@ -38,6 +39,7 @@ app.use('/api', cardsRouter)
 app.use('/api', recordsRouter)
 app.use('/api/newsletter', subscribersRouter)
 app.use('/api/auth', authRouter)
+app.use('/api', claimsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -247,7 +249,7 @@ if (distExists) {
 
   // Account pages are for one person each, so they are left out of search results. (The SPA also sets this once it
   // loads; this is what a crawler sees on the very first byte.)
-  for (const [route, title] of [['/login', 'Log in'], ['/signup', 'Create an account'], ['/forgot-password', 'Reset your password'], ['/reset-password', 'Choose a new password'], ['/verify-email', 'Confirm your email'], ['/account', 'Your account']]) {
+  for (const [route, title] of [['/login', 'Log in'], ['/signup', 'Create an account'], ['/forgot-password', 'Reset your password'], ['/reset-password', 'Choose a new password'], ['/verify-email', 'Confirm your email'], ['/admin/claims', 'Profile claims'], ['/account', 'Your account']]) {
     app.get(route, (req, res) => {
       res.send(
         injectCardMeta(indexHtmlTemplate, {

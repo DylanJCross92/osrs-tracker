@@ -93,6 +93,36 @@ export async function notifyNewAccount({ email, total = null, confirmed = false 
   }
 }
 
+/** Tell the owner that someone started claiming a profile, so they know to expect the in-game message. Never throws. */
+export async function notifyClaimStarted({ email, playerName }) {
+  if (!notifyConfigured()) return false
+  if (!underHourlyCap()) return false
+  const message = renderEmail({
+    preheader: `${email} is claiming ${playerName}.`,
+    title: 'Profile claim started',
+    paragraphs: [
+      { text: `${email} started claiming ${playerName}. They were told to send you a code in game. When it arrives, enter it on the claims page to verify them.`, strong: playerName },
+    ],
+    rows: [{ label: 'Profile', value: playerName }, { label: 'Account', value: email }],
+    button: { label: 'Open the claims page', url: `${process.env.SITE_URL || 'https://tickgains.com'}/admin/claims` },
+  })
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: process.env.NOTIFY_FROM || DEFAULT_FROM, to: [process.env.NOTIFY_EMAIL], subject: `Profile claim started: ${playerName}`, ...message }),
+    })
+    if (!res.ok) {
+      console.error(`Claim notification failed: Resend answered ${res.status}`)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error('Claim notification failed:', err.message)
+    return false
+  }
+}
+
 // For tests.
 export function _resetNotifyCap() {
   sent.length = 0

@@ -37,6 +37,24 @@
       </div>
     </section>
 
+    <section class="card">
+      <h2>Your profiles</h2>
+      <p class="acc-note">RuneScape profiles you own or are claiming. To claim one, open its profile page and press Claim.</p>
+      <p v-if="claimsLoading" class="acc-empty">Loading…</p>
+      <p v-else-if="!claims.length" class="acc-empty">No claims yet.</p>
+      <ul v-else class="acc-claims">
+        <li v-for="c in claims" :key="c.id">
+          <div class="acc-claim-main">
+            <RouterLink :to="{ name: 'playerDetail', params: { username: c.player.username } }">{{ c.player.displayName }}</RouterLink>
+            <span class="claim-chip" :class="c.status === 'verified' ? 'is-ok' : c.expired ? 'is-expired' : ''">{{ c.status === 'verified' ? 'Verified owner' : c.expired ? 'Expired' : 'Waiting for your code' }}</span>
+          </div>
+          <p v-if="c.status === 'pending' && !c.expired && c.code" class="acc-claim-code">
+            Send <b class="claim-code-inline">{{ c.code }}</b> in game to <b>{{ claimContact }}</b> from {{ c.player.displayName }}.
+          </p>
+        </li>
+      </ul>
+    </section>
+
     <section class="card acc-pw-row">
       <div>
         <h2>Password</h2>
@@ -50,13 +68,14 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import RoleBadges from '@/components/RoleBadges.vue'
 import { logOut, useAuth } from '@/composables/useAuth'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { MAX_RIVALS, useRivals } from '@/composables/useRivals'
+import { claimsApi } from '@/api/claims'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
 
@@ -69,6 +88,22 @@ const { rivals, removeRival } = useRivals()
 
 const since = computed(() => (user.value?.createdAt ? new Date(user.value.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''))
 const statusText = computed(() => ({ idle: '', saving: 'Saving…', saved: 'Saved to your account', error: 'Could not save, check your connection' })[syncState.value])
+
+// --- profiles -------------------------------------------------------------------------------------------------------
+const claims = ref([])
+const claimContact = ref('')
+const claimsLoading = ref(true)
+onMounted(async () => {
+  try {
+    const res = await claimsApi.mine()
+    claims.value = res.claims
+    claimContact.value = res.contact
+  } catch {
+    claims.value = []
+  } finally {
+    claimsLoading.value = false
+  }
+})
 
 // --- password -------------------------------------------------------------------------------------------------------
 const pwOpen = ref(false)

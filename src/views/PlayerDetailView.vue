@@ -15,6 +15,10 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
             Compare
           </RouterLink>
+          <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
+            {{ claim.mine === 'pending' ? 'Finish claim' : 'Claim' }}
+          </button>
           <button class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5L18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" /></svg>
             Challenge
@@ -30,7 +34,7 @@
         <PlayerAvatar :name="player?.username || usernameParam" />
       </div>
       <div class="detail-info">
-        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
+        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /><span v-if="claim?.claimed" class="claim-pill" :class="{ 'is-mine': claim.mine === 'owner' }" :title="claim.mine === 'owner' ? 'You own this profile' : 'This profile has been claimed by its owner'">{{ claim.mine === 'owner' ? 'Your profile' : 'Claimed' }}</span></h1>
         <p v-if="latest" class="last-synced">
           <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
           <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
@@ -56,6 +60,7 @@
 
   <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
   <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
+  <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
@@ -271,6 +276,9 @@ import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
 import ChallengeModal from '@/components/profile/ChallengeModal.vue'
+import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
+import { claimsApi } from '@/api/claims'
+import { useAuth } from '@/composables/useAuth'
 import ProfileCelebrations from '@/components/profile/ProfileCelebrations.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import ProfileOverview from '@/components/profile/ProfileOverview.vue'
@@ -460,6 +468,27 @@ const refreshing = ref(false)
 const checkingWomHistory = ref(false)
 const shareModalOpen = ref(false)
 const shareSkill = ref('Overall')
+const claimOpen = ref(false)
+const claim = ref(null)
+const { loggedIn } = useAuth()
+function openClaim() {
+  claimOpen.value = true
+  track('claim_open', { signed_in: loggedIn.value })
+}
+// Whether this profile is claimed, and how it relates to the signed-in visitor. Reloaded on login or logout.
+watch(
+  [() => player.value?.username, loggedIn],
+  async ([name]) => {
+    claim.value = null
+    if (!name) return
+    try {
+      claim.value = await claimsApi.get(name)
+    } catch {
+      claim.value = null
+    }
+  },
+  { immediate: true },
+)
 const challengeOpen = ref(false)
 const challengeSource = ref('header')
 function openChallenge(source) {

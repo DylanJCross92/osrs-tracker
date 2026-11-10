@@ -3043,3 +3043,48 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .role-badge.is-admin { border-color: rgba(217, 175, 82, 0.55); color: var(--gold-bright); background: rgba(217, 175, 82, 0.1); }
 .role-badge.is-owner { border-color: var(--gold); color: var(--gold-ink); background: linear-gradient(135deg, var(--gold-bright), var(--gold)); }
 .acc-roles { margin-top: 8px; }
+
+/* ---------- profile claims ---------- */
+.claim-pill { display: inline-flex; align-items: center; margin-left: 10px; padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel-alt); color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; }
+.claim-pill.is-mine { border-color: var(--gold); background: linear-gradient(135deg, var(--gold-bright), var(--gold)); color: var(--gold-ink); }
+.claim-modal { max-width: 460px; }
+.claim-lead { margin: 0 0 14px; color: var(--text); font-size: 0.95rem; line-height: 1.55; max-width: none; }
+.claim-lead b, .claim-steps b { color: var(--gold-bright); }
+.claim-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.claim-steps { margin: 0 0 14px; padding-left: 20px; color: var(--text); font-size: 0.92rem; line-height: 1.6; }
+.claim-steps li { margin-bottom: 6px; }
+.claim-code-box { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 0 0 16px; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--bg); }
+.claim-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 2rem; font-weight: 800; letter-spacing: 0.22em; color: var(--gold-bright); user-select: all; }
+.claim-start { width: 100%; height: 46px; }
+.claim-cancel { display: block; margin-top: 6px; color: var(--muted); text-decoration: underline; font-size: 0.85rem; }
+.acc-claims { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.acc-claims li { padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
+.acc-claim-main { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.acc-claim-main > a { font-weight: 700; color: var(--gold-bright); }
+.claim-chip { padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.74rem; font-weight: 600; }
+.claim-chip.is-ok { border-color: rgba(124, 184, 105, 0.5); color: var(--xp-green); }
+.claim-chip.is-expired { color: #d98a78; border-color: rgba(217, 138, 120, 0.4); }
+.acc-claim-code { margin: 8px 0 0; color: var(--muted); font-size: 0.88rem; max-width: none; }
+.claim-code-inline { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.14em; color: var(--gold-bright); }
+.adm-lookup { display: flex; gap: 10px; margin-top: 12px; }
+.adm-code-input { flex: 1; min-width: 0; height: 46px; box-sizing: border-box; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(14, 12, 9, 0.6); color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.1rem; letter-spacing: 0.18em; text-transform: uppercase; }
+.adm-code-input::placeholder { font-family: inherit; font-size: 0.88rem; letter-spacing: 0; text-transform: none; color: var(--muted); opacity: 0.75; }
+.adm-code-input:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); }
+.adm-lookup .btn { height: 46px; }
+.adm-found { margin-top: 16px; padding: 16px; border: 1px solid var(--gold); border-radius: 12px; background: rgba(217, 175, 82, 0.06); }
+.adm-found-lead { margin: 0 0 12px; color: var(--text); max-width: none; }
+.adm-found-lead b { color: var(--gold-bright); }
+.adm-found-rows { margin: 0 0 14px; display: flex; flex-direction: column; gap: 6px; }
+.adm-found-rows div { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
+.adm-found-rows dt { color: var(--muted); }
+.adm-found-rows dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; text-align: right; }
+.adm-count { margin-left: 6px; padding: 1px 9px; border-radius: 999px; background: var(--panel-alt); color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+.adm-email { color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.adm-reject { margin-left: auto; color: #d98a78; text-decoration: underline; font-size: 0.85rem; }
+@media (max-width: 520px) { .adm-lookup { flex-direction: column; } .claim-code { font-size: 1.6rem; } }
+.adm-found .acc-inline { flex-wrap: wrap; }
+.adm-found .acc-inline .btn { height: auto; min-height: 44px; padding-block: 10px; }
+.adm-found .acc-inline .btn-primary { flex: 1 1 220px; }
+.acct-profiles { padding: 4px 4px 6px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.acct-profile { display: block; padding: 8px 10px; border-radius: 8px; color: var(--gold-bright); font-size: 0.98rem; font-weight: 700; text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 260px; }
+.acct-profile:hover { background: var(--panel-alt); text-decoration: none; }

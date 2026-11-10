@@ -53,7 +53,7 @@ export async function attachUser(req, res, next) {
     next(err)
   }
 }
-const requireUser = (req, res, next) => (req.user ? next() : res.status(401).json({ error: 'Please log in first.' }))
+export const requireUser = (req, res, next) => (req.user ? next() : res.status(401).json({ error: 'Please log in first.' }))
 // For admin-only endpoints: use after attachUser. Answers 404 to everyone else so the endpoint is not advertised.
 export const requireRole = (...roles) => (req, res, next) => (req.user && hasRole(req.user.roles, ...roles) ? next() : res.status(404).end())
 

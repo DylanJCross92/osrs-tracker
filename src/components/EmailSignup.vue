@@ -1,5 +1,5 @@
 <template>
-  <form class="signup" :class="[`signup-${variant}`, { 'is-done': done }]" novalidate @submit.prevent="submit">
+  <form v-if="showForm" class="signup" :class="[`signup-${variant}`, { 'is-done': done }]" novalidate @submit.prevent="submit">
     <template v-if="!done">
       <div v-if="variant === 'card'" class="signup-copy">
         <h3>{{ heading }}</h3>
@@ -37,7 +37,8 @@ const signedUp = ref(readDone())
 </script>
 
 <script setup>
-import { useId } from 'vue'
+import { computed, useId } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { newsletterApi } from '@/api/newsletter'
 import { ApiError } from '@/api/client'
 import { track } from '@/utils/analytics'
@@ -49,6 +50,10 @@ const props = defineProps({
   heading: { type: String, default: 'Get news and new features by email' },
   blurb: { type: String, default: '' },
 })
+
+// Signed-in accounts already gave us their email, so they are not asked for it again.
+const { ready, loggedIn } = useAuth()
+const showForm = computed(() => ready.value && !loggedIn.value)
 
 const inputId = `signup-${useId()}`
 const email = ref('')
