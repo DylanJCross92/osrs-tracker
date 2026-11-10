@@ -12,7 +12,7 @@
     </ul>
     <h2>What we don't do</h2>
     <ul>
-      <li>There are no accounts, passwords or sign-ups, and TickGains never asks for your OSRS login.</li>
+      <li>There are no accounts or passwords, and TickGains never asks for your OSRS login. The optional email list is the only thing you can sign up for.</li>
       <li>Searching or tracking a name doesn't change anything on the OSRS account.</li>
     </ul>
     <h2>Usage analytics</h2>
@@ -27,6 +27,13 @@
       TickGains stores a salted, one-way hash of the visitor's IP address with the click. The address itself is never stored,
       and the hash can't be turned back into it.
     </p>
+    <h2>Email updates</h2>
+    <p>
+      If you choose to sign up for news and new-feature emails, TickGains stores your email address, the date, and which
+      form you used (for example the footer). It is only used to send you TickGains news and is never sold. A mail service is used to tell the site owner about each new sign-up, and later to send the emails themselves. Every email will include
+      a link to unsubscribe in one click. There is no account, and no signing up is needed to use
+      the site. To be removed sooner, use the <RouterLink to="/contact">contact page</RouterLink>.
+    </p>
     <h2>Your browser</h2>
     <p>Some preferences (like your selected gains period or a saved plan in the planner) are kept in your browser's local storage on your own device.</p>
     <h2>Questions or removal requests</h2>
@@ -36,5 +43,5 @@
 
 <script setup>
 import { setPageMeta } from '@/utils/pageMeta'
-setPageMeta({ title: 'Privacy', description: 'How TickGains handles data: public OSRS hiscores snapshots, no accounts, and usage analytics.', path: '/privacy' })
+setPageMeta({ title: 'Privacy', description: 'How TickGains handles data: public OSRS hiscores snapshots, no accounts, an optional email list, and usage analytics.', path: '/privacy' })
 </script>

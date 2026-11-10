@@ -30,6 +30,7 @@
         <div class="app-footer-about">
           <span class="app-footer-brand">TickGains</span>
           <p>Free OSRS XP tracking, hiscores history and account planning. No sign-up, just your RSN.</p>
+          <EmailSignup source="footer" />
         </div>
         <nav v-for="col in footerCols" :key="col.title" :aria-label="col.title" class="app-footer-col">
           <h4>{{ col.title }}</h4>
@@ -49,6 +50,7 @@ import { onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import NavSearch from '@/components/NavSearch.vue'
+import EmailSignup from '@/components/EmailSignup.vue'
 
 const route = useRoute()
 

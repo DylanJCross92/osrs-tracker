@@ -2860,3 +2860,25 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .ov-bar-skills { display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; gap: 4px; width: 40px; min-height: 40px; }
 .ov-bar-skills img { display: block; width: 18px; height: 18px; }
 @media (max-width: 520px) { .ov-bar-skills { gap: 3px; width: 35px; min-height: 35px; } .ov-bar-skills img { width: 16px; height: 16px; } }
+
+/* email signup (footer and homepage card) */
+.signup { display: flex; flex-direction: column; gap: 8px; max-width: 340px; margin-top: 14px; }
+.signup-label { margin: 0; color: var(--text); font-size: 0.82rem; font-weight: 600; max-width: none; }
+.signup-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.signup-row input[type='email'] { flex: 1 1 160px; min-width: 0; height: 40px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); color: var(--text); font-family: inherit; font-size: 0.9rem; }
+.signup-row input[type='email']:focus { outline: none; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); }
+.signup-row .btn { height: 40px; padding: 0 16px; white-space: nowrap; }
+.signup .signup-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.signup-fine, .app-footer-about .signup-fine { margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.45; max-width: none; }
+.signup-fine a { text-decoration: underline; }
+.signup-error, .app-footer-about .signup-error { margin: 0; color: #d98a78; font-size: 0.8rem; max-width: none; }
+.signup-done, .app-footer-about .signup-done { margin: 0; color: var(--text); font-size: 0.85rem; max-width: none; }
+.signup-done span { color: var(--xp-green); font-weight: 700; margin-right: 4px; }
+.signup-card { max-width: none; margin: 0; flex-direction: row; align-items: center; justify-content: space-between; gap: 20px 32px; flex-wrap: wrap; }
+.signup-card .signup-copy { flex: 1 1 280px; }
+.signup-card .signup-copy h3 { margin: 0 0 4px; font-size: 1.15rem; }
+.signup-card .signup-copy p { margin: 0; color: var(--muted); font-size: 0.9rem; max-width: 520px; }
+.signup-card .signup-row { flex: 1 1 340px; max-width: 460px; }
+.signup-card .signup-fine, .signup-card .signup-error { flex: 1 1 100%; }
+.signup-card.is-done { justify-content: flex-start; }
+.home-news { padding: 22px 24px; }

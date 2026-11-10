@@ -122,3 +122,18 @@ CREATE TABLE IF NOT EXISTS milestone_cheers (
   UNIQUE (player_id, milestone_type, skill, value, visitor_hash)
 );
 CREATE INDEX IF NOT EXISTS milestone_cheers_lookup_idx ON milestone_cheers (player_id, milestone_type, skill, value);
+
+
+-- People who asked to hear about news and new features (for example profile claiming). Only an email address and
+-- where they signed up from; nothing else. unsub_token goes in the link of every email we send so anyone can leave
+-- with one click. Rows are never sent to anyone, and unsubscribed rows stay (flagged) so we do not email them again.
+CREATE TABLE IF NOT EXISTS email_subscribers (
+  id SERIAL PRIMARY KEY,
+  email TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT '',
+  unsub_token TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  unsubscribed_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS email_subscribers_email_idx ON email_subscribers (lower(email));
+CREATE UNIQUE INDEX IF NOT EXISTS email_subscribers_token_idx ON email_subscribers (unsub_token);

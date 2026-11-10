@@ -6,6 +6,7 @@ import express from 'express'
 import cors from 'cors'
 import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
+import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
@@ -31,6 +32,7 @@ app.use(express.json())
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
 app.use('/api', recordsRouter)
+app.use('/api/newsletter', subscribersRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())

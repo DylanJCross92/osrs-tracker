@@ -241,7 +241,12 @@
       <div v-else class="card"><p class="empty-hint">Be the first, track a player above and the community activity starts here.</p></div>
     </section>
 
-    <!-- 6. Final CTA -->
+    <!-- 6. Stay in the loop -->
+    <section class="card home-news" aria-label="Email updates">
+      <EmailSignup source="home" variant="card" heading="Be first to hear what's next" blurb="New features are on the way, including claiming your profile. Leave your email and we'll let you know when they land." />
+    </section>
+
+    <!-- 7. Final CTA -->
     <section class="card home-final">
       <h2>Ready to Track Your Next 99?</h2>
       <p>Free, no sign-up, just your RSN.</p>
@@ -269,6 +274,7 @@ import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
 import { track } from '@/utils/analytics'
 import CheerPill from '@/components/CheerPill.vue'
+import EmailSignup from '@/components/EmailSignup.vue'
 import FeatureArt from '@/components/home/FeatureArt.vue'
 
 const router = useRouter()

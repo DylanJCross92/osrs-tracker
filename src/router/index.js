@@ -12,6 +12,7 @@ const routes = [
   { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
   { path: '/privacy', name: 'privacy', component: () => import('@/views/PrivacyView.vue') },
   { path: '/contact', name: 'contact', component: () => import('@/views/ContactView.vue') },
+  { path: '/unsubscribe', name: 'unsubscribe', component: () => import('@/views/UnsubscribeView.vue') },
   {
     path: '/discover',
     name: 'discover',
