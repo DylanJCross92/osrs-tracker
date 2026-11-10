@@ -13,10 +13,11 @@
 
     <div class="ov-week-body">
       <div class="ov-bars" role="list">
-        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}. Open day recap`" @click="$emit('day', d.raw)">
+        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}${d.top.length ? ', mostly ' + d.top.map((s) => s.skill).join(', ') : ''}. Open day recap`" @click="$emit('day', d.raw)">
           <span class="ov-bar-xp">{{ d.xp > 0 ? formatXp(d.xp) : '-' }}</span>
           <span class="ov-bar-track"><i :style="{ height: `${d.pct}%` }" /></span>
           <span class="ov-bar-day">{{ d.today ? 'Today' : d.label }}</span>
+          <span class="ov-bar-skills" aria-hidden="true"><img v-for="s in d.top" :key="s.skill" :src="skillIconSrc(s.skill)" :title="`${s.skill} +${s.xp.toLocaleString('en-US')} XP`" alt="" width="20" height="20" /></span>
           <svg v-if="d.best" class="ov-bar-star" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg>
         </button>
       </div>
@@ -64,6 +65,8 @@ const bars = computed(() =>
     label: d.label,
     xp: d.xp,
     raw: d,
+    // The four skills that gained the most that day (days come with their skills sorted, biggest first).
+    top: (d.skills || []).filter((s) => s.xp > 0).slice(0, 4),
     today: i === props.days.length - 1,
     best: d.xp > 0 && d.xp === bestXp.value && activeDays.value > 1,
     pct: d.xp > 0 ? Math.max((d.xp / max.value) * 100, 6) : 0,
