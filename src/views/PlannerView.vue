@@ -19,10 +19,11 @@
           <form class="add-player-form" @submit.prevent="loadPlayer">
             <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
             <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-            <input v-model="username" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" />
+            <input v-model="username" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
             <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">{{ lookingUp ? 'Finding…' : 'Find Player' }}</button>
             <button v-if="player" class="btn btn-ghost" type="button" @click="editingPlayer = false">Cancel</button>
           </form>
+          <RecentPlayers v-if="searchFocused && !username.trim()" @pick="pickSuggestion" />
           <ul v-if="suggestions.length" class="search-suggest">
             <li class="suggest-head">Already tracked</li>
             <li v-for="sg in suggestions" :key="sg.username">
@@ -198,6 +199,8 @@ import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
+import RecentPlayers from '@/components/RecentPlayers.vue'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
@@ -282,6 +285,7 @@ function startChangePlayer() {
   lookupError.value = ''
 }
 
+const searchFocused = ref(false)
 // Typeahead: partial, case-insensitive matches among already-tracked players.
 const suggestions = ref([])
 let suggestTimer = null
@@ -334,6 +338,7 @@ async function loadPlayer() {
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     player.value = found
+    recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
     // Goals keep the stats they were created with. Newer stats are offered through "Refresh from player stats".

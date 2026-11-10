@@ -25,8 +25,9 @@
         <div class="suggest-wrap">
         <label class="disc-search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-          <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" />
+          <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" @focus="searchFocused = true" @blur="searchFocused = false" />
         </label>
+        <RecentPlayers v-if="searchFocused && !query.trim()" @pick="(o) => router.push(profileTo(o.username))" />
         <ul v-if="suggestions.length || showNewRow" class="search-suggest">
           <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
           <li v-for="sg in suggestions" :key="sg.username">
@@ -51,11 +52,13 @@
       <RouterLink v-if="spotlight" :to="profileTo(spotlight.p.username)" class="disc-spot">
         <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'day' ? 'today' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
         <span class="disc-spot-top">
-          <span v-if="spotlight.topSkill" class="disc-spot-avatar"><img :src="skillIconSrc(spotlight.topSkill)" :alt="spotlight.topSkill" width="34" height="34" /></span>
+          <span class="disc-spot-avatar" aria-hidden="true"><PlayerAvatar :name="spotlight.p.username" /></span>
           <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" /></span>
         </span>
         <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString('en-US') }} <small>XP</small></span>
-        <span v-if="spotlight.topSkill" class="disc-spot-chip">mostly {{ spotlight.topSkill }} <b>+{{ formatXp(spotlight.topSkillXp) }}</b></span>
+        <span v-if="spotlight.topSkills.length" class="disc-spot-skills">
+          <span v-for="s in spotlight.topSkills" :key="s.skill" class="disc-spot-chip"><img :src="skillIconSrc(s.skill)" alt="" width="18" height="18" />{{ s.skill }} <b>+{{ formatXp(s.xp) }}</b></span>
+        </span>
         <span class="disc-spot-cta">View profile →</span>
       </RouterLink>
     </section>
@@ -310,10 +313,13 @@
 </template>
 
 <script setup>
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
+import RecentPlayers from '@/components/RecentPlayers.vue'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import CheerPill from '@/components/CheerPill.vue'
 import { playersApi } from '@/api/players'
 import { ApiError } from '@/api/client'
@@ -442,13 +448,14 @@ const spotlights = computed(() =>
 const spotlight = computed(() => {
   for (const key of ['day', 'week', 'month']) {
     const top = [...players.value].filter((p) => p.gains?.[key]?.xp > 0).sort((a, b) => b.gains[key].xp - a.gains[key].xp)[0]
-    if (top) return { p: top, period: key, xp: top.gains[key].xp, topSkill: top.gains[key].topSkill, topSkillXp: top.gains[key].topSkillXp }
+    if (top) return { p: top, period: key, xp: top.gains[key].xp, topSkill: top.gains[key].topSkill, topSkillXp: top.gains[key].topSkillXp, topSkills: top.gains[key].topSkills || [] }
   }
   return null
 })
 
 // --- search ---
 const query = ref('')
+const searchFocused = ref(false)
 const suggestions = ref([])
 const searched = ref(false)
 let searchTimer = null
@@ -511,6 +518,7 @@ async function trackNew() {
     await store.addPlayer(name)
     const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
     addedPlayer.value = { username: found?.username || name, displayName: found?.displayName || name }
+    recordRecent(addedPlayer.value)
     track('player_added', { source: 'discover', is_new_player: true })
     showToast(`Now tracking ${addedPlayer.value.displayName}, checking Wise Old Man for history in the background.`)
     load()
@@ -518,6 +526,7 @@ async function trackNew() {
     if (err instanceof ApiError && err.status === 409) {
       const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
       addedPlayer.value = { username: found?.username || name, displayName: found?.displayName || name }
+      recordRecent(addedPlayer.value)
     } else {
       addError.value = err instanceof ApiError ? err.message : 'Could not add that player.'
       track('player_search_result', { source: 'discover', result: 'error', status: err instanceof ApiError ? err.status : 0 })

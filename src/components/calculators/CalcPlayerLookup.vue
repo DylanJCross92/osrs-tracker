@@ -11,10 +11,11 @@
       <form class="add-player-form" @submit.prevent="find">
         <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
         <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-        <input v-model="name" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS username" data-1p-ignore data-lpignore="true" />
+        <input v-model="name" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS username" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
         <button class="btn btn-primary" type="submit" :disabled="loading || !name.trim()">{{ loading ? 'Finding…' : 'Load my stats' }}</button>
         <button v-if="player" class="btn btn-ghost" type="button" @click="editing = false">Cancel</button>
       </form>
+      <RecentPlayers v-if="searchFocused && !name.trim()" @pick="pick" />
       <ul v-if="suggestions.length" class="search-suggest">
         <li class="suggest-head">Already tracked</li>
         <li v-for="sg in suggestions" :key="sg.username">
@@ -32,6 +33,8 @@ import { computed, ref, watch } from 'vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
+import RecentPlayers from '@/components/RecentPlayers.vue'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import { track } from '@/utils/analytics'
 import { formatRelative } from '@/utils/time'
 import { levelAtXp, formatNum } from '@/utils/planner'
@@ -45,6 +48,7 @@ const player = ref(null)
 const editing = ref(false)
 const loading = ref(false)
 const error = ref('')
+const searchFocused = ref(false)
 
 const xp = computed(() => (props.skill === 'Overall' ? player.value?.latest?.overallXp : player.value?.latest?.skills?.[props.skill]?.xp) ?? 0)
 const level = computed(() => levelAtXp(xp.value, true))
@@ -97,6 +101,7 @@ async function find() {
     const found = lookup()
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     player.value = found
+    recordRecent(found)
     name.value = found.displayName
     editing.value = false
     emit('loaded', found)

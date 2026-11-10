@@ -22,11 +22,16 @@
           maxlength="12"
           name="rsn"
           aria-label="OSRS username"
+          data-1p-ignore
+          data-lpignore="true"
+          @focus="searchFocused = true"
+          @blur="searchFocused = false"
         />
-        <button class="btn btn-primary" type="submit" :disabled="adding || !newUsername.trim()">
+        <button v-if="newUsername.trim() || adding" class="btn btn-primary" type="submit" :disabled="adding || !newUsername.trim()">
           {{ adding ? 'Adding…' : 'Start Tracking' }}
         </button>
       </form>
+      <RecentPlayers v-if="searchFocused && !newUsername.trim()" class="home-suggest" @pick="openRecent" />
       <ul v-if="suggestions.length" class="search-suggest home-suggest">
         <li class="suggest-head">Already tracked</li>
         <li v-for="sg in suggestions" :key="sg.username">
@@ -129,7 +134,7 @@
       <div v-else-if="example" class="card home-preview">
         <div class="home-preview-main">
           <div class="home-preview-head">
-            <span class="home-preview-avatar"><img v-if="example.highest" :src="skillIconSrc(example.highest.skill)" :alt="example.highest.skill" width="34" height="34" /></span>
+            <span class="home-preview-avatar"><PlayerAvatar :name="example.username || example.displayName" /></span>
             <div>
               <span class="home-preview-label">Example profile</span>
               <h3>{{ example.displayName }}<PlayerBadge :label="example.badge" /></h3>
@@ -246,6 +251,7 @@
 </template>
 
 <script setup>
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
@@ -256,6 +262,8 @@ import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
+import RecentPlayers from '@/components/RecentPlayers.vue'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import XpLineChart from '@/components/XpLineChart.vue'
 import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
@@ -357,6 +365,7 @@ async function submitAdd() {
     showToast(`Now tracking ${username}, checking Wise Old Man for history in the background.`)
     trackedName.value = username
     newUsername.value = ''
+    recordRecent({ username: store.players.find((x) => x.username.toLowerCase() === username.toLowerCase())?.username || username, displayName: username })
   } catch (err) {
     if (err instanceof ApiError && err.status === 409) {
       // Already tracked, the useful thing is to open their profile.
@@ -395,6 +404,13 @@ watch(
     }
   },
 )
+
+// Focusing the empty box lists the last few players you opened (see RecentPlayers).
+const searchFocused = ref(false)
+function openRecent(o) {
+  track('search_suggestion_selected', { source: 'home_recent' })
+  router.push({ name: 'playerDetail', params: { username: o.username } })
+}
 
 // Typeahead: partial, case-insensitive matches among already-tracked players.
 const suggestions = ref([])

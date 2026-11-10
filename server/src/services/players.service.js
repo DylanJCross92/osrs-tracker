@@ -22,15 +22,19 @@ function computeGain(row, period) {
   const baselineSkills = row[`baseline_skills_${period}`]
   let topSkill = null
   let topSkillXp = 0
+  const gainedBySkill = []
   for (const [name, skill] of Object.entries(row.skills || {})) {
     const prevXp = baselineSkills?.[name]?.xp ?? skill.xp
     const gained = skill.xp - prevXp
+    if (gained > 0) gainedBySkill.push({ skill: name, xp: gained })
     if (gained > topSkillXp) {
       topSkillXp = gained
       topSkill = name
     }
   }
-  return { xp, topSkill, topSkillXp }
+  // The two skills that gained the most, for cards that show more than the single top skill.
+  const topSkills = gainedBySkill.sort((a, b) => b.xp - a.xp).slice(0, 2)
+  return { xp, topSkill, topSkillXp, topSkills }
 }
 
 // xp gained per skill since a period's baseline (only skills that gained),

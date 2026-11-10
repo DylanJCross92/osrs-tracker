@@ -23,7 +23,7 @@
     </div>
     <div class="detail-body">
       <div class="profile-avatar" aria-hidden="true">
-        <img v-if="topSkill" :src="skillIconSrc(topSkill.skill)" :alt="topSkill.skill" width="40" height="40" />
+        <PlayerAvatar :name="player?.username || usernameParam" />
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" /></h1>
@@ -303,12 +303,14 @@
 </template>
 
 <script setup>
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { useRivals } from '@/composables/useRivals'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
@@ -356,6 +358,8 @@ const player = computed(
   () => store.players.find((p) => p.username.toLowerCase() === usernameParam.value.toLowerCase()) ?? null,
 )
 const playerId = computed(() => player.value?.id ?? null)
+// Opening a real profile puts the player at the top of the recent-players lists in the search boxes.
+watch(player, (p) => p && recordRecent(p), { immediate: true })
 
 watch(
   [player, usernameParam],

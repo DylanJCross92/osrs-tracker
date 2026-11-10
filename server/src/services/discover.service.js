@@ -37,9 +37,9 @@ function compact(p) {
     capturedAt: l?.capturedAt ?? null,
     highest: highest ? { skill: highest[0], level: highest[1].level } : null,
     gains: {
-      day: p.gains?.day ? { xp: p.gains.day.xp, topSkill: p.gains.day.topSkill, topSkillXp: p.gains.day.topSkillXp } : null,
-      week: p.gains?.week ? { xp: p.gains.week.xp, topSkill: p.gains.week.topSkill, topSkillXp: p.gains.week.topSkillXp } : null,
-      month: p.gains?.month ? { xp: p.gains.month.xp, topSkill: p.gains.month.topSkill, topSkillXp: p.gains.month.topSkillXp } : null,
+      day: p.gains?.day ? { xp: p.gains.day.xp, topSkill: p.gains.day.topSkill, topSkillXp: p.gains.day.topSkillXp, topSkills: p.gains.day.topSkills } : null,
+      week: p.gains?.week ? { xp: p.gains.week.xp, topSkill: p.gains.week.topSkill, topSkillXp: p.gains.week.topSkillXp, topSkills: p.gains.week.topSkills } : null,
+      month: p.gains?.month ? { xp: p.gains.month.xp, topSkill: p.gains.month.topSkill, topSkillXp: p.gains.month.topSkillXp, topSkills: p.gains.month.topSkills } : null,
     },
     skillGains: p.skillGains,
     skillLevels: Object.fromEntries(Object.entries(l?.skills || {}).map(([k, v]) => [k, { level: v.level, xp: v.xp }])),

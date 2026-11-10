@@ -7,7 +7,7 @@
         <label class="cmp-field cmp-field-a">
           <i class="cmp-key cmp-key-a" aria-hidden="true" />
           <input ref="elA" v-model="inputA" type="text" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @keydown="onKey('a', $event)" />
-          <CompareSuggest v-if="focused === 'a' && options.length" :options="options" :heading="heading" :active="hi" @pick="pick('a', $event)" @hover="hi = $event" />
+          <CompareSuggest v-if="focused === 'a' && options.length" :options="options" :heading="heading" :active="hi" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button type="button" class="cmp-swap" aria-label="Swap the two players" title="Swap players" @click="swapInputs">
           <span class="cmp-swap-vs">VS</span>
@@ -16,7 +16,7 @@
         <label class="cmp-field cmp-field-b">
           <i class="cmp-key cmp-key-b" aria-hidden="true" />
           <input ref="elB" v-model="inputB" type="text" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @keydown="onKey('b', $event)" />
-          <CompareSuggest v-if="focused === 'b' && options.length" :options="options" :heading="heading" :active="hi" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" />
+          <CompareSuggest v-if="focused === 'b' && options.length" :options="options" :heading="heading" :active="hi" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit">Compare</button>
       </form>
@@ -52,7 +52,7 @@
           <section class="card cmp-head">
             <div class="cmp-head-grid">
               <div v-for="s in [sideA, sideB]" :key="s.key" class="cmp-player" :class="{ 'is-lead': leader === s.key }">
-                <span class="cmp-avatar" aria-hidden="true"><img v-if="s.top" :src="skillIconSrc(s.top.skill)" :alt="s.top.skill" width="32" height="32" /></span>
+                <span class="cmp-avatar" aria-hidden="true"><PlayerAvatar :name="s.player.username" /></span>
                 <RouterLink class="cmp-name" :to="{ name: 'playerDetail', params: { username: s.player.username } }">{{ s.player.displayName }}</RouterLink>
                 <span class="cmp-meta">Overall {{ s.latest.overallLevel.toLocaleString('en-US') }} · {{ formatXp(s.latest.overallXp) }} XP</span>
                 <span v-if="leader === s.key" class="cmp-crown">Ahead {{ periodPhrase }}</span>
@@ -111,6 +111,7 @@
 </template>
 
 <script setup>
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
@@ -124,6 +125,7 @@ import { trackedSnapshots, dailyXp, compareSkills, compareHeadline, skillLeads, 
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
 import CompareSuggest from '@/components/compare/CompareSuggest.vue'
+import { useRecentPlayers, recordRecent } from '@/composables/useRecentPlayers'
 import { playersApi } from '@/api/players'
 import CompareDays from '@/components/compare/CompareDays.vue'
 import CompareTape from '@/components/compare/CompareTape.vue'
@@ -187,11 +189,17 @@ const recommended = computed(() =>
     .map(asOption),
 )
 const typing = computed(() => !!focused.value && termOf(focused.value).length >= 2)
+const { options: recentOptions, remove: removeRecentPlayer } = useRecentPlayers()
 const options = computed(() => {
   if (!focused.value) return []
   const skip = otherName(focused.value)
-  const list = typing.value ? found.value.map(asOption) : recommended.value
-  return list.filter((o) => o.username.toLowerCase() !== skip).slice(0, 6)
+  const ok = (o) => o.username.toLowerCase() !== skip
+  if (typing.value) return found.value.map(asOption).filter(ok).slice(0, 6)
+  // Empty box: your recent players first, then the biggest recent gainers to fill the list.
+  const recents = recentOptions.value.filter(ok)
+  const seen = new Set(recents.map((o) => o.username.toLowerCase()))
+  const rest = recommended.value.filter((o) => ok(o) && !seen.has(o.username.toLowerCase()))
+  return [...recents, ...rest].slice(0, 6)
 })
 const heading = computed(() => (typing.value ? 'Matching players' : 'Recommended players'))
 
@@ -230,7 +238,7 @@ function pick(k, o) {
   inputOf(k).value = o.displayName
   found.value = []
   focused.value = ''
-  track('compare_suggestion_selected', { side: k, source: typing.value ? 'search' : 'recommended' })
+  track('compare_suggestion_selected', { side: k, source: typing.value ? 'search' : o.recent ? 'recent' : 'recommended' })
   // Move on to the other box when it is still empty, so picking two players takes two taps.
   const next = k === 'a' ? elB : elA
   if (!inputOf(k === 'a' ? 'b' : 'a').value.trim()) next.value?.focus()
@@ -305,6 +313,7 @@ async function loadSide(key, name, id) {
     return
   }
   side.player = player
+  recordRecent(player)
   try {
     applySnapshots(side, await store.fetchSnapshots(player.id))
   } catch {
