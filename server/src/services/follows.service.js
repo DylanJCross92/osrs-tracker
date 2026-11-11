@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import { listPlayers } from './players.service.js'
 import { achievementDefinitions } from './milestones.service.js'
+import { addNotification, ownerOfPlayer } from './inbox.service.js'
 
 export const MAX_FOLLOWS = 25
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
@@ -21,11 +22,37 @@ export async function listFollows(userId) {
   return rows.map((r) => ({ username: r.username, displayName: r.display_name }))
 }
 
+/**
+ * Tells the account that owns a profile that someone started following it. The follower is named only when they own a
+ * profile themselves (their RSN is public); otherwise it says "Someone", never an email. Once per follower per profile,
+ * so unfollowing and following again does not notify twice. Never throws.
+ */
+async function notifyNewFollower(followerId, playerId) {
+  try {
+    const ownerId = await ownerOfPlayer(playerId)
+    if (!ownerId || ownerId === followerId) return
+    const { rows: mine } = await pool.query(
+      `SELECT p.username, p.display_name FROM profile_claims c JOIN players p ON p.id = c.player_id WHERE c.user_id = $1 AND c.status = 'verified' ORDER BY c.decided_at ASC LIMIT 1`,
+      [followerId],
+    )
+    const { rows: theirs } = await pool.query('SELECT username FROM players WHERE id = $1', [playerId])
+    await addNotification(ownerId, {
+      type: 'new_follower',
+      text: `${mine[0]?.display_name || 'Someone'} started following you`,
+      link: `/player/${encodeURIComponent(mine[0]?.username || theirs[0]?.username || '')}`,
+      dedupeKey: `follow:${followerId}:${playerId}`,
+    })
+  } catch (err) {
+    console.error('[follows] could not notify the owner:', err.message)
+  }
+}
+
 export async function followPlayer(userId, playerId) {
   const { rows } = await pool.query('SELECT count(*)::int AS n FROM follows WHERE user_id = $1', [userId])
   const already = await pool.query('SELECT 1 FROM follows WHERE user_id = $1 AND player_id = $2', [userId, playerId])
   if (!already.rowCount && rows[0].n >= MAX_FOLLOWS) throw new FollowError(`You can follow up to ${MAX_FOLLOWS} players. Unfollow one first.`)
-  await pool.query('INSERT INTO follows (user_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, playerId])
+  const { rowCount } = await pool.query('INSERT INTO follows (user_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, playerId])
+  if (rowCount) notifyNewFollower(userId, playerId)
 }
 
 export async function unfollowPlayer(userId, playerId) {
@@ -41,7 +68,10 @@ export async function setFollows(userId, names) {
   const { rows } = clean.length ? await pool.query('SELECT id FROM players WHERE lower(username) = ANY($1::text[])', [clean]) : { rows: [] }
   const ids = rows.map((r) => r.id)
   await pool.query('DELETE FROM follows WHERE user_id = $1 AND NOT (player_id = ANY($2::int[]))', [userId, ids])
-  for (const id of ids) await pool.query('INSERT INTO follows (user_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, id])
+  for (const id of ids) {
+    const { rowCount } = await pool.query('INSERT INTO follows (user_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, id])
+    if (rowCount) notifyNewFollower(userId, id)
+  }
   return listFollows(userId)
 }
 
