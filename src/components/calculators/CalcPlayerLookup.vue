@@ -8,8 +8,8 @@
       <button class="btn-text" type="button" @click="clear">Clear</button>
     </div>
     <div v-else class="suggest-wrap">
-      <form class="add-player-form" @submit.prevent="find">
-        <input v-model="name" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS username" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
+      <form class="add-player-form" autocomplete="off" @submit.prevent="find">
+        <input v-model="name" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS name (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS player name" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
         <button class="btn btn-primary" type="submit" :disabled="loading || !name.trim()">{{ loading ? 'Finding…' : 'Load my stats' }}</button>
         <button v-if="player" class="btn btn-ghost" type="button" @click="editing = false">Cancel</button>
       </form>

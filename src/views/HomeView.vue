@@ -6,17 +6,17 @@
       <p class="home-sub">Track every XP gain, explore your history, and plan your next 99.</p>
 
       <div class="suggest-wrap home-suggest-wrap">
-      <form class="home-search" @submit.prevent="submitAdd">
+      <form class="home-search" autocomplete="off" @submit.prevent="submitAdd">
         <input
           ref="searchInput"
           v-model="newUsername"
           type="search"
-          placeholder="Enter your OSRS username"
+          placeholder="Enter your OSRS name"
           :disabled="adding"
           autocomplete="off"
           maxlength="12"
           name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
-          aria-label="OSRS username"
+          aria-label="OSRS player name"
           data-1p-ignore
           data-lpignore="true"
           @focus="searchFocused = true"

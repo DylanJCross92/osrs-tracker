@@ -3192,3 +3192,15 @@ input[type='search']::-webkit-search-results-decoration { display: none; -webkit
   .planner .add-player-form input { flex: 1 1 100%; }
   .planner .add-player-form .btn { flex: 1 1 0; }
 }
+
+/* iPhones and iPads zoom the page when a field with text smaller than 16px gets focus. On touch screens every field is
+   at least 16px, so tapping one never changes the view. (Fields that are already larger keep their size below.) */
+@media (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='hidden']),
+  select,
+  textarea { font-size: 16px !important; }
+  .home-search input[type='search'], .home-search input[type='text'] { font-size: 1.05rem !important; }
+  .cl-code-input, .adm-code-input, .claim-code { font-size: 1.15rem !important; }
+}
+/* The room kept for the Start Tracking button is only needed once something is typed, so the placeholder gets the full width. */
+.home-search input[type='search']:placeholder-shown { padding-right: 22px; }
