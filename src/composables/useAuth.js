@@ -86,6 +86,25 @@ export async function refreshProfiles() {
   }
 }
 
+/** Resolves once this browser's sign-in and the profiles the account owns are known (or after a few seconds, whichever is first). */
+export function waitForAuth(timeoutMs = 4000) {
+  const done = () => ready.value && profilesReady.value
+  if (done()) return Promise.resolve()
+  return new Promise((resolve) => {
+    let stop = () => {}
+    const timer = setTimeout(() => {
+      stop()
+      resolve()
+    }, timeoutMs)
+    stop = watch([ready, profilesReady], () => {
+      if (!done()) return
+      clearTimeout(timer)
+      stop()
+      resolve()
+    })
+  })
+}
+
 /** Asks the server what needs attention. Quiet on failure: the badge just keeps its last value. */
 export async function refreshNotifications() {
   if (!user.value) {

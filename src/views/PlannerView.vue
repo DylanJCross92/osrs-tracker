@@ -252,7 +252,7 @@ import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useRivals } from '@/composables/useRivals'
-import { useAuth } from '@/composables/useAuth'
+import { useAuth, waitForAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
@@ -377,7 +377,23 @@ function pickSuggestion(sg) {
 }
 
 let playersFreshened = false
+const OWN_PROFILE_KEY = 'tickgains-planner-own-profile'
+function rememberOwnProfile(name) {
+  try {
+    localStorage.setItem(OWN_PROFILE_KEY, String(name))
+  } catch {
+    /* storage unavailable */
+  }
+}
 const sameName = (a, b) => String(a || '').toLowerCase().replace(/[\s_-]+/g, '') === String(b || '').toLowerCase().replace(/[\s_-]+/g, '')
+// Searching for a player other than the one the plan on screen belongs to (the loaded player, or the player a saved plan was made
+// for) drops that plan. Goals entered by hand with no player behind them are kept. On an empty planner, the first player searched
+// for gets their own latest plan.
+function shouldSwitchPlayer(previous, found) {
+  if (previous && !sameName(previous.username, found.username)) return true
+  if (currentPlanId.value && openPlanIsForSomeoneElse(found)) return true
+  return !previous && !goals.value.length
+}
 function openPlanIsForSomeoneElse(found) {
   const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
   const rsn = saved?.player?.rsn
@@ -436,12 +452,13 @@ async function loadPlayer({ typed = false } = {}) {
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     const previous = player.value
     player.value = found
+    if (ownsLoadedProfile.value) rememberOwnProfile(found.username)
     if (typed) recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
     if (templatePending.value) personalizeTemplate()
     // Searching for a different player (or for the first player on an empty planner): start over for them.
-    else if (typed && ((previous && !sameName(previous.username, found.username)) || (!previous && !goals.value.length))) await switchPlanToPlayer(found)
+    else if (typed && shouldSwitchPlayer(previous, found)) await switchPlanToPlayer(found)
     // Goals keep the stats they were created with, and progress is measured from them.
     else if (!goals.value.length) statsAt.value = found.latest.capturedAt
     // A saved plan only stays open for the player it was made for. Looking at anyone else (a link from their profile, say)
@@ -1022,13 +1039,30 @@ watch(
 )
 
 onMounted(async () => {
+  // A plain visit while signed in opens the person's own profile. With several claimed profiles, the one used last.
+  const plainVisit = !Object.keys(route.query).length
+  let ownDefault = null
+  if (plainVisit) {
+    await waitForAuth()
+    if (loggedIn.value && profiles.value.length) {
+      let last = ''
+      try {
+        last = localStorage.getItem(OWN_PROFILE_KEY) || ''
+      } catch {
+        last = ''
+      }
+      ownDefault = profiles.value.find((p) => sameName(p.username, last)) || profiles.value[0]
+    }
+  }
   let restored = null
   if (route.query.g) restored = decodePlan(route.query, SKILL_NAMES)
   else if (typeof route.query.u === 'string') restored = { username: route.query.u, goals: [], hoursPerDay: 2 }
   else {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
-      if (saved && Array.isArray(saved.goals)) {
+      // The working copy is kept only when it is already for one of the person's own profiles; anyone else's is dropped.
+      const forSomeoneElse = ownDefault && saved?.username && !sameName(saved.username, ownDefault.username) && !profiles.value.some((p) => sameName(p.username, saved.username))
+      if (saved && Array.isArray(saved.goals) && !forSomeoneElse) {
         // Plans stored before global strategies pinned every goal to a method; the old default now follows the global strategy.
         saved.goals = saved.goals.map((g) => ({ ...g, methodId: g.methodId === AUTO_FAST || !g.methodId ? GLOBAL_STRATEGY : g.methodId, quests: g.quests || [], customXpPerHour: g.customXpPerHour || 0 }))
         restored = saved
@@ -1066,7 +1100,16 @@ onMounted(async () => {
     } else if (sameAsRemembered && remembered.shareId) {
       unsavedShareId.value = remembered.shareId
     }
-  } else if (!Object.keys(route.query).length && savedPlans.value.length) {
+  } else if (ownDefault) {
+    // Signed in with a claimed profile: that profile, with its latest saved plan if it has one (otherwise a blank planner).
+    const mine = savedPlans.value.find((p) => p.player?.rsn && (sameName(p.player.rsn, ownDefault.username) || sameName(p.player.rsn, ownDefault.displayName)))
+    if (mine) await loadSaved(mine, { silent: true })
+    else username.value = ownDefault.displayName
+  } else if (typeof route.query.u === 'string' && !route.query.g) {
+    // A link to plan for one player (from their profile): their latest saved plan, if they have one.
+    const theirs = savedPlans.value.find((p) => p.player?.rsn && sameName(p.player.rsn, route.query.u))
+    if (theirs) await loadSaved(theirs, { silent: true })
+  } else if (plainVisit && savedPlans.value.length) {
     // A plain visit with nothing in progress: pick up the most recently saved plan.
     await loadSaved(savedPlans.value[0], { silent: true })
   }
