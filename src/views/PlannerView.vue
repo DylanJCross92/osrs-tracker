@@ -378,6 +378,11 @@ function pickSuggestion(sg) {
 
 let playersFreshened = false
 const sameName = (a, b) => String(a || '').toLowerCase().replace(/[\s_-]+/g, '') === String(b || '').toLowerCase().replace(/[\s_-]+/g, '')
+function openPlanIsForSomeoneElse(found) {
+  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+  const rsn = saved?.player?.rsn
+  return !!rsn && !sameName(rsn, found.username) && !sameName(rsn, found.displayName)
+}
 function switchPlanToPlayer(found) {
   const was = currentPlanName.value
   unsavedShareId.value = ''
@@ -430,6 +435,12 @@ async function loadPlayer({ typed = false } = {}) {
     else if (typed && previous && goals.value.length && sameName(previous.username, found.username) === false) switchPlanToPlayer(found)
     // Goals keep the stats they were created with, and progress is measured from them.
     else if (!goals.value.length) statsAt.value = found.latest.capturedAt
+    // A saved plan only stays open for the player it was made for. Looking at anyone else (a link from their profile, say)
+    // shows the goals as an unsaved plan rather than as the saved one.
+    if (currentPlanId.value && openPlanIsForSomeoneElse(found)) {
+      currentPlanId.value = ''
+      currentPlanName.value = ''
+    }
     // A plan from a link that does not say when it started: if every goal starts exactly at this player's current XP, it was
     // made from these stats, so tracking can begin from them.
     else if (!statsAt.value && goals.value.every((g) => g.currentXp === found.latest.skills?.[g.skill]?.xp)) statsAt.value = found.latest.capturedAt
@@ -1037,7 +1048,9 @@ onMounted(async () => {
     }
     const here = planFingerprint({ hoursPerDay: hoursPerDay.value, globalStrategy: globalStrategy.value, gpValue: gpValue.value, goals: goals.value })
     const sameAsRemembered = remembered && Array.isArray(remembered.goals) && planFingerprint({ hoursPerDay: remembered.hoursPerDay, globalStrategy: remembered.strategy, gpValue: remembered.gpValue, goals: remembered.goals }) === here
-    const match = (sameAsRemembered && savedPlans.value.find((p) => p.id === remembered.planId)) || savedPlans.value.find((p) => planFingerprint(p) === here)
+    // A saved plan only matches when it was made for the player on screen (or for nobody in particular).
+    const forThisPlayer = (p) => !p.player?.rsn || !username.value || sameName(p.player.rsn, username.value)
+    const match = (sameAsRemembered && savedPlans.value.find((p) => p.id === remembered.planId && forThisPlayer(p))) || savedPlans.value.find((p) => forThisPlayer(p) && planFingerprint(p) === here)
     if (match) {
       currentPlanId.value = match.id
       currentPlanName.value = match.name
