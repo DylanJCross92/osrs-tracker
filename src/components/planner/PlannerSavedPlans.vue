@@ -44,7 +44,7 @@
                 <button class="saved-icon" type="button" title="Rename" aria-label="Rename" @click="startRename(p)">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" /></svg>
                 </button>
-                <button class="saved-icon" :class="{ on: shareFor(p.id) }" type="button" :title="shareFor(p.id) ? 'Sharing: manage the public link' : 'Share'" :aria-label="shareFor(p.id) ? 'Manage sharing' : 'Share'" @click="$emit('share', p)">
+                <button class="saved-icon" :class="{ on: shareFor(p.id) }" type="button" :title="shareFor(p.id) ? 'Sharing: manage the public link' : 'Share'" :aria-label="shareFor(p.id) ? 'Manage sharing' : 'Share'" @click="shareRow(p)">
                   <ShareIcon name="share" :size="18" />
                 </button>
                 <button class="saved-icon" type="button" title="Duplicate" aria-label="Duplicate" @click="$emit('duplicate', p.id)">
@@ -108,11 +108,17 @@ const { shareFor } = useSharedPlans()
 // Saving asks for a name in a small window; sharing a plan that was never saved asks first, then carries on to sharing.
 const saving = ref(false)
 const savingForShare = ref(false)
+function shareRow(p) {
+  open.value = false
+  emit('share', p)
+}
 function openSave(forShare) {
+  open.value = false
   savingForShare.value = forShare
   saving.value = true
 }
 function onShare() {
+  open.value = false
   if (props.currentId) emit('share-current', props.currentName)
   else openSave(true)
 }
