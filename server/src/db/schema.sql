@@ -273,3 +273,23 @@ CREATE INDEX IF NOT EXISTS profile_goals_player_idx ON profile_goals (player_id,
 -- The player a notification is about (its RSN), so the bell can show their picture. NULL when it is not about one
 -- player, or when the person should stay anonymous.
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS subject TEXT;
+
+-- A saved plan an owner has chosen to make public. Plans are private until shared; a row here is the public copy (a cleaned
+-- snapshot, so later edits only go public when the owner updates it). Turning sharing off deletes the row, which kills the
+-- link, and sharing again makes a new link. mode is 'static' (just the plan) or 'live' (also shows the owner's progress from
+-- their tracked XP). summary holds the owner's own estimates (hours, gp, days) for link previews.
+CREATE TABLE IF NOT EXISTS shared_plans (
+  id SERIAL PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  rsn TEXT NOT NULL DEFAULT '',
+  mode TEXT NOT NULL DEFAULT 'static' CHECK (mode IN ('static', 'live')),
+  plan JSONB NOT NULL,
+  summary JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, plan_id)
+);
+CREATE INDEX IF NOT EXISTS shared_plans_user_idx ON shared_plans (user_id, updated_at DESC);

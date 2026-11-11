@@ -54,6 +54,8 @@ const routes = [
     name: 'planner',
     component: () => import('@/views/PlannerView.vue'),
   },
+  // A plan someone made public: read-only, no account needed.
+  { path: '/plan/:slug', name: 'sharedPlan', component: () => import('@/views/SharedPlanView.vue') },
   {
     path: '/player/:username',
     name: 'playerDetail',

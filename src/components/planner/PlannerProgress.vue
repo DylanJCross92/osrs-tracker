@@ -46,7 +46,7 @@
       <span v-for="s in since.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
       <span v-if="since.skills.length > 4" class="pp-more">and {{ since.skills.length - 4 }} more</span>
     </p>
-    <p class="pp-foot">
+    <p v-if="!readonly" class="pp-foot">
       Progress is measured from the stats this plan started with. Estimates are based on your latest tracked XP.
       <button class="btn-text" type="button" @click="$emit('rebase')">Restart from today's stats</button>
     </p>
@@ -66,6 +66,8 @@ const props = defineProps({
   since: { type: Object, default: null },
   // The timeline entries (same order as the goals), for each goal's finish date.
   entries: { type: Array, default: () => [] },
+  // On a public plan page: no restart link and no personal notes.
+  readonly: { type: Boolean, default: false },
 })
 defineEmits(['rebase'])
 

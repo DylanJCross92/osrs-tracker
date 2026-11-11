@@ -3566,3 +3566,55 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .pp-mark:hover .pp-tip, .pp-mark.on .pp-tip, .pp-mark:focus .pp-tip { display: flex; }
 .pp-mark.tip-right .pp-tip { left: auto; right: -6px; transform: none; }
 .pp-mark.tip-left .pp-tip { left: -6px; transform: none; }
+
+/* sharing a plan */
+.sp-public { margin-left: 8px; padding: 1px 8px; border-radius: 999px; font-style: normal; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--xp-green); border: 1px solid rgba(124, 184, 105, 0.5); background: rgba(124, 184, 105, 0.1); vertical-align: middle; }
+.plan-share { max-width: 620px; }
+.ps-lead { margin: 0 0 14px; color: var(--muted); font-size: 0.92rem; }
+.ps-lead b { color: var(--text); }
+.ps-lead.ps-live { color: var(--text); }
+.ps-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--xp-green); margin-right: 4px; box-shadow: 0 0 0 3px rgba(124, 184, 105, 0.2); }
+.ps-modes { border: 0; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
+.ps-modes legend { padding: 0; margin-bottom: 6px; color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.ps-mode { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); cursor: pointer; }
+.ps-mode.on { border-color: var(--gold); background: rgba(217, 175, 82, 0.08); }
+.ps-mode.off { opacity: 0.55; cursor: not-allowed; }
+.ps-mode input { margin-top: 4px; accent-color: var(--gold); }
+.ps-mode b { display: block; }
+.ps-mode small { display: block; color: var(--muted); font-size: 0.8rem; margin-top: 2px; }
+.ps-link { display: flex; gap: 8px; margin: 16px 0 10px; }
+.ps-link input { flex: 1; min-width: 0; }
+.ps-stop { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--muted); font-size: 0.86rem; }
+
+/* public plan page */
+.shared-plan { display: flex; flex-direction: column; gap: 16px; }
+.sp-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 24px; }
+.sp-kicker { margin: 0 0 4px; color: var(--gold); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; display: flex; align-items: center; gap: 10px; }
+.sp-mode { padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border-strong); color: var(--muted); font-size: 0.7rem; letter-spacing: 0.06em; }
+.sp-mode.live { color: var(--xp-green); border-color: rgba(124, 184, 105, 0.5); }
+.sp-head h1 { margin: 0 0 4px; overflow-wrap: anywhere; }
+.sp-by { margin: 0; color: var(--muted); }
+.sp-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp-goals-title { margin: 18px 0 10px; font-size: 1.1rem; }
+.sp-goals { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.sp-goal { position: relative; padding: 10px 14px 12px; border-radius: 12px; background: linear-gradient(180deg, var(--panel-alt), var(--panel)); border: 1px solid var(--border); overflow: hidden; }
+.sp-goal.done { border-color: rgba(124, 184, 105, 0.45); }
+.sp-goal-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.sp-order { width: 24px; height: 24px; border-radius: 50%; background: var(--bg); border: 1px solid var(--border-strong); color: var(--muted); font-size: 0.74rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.sp-goal-title { display: flex; flex-direction: column; min-width: 90px; }
+.sp-goal-title em { font-style: normal; color: var(--muted); font-size: 0.85rem; }
+.sp-goal-method { flex: 1; min-width: 140px; color: var(--muted); font-size: 0.9rem; }
+.sp-goal-nums { display: flex; flex-wrap: wrap; gap: 4px 20px; font-size: 0.92rem; }
+.sp-goal-nums span { display: flex; flex-direction: column; }
+.sp-goal-nums small { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.sp-goal-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, 0.06); }
+.sp-goal-bar i { display: block; height: 100%; background: var(--gold-bright); }
+.sp-goal.done .sp-goal-bar i { background: var(--xp-green); }
+.sp-steps { margin-top: 8px; }
+.sp-steps summary { cursor: pointer; color: var(--gold-bright); font-size: 0.86rem; }
+.sp-cta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.sp-cta h2 { margin: 0 0 4px; }
+.sp-cta p { margin: 0; max-width: 560px; }
+.shared-plan .plan-tiles { margin-bottom: 14px; }
+.ps-template { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: rgba(217, 175, 82, 0.1); border: 1px solid var(--border-strong); font-size: 0.9rem; }
+.ps-template b { color: var(--gold-bright); }

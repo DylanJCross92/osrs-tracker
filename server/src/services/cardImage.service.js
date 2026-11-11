@@ -786,3 +786,88 @@ async function buildProfileCardTree(d) {
 export async function renderProfileCardPng(data) {
   return renderPng(await buildProfileCardTree(data))
 }
+
+// --- Shared plan card (what a pasted plan link unfurls into) -----------------------------------------------------------
+
+const planHours = (h) => (h == null ? '-' : h >= 100 ? `${Math.round(h).toLocaleString('en-US')} h` : `${parseFloat(h.toFixed(1))} h`)
+const planGp = (gp) => {
+  if (gp == null) return 'No GP data'
+  const abs = Math.abs(gp)
+  const n = abs >= 1e9 ? `${parseFloat((abs / 1e9).toFixed(2))}B` : abs >= 1e6 ? `${parseFloat((abs / 1e6).toFixed(1))}M` : abs >= 1e3 ? `${parseFloat((abs / 1e3).toFixed(1))}K` : String(abs)
+  return `${gp >= 0 ? '+' : '-'}${n} gp`
+}
+const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
+
+async function buildPlanCardTree({ name, rsn, mode, summary, plan }) {
+  const goals = summary.goals?.length ? summary.goals : plan.goals.map((g) => ({ skill: g.skill, fromLevel: 1, toLevel: 99 }))
+  const shown = goals.slice(0, 10)
+  const icons = await Promise.all(shown.map((g) => skillIconDataUri(g.skill)))
+  const title = clip(name, 40)
+  const tile = (label, value, color) =>
+    node('div', { display: 'flex', flexDirection: 'column', padding: '14px 22px', borderRadius: 18, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, flexShrink: 0 }, [
+      node('div', { fontSize: 20, fontWeight: 700, color: COLORS.muted, textTransform: 'uppercase', letterSpacing: '0.1em' }, label),
+      node('div', { display: 'flex', fontSize: 40, fontWeight: 800, color, marginTop: 4, whiteSpace: 'nowrap' }, value),
+    ])
+  const days = summary.days != null ? `${summary.days.toLocaleString('en-US')} day${summary.days === 1 ? '' : 's'}` : '-'
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 85% 20%, #3a2e14 0%, #1d1810 45%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 14 }, [
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'Training plan'),
+          node('div', { display: 'flex', fontSize: 20, fontWeight: 700, color: mode === 'live' ? COLORS.green : COLORS.muted, padding: '4px 14px', borderRadius: 999, border: `1px solid ${mode === 'live' ? COLORS.green : COLORS.border}` }, mode === 'live' ? 'Live progress' : 'Static plan'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', flexDirection: 'column' }, [
+        node('div', { display: 'flex', fontSize: title.length > 24 ? 62 : 80, fontWeight: 800, color: COLORS.cream, lineHeight: 1.05 }, title),
+        rsn ? node('div', { display: 'flex', fontSize: 34, fontWeight: 700, color: COLORS.gold, marginTop: 8 }, `by ${rsn}`) : null,
+        node(
+          'div',
+          { display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 24 },
+          [
+            ...shown.map((g, i) =>
+              node('div', { display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 24, fontWeight: 700 }, [
+                icons[i] ? image(icons[i], 28, 28) : null,
+                node('div', { display: 'flex' }, `${g.toLevel}`),
+              ].filter(Boolean)),
+            ),
+            goals.length > shown.length ? node('div', { display: 'flex', alignItems: 'center', fontSize: 22, color: COLORS.muted, padding: '6px 8px' }, `+${goals.length - shown.length} more`) : null,
+          ].filter(Boolean),
+        ),
+      ].filter(Boolean)),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }, [
+        node('div', { display: 'flex', gap: 14 }, [
+          tile('Training time', planHours(summary.totalHours), COLORS.cream),
+          tile('Net GP', planGp(summary.netGp), summary.netGp != null && summary.netGp < 0 ? '#e58a7c' : COLORS.green),
+          tile(`At ${plan.hoursPerDay} h/day`, days, COLORS.gold),
+        ]),
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }, [
+          node('div', { display: 'flex', fontSize: 24, fontWeight: 800, color: COLORS.gold, whiteSpace: 'nowrap' }, 'Use this plan, free'),
+          node('div', { display: 'flex', fontSize: 22, color: '#d8ccae', fontWeight: 700, marginTop: 4 }, 'tickgains.com'),
+        ]),
+      ]),
+    ],
+  )
+}
+
+/** A public share (see sharedPlans.js publicShape) -> PNG Buffer. */
+export async function renderPlanCardPng(share) {
+  return renderPng(await buildPlanCardTree(share))
+}

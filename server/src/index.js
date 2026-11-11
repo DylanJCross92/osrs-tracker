@@ -15,6 +15,8 @@ import { challengesRouter } from './routes/challenges.routes.js'
 import { followsRouter } from './routes/follows.routes.js'
 import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
+import { plansRouter } from './routes/plans.routes.js'
+import { getPublicShare } from './services/sharedPlans.service.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
@@ -52,6 +54,7 @@ app.use('/api', challengesRouter)
 app.use('/api', followsRouter)
 app.use('/api', profilePagesRouter)
 app.use('/api', goalsRouter)
+app.use('/api', plansRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -259,6 +262,29 @@ if (distExists) {
           description,
           imageUrl: goal ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/goals/${goal.id}/image.png` : `${SITE_URL}/og-default.png`,
           pageUrl: goal ? `${base}/goals/${goal.id}` : `${base}?tab=goals`,
+          noindex: true,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // A shared plan. The SPA draws the page; this gives the link its preview card. Plans are user content, so noindex.
+  app.get('/plan/:slug', async (req, res, next) => {
+    try {
+      const share = await getPublicShare(req.params.slug).catch(() => null)
+      if (!share) return res.sendFile(path.join(distPath, 'index.html'))
+      const s = share.summary || {}
+      const hours = s.totalHours == null ? null : s.totalHours >= 100 ? `${Math.round(s.totalHours).toLocaleString('en-US')} hours` : `${parseFloat(s.totalHours.toFixed(1))} hours`
+      const skills = (s.goals || []).length || share.plan.goals.length
+      const by = share.rsn ? ` by ${share.rsn}` : ''
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${share.name}${by} | TickGains training plan`,
+          description: `An Old School RuneScape training plan${by}: ${skills} skill goal${skills === 1 ? '' : 's'}${hours ? `, about ${hours} of training` : ''}${s.days != null ? ` (${s.days.toLocaleString('en-US')} days at ${share.plan.hoursPerDay} h/day)` : ''}. Open it, or use it as a starting point for your own plan on TickGains.`,
+          imageUrl: `${SITE_URL}/api/plans/public/${share.slug}/card.png?v=${new Date(share.updatedAt).getTime()}`,
+          pageUrl: `${SITE_URL}/plan/${share.slug}`,
           noindex: true,
         }),
       )

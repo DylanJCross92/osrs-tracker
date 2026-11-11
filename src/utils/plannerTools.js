@@ -17,6 +17,7 @@ import {
   DEFAULT_GP_VALUE,
   isAuto,
   planGoal,
+  planTotals,
   compareMethods,
   xpAtLevel,
   levelAtXp,
@@ -260,6 +261,34 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
     elapsedDays,
     aheadDays,
     schedule: aheadDays == null ? null : aheadDays > 0.5 ? 'ahead' : aheadDays < -0.5 ? 'behind' : 'on',
+  }
+}
+
+// --- Sharing ------------------------------------------------------------------
+
+/** Totals for a saved or shared plan from its own start, with no personal data: used for share previews and the public page. */
+export function summarizePlan(plan) {
+  const goals = plan.goals || []
+  const plans = goals.map((g) => planGoal(resolveGoal(g, plan.globalStrategy, plan.gpValue)))
+  const t = planTotals(plans, plan.hoursPerDay)
+  return {
+    totalHours: t.totalHours,
+    netGp: t.netGp,
+    days: t.days,
+    totalXp: t.totalXp,
+    goals: goals.map((g) => ({ skill: g.skill, fromLevel: levelAtXp(g.currentXp, true), toLevel: levelAtXp(g.targetXp, true) })),
+  }
+}
+
+/** The body the server expects when a saved plan is made public. */
+export function sharePayload(saved, mode) {
+  return {
+    planId: saved.id,
+    name: saved.name,
+    rsn: saved.player?.rsn || '',
+    mode,
+    plan: { hoursPerDay: saved.hoursPerDay, globalStrategy: saved.globalStrategy, gpValue: saved.gpValue, statsAt: saved.statsAt || null, goals: saved.goals },
+    summary: summarizePlan(saved),
   }
 }
 

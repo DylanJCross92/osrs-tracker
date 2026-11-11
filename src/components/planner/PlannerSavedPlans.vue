@@ -4,6 +4,7 @@
       <input v-model="name" type="text" maxlength="60" placeholder="Name this plan to save it" aria-label="Plan name" data-1p-ignore />
       <button class="btn btn-primary" type="submit" :disabled="!hasGoals">{{ currentId ? 'Update' : 'Save plan' }}</button>
       <button v-if="currentId" class="btn btn-ghost" type="button" @click="onSaveNew">Save as new</button>
+      <button class="btn btn-ghost sp-share" type="button" :disabled="!hasGoals" title="Get a public link to this plan" @click="$emit('share-current', name)">Share</button>
       <button class="btn btn-ghost sp-toggle" type="button" :aria-expanded="open" @click="open = !open">
         Saved plans<span class="sp-count">{{ plans.length }}</span><span class="sp-caret" aria-hidden="true">{{ open ? '▴' : '▾' }}</span>
       </button>
@@ -23,13 +24,14 @@
               <button class="btn-text" type="button" @click="doRename(p)">Save</button>
             </template>
             <template v-else>
-              <b>{{ p.name }}</b>
+              <b>{{ p.name }}<i v-if="shareFor(p.id)" class="sp-public" :title="`Public (${shareFor(p.id).mode === 'live' ? 'live progress' : 'static'})`">Public</i></b>
               <small>{{ p.goals.length }} skill{{ p.goals.length === 1 ? '' : 's' }}<template v-if="p.player.rsn"> · {{ p.player.rsn }}</template> · updated {{ new Date(p.updatedAt).toLocaleDateString() }}</small>
             </template>
           </div>
           <div class="saved-actions">
             <button class="btn-text" type="button" @click="load(p)">Load</button>
             <button class="btn-text" type="button" @click="startRename(p)">Rename</button>
+            <button class="btn-text" type="button" @click="$emit('share', p)">{{ shareFor(p.id) ? 'Sharing' : 'Share' }}</button>
             <button class="btn-text" type="button" @click="$emit('duplicate', p.id)">Duplicate</button>
             <button class="btn-text" type="button" @click="$emit('export', p)">Export</button>
             <button class="btn-text saved-delete" type="button" @click="$emit('delete', p.id)">Delete</button>
@@ -57,6 +59,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
+import { useSharedPlans } from '@/composables/useSharedPlans'
 
 const props = defineProps({
   plans: { type: Array, required: true },
@@ -65,9 +68,10 @@ const props = defineProps({
   hasGoals: { type: Boolean, default: false },
   importResult: { type: Object, default: null },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current'])
 
 const { loggedIn } = useAuth()
+const { shareFor } = useSharedPlans()
 const name = ref(props.currentName)
 watch(() => props.currentName, (v) => (name.value = v))
 const open = ref(false)

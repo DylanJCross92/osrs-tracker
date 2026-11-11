@@ -35,6 +35,15 @@
         <p v-else-if="!player" class="planner-hint">No username? Skip this and enter your current level or XP when you add a goal.</p>
       </template>
 
+      <div v-if="template" class="ps-template" role="status">
+        <span>
+          Using <b>{{ template.name }}</b><template v-if="template.rsn"> by {{ template.rsn }}</template>.
+          <template v-if="templatePending">Enter your RSN to start every goal from your own stats.</template>
+          <template v-else>Every goal now starts from your current stats. Nothing of the original player's progress was copied.</template>
+        </span>
+        <button class="btn-text" type="button" @click="template = null">Dismiss</button>
+      </div>
+
       <!-- Save the plan and open earlier ones from the top of the page -->
       <PlannerSavedPlans
         :plans="savedPlans"
@@ -50,7 +59,10 @@
         @delete="deleteSaved"
         @rename="renameSaved"
         @import="importSaved"
+        @share="openShare"
+        @share-current="shareCurrent"
       />
+      <SharePlanModal v-if="sharing" :plan="sharing" @close="sharing = null" />
     </section>
 
 
@@ -205,6 +217,9 @@ import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
 import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
 import PlannerGoalRail from '@/components/planner/PlannerGoalRail.vue'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
+import SharePlanModal from '@/components/planner/SharePlanModal.vue'
+import { sharedPlansApi } from '@/api/sharedPlans'
+import { useRivals } from '@/composables/useRivals'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
@@ -362,8 +377,9 @@ async function loadPlayer({ typed = false } = {}) {
     if (typed) recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
+    if (templatePending.value) personalizeTemplate()
     // Goals keep the stats they were created with, and progress is measured from them.
-    if (!goals.value.length) statsAt.value = found.latest.capturedAt
+    else if (!goals.value.length) statsAt.value = found.latest.capturedAt
     // A plan from a link that does not say when it started: if every goal starts exactly at this player's current XP, it was
     // made from these stats, so tracking can begin from them.
     else if (!statsAt.value && goals.value.every((g) => g.currentXp === found.latest.skills?.[g.skill]?.xp)) statsAt.value = found.latest.capturedAt
@@ -713,6 +729,77 @@ function saveCurrent(name, asNew) {
   track('planner_plan_saved', { goals: plan.goals.length })
   showToast(`Saved "${plan.name}".`)
 }
+// --- Using someone else's public plan ---------------------------------------------------------
+// "Use this plan" opens the planner with ?template=<slug>. The plan's goals, targets, methods, order and strategy come
+// across; every goal starts from the new player's own XP, and none of the owner's progress is copied.
+const template = ref(null)
+const templatePending = ref(false)
+const { me } = useRivals()
+
+function personalizeTemplate() {
+  if (!player.value?.latest) return
+  for (const g of goals.value) {
+    const xp = playerXp(g.skill) ?? 0
+    g.currentXp = Math.min(xp, g.targetXp)
+  }
+  statsAt.value = player.value.latest.capturedAt
+  templatePending.value = false
+  track('planner_template_personalized', { goals: goals.value.length })
+}
+
+async function loadTemplate(slug) {
+  let share
+  try {
+    share = (await sharedPlansApi.get(slug)).plan
+  } catch {
+    showToast('That plan is not shared any more.')
+    return false
+  }
+  // Keep whatever plan was on screen: it is saved before the template replaces it.
+  if (goals.value.length) {
+    const kept = savePlan(snapshotPlan(currentSnapshotState(), `Plan before using "${share.name}"`.slice(0, 60)))
+    if (kept) {
+      refreshSaved()
+      showToast('Your previous plan was saved to Saved plans.')
+    }
+  }
+  goals.value = share.plan.goals.map((g) => ({
+    skill: g.skill,
+    currentXp: 0,
+    targetXp: g.targetXp,
+    methodId: g.methodId,
+    customXpPerHour: g.customXpPerHour || 0,
+    quests: [...(g.quests || [])],
+  }))
+  hoursPerDay.value = share.plan.hoursPerDay
+  globalStrategy.value = share.plan.globalStrategy
+  gpValue.value = share.plan.gpValue
+  statsAt.value = null
+  currentPlanId.value = ''
+  currentPlanName.value = share.name.slice(0, 60)
+  template.value = { slug, name: share.name, rsn: share.rsn }
+  templatePending.value = true
+  expanded.value = new Set()
+  // Someone who has saved their own name elsewhere on the site is taken straight to their own numbers.
+  if (!username.value && me.value) username.value = me.value
+  track('planner_template_used', { goals: goals.value.length })
+  return true
+}
+
+// --- Sharing a plan publicly ---------------------------------------------------------------
+const sharing = ref(null)
+function openShare(stored) {
+  const res = validatePlan(stored)
+  if (res.error) return showToast(res.error)
+  sharing.value = res.plan
+}
+// Sharing the plan on screen: save it first (so the public copy matches what is shown), then open the share window.
+function shareCurrent(name) {
+  if (!goals.value.length) return
+  saveCurrent(name, false)
+  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+  if (saved) openShare(saved)
+}
 function applyPlan(plan) {
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests] }))
   hoursPerDay.value = plan.hoursPerDay
@@ -822,8 +909,9 @@ onMounted(async () => {
     if (restored.gpValue > 0) gpValue.value = restored.gpValue
     statsAt.value = restored.statsAt || null
   }
+  if (typeof route.query.template === 'string') await loadTemplate(route.query.template)
   // Only one goal card is open by default (none on phones).
-  if (goals.value.length && !isMobile()) expanded.value = new Set([goals.value[0].skill])
+  else if (goals.value.length && !isMobile()) expanded.value = new Set([goals.value[0].skill])
   // Re-hydrate a previously-loaded username so the header and refresh offer reflect the latest snapshot.
   if (username.value) await loadPlayer()
 })
