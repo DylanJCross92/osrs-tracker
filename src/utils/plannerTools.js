@@ -270,6 +270,48 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
   }
 }
 
+/**
+ * When will the plan really finish, going by how fast the player has actually been gaining XP in the goal skills?
+ * `snapshots` is the player's tracked history (oldest first, each with capturedAt and skills[skill].xp). The pace is measured
+ * over the last `windowDays` days, or since the plan started when that is shorter, and compared with the planned finish date.
+ * Returns { status: 'early' | 'late' | 'on', ... } or { status: 'none', reason } when there is too little to go on.
+ */
+export function projectFinish({ snapshots, goals, remainingXp, plannedDays, baselineAt, now = new Date(), windowDays = 14 }) {
+  if (!remainingXp || remainingXp <= 0) return { status: 'none', reason: 'complete' }
+  const baseline = baselineAt ? new Date(baselineAt) : null
+  if (!baseline || Number.isNaN(baseline.getTime()) || !goals?.length) return { status: 'none', reason: 'no-baseline' }
+  const windowStart = new Date(Math.max(baseline.getTime(), now.getTime() - windowDays * 86_400_000))
+  const sumAt = (snap) => goals.reduce((a, g) => a + (Number(snap.skills?.[g.skill]?.xp) || 0), 0)
+  const rows = (snapshots || [])
+    .map((s) => ({ t: new Date(s.capturedAt).getTime(), xp: sumAt(s) }))
+    .filter((r) => !Number.isNaN(r.t) && r.t <= now.getTime())
+    .sort((a, b) => a.t - b.t)
+  if (!rows.length) return { status: 'none', reason: 'no-history' }
+  // Where the goal skills stood when the window opened: the newest snapshot before it, or the plan's own starting XP when the
+  // window opens at the plan's start.
+  const before = [...rows].reverse().find((r) => r.t <= windowStart.getTime())
+  const startXp = before ? before.xp : windowStart.getTime() === baseline.getTime() ? goals.reduce((a, g) => a + g.currentXp, 0) : rows[0].xp
+  const startT = before || windowStart.getTime() === baseline.getTime() ? windowStart.getTime() : rows[0].t
+  const days = (now.getTime() - startT) / 86_400_000
+  if (days < 1) return { status: 'none', reason: 'too-soon' }
+  const gained = Math.max(0, rows[rows.length - 1].xp - startXp)
+  if (gained <= 0) return { status: 'none', reason: 'no-gain' }
+  const xpPerDay = gained / days
+  const daysLeft = remainingXp / xpPerDay
+  const projected = new Date(now.getTime() + daysLeft * 86_400_000)
+  const planned = plannedDays != null ? new Date(baseline.getTime() + plannedDays * 86_400_000) : null
+  const diffDays = planned ? (planned.getTime() - projected.getTime()) / 86_400_000 : null
+  return {
+    status: diffDays == null ? 'none' : diffDays > 0.5 ? 'early' : diffDays < -0.5 ? 'late' : 'on',
+    xpPerDay,
+    windowDays: Math.max(1, Math.round(days)),
+    daysLeft,
+    projected,
+    planned,
+    diffDays,
+  }
+}
+
 // --- Sharing ------------------------------------------------------------------
 
 /** Totals for a saved or shared plan from its own start, with no personal data: used for share previews and the public page. */

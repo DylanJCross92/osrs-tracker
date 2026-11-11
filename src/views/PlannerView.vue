@@ -101,6 +101,7 @@
         :since="sinceVisit"
         :entries="timeline.entries"
         :hours-per-day="hoursPerDay"
+        :projection="projection"
         @rebase="refreshFromPlayer"
       />
 
@@ -296,6 +297,7 @@ import {
   resolveGoal,
   buildTimeline,
   buildProgress,
+  projectFinish,
   liveGoalFor,
   listSavedPlans,
   snapshotPlan,
@@ -544,6 +546,35 @@ const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targe
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 const progress = computed(() => (tracking.value && goals.value.length ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value) : null))
+// How fast the player has really been gaining XP in these skills (their tracked daily history) and what that means for the finish date.
+const history = ref({ id: null, rows: [] })
+watch(
+  () => [player.value?.id, player.value?.latest?.capturedAt],
+  async ([id]) => {
+    if (!id) {
+      history.value = { id: null, rows: [] }
+      return
+    }
+    try {
+      const rows = await playersApi.snapshots(id)
+      if (player.value?.id === id) history.value = { id, rows }
+    } catch {
+      history.value = { id, rows: [] }
+    }
+  },
+  { immediate: true },
+)
+const projection = computed(() => {
+  if (!progress.value || progress.value.complete || history.value.id !== player.value?.id) return null
+  const hpd = Number(hoursPerDay.value)
+  return projectFinish({
+    snapshots: history.value.rows,
+    goals: goals.value,
+    remainingXp: progress.value.remainingXp,
+    plannedDays: hpd > 0 ? progress.value.originalHours / hpd : null,
+    baselineAt: statsAt.value,
+  })
+})
 const compares = computed(() => resolved.value.map((g) => memo(compareCache, goalKey(g, false), () => compareStrategies(g))))
 const totals = computed(() => planTotals(plans.value, hoursPerDay.value))
 

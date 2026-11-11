@@ -2,7 +2,7 @@
   <section class="pp" :class="{ complete: progress.complete }" aria-label="Plan progress">
     <div class="pp-head">
       <b class="pp-pct">{{ progress.complete ? 'Plan complete' : `${pctText} complete` }}</b>
-      <span v-if="progress.schedule && !progress.complete" class="pp-badge" :class="`is-${progress.schedule}`">{{ scheduleText }}</span>
+      <span v-if="badge && !progress.complete" class="pp-badge" :class="`is-${badge.kind}`">{{ badge.text }}</span>
       <span class="pp-xp">{{ formatNum(progress.gainedXp) }} XP gained · {{ formatNum(progress.remainingXp) }} left</span>
     </div>
     <!-- Where each skill's goal lands along the plan, in training order -->
@@ -42,6 +42,11 @@
       <span v-if="baselineAt">Started {{ fmtDate(baselineAt) }}</span>
       <span v-if="updatedAt">Stats updated {{ formatRelative(updatedAt) }}</span>
     </p>
+    <p v-if="paceLine" class="pp-pace" :class="`is-${projection.status}`">
+      <b>{{ paceLine.headline }}</b>
+      <span>{{ paceLine.detail }}</span>
+    </p>
+    <p v-else-if="paceHint" class="pp-pace is-none"><span>{{ paceHint }}</span></p>
     <p v-if="since" class="pp-since">
       <b>Since your last visit</b> ({{ formatRelative(since.at) }}): +{{ formatNum(since.total) }} XP
       <span v-for="s in since.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
@@ -68,6 +73,8 @@ const props = defineProps({
   // The timeline entries (same order as the goals), for each goal's finish date.
   entries: { type: Array, default: () => [] },
   hoursPerDay: { type: Number, default: 2 },
+  // Where the player's real pace says the plan will finish (null on a public plan page).
+  projection: { type: Object, default: null },
   // On a public plan page: no restart link and no personal notes.
   readonly: { type: Boolean, default: false },
 })
@@ -114,11 +121,38 @@ function untilText(d) {
   if (days < 730) return `in about ${Math.round(days / 30)} months`
   return `in about ${(days / 365).toFixed(1)} years`
 }
-const scheduleText = computed(() => {
-  const d = Math.abs(props.progress.aheadDays)
-  const amount = d < 1 ? `${Math.max(1, Math.round(d * 24))} hours` : d < 60 ? `${Math.round(d)} day${Math.round(d) === 1 ? '' : 's'}` : `about ${Math.round(d / 30)} months`
-  if (props.progress.schedule === 'ahead') return `${amount} ahead of schedule`
-  if (props.progress.schedule === 'behind') return `${amount} behind schedule`
-  return 'On schedule'
+const amountText = (days) => {
+  const d = Math.abs(days)
+  return d < 1 ? `${Math.max(1, Math.round(d * 24))} hour${Math.max(1, Math.round(d * 24)) === 1 ? '' : 's'}` : d < 60 ? `${Math.round(d)} day${Math.round(d) === 1 ? '' : 's'}` : `about ${Math.round(d / 30)} months`
+}
+// The badge goes by the real pace when there is history to measure it from, and by the plan's own schedule until then.
+const badge = computed(() => {
+  const pr = props.projection
+  if (pr && pr.status !== 'none') {
+    if (pr.status === 'on') return { kind: 'on', text: 'On pace' }
+    return { kind: pr.status === 'early' ? 'ahead' : 'behind', text: `On pace to finish ${amountText(pr.diffDays)} ${pr.status === 'early' ? 'early' : 'late'}` }
+  }
+  const sc = props.progress.schedule
+  if (!sc) return null
+  const amount = amountText(props.progress.aheadDays)
+  return { kind: sc, text: sc === 'ahead' ? `${amount} ahead of schedule` : sc === 'behind' ? `${amount} behind schedule` : 'On schedule' }
+})
+const paceLine = computed(() => {
+  const pr = props.projection
+  if (!pr || pr.status === 'none') return null
+  const far = pr.daysLeft > 365 * 5
+  const finish = far ? 'more than 5 years away' : fmtDate(pr.projected)
+  const verdict = pr.status === 'on' ? 'right on the planned date' : `${amountText(pr.diffDays)} ${pr.status === 'early' ? 'earlier' : 'later'} than planned`
+  return {
+    headline: far ? `At this pace you would finish ${finish}` : `At this pace you finish ${finish}`,
+    detail: `${verdict} (planned ${fmtDate(pr.planned)}). Based on ${formatNum(Math.round(pr.xpPerDay))} XP a day in these skills over the last ${pr.windowDays} day${pr.windowDays === 1 ? '' : 's'}.`,
+  }
+})
+const paceHint = computed(() => {
+  const pr = props.projection
+  if (!pr || pr.status !== 'none') return null
+  if (pr.reason === 'no-gain') return 'No XP gained in these skills yet, so there is no pace to project a finish date from.'
+  if (pr.reason === 'too-soon') return 'Projected finish date appears once there is a day of tracked progress.'
+  return null
 })
 </script>

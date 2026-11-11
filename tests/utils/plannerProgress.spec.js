@@ -133,3 +133,41 @@ describe('planFingerprint', () => {
     expect(planFingerprint({ ...base, goals: [] })).not.toBe(f)
   })
 })
+
+describe('projectFinish', () => {
+  const now = new Date('2026-11-21T12:00:00Z')
+  const day = 86_400_000
+  const goals = [{ skill: 'Mining', currentXp: 1_000_000, targetXp: 2_000_000 }]
+  const snap = (daysAgo, xp) => ({ capturedAt: new Date(now.getTime() - daysAgo * day).toISOString(), skills: { Mining: { xp } } })
+
+  it('projects the finish from the pace in the last 14 days and says how early it is', async () => {
+    const { projectFinish } = await import('@/utils/plannerTools')
+    // 140k gained over 14 days = 10k/day, 500k left = 50 more days. The plan was 100 days long, started 20 days ago.
+    const r = projectFinish({
+      snapshots: [snap(20, 1_000_000), snap(14, 1_360_000), snap(0, 1_500_000)],
+      goals, remainingXp: 500_000, plannedDays: 100, baselineAt: new Date(now.getTime() - 20 * day).toISOString(), now,
+    })
+    expect(r.status).toBe('early')
+    expect(Math.round(r.xpPerDay)).toBe(10_000)
+    expect(Math.round(r.daysLeft)).toBe(50)
+    expect(Math.round(r.diffDays)).toBe(30)
+  })
+
+  it('says late when the pace is slower than the plan needs', async () => {
+    const { projectFinish } = await import('@/utils/plannerTools')
+    const r = projectFinish({
+      snapshots: [snap(10, 1_000_000), snap(0, 1_010_000)],
+      goals, remainingXp: 990_000, plannedDays: 30, baselineAt: new Date(now.getTime() - 10 * day).toISOString(), now,
+    })
+    expect(r.status).toBe('late')
+    expect(r.diffDays).toBeLessThan(0)
+  })
+
+  it('has nothing to say without history, a day of tracking or any gains', async () => {
+    const { projectFinish } = await import('@/utils/plannerTools')
+    const base = { goals, remainingXp: 500_000, plannedDays: 30, baselineAt: new Date(now.getTime() - 5 * day).toISOString(), now }
+    expect(projectFinish({ ...base, snapshots: [] }).status).toBe('none')
+    expect(projectFinish({ ...base, snapshots: [snap(5, 1_000_000), snap(0, 1_000_000)] }).reason).toBe('no-gain')
+    expect(projectFinish({ ...base, baselineAt: new Date(now.getTime() - 0.2 * day).toISOString(), snapshots: [snap(0.2, 1_000_000), snap(0, 1_001_000)] }).reason).toBe('too-soon')
+  })
+})
