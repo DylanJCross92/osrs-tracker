@@ -27,17 +27,20 @@
               @click="renaming === p.id || load(p)"
               @keydown.enter.self="renaming === p.id || load(p)"
             >
-              <div class="saved-meta">
-                <template v-if="renaming === p.id">
-                  <input v-model="renameText" type="text" maxlength="60" aria-label="New plan name" autofocus @keydown.enter="doRename(p)" @keydown.esc="renaming = null" />
-                  <button class="btn-text" type="button" @click.stop="doRename(p)">Save</button>
-                </template>
-                <template v-else>
-                  <b>{{ p.name }}<i v-if="shareFor(p.id)" class="sp-public" :title="`Public (${shareFor(p.id).mode === 'live' ? 'live progress' : 'static'})`">Public</i></b>
-                  <small>{{ p.goals.length }} skill{{ p.goals.length === 1 ? '' : 's' }}<template v-if="p.player.rsn"> · {{ p.player.rsn }}</template> · updated {{ new Date(p.updatedAt).toLocaleDateString() }}</small>
-                </template>
+              <form v-if="renaming === p.id" class="saved-rename" @submit.prevent="doRename(p)" @click.stop>
+                <input v-model="renameText" type="text" maxlength="60" aria-label="New plan name" @keydown.esc="renaming = null" />
+                <button class="saved-icon on" type="submit" title="Save name" aria-label="Save name">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                </button>
+                <button class="saved-icon" type="button" title="Cancel" aria-label="Cancel rename" @click="renaming = null">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+                </button>
+              </form>
+              <div v-else class="saved-meta">
+                <b>{{ p.name }}<i v-if="shareFor(p.id)" class="sp-public" :title="`Public (${shareFor(p.id).mode === 'live' ? 'live progress' : 'static'})`">Public</i></b>
+                <small>{{ p.goals.length }} skill{{ p.goals.length === 1 ? '' : 's' }}<template v-if="p.player.rsn"> · {{ p.player.rsn }}</template> · {{ new Date(p.updatedAt).toLocaleDateString() }}</small>
               </div>
-              <div class="saved-actions" @click.stop>
+              <div v-if="renaming !== p.id" class="saved-actions" @click.stop>
                 <button class="saved-icon" type="button" title="Rename" aria-label="Rename" @click="startRename(p)">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" /></svg>
                 </button>
@@ -85,7 +88,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useSharedPlans } from '@/composables/useSharedPlans'
 import ShareIcon from '@/components/ShareIcon.vue'
@@ -146,6 +149,7 @@ const importOk = ref(false)
 function startRename(p) {
   renaming.value = p.id
   renameText.value = p.name
+  nextTick(() => document.querySelector('.saved-rename input')?.select())
 }
 function doRename(p) {
   emit('rename', p.id, renameText.value)

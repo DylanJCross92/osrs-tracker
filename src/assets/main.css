@@ -3725,3 +3725,27 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
   .sp-panel { width: calc(100% + 104px); max-width: calc(100vw - 32px); }
   .sp-panel::before { left: 28px; }
 }
+
+/* saved plans dropdown, tidied: anchored to the controls' right edge, tidy rows, compact rename */
+.sp-bar { position: relative; }
+.sp-menu { position: static; }
+.sp-panel { left: auto; right: 0; width: min(440px, calc(100vw - 32px)); padding: 14px 14px 12px; }
+.sp-panel::before { display: none; }
+.sp-panel-head { margin-bottom: 2px; }
+.sp-panel .sp-note { margin: 0 0 12px; line-height: 1.35; }
+.sp-panel .saved-list { margin-bottom: 8px; }
+.sp-panel .saved-list li { flex-wrap: nowrap; gap: 8px; padding: 10px 10px 10px 14px; }
+.sp-panel .saved-meta { flex: 1; min-width: 0; }
+.sp-panel .saved-meta b { display: flex; align-items: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.95rem; }
+.sp-panel .saved-meta small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.76rem; }
+.sp-panel .saved-actions { flex: none; gap: 0; }
+.sp-panel .saved-icon { width: 32px; height: 32px; }
+.sp-panel .saved-rename { flex: 1; min-width: 0; display: flex; align-items: center; gap: 4px; margin: 0; }
+.sp-panel .saved-rename input { flex: 1; min-width: 0; height: 36px; min-height: 0; padding: 0 10px; font-size: 0.92rem; }
+.planner-all-methods summary { cursor: pointer; }
+@media (max-width: 640px) {
+  .sp-panel { left: 0; right: 0; width: auto; }
+  .sp-panel .saved-list li { flex-wrap: wrap; }
+  .sp-panel .saved-icon { width: 40px; height: 40px; }
+  .sp-panel .saved-rename input { height: 44px; font-size: 16px; }
+}
