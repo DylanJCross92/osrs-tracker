@@ -463,7 +463,6 @@ const showAdd = ref(false)
 
 const overrideCount = computed(() => goals.value.filter((g) => g.methodId !== GLOBAL_STRATEGY).length)
 
-const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches
 
 // Goals (with the global strategy applied) and their results. Results are cached by inputs so a change only
 // recalculates the goals it touches.
@@ -831,7 +830,7 @@ function useRecommended(rec) {
   currentPlanName.value = rec.title.slice(0, 60)
   template.value = { slug: '', name: rec.title, rsn: '', recommendedId: rec.id }
   templatePending.value = !player.value?.latest
-  expanded.value = isMobile() ? new Set() : new Set([goals.value[0].skill])
+  expanded.value = new Set() // goals stay collapsed; only a goal you add yourself opens
   track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest })
   showToast(`Started "${rec.title}". Rename and save it when you are ready.`)
 }
@@ -888,7 +887,7 @@ function applyPlan(plan) {
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
   statsAt.value = plan.statsAt
-  expanded.value = isMobile() || !goals.value.length ? new Set() : new Set([goals.value[0].skill])
+  expanded.value = new Set()
 }
 async function loadSaved(stored, { silent = false } = {}) {
   const res = validatePlan(stored)
@@ -1013,8 +1012,6 @@ onMounted(async () => {
     // A plain visit with nothing in progress: pick up the most recently saved plan.
     await loadSaved(savedPlans.value[0], { silent: true })
   }
-  // Only one goal card is open by default (none on phones).
-  if (!template.value && goals.value.length && !isMobile()) expanded.value = new Set([goals.value[0].skill])
   // Re-hydrate a previously-loaded username so the header and refresh offer reflect the latest snapshot.
   if (username.value) await loadPlayer()
 })
