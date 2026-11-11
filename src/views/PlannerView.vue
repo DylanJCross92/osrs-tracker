@@ -2,25 +2,34 @@
   <div class="planner">
     <!-- 1. Player selection -->
     <section class="card planner-top">
-      <div class="planner-head">
-        <h1>OSRS Account Planner</h1>
-        <a v-if="backName" href="#" class="btn-text planner-back" @click.prevent="goBack">← {{ backName }}'s profile</a>
+      <div class="pt-head">
+        <div class="pt-title">
+          <h1>Account Planner</h1>
+          <p>Set skill goals, compare routes, and watch your progress.</p>
+        </div>
+        <a v-if="backName" href="#" class="pt-back" @click.prevent="goBack">← {{ backName }}'s profile</a>
       </div>
 
-      <div v-if="player && !editingPlayer" class="planner-player planner-player-compact">
-        <b>{{ player.displayName }}</b>
-        <span>Total level {{ player.latest.overallLevel.toLocaleString('en-US') }}</span>
-        <span>{{ formatNum(player.latest.overallXp) }} XP</span>
-        <span>Updated {{ formatRelative(player.latest.capturedAt) }}</span>
-        <RouterLink :to="{ name: 'playerDetail', params: { username: player.username } }">TickGains profile →</RouterLink>
-        <button class="btn-text" type="button" @click="startChangePlayer">Change player</button>
+      <div v-if="player && !editingPlayer" class="pt-player">
+        <span class="pt-avatar"><PlayerAvatar :name="player.username" /></span>
+        <div class="pt-player-main">
+          <b>{{ player.displayName }}</b>
+          <span class="pt-stats">
+            <span>Total level <i>{{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
+            <span><i>{{ formatNum(player.latest.overallXp) }}</i> XP</span>
+            <span>Updated {{ formatRelative(player.latest.capturedAt) }}</span>
+          </span>
+        </div>
+        <div class="pt-player-actions">
+          <RouterLink class="pt-link" :to="{ name: 'playerDetail', params: { username: player.username } }">Profile</RouterLink>
+          <button class="pt-link" type="button" @click="startChangePlayer">Change</button>
+        </div>
       </div>
       <template v-else>
-        <p class="planner-intro">Load your stats by username (or enter them by hand), then add skill goals and compare ways to reach them. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
-        <div class="suggest-wrap">
+        <div class="suggest-wrap pt-find">
           <form class="add-player-form" autocomplete="off" @submit.prevent="loadPlayer({ typed: true })">
-            <input v-model="username" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS name (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
-            <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">{{ lookingUp ? 'Finding…' : 'Find Player' }}</button>
+            <input v-model="username" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Your OSRS name" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
+            <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">{{ lookingUp ? 'Finding…' : 'Find player' }}</button>
             <button v-if="player" class="btn btn-ghost" type="button" @click="editingPlayer = false">Cancel</button>
           </form>
           <RecentPlayers v-if="searchFocused && !username.trim()" @pick="pickSuggestion" />
@@ -32,7 +41,7 @@
           </ul>
         </div>
         <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan manually.</p>
-        <p v-else-if="!player" class="planner-hint">No username? Skip this and enter your current level or XP when you add a goal.</p>
+        <p v-else class="pt-hint">No name? Skip this and enter your level or XP when you add a goal. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
       </template>
 
       <div v-if="template" class="ps-template" role="status">
@@ -44,35 +53,36 @@
         <button class="btn-text" type="button" @click="template = null">Dismiss</button>
       </div>
 
-      <!-- Save the plan and open earlier ones from the top of the page -->
-      <PlannerSavedPlans
-        :plans="savedPlans"
-        :current-id="currentPlanId"
-        :current-name="currentPlanName"
-        :has-goals="goals.length > 0"
-        :import-result="importResult"
-        @save="(n) => saveCurrent(n, false)"
-        @save-new="(n) => saveCurrent(n, true)"
-        @load="loadSaved"
-        @duplicate="duplicateSaved"
-        @export="exportSaved"
-        @delete="deleteSaved"
-        @rename="renameSaved"
-        @import="importSaved"
-        @share="openShare"
-        @share-current="shareCurrent"
-      />
-      <SharePlanModal v-if="sharing" :plan="sharing" @close="sharing = null" />
     </section>
 
 
     <!-- 3. Training goals -->
     <section id="add-goal" class="card planner-goals-card">
       <div class="planner-goals-head">
-        <h2>Training goals</h2>
-        <span v-if="goals.length" class="planner-calc">Calculated {{ formatRelative(calcAt.toISOString()) }}</span>
+        <div class="pg-title">
+          <h2>Training goals</h2>
+          <span v-if="goals.length" class="planner-calc">Calculated {{ formatRelative(calcAt.toISOString()) }}</span>
+        </div>
+        <PlannerSavedPlans
+          :plans="savedPlans"
+          :current-id="currentPlanId"
+          :current-name="currentPlanName"
+          :has-goals="goals.length > 0"
+          :import-result="importResult"
+          @save="(n) => saveCurrent(n, false)"
+          @save-new="(n) => saveCurrent(n, true)"
+          @load="loadSaved"
+          @duplicate="duplicateSaved"
+          @export="exportSaved"
+          @delete="deleteSaved"
+          @rename="renameSaved"
+          @import="importSaved"
+          @share="openShare"
+          @share-current="shareCurrent"
+        />
         <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
+      <SharePlanModal v-if="sharing" :plan="sharing" @close="sharing = null" />
 
       <PlannerProgress
         v-if="progress"
@@ -217,6 +227,7 @@ import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
 import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
 import PlannerGoalRail from '@/components/planner/PlannerGoalRail.vue'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useRivals } from '@/composables/useRivals'

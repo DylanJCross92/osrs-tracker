@@ -3629,3 +3629,66 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .saved-icon.on { color: var(--xp-green); }
 .saved-icon.saved-delete:hover, .saved-icon.saved-delete:focus-visible { color: #e58a7c; background: rgba(217, 105, 90, 0.1); border-color: rgba(217, 105, 90, 0.4); }
 @media (max-width: 640px) { .saved-icon { width: 40px; height: 40px; } }
+
+/* planner header: slim title, one player bar, one search box */
+.planner .planner-top { padding: 18px 22px 16px; margin-bottom: 14px; background: linear-gradient(135deg, rgba(240, 201, 118, 0.07), transparent 55%), var(--panel); }
+.pt-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 4px 16px; margin-bottom: 14px; }
+.pt-title h1 { margin: 0; font-size: 1.55rem; letter-spacing: -0.01em; }
+.pt-title p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+.pt-back { color: var(--muted); font-size: 0.84rem; text-decoration: none; white-space: nowrap; }
+.pt-back:hover { color: var(--gold-bright); }
+.pt-player { display: flex; align-items: center; gap: 14px; padding: 10px 14px 10px 10px; border-radius: 14px; background: rgba(0, 0, 0, 0.22); border: 1px solid var(--border); }
+.pt-avatar { flex: none; width: 46px; height: 46px; border-radius: 13px; overflow: hidden; border: 2px solid var(--gold); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.12); }
+.pt-player-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.pt-player-main > b { color: var(--gold-bright); font-size: 1.05rem; line-height: 1.2; }
+.pt-stats { display: flex; flex-wrap: wrap; gap: 0 14px; color: var(--muted); font-size: 0.8rem; }
+.pt-stats i { font-style: normal; color: var(--text); font-weight: 600; }
+.pt-stats span + span::before { content: ''; display: inline-block; width: 3px; height: 3px; margin: 0 8px 2px -8px; border-radius: 50%; background: var(--border-strong); vertical-align: middle; }
+.pt-player-actions { display: flex; gap: 4px; }
+.pt-link { padding: 6px 12px; border-radius: 999px; background: none; border: 1px solid var(--border); color: var(--muted); font: inherit; font-size: 0.82rem; text-decoration: none; cursor: pointer; transition: color 0.12s, border-color 0.12s; }
+.pt-link:hover { color: var(--gold-bright); border-color: var(--gold); }
+.pt-find .add-player-form { display: flex; gap: 0; }
+.pt-find .add-player-form input { flex: 1; min-width: 0; height: 46px; border-radius: 14px 0 0 14px; border-right: 0; padding-left: 16px; }
+.pt-find .add-player-form .btn { height: 46px; border-radius: 0 14px 14px 0; white-space: nowrap; }
+.pt-find .add-player-form .btn-ghost { border-radius: 0; }
+.pt-hint { margin: 8px 2px 0; color: var(--muted); font-size: 0.82rem; }
+.planner-top .ps-template { margin: 12px 0 0; }
+@media (max-width: 640px) {
+  .planner .planner-top { padding: 14px 14px 14px; }
+  .pt-title h1 { font-size: 1.35rem; }
+  .pt-player { flex-wrap: wrap; }
+  .pt-player-actions { width: 100%; justify-content: flex-end; }
+  .pt-find .add-player-form { flex-wrap: nowrap; }
+  .planner .pt-find .add-player-form input { flex: 1 1 auto; }
+  .planner .pt-find .add-player-form .btn { flex: 0 0 auto; }
+}
+
+/* training goals header: title, plan icons, add button */
+.planner-goals-head { gap: 10px 14px; }
+.pg-title { flex: 1 1 auto; min-width: 140px; display: flex; flex-direction: column; }
+.pg-title h2 { margin: 0; }
+.pg-title .planner-calc { margin: 0; font-size: 0.78rem; }
+.planner-goals-head .planner-calc { margin-left: 0; }
+.sp { display: contents; }
+.sp-icons { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border-radius: 12px; background: rgba(0, 0, 0, 0.22); border: 1px solid var(--border); }
+.sp-name { max-width: 170px; margin: 0 6px 0 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.82rem; font-weight: 600; color: var(--text); }
+.sp-name.unsaved { color: var(--muted); font-weight: 400; font-style: italic; }
+.sp-icon { position: relative; width: 38px; height: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 9px; background: none; border: 0; color: var(--gold-bright); cursor: pointer; transition: background 0.12s, color 0.12s; }
+.sp-icon:hover:not(:disabled), .sp-icon:focus-visible, .sp-icon.open { background: rgba(217, 175, 82, 0.14); outline: none; }
+.sp-icon:disabled { color: var(--muted); opacity: 0.45; cursor: default; }
+.sp-icon .sp-count { position: absolute; top: 1px; right: 1px; min-width: 16px; height: 16px; margin: 0; padding: 0 4px; box-sizing: border-box; border-radius: 8px; background: var(--gold); color: var(--gold-ink); font-size: 0.62rem; font-weight: 800; line-height: 16px; }
+.sp-panel { position: static; order: 10; flex: 1 1 100%; max-height: min(60vh, 460px); margin: 4px 0 4px; box-shadow: none; }
+.planner-goals-head { align-items: center; }
+@media (max-width: 640px) {
+  .planner-goals-head .btn { width: auto; flex: 1 1 100%; }
+  .sp-icons { flex: 1 1 auto; justify-content: flex-end; }
+  .sp-name { flex: 1; max-width: none; }
+  .sp-icon { width: 44px; height: 40px; }
+}
+
+/* save plan window */
+.save-plan { max-width: 440px; }
+.save-plan-field { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; color: var(--muted); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.save-plan-field input { height: 46px; text-transform: none; letter-spacing: 0; font-size: 1rem; }
+.save-plan-note { margin: 0 0 16px; color: var(--muted); font-size: 0.84rem; }
+.save-plan-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
