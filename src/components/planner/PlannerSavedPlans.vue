@@ -17,24 +17,43 @@
       </p>
 
       <ul v-if="plans.length" class="saved-list">
-        <li v-for="p in plans" :key="p.id" :class="{ current: p.id === currentId }">
+        <li
+          v-for="p in plans"
+          :key="p.id"
+          :class="{ current: p.id === currentId, renaming: renaming === p.id }"
+          :role="renaming === p.id ? null : 'button'"
+          :tabindex="renaming === p.id ? null : 0"
+          :aria-label="renaming === p.id ? null : `Load ${p.name}`"
+          :title="renaming === p.id ? null : 'Click to load this plan'"
+          @click="renaming === p.id || load(p)"
+          @keydown.enter.self="renaming === p.id || load(p)"
+        >
           <div class="saved-meta">
             <template v-if="renaming === p.id">
-              <input v-model="renameText" type="text" maxlength="60" aria-label="New plan name" @keydown.enter="doRename(p)" @keydown.esc="renaming = null" />
-              <button class="btn-text" type="button" @click="doRename(p)">Save</button>
+              <input v-model="renameText" type="text" maxlength="60" aria-label="New plan name" autofocus @keydown.enter="doRename(p)" @keydown.esc="renaming = null" />
+              <button class="btn-text" type="button" @click.stop="doRename(p)">Save</button>
             </template>
             <template v-else>
               <b>{{ p.name }}<i v-if="shareFor(p.id)" class="sp-public" :title="`Public (${shareFor(p.id).mode === 'live' ? 'live progress' : 'static'})`">Public</i></b>
               <small>{{ p.goals.length }} skill{{ p.goals.length === 1 ? '' : 's' }}<template v-if="p.player.rsn"> · {{ p.player.rsn }}</template> · updated {{ new Date(p.updatedAt).toLocaleDateString() }}</small>
             </template>
           </div>
-          <div class="saved-actions">
-            <button class="btn-text" type="button" @click="load(p)">Load</button>
-            <button class="btn-text" type="button" @click="startRename(p)">Rename</button>
-            <button class="btn-text" type="button" @click="$emit('share', p)">{{ shareFor(p.id) ? 'Sharing' : 'Share' }}</button>
-            <button class="btn-text" type="button" @click="$emit('duplicate', p.id)">Duplicate</button>
-            <button class="btn-text" type="button" @click="$emit('export', p)">Export</button>
-            <button class="btn-text saved-delete" type="button" @click="$emit('delete', p.id)">Delete</button>
+          <div class="saved-actions" @click.stop>
+            <button class="saved-icon" type="button" title="Rename" aria-label="Rename" @click="startRename(p)">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 00-4-4L4 16v4z" /><path d="M13.5 6.5l4 4" /></svg>
+            </button>
+            <button class="saved-icon" :class="{ on: shareFor(p.id) }" type="button" :title="shareFor(p.id) ? 'Sharing: manage the public link' : 'Share'" :aria-label="shareFor(p.id) ? 'Manage sharing' : 'Share'" @click="$emit('share', p)">
+              <ShareIcon name="share" :size="18" />
+            </button>
+            <button class="saved-icon" type="button" title="Duplicate" aria-label="Duplicate" @click="$emit('duplicate', p.id)">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 012-2h9" /></svg>
+            </button>
+            <button class="saved-icon" type="button" title="Export" aria-label="Export" @click="$emit('export', p)">
+              <ShareIcon name="download" :size="18" />
+            </button>
+            <button class="saved-icon saved-delete" type="button" title="Delete" aria-label="Delete" @click="$emit('delete', p.id)">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
+            </button>
           </div>
         </li>
       </ul>
@@ -60,6 +79,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useSharedPlans } from '@/composables/useSharedPlans'
+import ShareIcon from '@/components/ShareIcon.vue'
 
 const props = defineProps({
   plans: { type: Array, required: true },

@@ -3618,3 +3618,14 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .shared-plan .plan-tiles { margin-bottom: 14px; }
 .ps-template { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: rgba(217, 175, 82, 0.1); border: 1px solid var(--border-strong); font-size: 0.9rem; }
 .ps-template b { color: var(--gold-bright); }
+
+/* saved plans: the row loads the plan, the actions are icons */
+.saved-list li[role='button'] { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.saved-list li[role='button']:hover, .saved-list li[role='button']:focus-visible { border-color: var(--border-strong); background: rgba(255, 255, 255, 0.04); outline: none; }
+.saved-list li.current:hover { border-color: var(--gold); }
+.saved-actions { gap: 2px; flex-wrap: nowrap; cursor: default; }
+.saved-icon { width: 34px; height: 34px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: none; border: 1px solid transparent; border-radius: 8px; color: var(--muted); cursor: pointer; transition: color 0.12s, background 0.12s, border-color 0.12s; }
+.saved-icon:hover, .saved-icon:focus-visible { color: var(--gold-bright); background: rgba(217, 175, 82, 0.1); border-color: var(--border-strong); outline: none; }
+.saved-icon.on { color: var(--xp-green); }
+.saved-icon.saved-delete:hover, .saved-icon.saved-delete:focus-visible { color: #e58a7c; background: rgba(217, 105, 90, 0.1); border-color: rgba(217, 105, 90, 0.4); }
+@media (max-width: 640px) { .saved-icon { width: 40px; height: 40px; } }
