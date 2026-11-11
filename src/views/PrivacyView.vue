@@ -35,7 +35,7 @@
     </p>
     <h2>Customised profiles</h2>
     <p>
-      The owner of a claimed profile can add a short bio, a "currently training" line, links to Discord, Twitch, YouTube or X, public
+      The owner of a claimed profile can add a short bio, links to Discord, Twitch, YouTube or X, public
       goals, and a picture. This is shown to everyone who views that profile. Pictures are shrunk in your browser and stored with the
       profile; you can remove them at any time, and site admins can remove content that breaks the rules.
     </p>

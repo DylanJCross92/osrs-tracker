@@ -1,11 +1,8 @@
 // Rules for what an owner may put on their profile. Everything is plain text; links can only point to a few well-known
 // sites over https; pictures must really be JPEG, PNG or WebP and small. Pure functions so they can be tested.
 export const MAX_BIO = 300
-export const MAX_STATUS = 60
 export const MAX_LINKS = 5
 export const MAX_AVATAR_BYTES = 150_000
-// Tabs an owner can hide from visitors (they always see everything themselves). Overview and Stats always show.
-export const HIDEABLE_SECTIONS = ['achievements', 'records', 'goals', 'history']
 
 export const LINK_KINDS = {
   discord: ['discord.gg', 'discord.com', 'www.discord.com'],
@@ -39,7 +36,6 @@ export function sanitizeProfilePage(input) {
   const out = {}
   if (!input || typeof input !== 'object' || Array.isArray(input)) return out
   if ('bio' in input) out.bio = plain(input.bio, MAX_BIO)
-  if ('status' in input) out.status = plain(input.status, MAX_STATUS)
   if (Array.isArray(input.links)) {
     const seen = new Set()
     out.links = []
@@ -51,7 +47,6 @@ export function sanitizeProfilePage(input) {
       if (out.links.length >= MAX_LINKS) break
     }
   }
-  if (Array.isArray(input.hiddenSections)) out.hiddenSections = [...new Set(input.hiddenSections.filter((s) => HIDEABLE_SECTIONS.includes(s)))]
   return out
 }
 

@@ -17,15 +17,13 @@ export async function isOwner(userId, playerId) {
 /** The public parts of a profile's page. Everything has an empty default, so an uncustomised profile returns a blank page. */
 export async function getProfilePage(playerId) {
   const { rows } = await pool.query(
-    `SELECT bio, status, links, hidden_sections, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
+    `SELECT bio, links, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
     [playerId],
   )
   const r = rows[0]
   return {
     bio: r?.bio || '',
-    status: r?.status || '',
     links: r?.links || [],
-    hiddenSections: r?.hidden_sections || [],
     hasAvatar: Boolean(r?.has_avatar),
     avatarV: r?.has_avatar ? Number(r.avatar_v) : null,
   }
@@ -35,15 +33,13 @@ export async function getProfilePage(playerId) {
 export async function saveProfilePage(playerId, input) {
   const patch = sanitizeProfilePage(input)
   await pool.query(
-    `INSERT INTO profile_pages (player_id, bio, status, links, hidden_sections)
-     VALUES ($1, COALESCE($2, ''), COALESCE($3, ''), COALESCE($4::jsonb, '[]'::jsonb), COALESCE($5::jsonb, '[]'::jsonb))
+    `INSERT INTO profile_pages (player_id, bio, links)
+     VALUES ($1, COALESCE($2, ''), COALESCE($3::jsonb, '[]'::jsonb))
      ON CONFLICT (player_id) DO UPDATE SET
        bio = COALESCE($2, profile_pages.bio),
-       status = COALESCE($3, profile_pages.status),
-       links = COALESCE($4::jsonb, profile_pages.links),
-       hidden_sections = COALESCE($5::jsonb, profile_pages.hidden_sections),
+       links = COALESCE($3::jsonb, profile_pages.links),
        updated_at = now()`,
-    [playerId, patch.bio ?? null, patch.status ?? null, patch.links ? JSON.stringify(patch.links) : null, patch.hiddenSections ? JSON.stringify(patch.hiddenSections) : null],
+    [playerId, patch.bio ?? null, patch.links ? JSON.stringify(patch.links) : null],
   )
   return getProfilePage(playerId)
 }

@@ -43,7 +43,6 @@
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
-        <p v-if="page.status" class="pp-status"><span aria-hidden="true">●</span> {{ page.status }}</p>
         <p v-if="page.bio" class="pp-bio">{{ page.bio }}</p>
         <ul v-if="page.links.length" class="pp-links">
           <li v-for="l in page.links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener nofollow ugc">{{ LINK_LABELS[l.kind] || l.kind }}</a></li>
@@ -96,7 +95,7 @@
 
   <template v-else-if="snapshots.length">
     <nav class="profile-tabs" aria-label="Profile sections">
-      <button v-for="t in visibleTabs" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
+      <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
     <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" @challenge="openChallenge('overview')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
@@ -508,7 +507,7 @@ async function toggleFollow() {
 // How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)
 // What the owner added to this profile (bio, status, links, hidden tabs). Visitors get it too.
-const blankPage = () => ({ bio: '', status: '', links: [], hiddenSections: [], hasAvatar: false, avatarV: null })
+const blankPage = () => ({ bio: '', links: [], hasAvatar: false, avatarV: null })
 const page = ref(blankPage())
 const customizeOpen = ref(false)
 // Public goals the owner set, with live progress; the pinned one shows in the header.
@@ -543,14 +542,6 @@ watch(
   },
   { immediate: true },
 )
-// Tabs the owner chose to hide are hidden from visitors only; the owner always sees them all. (Defined after the claim
-// state and the page it depends on.)
-const visibleTabs = computed(() => (isProfileOwner.value ? TABS : TABS.filter((t) => !page.value.hiddenSections.includes(t.key))))
-// Landing on a tab that has since been hidden falls back to the overview.
-watch(visibleTabs, (list) => {
-  // Wait until we know whether the visitor is the owner, who may open any tab.
-  if (claim.value && !list.some((t) => t.key === tab.value)) tab.value = 'overview'
-})
 const claimOpen = ref(false)
 const { loggedIn } = useAuth()
 function openClaim() {

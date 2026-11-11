@@ -3,7 +3,7 @@ import { api, ApiError, BASE_URL } from './client'
 const enc = encodeURIComponent
 
 export const profilePageApi = {
-  // { bio, status, links: [{ kind, url }], hiddenSections, hasAvatar, avatarV }
+  // { bio, links: [{ kind, url }], hasAvatar, avatarV }
   get: (username) => api.get(`/players/${enc(username)}/page`),
   save: (username, page) => api.put(`/players/${enc(username)}/page`, page),
   removeAvatar: (username) => api.post(`/players/${enc(username)}/avatar/remove`),

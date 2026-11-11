@@ -24,21 +24,20 @@ describe('cleanLink', () => {
 })
 
 describe('sanitizeProfilePage', () => {
-  it('flattens text to one paragraph and enforces limits', () => {
-    const out = sanitizeProfilePage({ bio: `  Hello\n\nworld\t${'x'.repeat(400)} `, status: 'Training <b>Mining</b>' })
+  it('flattens the bio to one paragraph and enforces its limit', () => {
+    const out = sanitizeProfilePage({ bio: `  Hello\n\nworld\t${'x'.repeat(400)} ` })
     expect(out.bio.startsWith('Hello world x')).toBe(true)
     expect(out.bio.length).toBe(MAX_BIO)
     expect(out.bio).not.toContain('\n')
-    expect(out.status).toBe('Training <b>Mining</b>')
   })
-  it('keeps at most MAX_LINKS unique valid links and known hidden sections', () => {
+  it('keeps at most MAX_LINKS unique valid links', () => {
     const links = Array.from({ length: 9 }, (_, i) => ({ kind: 'discord', url: `https://discord.gg/room${i}` }))
-    const out = sanitizeProfilePage({ links: [...links, { kind: 'discord', url: 'https://discord.gg/room0' }, { kind: 'bad', url: 'x' }], hiddenSections: ['records', 'records', 'overview', 'goals'] })
+    const out = sanitizeProfilePage({ links: [...links, { kind: 'discord', url: 'https://discord.gg/room0' }, { kind: 'bad', url: 'x' }] })
     expect(out.links).toHaveLength(MAX_LINKS)
-    expect(out.hiddenSections).toEqual(['records', 'goals'])
   })
   it('leaves missing fields out so a partial save cannot wipe the rest', () => {
-    expect(sanitizeProfilePage({ status: 'Mining' })).toEqual({ status: 'Mining' })
+    expect(sanitizeProfilePage({ bio: 'Hi' })).toEqual({ bio: 'Hi' })
+    expect(sanitizeProfilePage({ status: 'ignored now' })).toEqual({})
     for (const bad of [null, undefined, 5, 'x', []]) expect(sanitizeProfilePage(bad)).toEqual({})
   })
 })

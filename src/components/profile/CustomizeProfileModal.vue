@@ -25,7 +25,6 @@
 
         <section class="cz-block">
           <h3>About</h3>
-          <label class="cz-field"><span>Currently training</span><input v-model="form.status" type="text" maxlength="60" placeholder="For example: 99 Mining" autocomplete="off" data-1p-ignore /></label>
           <label class="cz-field"><span>Bio <small>{{ form.bio.length }}/300</small></span><textarea v-model="form.bio" maxlength="300" rows="3" placeholder="A line or two about you and your account"></textarea></label>
         </section>
 
@@ -39,14 +38,6 @@
           <button v-if="form.links.length < 5" class="btn btn-ghost cz-add" type="button" @click="form.links.push({ kind: 'discord', url: '' })">Add a link</button>
         </section>
 
-        <section class="cz-block">
-          <h3>Tabs visitors can see</h3>
-          <p class="cz-note">You always see everything on your own profile. Overview and Stats always show.</p>
-          <label v-for="s in SECTIONS" :key="s.key" class="auth-check cz-check">
-            <input v-model="visible[s.key]" type="checkbox" />
-            <span>{{ s.label }}</span>
-          </label>
-        </section>
       </div>
 
       <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
@@ -83,16 +74,9 @@ const KINDS = [
   { key: 'youtube', label: 'YouTube', example: 'https://youtube.com/@yourname' },
   { key: 'twitter', label: 'X', example: 'https://x.com/yourname' },
 ]
-const SECTIONS = [
-  { key: 'achievements', label: 'Achievements' },
-  { key: 'records', label: 'Records' },
-  { key: 'goals', label: 'Goals' },
-  { key: 'history', label: 'History' },
-]
 
 const current = reactive({ ...props.page })
-const form = reactive({ status: props.page.status || '', bio: props.page.bio || '', links: (props.page.links || []).map((l) => ({ ...l })) })
-const visible = reactive(Object.fromEntries(SECTIONS.map((s) => [s.key, !(props.page.hiddenSections || []).includes(s.key)])))
+const form = reactive({ bio: props.page.bio || '', links: (props.page.links || []).map((l) => ({ ...l })) })
 const busy = ref(false)
 const busyPic = ref(false)
 const error = ref('')
@@ -144,7 +128,7 @@ async function save() {
   error.value = ''
   try {
     const links = form.links.filter((l) => l.url.trim()).map((l) => ({ kind: l.kind, url: l.url.trim() }))
-    const saved = await profilePageApi.save(props.username, { status: form.status, bio: form.bio, links, hiddenSections: SECTIONS.filter((s) => !visible[s.key]).map((s) => s.key) })
+    const saved = await profilePageApi.save(props.username, { bio: form.bio, links })
     track('profile_customize')
     showToast('Profile saved.')
     emit('saved', saved)
