@@ -828,20 +828,20 @@ function applyPlan(plan) {
   statsAt.value = plan.statsAt
   expanded.value = isMobile() || !goals.value.length ? new Set() : new Set([goals.value[0].skill])
 }
-async function loadSaved(stored) {
+async function loadSaved(stored, { silent = false } = {}) {
   const res = validatePlan(stored)
-  if (res.error) return showToast(res.error)
+  if (res.error) return silent ? undefined : showToast(res.error)
   applyPlan(res.plan)
   currentPlanId.value = res.plan.id
   currentPlanName.value = res.plan.name
-  if (res.warnings.length) showToast(res.warnings[0])
+  if (res.warnings.length && !silent) showToast(res.warnings[0])
   // Load the player so newer stats can be offered, the saved starting values stay as they were.
   if (res.plan.player.rsn) {
     username.value = res.plan.player.rsn
     await loadPlayer()
   }
-  track('planner_plan_loaded', { goals: res.plan.goals.length })
-  showToast(`Loaded "${res.plan.name}".`)
+  track(silent ? 'planner_plan_autoloaded' : 'planner_plan_loaded', { goals: res.plan.goals.length })
+  if (!silent) showToast(`Loaded "${res.plan.name}".`)
 }
 function duplicateSaved(id) {
   const copy = duplicatePlan(id)
@@ -888,12 +888,13 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt],
+  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId],
   () => {
     calcAt.value = new Date()
     const state = planState()
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value }))
+      // The saved plan this working copy came from is remembered too, so coming back shows it as that plan.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value, planId: currentPlanId.value, planName: currentPlanName.value }))
     } catch {
       /* storage unavailable, URL sharing still works */
     }
@@ -930,8 +931,28 @@ onMounted(async () => {
     statsAt.value = restored.statsAt || null
   }
   if (typeof route.query.template === 'string') await loadTemplate(route.query.template)
+  else if (goals.value.length) {
+    // Which saved plan is this? The working copy remembers it. A plan from somebody else's link, or one that matches no saved
+    // plan, stays unsaved. The remembered plan is only trusted when the plan on screen is the working copy, never a link.
+    let remembered = null
+    try {
+      remembered = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+    } catch {
+      remembered = null
+    }
+    const here = planFingerprint({ hoursPerDay: hoursPerDay.value, globalStrategy: globalStrategy.value, gpValue: gpValue.value, goals: goals.value })
+    const sameAsRemembered = remembered && Array.isArray(remembered.goals) && planFingerprint({ hoursPerDay: remembered.hoursPerDay, globalStrategy: remembered.strategy, gpValue: remembered.gpValue, goals: remembered.goals }) === here
+    const match = (sameAsRemembered && savedPlans.value.find((p) => p.id === remembered.planId)) || savedPlans.value.find((p) => planFingerprint(p) === here)
+    if (match) {
+      currentPlanId.value = match.id
+      currentPlanName.value = match.name
+    }
+  } else if (!Object.keys(route.query).length && savedPlans.value.length) {
+    // A plain visit with nothing in progress: pick up the most recently saved plan.
+    await loadSaved(savedPlans.value[0], { silent: true })
+  }
   // Only one goal card is open by default (none on phones).
-  else if (goals.value.length && !isMobile()) expanded.value = new Set([goals.value[0].skill])
+  if (!template.value && goals.value.length && !isMobile()) expanded.value = new Set([goals.value[0].skill])
   // Re-hydrate a previously-loaded username so the header and refresh offer reflect the latest snapshot.
   if (username.value) await loadPlayer()
 })
