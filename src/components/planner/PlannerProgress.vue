@@ -46,7 +46,6 @@
       <b>{{ paceLine.headline }}</b>
       <span>{{ paceLine.detail }}</span>
     </p>
-    <p v-else-if="paceHint" class="pp-pace is-none"><span>{{ paceHint }}</span></p>
     <p v-if="since" class="pp-since">
       <b>Since your last visit</b> ({{ formatRelative(since.at) }}): +{{ formatNum(since.total) }} XP
       <span v-for="s in since.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
@@ -147,12 +146,5 @@ const paceLine = computed(() => {
     headline: far ? `At this pace you would finish ${finish}` : `At this pace you finish ${finish}`,
     detail: `${verdict} (planned ${fmtDate(pr.planned)}). Based on ${formatNum(Math.round(pr.xpPerDay))} XP a day in these skills over the last ${pr.windowDays} day${pr.windowDays === 1 ? '' : 's'}.`,
   }
-})
-const paceHint = computed(() => {
-  const pr = props.projection
-  if (!pr || pr.status !== 'none') return null
-  if (pr.reason === 'no-gain') return 'No XP gained in these skills yet, so there is no pace to project a finish date from.'
-  if (pr.reason === 'too-soon') return 'Projected finish date appears once there is a day of tracked progress.'
-  return null
 })
 </script>

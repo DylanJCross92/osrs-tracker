@@ -3882,4 +3882,3 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .pp-pace.is-late { border-left-color: #e58a7c; }
 .pp-pace.is-late b { color: #e58a7c; }
 .pp-pace.is-on { border-left-color: var(--gold); }
-.pp-pace.is-none { border-left-color: var(--border-strong); font-size: 0.84rem; }
