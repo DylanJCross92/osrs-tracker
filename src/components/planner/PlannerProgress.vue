@@ -5,6 +5,22 @@
       <span v-if="progress.schedule && !progress.complete" class="pp-badge" :class="`is-${progress.schedule}`">{{ scheduleText }}</span>
       <span class="pp-xp">{{ formatNum(progress.gainedXp) }} XP gained · {{ formatNum(progress.remainingXp) }} left</span>
     </div>
+    <!-- Where each skill's goal lands along the plan, in training order -->
+    <div v-if="markers.length" class="pp-marks" :style="{ '--lanes': lanes }" aria-label="When each goal will be met">
+      <span
+        v-for="m in markers"
+        :key="m.skill"
+        class="pp-mark"
+        :class="{ done: m.done }"
+        :style="{ left: m.pos + '%', '--lane': m.lane }"
+        role="img"
+        :aria-label="m.label"
+        :title="m.label"
+      >
+        <img :src="skillIconSrc(m.skill)" :alt="m.skill" width="18" height="18" />
+        <i v-if="m.done" class="pp-mark-tick" aria-hidden="true">✓</i>
+      </span>
+    </div>
     <div class="pp-bar" role="progressbar" :aria-valuenow="Math.round(progress.pct * 100)" aria-valuemin="0" aria-valuemax="100" aria-label="Overall plan progress">
       <i :style="{ width: progress.pct * 100 + '%' }" />
     </div>
@@ -36,8 +52,35 @@ const props = defineProps({
   updatedAt: { type: String, default: '' },
   baselineAt: { type: String, default: '' },
   since: { type: Object, default: null },
+  // The timeline entries (same order as the goals), for each goal's finish date.
+  entries: { type: Array, default: () => [] },
 })
 defineEmits(['rebase'])
+
+// Each goal's finish sits at its share of the whole plan's XP, adding up goals in training order, so the last one ends the bar.
+// Markers that would overlap move to another lane.
+const MIN_GAP = 6.5
+const markers = computed(() => {
+  const per = props.progress.per
+  const total = props.progress.totalXp
+  if (!total || !per.length) return []
+  let running = 0
+  const laneEnds = []
+  const out = []
+  per.forEach((p, i) => {
+    if (!p.total) return
+    running += p.total
+    const pos = Math.min(100, (running / total) * 100)
+    let lane = laneEnds.findIndex((end) => pos - end >= MIN_GAP)
+    if (lane === -1) lane = Math.min(laneEnds.length, 2)
+    laneEnds[lane] = pos
+    const end = props.entries[i]?.endDate
+    const label = p.done ? `${p.skill}: level ${p.targetLevel} reached` : `${p.skill}: level ${p.targetLevel}${end ? ` by ${fmtDate(end)}` : ''}`
+    out.push({ skill: p.skill, pos, lane, done: p.done, label })
+  })
+  return out
+})
+const lanes = computed(() => Math.max(1, ...markers.value.map((m) => m.lane + 1)))
 
 const pctText = computed(() => {
   const p = props.progress.pct * 100

@@ -68,6 +68,7 @@
         :updated-at="player?.latest?.capturedAt || ''"
         :baseline-at="statsAt || ''"
         :since="sinceVisit"
+        :entries="timeline.entries"
         @rebase="refreshFromPlayer"
       />
 
