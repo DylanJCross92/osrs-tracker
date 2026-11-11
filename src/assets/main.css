@@ -3446,7 +3446,7 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .pp-badge { padding: 2px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; border: 1px solid var(--border-strong); color: var(--muted); }
 .pp-badge.is-ahead { color: var(--xp-green); border-color: rgba(124, 184, 105, 0.5); background: rgba(124, 184, 105, 0.1); }
 .pp-badge.is-behind { color: #e0a86a; border-color: rgba(224, 168, 106, 0.5); background: rgba(224, 168, 106, 0.1); }
-.pp-bar { height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
+.pp-bar { position: relative; height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
 .pp-bar i { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s; min-width: 0; }
 .pp.complete .pp-bar i { background: var(--xp-green); }
 .pp-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--muted); font-size: 0.8rem; }
@@ -3550,3 +3550,19 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .pp-mark.done::after { border-left-color: rgba(124, 184, 105, 0.6); }
 .pp-mark img { image-rendering: pixelated; }
 .pp-mark-tick { position: absolute; right: -5px; bottom: -5px; width: 13px; height: 13px; border-radius: 50%; background: var(--xp-green); color: var(--gold-ink); font-style: normal; font-size: 0.55rem; font-weight: 800; line-height: 13px; text-align: center; }
+
+.pp-break { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1.5px; background: var(--bg); transition: background 0.12s, width 0.12s; }
+.pp-break.on { width: 5px; margin-left: -2.5px; background: var(--gold-bright); }
+.pp-break.done.on { background: var(--xp-green); }
+.pp-mark { cursor: default; outline: none; }
+.pp-mark:hover, .pp-mark.on, .pp-mark:focus-visible { z-index: 30; border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(240, 201, 118, 0.18); }
+.pp-mark.done:hover, .pp-mark.done.on, .pp-mark.done:focus-visible { border-color: var(--xp-green); box-shadow: 0 0 0 3px rgba(124, 184, 105, 0.2); }
+.pp-tip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); display: none; flex-direction: column; gap: 1px; min-width: 130px; padding: 8px 12px; border-radius: 10px; background: var(--panel-alt); border: 1px solid var(--gold); box-shadow: var(--shadow-md); color: var(--text); text-align: left; white-space: nowrap; pointer-events: none; z-index: 40; }
+.pp-tip b { color: var(--gold-bright); font-size: 0.92rem; }
+.pp-tip-goal { font-size: 0.8rem; color: var(--muted); }
+.pp-tip-date { font-size: 0.95rem; font-weight: 700; }
+.pp-tip-in { font-size: 0.76rem; color: var(--muted); }
+.pp-mark.done .pp-tip { border-color: var(--xp-green); }
+.pp-mark:hover .pp-tip, .pp-mark.on .pp-tip, .pp-mark:focus .pp-tip { display: flex; }
+.pp-mark.tip-right .pp-tip { left: auto; right: -6px; transform: none; }
+.pp-mark.tip-left .pp-tip { left: -6px; transform: none; }
