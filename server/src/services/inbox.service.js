@@ -41,9 +41,10 @@ export async function listInbox(userId, limit = 50) {
     `SELECT id, type, text, link, subject, created_at, read_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
     [userId, Math.min(Math.max(Number(limit) || 50, 1), 100)],
   )
-  // Older notices have no subject; most link to the player they are about. A follower who stays anonymous never does.
+  // Older notices have no subject; most link to the player they are about.
   const fromLink = (r) => {
-    if (r.type === 'new_follower') return null
+    // A follower who stayed anonymous ("Someone ...") links to the followed profile, so that link must not be read as them.
+    if (r.type === 'new_follower' && /^someone\b/i.test(r.text)) return null
     const m = /^\/player\/([^/?#]+)/.exec(r.link || '')
     try {
       return m ? decodeURIComponent(m[1]) : null
