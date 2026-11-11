@@ -46,8 +46,11 @@
 
       <div v-if="template" class="ps-template" role="status">
         <span>
-          Using <b>{{ template.name }}</b><template v-if="template.rsn"> by {{ template.rsn }}</template>.
+          <template v-if="template.recommendedId">Started from the recommended plan <b>{{ template.name }}</b>.</template>
+          <template v-else>Using <b>{{ template.name }}</b><template v-if="template.rsn"> by {{ template.rsn }}</template>.</template>
+          {{ ' ' }}
           <template v-if="templatePending">Enter your RSN to start every goal from your own stats.</template>
+          <template v-else-if="template.recommendedId">Every goal starts from your current stats.</template>
           <template v-else>Every goal now starts from your current stats. Nothing of the original player's progress was copied.</template>
         </span>
         <button class="btn-text" type="button" @click="template = null">Dismiss</button>
@@ -170,10 +173,20 @@
         </div>
       </div>
       <button v-if="goals.length" class="goal-add-bottom" type="button" @click="openAdd">+ Add another skill</button>
-      <div v-if="!goals.length" class="planner-empty">
-        <p class="empty-hint">Add your first skill goal to start a plan.</p>
+      <div v-if="!goals.length" class="rp-empty">
+        <h3>Start from a recommended plan</h3>
+        <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ player ? `${player.displayName}'s` : 'your' }} stats. Change anything afterwards.</p>
+        <RecommendedPlans :limit="8" :skills="player?.latest?.skills || null" :has-player="!!player?.latest" :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @use="useRecommended" />
+        <div class="rp-or"><span>or build your own</span></div>
         <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
+    </section>
+
+    <!-- Ideas for players who already have a plan going -->
+    <section v-if="goals.length && player?.latest" class="card rp-section" aria-label="Recommended plans">
+      <h2>Recommended plans</h2>
+      <p class="rp-sub">Where {{ player.displayName }} could go next, from their current stats. Using one keeps your current plan safe in Saved plans.</p>
+      <RecommendedPlans compact :limit="4" :skills="player.latest.skills" has-player :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @use="useRecommended" />
     </section>
 
     <template v-if="goals.length">
@@ -229,6 +242,8 @@ import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
 import PlannerGoalRail from '@/components/planner/PlannerGoalRail.vue'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
+import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useRivals } from '@/composables/useRivals'
@@ -758,6 +773,16 @@ const { me } = useRivals()
 
 function personalizeTemplate() {
   if (!player.value?.latest) return
+  // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
+  if (template.value?.recommendedId) {
+    const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
+    if (rec) goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
+    else goals.value = []
+    statsAt.value = player.value.latest.capturedAt
+    templatePending.value = false
+    track('planner_recommended_personalized', { goals: goals.value.length })
+    return
+  }
   for (const g of goals.value) {
     const xp = playerXp(g.skill) ?? 0
     g.currentXp = Math.min(xp, g.targetXp)
@@ -765,6 +790,33 @@ function personalizeTemplate() {
   statsAt.value = player.value.latest.capturedAt
   templatePending.value = false
   track('planner_template_personalized', { goals: goals.value.length })
+}
+
+// Keep whatever plan is on screen before it is replaced. A saved plan with nothing new in it is already safe; anything else
+// (an unsaved plan, or changes not updated yet) is saved to Saved plans first.
+function keepCurrentPlanBefore(name) {
+  if (!goals.value.length) return
+  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+  if (saved && !dirty.value) return
+  const kept = savePlan(snapshotPlan(currentSnapshotState(), `Plan before using "${name}"`.slice(0, 60)))
+  if (kept) {
+    refreshSaved()
+    showToast('Your previous plan was saved to Saved plans.')
+  }
+}
+
+// "Use this plan" on a recommended plan: its goals come from the player's own stats, so they start from where they really are.
+function useRecommended(rec) {
+  keepCurrentPlanBefore(rec.title)
+  goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
+  statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
+  currentPlanId.value = ''
+  currentPlanName.value = rec.title.slice(0, 60)
+  template.value = { slug: '', name: rec.title, rsn: '', recommendedId: rec.id }
+  templatePending.value = !player.value?.latest
+  expanded.value = isMobile() ? new Set() : new Set([goals.value[0].skill])
+  track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest })
+  showToast(`Started "${rec.title}". Rename and save it when you are ready.`)
 }
 
 async function loadTemplate(slug) {
@@ -775,14 +827,7 @@ async function loadTemplate(slug) {
     showToast('That plan is not shared any more.')
     return false
   }
-  // Keep whatever plan was on screen: it is saved before the template replaces it.
-  if (goals.value.length) {
-    const kept = savePlan(snapshotPlan(currentSnapshotState(), `Plan before using "${share.name}"`.slice(0, 60)))
-    if (kept) {
-      refreshSaved()
-      showToast('Your previous plan was saved to Saved plans.')
-    }
-  }
+  keepCurrentPlanBefore(share.name)
   goals.value = share.plan.goals.map((g) => ({
     skill: g.skill,
     currentXp: 0,
