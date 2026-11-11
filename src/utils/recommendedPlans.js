@@ -2,7 +2,7 @@
 // worked out from the player's current XP each time, so they always start from where the player really is.
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { SKILL_CATEGORIES } from '@/utils/plannerTools'
-import { levelAtXp, xpAtLevel } from '@/utils/planner'
+import { MAX_VIRTUAL_LEVEL, MAX_XP, levelAtXp, xpAtLevel } from '@/utils/planner'
 
 export const MAX_LEVEL = 99
 export const MAX_TOTAL = SKILL_NAMES.length * MAX_LEVEL
@@ -21,6 +21,8 @@ export function skillStates(skills) {
   })
 }
 
+// Past 99: for players who have everything at 99, the only goals left are virtual levels and 200M XP.
+const goalToXp = (state, targetXp) => ({ skill: state.skill, currentXp: state.xp, targetXp, methodId: 'global', customXpPerHour: 0, quests: [] })
 const goalFor = (state, targetLevel) => ({ skill: state.skill, currentXp: state.xp, targetXp: xpAtLevel(targetLevel), methodId: 'global', customXpPerHour: 0, quests: [] })
 const remaining = (g) => g.targetXp - g.currentXp
 // Quickest wins first, so the plan's timeline starts finishing goals soon.
@@ -92,6 +94,24 @@ export function recommendedPlans(skills) {
     description: 'Attack, Strength, Defence, Hitpoints, Ranged, Prayer and Magic, all the way to 99.',
     goals: levelPlan(states, MAX_LEVEL, SKILL_CATEGORIES.combat.skills),
   })
+  // Only once every skill is at 99 (a total level of 2,376): the goals that come after maxing.
+  if (total >= MAX_TOTAL) {
+    const toXp = (xp) => states.filter((st) => st.xp < xp).map((st) => goalToXp(st, xp)).sort(byQuickest)
+    add({
+      id: 'virtual-126',
+      kind: 'levels',
+      title: `All skills to ${MAX_VIRTUAL_LEVEL} (virtual max)`,
+      description: 'Past 99 every skill keeps levelling, up to virtual level 126. Quickest skills first.',
+      goals: toXp(xpAtLevel(MAX_VIRTUAL_LEVEL)),
+    })
+    add({
+      id: 'xp-200m',
+      kind: 'levels',
+      title: '200M XP in every skill',
+      description: 'The ultimate completionist goal: every skill to the 200 million XP cap.',
+      goals: toXp(MAX_XP),
+    })
+  }
   for (const target of TOTAL_TARGETS) {
     const goals = totalLevelPlan(states, target)
     if (goals) {

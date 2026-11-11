@@ -383,16 +383,26 @@ function openPlanIsForSomeoneElse(found) {
   const rsn = saved?.player?.rsn
   return !!rsn && !sameName(rsn, found.username) && !sameName(rsn, found.displayName)
 }
-function switchPlanToPlayer(found) {
+// Searching for a different player starts over for that player: the old plan is cleared (it stays in Saved plans, if it was
+// saved), then that player's most recent saved plan opens, or the planner is left blank with recommended plans to start from.
+async function switchPlanToPlayer(found) {
   const was = currentPlanName.value
-  unsavedShareId.value = ''
-  for (const g of goals.value) g.currentXp = Math.min(found.latest.skills?.[g.skill]?.xp ?? 0, g.targetXp)
-  statsAt.value = found.latest.capturedAt
+  goals.value = []
   currentPlanId.value = ''
   currentPlanName.value = ''
+  unsavedShareId.value = ''
   template.value = null
-  track('planner_plan_switched_player', { goals: goals.value.length })
-  showToast(`Now planning for ${found.displayName}: every goal starts from their stats.${was ? ` "${was}" is still saved for the other player.` : ''}`)
+  templatePending.value = false
+  expanded.value = new Set()
+  statsAt.value = found.latest.capturedAt
+  track('planner_player_switched', { hadPlan: !!was })
+  const theirs = savedPlans.value.find((p) => p.player?.rsn && (sameName(p.player.rsn, found.username) || sameName(p.player.rsn, found.displayName)))
+  if (theirs) {
+    await loadSaved(theirs, { silent: true })
+    showToast(`Opened "${theirs.name}" for ${found.displayName}.`)
+  } else {
+    showToast(`Now planning for ${found.displayName}.${was ? ` "${was}" is still in Saved plans.` : ''}`)
+  }
 }
 // `typed` is true when the user searched for this name; restoring a saved plan loads the player without it.
 async function loadPlayer({ typed = false } = {}) {
@@ -430,9 +440,8 @@ async function loadPlayer({ typed = false } = {}) {
     username.value = found.displayName
     editingPlayer.value = false
     if (templatePending.value) personalizeTemplate()
-    // Searching for a different player while a plan is open: the goals were measured from the old player, so they are
-    // re-measured from the new one, and the open plan (made for the old player) is left alone in Saved plans.
-    else if (typed && previous && goals.value.length && sameName(previous.username, found.username) === false) switchPlanToPlayer(found)
+    // Searching for a different player (or for the first player on an empty planner): start over for them.
+    else if (typed && ((previous && !sameName(previous.username, found.username)) || (!previous && !goals.value.length))) await switchPlanToPlayer(found)
     // Goals keep the stats they were created with, and progress is measured from them.
     else if (!goals.value.length) statsAt.value = found.latest.capturedAt
     // A saved plan only stays open for the player it was made for. Looking at anyone else (a link from their profile, say)

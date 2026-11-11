@@ -1,7 +1,8 @@
 <template>
   <div class="rp" :class="{ compact }">
     <p v-if="!hasPlayer && !compact" class="rp-hint">Enter your OSRS name above and these are worked out from your own stats. Without it they start every skill from level 1.</p>
-    <ul class="rp-grid">
+    <p v-if="!shown.length" class="rp-none">Nothing to recommend: every goal on offer is already done. Add a goal of your own to keep going.</p>
+    <ul v-else class="rp-grid">
       <li v-for="r in shown" :key="r.id" class="rp-card" :class="`kind-${r.kind}`">
         <span class="rp-kicker">{{ KIND_LABELS[r.kind] }}</span>
         <h3>{{ r.title }}</h3>

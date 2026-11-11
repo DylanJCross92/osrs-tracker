@@ -103,4 +103,11 @@ describe('recommendedPlans', () => {
     expect(new Set(list.map((p) => p.id)).size).toBe(4)
     expect(list.some((p) => p.kind === 'total')).toBe(true)
   })
+
+  it('has goals left for a maxed player: virtual levels and 200M XP', () => {
+    const maxed = Object.fromEntries(SKILL_NAMES.map((n) => [n, { xp: xpAtLevel(99), level: 99 }]))
+    const ids = recommendedPlans(maxed).map((p) => p.id)
+    expect(ids).toEqual(['virtual-126', 'xp-200m'])
+    expect(recommendedPlans(stats({ Mining: 60 })).map((p) => p.id)).not.toContain('virtual-126')
+  })
 })
