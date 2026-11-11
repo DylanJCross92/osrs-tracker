@@ -91,7 +91,7 @@
         />
         <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
-      <SharePlanModal v-if="sharing" :plan="sharing" @close="sharing = null" />
+      <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
 
       <PlannerProgress
         v-if="progress"
@@ -931,9 +931,11 @@ async function loadTemplate(slug) {
 
 // --- Sharing a plan publicly ---------------------------------------------------------------
 const sharing = ref(null)
-function openShare(stored) {
+const sharingAuto = ref(false)
+function openShare(stored, { auto = false } = {}) {
   const res = validatePlan(stored)
   if (res.error) return showToast(res.error)
+  sharingAuto.value = auto
   sharing.value = res.plan
 }
 // Sharing the plan on screen: save it first (so the public copy matches what is shown), then open the share window.
@@ -949,7 +951,7 @@ function shareWithoutSaving(name) {
   const id = currentPlanId.value || unsavedShareId.value || `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
   if (!currentPlanId.value) unsavedShareId.value = id
   const plan = snapshotPlan(currentSnapshotState(), name || currentPlanName.value || 'Shared plan', { id })
-  openShare(plan)
+  openShare(plan, { auto: true })
 }
 function applyPlan(plan) {
   unsavedShareId.value = ''

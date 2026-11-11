@@ -15,10 +15,11 @@
       </template>
 
       <template v-else>
-        <p v-if="!current" class="ps-lead">
+        <p v-if="!current && autoPublish && busy" class="ps-lead">Creating the public link for <b>{{ plan.name }}</b>…</p>
+        <p v-else-if="!current" class="ps-lead">
           <b>{{ plan.name }}</b> is private. Make it public to get a link anyone can open, no account needed. They can look at it and copy it, but never change yours. Your account is never shown.
         </p>
-        <p v-else class="ps-lead ps-live"><span class="ps-dot" aria-hidden="true" /> <b>{{ plan.name }}</b> is public. Anyone with the link can view it.</p>
+        <p v-else class="ps-lead ps-live"><span class="ps-dot" aria-hidden="true" /> <b>{{ plan.name }}</b> is public. Anyone with the link can view it.<template v-if="autoPublish"> It is not saved to your account.</template></p>
 
         <fieldset class="ps-modes">
           <legend>What people see</legend>
@@ -86,7 +87,11 @@ import { useSharedPlans } from '@/composables/useSharedPlans'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
 
-const props = defineProps({ plan: { type: Object, required: true } })
+const props = defineProps({
+  plan: { type: Object, required: true },
+  // A plan for a profile that is not yours is never kept private: it is published the moment this window opens.
+  autoPublish: { type: Boolean, default: false },
+})
 const emit = defineEmits(['close'])
 
 const { loggedIn } = useAuth()
@@ -154,6 +159,10 @@ async function nativeShare() {
 }
 
 const onKey = (e) => e.key === 'Escape' && emit('close')
-onMounted(() => document.addEventListener('keydown', onKey))
+onMounted(() => {
+  document.addEventListener('keydown', onKey)
+  // Sharing a plan for someone else's profile publishes it straight away, there is no private version to start from.
+  if (props.autoPublish && loggedIn.value && !current.value) publish()
+})
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 </script>
