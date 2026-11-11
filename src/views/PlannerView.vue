@@ -88,8 +88,8 @@
           @share="openShare"
           @share-current="shareCurrent"
           @blocked="showToast(saveBlockedReason)"
+          @revert="revertPlan"
         />
-        <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
       <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
 
@@ -868,6 +868,14 @@ function personalizeTemplate() {
 
 // Keep whatever plan is on screen before it is replaced. A saved plan with nothing new in it is already safe; anything else
 // (an unsaved plan, or changes not updated yet) is saved to Saved plans first.
+// Throw away changes made since the last save and show the saved version again.
+async function revertPlan() {
+  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+  if (!saved) return
+  await loadSaved(saved, { silent: true })
+  track('planner_plan_reverted')
+  showToast(`Reverted "${saved.name}" to its last saved version.`)
+}
 function keepCurrentPlanBefore(name) {
   if (!goals.value.length) return
   const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
@@ -1099,6 +1107,11 @@ onMounted(async () => {
     if (match) {
       currentPlanId.value = match.id
       currentPlanName.value = match.name
+      // Changes that were never saved to the plan are not kept: coming back shows the plan as it was last saved.
+      if (planFingerprint(match) !== here) {
+        await loadSaved(match, { silent: true })
+        showToast(`"${match.name}" opened as you last saved it. Changes you did not save were not kept.`)
+      }
     } else if (sameAsRemembered && remembered.shareId) {
       unsavedShareId.value = remembered.shareId
     }

@@ -90,6 +90,10 @@
         <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
         <span>{{ saveLabel }}</span>
       </button>
+      <button v-if="dirty && currentId" class="sp-revert" :class="{ confirm: confirmRevert }" type="button" :title="confirmRevert ? 'Press again to discard your changes' : 'Go back to the last saved version'" @click="onRevert" @blur="confirmRevert = false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8" /><path d="M3 3v5h5" /></svg>
+        <span>{{ confirmRevert ? 'Discard changes?' : 'Revert' }}</span>
+      </button>
       <button class="sp-icon" type="button" :disabled="!hasGoals" title="Share plan" aria-label="Share plan" @click="onShare">
         <ShareIcon name="share" :size="19" />
       </button>
@@ -121,7 +125,7 @@ const props = defineProps({
   saveBlockedReason: { type: String, default: '' },
   importResult: { type: Object, default: null },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current', 'blocked'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current', 'blocked', 'revert'])
 
 const { loggedIn } = useAuth()
 const { shareFor } = useSharedPlans()
@@ -167,6 +171,20 @@ const saveTitle = computed(
       blocked: props.saveBlockedReason,
     })[saveState.value],
 )
+// Reverting throws changes away, so it asks once: the first press changes the label, the second does it.
+const confirmRevert = ref(false)
+let revertTimer = null
+function onRevert() {
+  if (!confirmRevert.value) {
+    confirmRevert.value = true
+    clearTimeout(revertTimer)
+    revertTimer = setTimeout(() => (confirmRevert.value = false), 4000)
+    return
+  }
+  clearTimeout(revertTimer)
+  confirmRevert.value = false
+  emit('revert')
+}
 function onSaveClick() {
   if (saveState.value === 'blocked') return emit('blocked')
   if (saveState.value === 'new') openSave(false)

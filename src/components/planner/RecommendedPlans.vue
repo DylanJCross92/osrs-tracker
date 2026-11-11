@@ -8,13 +8,13 @@
         <h3>{{ r.title }}</h3>
         <p class="rp-desc">{{ r.description }}</p>
         <div class="rp-icons" aria-hidden="true">
-          <img v-for="g in r.goals.slice(0, 9)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="20" height="20" :title="g.skill" />
-          <span v-if="r.goals.length > 9" class="rp-more">+{{ r.goals.length - 9 }}</span>
+          <img v-for="g in r.goals.slice(0, MAX_ICONS)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="20" height="20" :title="g.skill" />
+          <span v-if="r.goals.length > MAX_ICONS" class="rp-more">+{{ r.goals.length - MAX_ICONS }}</span>
         </div>
         <dl class="rp-meta">
           <div><dt>Goals</dt><dd>{{ r.skillCount }} skill{{ r.skillCount === 1 ? '' : 's' }}</dd></div>
-          <div v-if="hasPlayer && summaries[r.id]"><dt>Training time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
-          <div v-if="hasPlayer && summaries[r.id]?.days != null"><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days.toLocaleString('en-US') }} days</dd></div>
+          <div><dt>Time</dt><dd>{{ hasPlayer && summaries[r.id] ? formatHours(summaries[r.id].totalHours) : '-' }}</dd></div>
+          <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ hasPlayer && summaries[r.id]?.days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : '-' }}</dd></div>
         </dl>
         <button class="btn btn-primary rp-use" type="button" @click="$emit('use', r)">Use this plan</button>
       </li>
@@ -42,6 +42,7 @@ const props = defineProps({
 })
 defineEmits(['use'])
 
+const MAX_ICONS = 8
 const KIND_LABELS = { levels: 'All skills', combat: 'Combat', total: 'Total level' }
 
 const all = computed(() => recommendedPlans(props.skills))
