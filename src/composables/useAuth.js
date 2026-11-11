@@ -16,6 +16,8 @@ const ready = ref(false)
 const syncState = ref('idle')
 // Profiles this account owns (verified claims): [{ username, displayName }]. Shown in the account menu.
 const profiles = ref([])
+// True once the list of profiles this account owns has been read (or there is nothing to read).
+const profilesReady = ref(false)
 // Things that need this account's attention (see the avatar's red badge): { items, total }.
 const notifications = ref({ items: [], unread: 0, total: 0 })
 
@@ -71,6 +73,7 @@ watch(
 export async function refreshProfiles() {
   if (!user.value) {
     profiles.value = []
+    profilesReady.value = true
     return
   }
   try {
@@ -78,6 +81,8 @@ export async function refreshProfiles() {
     profiles.value = res.claims.filter((c) => c.status === 'verified').map((c) => c.player)
   } catch {
     // Keep whatever we had.
+  } finally {
+    profilesReady.value = true
   }
 }
 
@@ -115,6 +120,7 @@ async function syncFollows() {
 
 async function setUser(u) {
   user.value = u
+  profilesReady.value = !u
   if (u) {
     reconcile(u.settings)
     refreshProfiles()
@@ -189,5 +195,5 @@ export const authReady = () => initAuth()
 
 export function useAuth() {
   const isAdmin = computed(() => !!user.value?.roles?.some((r) => r === 'admin' || r === 'owner'))
-  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles, notifications }
+  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles, profilesReady, notifications }
 }

@@ -12,8 +12,9 @@
         <div v-if="open" class="sp-panel" role="region" aria-label="Saved plans">
           <div class="sp-panel-head">
           <b>{{ playerName ? `Plans for ${playerLabel}` : 'Saved plans' }} <span>{{ visiblePlans.length }}</span></b>
-          <button class="sp-new" type="button" :disabled="!hasGoals" @click="openSaveAsNew">+ Save as new</button>
+          <button class="sp-new" type="button" :disabled="!hasGoals" :title="canSave ? '' : saveBlockedReason" @click="canSave ? openSaveAsNew() : $emit('blocked')">{{ canSave ? '+ Save as new' : 'Can\'t save' }}</button>
         </div>
+          <p v-if="!canSave" class="sp-note sp-note-warn">{{ saveBlockedReason }}</p>
           <p class="sp-note">
             <template v-if="loggedIn">Saved to your account, so they are on every device you log in on.</template>
             <template v-else>Stored in this browser. <RouterLink :to="{ name: 'login', query: { next: '/planner' } }">Log in</RouterLink> to keep them on every device.</template>
@@ -82,8 +83,9 @@
           </details>
         </div>
       </div>
-      <button class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :title="saveTitle" @click="onSaveClick">
-        <svg v-if="saveState === 'clean'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      <button class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :aria-disabled="saveState === 'blocked'" :title="saveTitle" @click="onSaveClick">
+        <svg v-if="saveState === 'blocked'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
+        <svg v-else-if="saveState === 'clean'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
         <svg v-else-if="saveState === 'dirty'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14" /></svg>
         <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
         <span>{{ saveLabel }}</span>
@@ -93,7 +95,7 @@
       </button>
     </div>
 
-    <SavePlanModal v-if="saving" :initial-name="modalName" :exists="false" :for-share="savingForShare" :as-new="savingAsNew" @close="saving = false" @confirm="onConfirm" />
+    <SavePlanModal v-if="saving" :initial-name="modalName" :exists="false" :for-share="savingForShare" :as-new="savingAsNew" :no-save="!canSave" @close="saving = false" @confirm="onConfirm" />
   </div>
 </template>
 
@@ -114,9 +116,12 @@ const props = defineProps({
   hasGoals: { type: Boolean, default: false },
   // The plan on screen has changes its saved copy does not have yet.
   dirty: { type: Boolean, default: false },
+  // Plans can only be saved for the player's own profile (or for no player at all).
+  canSave: { type: Boolean, default: true },
+  saveBlockedReason: { type: String, default: '' },
   importResult: { type: Object, default: null },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current', 'blocked'])
 
 const { loggedIn } = useAuth()
 const { shareFor } = useSharedPlans()
@@ -148,17 +153,22 @@ function openSave(forShare, asNew = false) {
 const openSaveAsNew = () => openSave(false, true)
 
 // One button that says what pressing it will do: save a new plan, update the saved one, or (nothing to do) show it is saved.
-const saveState = computed(() => (!props.currentId ? 'new' : props.dirty ? 'dirty' : 'clean'))
-const saveLabel = computed(() => ({ new: 'Save plan', dirty: 'Update plan', clean: 'Saved' })[saveState.value])
+const saveState = computed(() => {
+  const base = !props.currentId ? 'new' : props.dirty ? 'dirty' : 'clean'
+  return !props.canSave && base !== 'clean' ? 'blocked' : base
+})
+const saveLabel = computed(() => ({ new: 'Save plan', dirty: 'Update plan', clean: 'Saved', blocked: 'Not saved' })[saveState.value])
 const saveTitle = computed(
   () =>
     ({
       new: 'Name this plan and save it',
       dirty: 'You changed this plan. Update the saved copy to keep the changes.',
       clean: 'This plan is saved and up to date',
+      blocked: props.saveBlockedReason,
     })[saveState.value],
 )
 function onSaveClick() {
+  if (saveState.value === 'blocked') return emit('blocked')
   if (saveState.value === 'new') openSave(false)
   else if (saveState.value === 'dirty') emit('save', props.currentName)
 }

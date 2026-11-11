@@ -74,6 +74,8 @@
           :player-label="player?.displayName || ''"
           :has-goals="goals.length > 0"
           :dirty="dirty"
+          :can-save="canSavePlan"
+          :save-blocked-reason="saveBlockedReason"
           :import-result="importResult"
           @save="(n) => saveCurrent(n, false)"
           @save-new="(n) => saveCurrent(n, true)"
@@ -85,6 +87,7 @@
           @import="importSaved"
           @share="openShare"
           @share-current="shareCurrent"
+          @blocked="showToast(saveBlockedReason)"
         />
         <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
@@ -249,6 +252,7 @@ import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useRivals } from '@/composables/useRivals'
+import { useAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
@@ -376,6 +380,7 @@ let playersFreshened = false
 const sameName = (a, b) => String(a || '').toLowerCase().replace(/[\s_-]+/g, '') === String(b || '').toLowerCase().replace(/[\s_-]+/g, '')
 function switchPlanToPlayer(found) {
   const was = currentPlanName.value
+  unsavedShareId.value = ''
   for (const g of goals.value) g.currentXp = Math.min(found.latest.skills?.[g.skill]?.xp ?? 0, g.targetXp)
   statsAt.value = found.latest.capturedAt
   currentPlanId.value = ''
@@ -769,7 +774,23 @@ const dirty = computed(() => {
   if (!saved) return false
   return planFingerprint(saved) !== planFingerprint({ hoursPerDay: hoursPerDay.value, globalStrategy: globalStrategy.value, gpValue: gpValue.value, goals: goals.value })
 })
+// Plans can only be saved for your own profile: the one you have claimed. A plan for any other profile can still be shared,
+// it just is not kept in Saved plans. A plan for no profile at all (goals entered by hand) can always be saved.
+const { loggedIn, profiles, profilesReady } = useAuth()
+const ownsLoadedProfile = computed(() => !!player.value && profiles.value.some((p) => sameName(p.username, player.value.username)))
+// While the account's profiles are still being read, a signed-in person is not turned away.
+const canSavePlan = computed(() => !player.value || ownsLoadedProfile.value || (loggedIn.value && !profilesReady.value))
+const saveBlockedReason = computed(() => {
+  if (canSavePlan.value || !player.value) return ''
+  const who = player.value.displayName
+  return loggedIn.value
+    ? `Plans can only be saved for your own profile, and ${who} is not one you have claimed. You can still share this plan without saving it.`
+    : `Plans can only be saved for your own profile. Log in and claim ${who} to save plans for it. You can still share this plan without saving it.`
+})
+// A plan shared without being saved keeps one id, so sharing it again updates the same link instead of making a new one.
+const unsavedShareId = ref('')
 function saveCurrent(name, asNew) {
+  if (!canSavePlan.value) return showToast(saveBlockedReason.value)
   const wasSaved = !asNew && !!currentPlanId.value && savedPlans.value.some((p) => p.id === currentPlanId.value)
   const existing = !asNew && currentPlanId.value ? savedPlans.value.find((p) => p.id === currentPlanId.value) || {} : {}
   const plan = savePlan(snapshotPlan(currentSnapshotState(), name || currentPlanName.value, existing))
@@ -814,6 +835,8 @@ function keepCurrentPlanBefore(name) {
   if (!goals.value.length) return
   const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
   if (saved && !dirty.value) return
+  // A plan for someone else's profile is never saved, so there is nothing to keep it in.
+  if (!canSavePlan.value) return
   const kept = savePlan(snapshotPlan(currentSnapshotState(), `Plan before using "${name}"`.slice(0, 60)))
   if (kept) {
     refreshSaved()
@@ -824,6 +847,7 @@ function keepCurrentPlanBefore(name) {
 // "Use this plan" on a recommended plan: its goals come from the player's own stats, so they start from where they really are.
 function useRecommended(rec) {
   keepCurrentPlanBefore(rec.title)
+  unsavedShareId.value = ''
   goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
@@ -844,6 +868,7 @@ async function loadTemplate(slug) {
     return false
   }
   keepCurrentPlanBefore(share.name)
+  unsavedShareId.value = ''
   goals.value = share.plan.goals.map((g) => ({
     skill: g.skill,
     currentXp: 0,
@@ -877,11 +902,20 @@ function openShare(stored) {
 // Sharing the plan on screen: save it first (so the public copy matches what is shown), then open the share window.
 function shareCurrent(name) {
   if (!goals.value.length) return
+  if (!canSavePlan.value) return shareWithoutSaving(name)
   saveCurrent(name, false)
   const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
   if (saved) openShare(saved)
 }
+// Share the plan on screen as it is, without putting it in Saved plans. Used for plans about a profile that is not yours.
+function shareWithoutSaving(name) {
+  const id = currentPlanId.value || unsavedShareId.value || `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
+  if (!currentPlanId.value) unsavedShareId.value = id
+  const plan = snapshotPlan(currentSnapshotState(), name || currentPlanName.value || 'Shared plan', { id })
+  openShare(plan)
+}
 function applyPlan(plan) {
+  unsavedShareId.value = ''
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests] }))
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
@@ -949,13 +983,13 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId],
+  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId],
   () => {
     calcAt.value = new Date()
     const state = planState()
     try {
       // The saved plan this working copy came from is remembered too, so coming back shows it as that plan.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value, planId: currentPlanId.value, planName: currentPlanName.value }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value, planId: currentPlanId.value, planName: currentPlanName.value, shareId: unsavedShareId.value }))
     } catch {
       /* storage unavailable, URL sharing still works */
     }
@@ -1007,6 +1041,8 @@ onMounted(async () => {
     if (match) {
       currentPlanId.value = match.id
       currentPlanName.value = match.name
+    } else if (sameAsRemembered && remembered.shareId) {
+      unsavedShareId.value = remembered.shareId
     }
   } else if (!Object.keys(route.query).length && savedPlans.value.length) {
     // A plain visit with nothing in progress: pick up the most recently saved plan.

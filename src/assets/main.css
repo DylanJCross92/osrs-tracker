@@ -3835,3 +3835,7 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 
 .sp-others { display: block; width: 100%; margin: 2px 0 8px; padding: 8px 12px; border-radius: 10px; background: none; border: 1px dashed var(--border-strong); color: var(--muted); font: inherit; font-size: 0.82rem; text-align: left; cursor: pointer; }
 .sp-others:hover { color: var(--gold-bright); border-color: var(--gold); }
+
+.sp-save.is-blocked { background: rgba(224, 168, 106, 0.08); border-color: rgba(224, 168, 106, 0.4); color: #e0a86a; cursor: pointer; }
+.sp-save.is-blocked:hover { background: rgba(224, 168, 106, 0.14); }
+.sp-note-warn { padding: 8px 10px; border-radius: 8px; background: rgba(224, 168, 106, 0.1); border: 1px solid rgba(224, 168, 106, 0.35); color: #e0a86a; }
