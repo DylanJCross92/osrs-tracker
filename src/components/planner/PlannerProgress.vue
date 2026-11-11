@@ -28,11 +28,12 @@
           <span class="pp-tip-goal">{{ m.done ? 'Goal reached' : `Goal: level ${m.targetLevel}` }}</span>
           <span class="pp-tip-date">{{ m.done ? 'Complete' : m.dateText || 'Date unknown' }}</span>
           <span v-if="!m.done && m.inText" class="pp-tip-in">{{ m.inText }}</span>
+          <span v-if="m.days" class="pp-tip-in">{{ m.days }} day{{ m.days === 1 ? '' : 's' }} of training</span>
         </span>
       </span>
     </div>
-    <div class="pp-bar" role="progressbar" :aria-valuenow="Math.round(progress.pct * 100)" aria-valuemin="0" aria-valuemax="100" aria-label="Overall plan progress">
-      <i :style="{ width: progress.pct * 100 + '%' }" />
+    <div class="pp-bar" role="progressbar" :aria-valuenow="Math.round(progress.timePct * 100)" aria-valuemin="0" aria-valuemax="100" aria-label="Overall plan progress">
+      <i :style="{ width: progress.timePct * 100 + '%' }" />
       <!-- A break in the bar at the point each goal ends -->
       <span v-for="m in markers.filter((x) => x.pos < 99.5)" :key="`b-${m.skill}`" class="pp-break" :class="{ on: hovered === m.skill, done: m.done }" :style="{ left: m.pos + '%' }" aria-hidden="true" />
     </div>
@@ -66,26 +67,28 @@ const props = defineProps({
   since: { type: Object, default: null },
   // The timeline entries (same order as the goals), for each goal's finish date.
   entries: { type: Array, default: () => [] },
+  hoursPerDay: { type: Number, default: 2 },
   // On a public plan page: no restart link and no personal notes.
   readonly: { type: Boolean, default: false },
 })
 defineEmits(['rebase'])
 
-// Each goal's finish sits at its share of the whole plan's XP, adding up goals in training order, so the last one ends the bar.
-// Markers that would overlap move to another lane.
-const hovered = ref('')
+// Each goal's finish sits at its share of the whole plan's training time, adding goals up in training order, so a goal that takes
+// longer takes more room and the bar reads like a timeline. Markers that would overlap move to another lane.
 const MIN_GAP = 6.5
 const markers = computed(() => {
   const per = props.progress.per
-  const total = props.progress.totalXp
-  if (!total || !per.length) return []
+  const totalHours = per.reduce((sum, p) => sum + p.hours, 0)
+  if (!per.length) return []
   let running = 0
   const laneEnds = []
   const out = []
   per.forEach((p, i) => {
-    if (!p.total) return
-    running += p.total
-    const pos = Math.min(100, (running / total) * 100)
+    if (!p.hours && !totalHours) return
+    running += p.hours
+    // Without any hours to go on (no method data), fall back to equal spacing so the bar still shows every goal.
+    const pos = totalHours > 0 ? Math.min(100, (running / totalHours) * 100) : ((i + 1) / per.length) * 100
+    if (totalHours > 0 && !p.hours) return
     let lane = laneEnds.findIndex((end) => pos - end >= MIN_GAP)
     if (lane === -1) lane = Math.min(laneEnds.length, 2)
     laneEnds[lane] = pos
@@ -93,14 +96,14 @@ const markers = computed(() => {
     const label = p.done ? `${p.skill}: level ${p.targetLevel} reached` : `${p.skill}: level ${p.targetLevel}${end ? ` by ${fmtDate(end)}` : ''}`
     // Keep the tooltip inside the card near either end.
     const align = pos > 82 ? 'tip-right' : pos < 18 ? 'tip-left' : ''
-    out.push({ skill: p.skill, pos, lane, done: p.done, label, align, targetLevel: p.targetLevel, dateText: end ? fmtDate(end) : '', inText: end ? untilText(end) : '' })
+    out.push({ skill: p.skill, pos, lane, done: p.done, label, align, targetLevel: p.targetLevel, dateText: end ? fmtDate(end) : '', inText: end ? untilText(end) : '', days: props.hoursPerDay > 0 ? Math.ceil(p.hours / props.hoursPerDay) : null })
   })
   return out
 })
 const lanes = computed(() => Math.max(1, ...markers.value.map((m) => m.lane + 1)))
 
 const pctText = computed(() => {
-  const p = props.progress.pct * 100
+  const p = props.progress.timePct * 100
   return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
 })
 const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })

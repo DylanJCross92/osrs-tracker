@@ -235,6 +235,9 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
       startLevel: levelAtXp(g.currentXp, true),
       liveLevel: levelAtXp(live, true),
       targetLevel: levelAtXp(g.targetXp, true),
+      // Training hours this goal was planned to take from its start, and what is left of them now: the timeline is drawn from these.
+      hours: originalPlans[i]?.hours || 0,
+      hoursLeft: livePlans[i]?.hours || 0,
     }
   })
   const totalXp = per.reduce((a, p) => a + p.total, 0)
@@ -253,6 +256,9 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
     gainedXp,
     remainingXp: Math.max(0, totalXp - gainedXp),
     pct: totalXp > 0 ? Math.min(1, gainedXp / totalXp) : per.length && completedGoals === per.length ? 1 : 0,
+    // How much of the planned training time is behind the player. This is what the progress bar shows: a goal that takes twice
+    // as long takes twice the room, so the bar reads like a timeline.
+    timePct: originalHours > 0 ? Math.min(1, Math.max(0, (originalHours - liveHours) / originalHours)) : totalXp > 0 ? Math.min(1, gainedXp / totalXp) : 0,
     completedGoals,
     goalCount: per.length,
     complete: per.length > 0 && completedGoals === per.length,

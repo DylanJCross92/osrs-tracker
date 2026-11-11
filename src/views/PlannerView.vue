@@ -100,6 +100,7 @@
         :baseline-at="statsAt || ''"
         :since="sinceVisit"
         :entries="timeline.entries"
+        :hours-per-day="hoursPerDay"
         @rebase="refreshFromPlayer"
       />
 

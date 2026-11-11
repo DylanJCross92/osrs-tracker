@@ -34,6 +34,17 @@ describe('buildProgress', () => {
     expect(p.complete).toBe(false)
   })
 
+  it('carries each goal\'s planned hours and a time-based percent for the timeline', () => {
+    const live = [liveGoalFor(goals[0], xpAtLevel(60)), goals[1]]
+    const orig = goals.map(plan)
+    const p = buildProgress(goals, live, orig, live.map(plan), 2, baseline, new Date('2027-01-02T00:00:00Z'))
+    expect(p.per[0].hours).toBeCloseTo(orig[0].hours)
+    expect(p.per[0].hoursLeft).toBeLessThan(p.per[0].hours)
+    expect(p.per[1].hoursLeft).toBeCloseTo(p.per[1].hours)
+    const done = orig[0].hours - plan(live[0]).hours
+    expect(p.timePct).toBeCloseTo(done / (orig[0].hours + orig[1].hours))
+  })
+
   it('is complete when every goal is reached', () => {
     const live = goals.map((g) => liveGoalFor(g, g.targetXp))
     const p = buildProgress(goals, live, goals.map(plan), live.map(plan), 2, baseline, new Date('2027-02-01T00:00:00Z'))
