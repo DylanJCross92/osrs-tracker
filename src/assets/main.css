@@ -3846,6 +3846,9 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .goal-add-bottom { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); border: 1px solid var(--gold); color: var(--gold-ink); font-weight: 700; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 16px rgba(217, 175, 82, 0.18); transition: filter 0.12s, transform 0.12s; }
 .goal-add-bottom:hover { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); filter: brightness(1.07); transform: translateY(-1px); }
 .goal-add-bottom:active { transform: translateY(0); }
+/* softer: a solid gold tint instead of a bright gold slab, so the wide button does not shout */
+.goal-add-bottom { background: rgba(217, 175, 82, 0.14); border: 1px solid rgba(217, 175, 82, 0.45); color: var(--gold-bright); box-shadow: none; }
+.goal-add-bottom:hover { background: rgba(217, 175, 82, 0.24); border-color: var(--gold); filter: none; transform: none; }
 
 /* revert button next to Update plan */
 .sp-revert { display: inline-flex; align-items: center; gap: 7px; height: 40px; padding: 0 14px 0 11px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-strong); color: var(--muted); font: inherit; font-size: 0.86rem; font-weight: 600; white-space: nowrap; cursor: pointer; transition: color 0.12s, border-color 0.12s, background 0.12s; }

@@ -975,6 +975,8 @@ async function loadSaved(stored, { silent = false } = {}) {
   const res = validatePlan(stored)
   if (res.error) return silent ? undefined : showToast(res.error)
   applyPlan(res.plan)
+  // Plans saved without a start time still track progress: the goals carry their own starting XP, so the day the plan was made stands in.
+  if (!statsAt.value) statsAt.value = stored.createdAt || stored.updatedAt || null
   currentPlanId.value = res.plan.id
   currentPlanName.value = res.plan.name
   if (res.warnings.length && !silent) showToast(res.warnings[0])
