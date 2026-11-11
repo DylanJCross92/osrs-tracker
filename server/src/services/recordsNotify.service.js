@@ -1,7 +1,7 @@
 import { pool } from '../db.js'
 import { getPlayerRecords } from './records.service.js'
 import { recordHeadline } from '../utils/records.js'
-import { addNotification, ownerOfPlayer } from './inbox.service.js'
+import { addOrRefreshNotification, dayStamp, ownerOfPlayer } from './inbox.service.js'
 import { checkGoals } from './goals.service.js'
 
 /**
@@ -25,11 +25,13 @@ export async function checkRecords(playerId) {
     for (const r of records) {
       if (r.locked || !(r.key in next)) continue
       if (r.key in previous && next[r.key] > Number(previous[r.key])) {
-        await addNotification(ownerId, {
+        // One notice per record per day: a record that keeps improving as XP arrives updates the day's notice rather than
+        // adding a new one each time.
+        await addOrRefreshNotification(ownerId, {
           type: 'record',
           text: `New personal record: ${recordHeadline(r)}`,
           link: `/player/${encodeURIComponent(rows[0].username)}?tab=records&record=${encodeURIComponent(r.key)}`,
-          dedupeKey: `record:${playerId}:${r.key}:${next[r.key]}`,
+          dedupeKey: `record:${playerId}:${r.key}:${dayStamp()}`,
           subject: rows[0].username,
         })
       }

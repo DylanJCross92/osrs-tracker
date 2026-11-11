@@ -24,6 +24,34 @@ export async function addNotification(userId, { type, text, link = '', dedupeKey
   }
 }
 
+/** The UTC calendar day as YYYY-MM-DD, for notices that are shown at most once a day. */
+export const dayStamp = (date = new Date()) => date.toISOString().slice(0, 10)
+
+/**
+ * Like addNotification, but a notice with the same dedupeKey is updated instead of ignored: the first one is added, later ones
+ * only refresh its text and link. It keeps its place in the list and its read state, so a figure that moves several times
+ * a day (a weekly XP record, say) is one notice that always shows the latest number, not a new one each time.
+ * Returns true when a new notice was added.
+ */
+export async function addOrRefreshNotification(userId, { type, text, link = '', dedupeKey, subject = null }) {
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO notifications (user_id, type, text, link, dedupe_key, subject) VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE SET text = EXCLUDED.text, link = EXCLUDED.link
+       RETURNING (xmax = 0) AS inserted`,
+      [userId, String(type).slice(0, 40), String(text).slice(0, MAX_TEXT), String(link).slice(0, 300), dedupeKey, subject ? String(subject).slice(0, 12) : null],
+    )
+    const inserted = rows[0]?.inserted === true
+    if (inserted) {
+      pool.query(`DELETE FROM notifications WHERE user_id = $1 AND id NOT IN (SELECT id FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2)`, [userId, KEEP_PER_USER]).catch(() => {})
+    }
+    return inserted
+  } catch (err) {
+    console.error('[inbox] could not add notification:', err.message)
+    return false
+  }
+}
+
 /** The account that owns a profile (verified claim), or null. */
 export async function ownerOfPlayer(playerId) {
   const { rows } = await pool.query(`SELECT user_id FROM profile_claims WHERE player_id = $1 AND status = 'verified'`, [playerId])
