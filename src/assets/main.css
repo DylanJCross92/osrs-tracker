@@ -3769,3 +3769,36 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .sp-new:hover:not(:disabled) { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); }
 .sp-new:disabled { opacity: 0.4; cursor: default; }
 @media (max-width: 640px) { .sp-bar { flex-wrap: wrap; } .sp-menu { flex: 1 1 100%; } .sp-save { flex: 1; justify-content: center; height: 44px; } }
+
+/* ---------- header, decluttered: logo, text tabs, a calm search, account ---------- */
+.app-topbar-inner { max-width: 1180px; padding: 0 20px; min-height: 64px; gap: 10px; justify-content: flex-start; }
+.app-logo { order: 1; flex: none; margin-right: 18px; }
+.app-nav { order: 2; align-self: stretch; display: flex; gap: 2px; padding: 0; background: none; border: 0; border-radius: 0; }
+.nav-search { order: 3; flex: 0 1 240px; max-width: none; margin-left: auto; transition: flex-basis 0.2s ease; }
+.nav-search:focus-within { flex-basis: 340px; }
+.acct { order: 4; gap: 10px; }
+.nav-search-field input { height: 38px; background: rgba(0, 0, 0, 0.22); border-color: var(--border); }
+.nav-search-field input:hover { border-color: var(--border-strong); }
+.acct .btn { height: 38px; }
+.acct-avatar { width: 38px; height: 38px; }
+.app-nav .app-nav-link { position: relative; display: inline-flex; align-items: center; height: 100%; padding: 0 16px; border-radius: 0; background: none; box-shadow: none; color: var(--muted); font-size: 0.95rem; font-weight: 600; letter-spacing: 0.01em; }
+.app-nav .app-nav-link svg { display: none; }
+.app-nav .app-nav-link:hover { color: var(--text); background: none; }
+.app-nav .app-nav-link::after { content: ''; position: absolute; left: 16px; right: 16px; bottom: 0; height: 3px; border-radius: 3px 3px 0 0; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transform: scaleX(0); transform-origin: center; transition: transform 0.18s ease; box-shadow: 0 -2px 12px rgba(240, 201, 118, 0.45); }
+.app-nav .app-nav-link:hover::after { transform: scaleX(0.35); opacity: 0.6; }
+.app-nav .app-nav-link.is-active { color: var(--gold-bright); background: none; box-shadow: none; }
+.app-nav .app-nav-link.is-active::after { transform: scaleX(1); opacity: 1; }
+/* the gold rule along the bottom of the bar is enough; the extra glow on the logo made it busy */
+.app-logo { filter: none; }
+
+@media (max-width: 860px) {
+  /* phones and tablets: logo, search and account on top, the three tabs underneath */
+  .app-topbar-inner { flex-wrap: wrap; min-height: 0; padding: 10px 12px 0; row-gap: 8px; position: relative; }
+  .app-logo { order: 1; margin-right: 4px; }
+  .nav-search { order: 2; flex: 1 1 0; max-width: none; margin-left: 0; position: static; }
+  .nav-search:focus-within { flex-basis: 0; }
+  .acct { order: 3; }
+  .app-nav { order: 4; width: 100%; justify-content: space-between; align-self: auto; height: 44px; margin: 0 -12px; padding: 0 6px; border-top: 1px solid var(--border); }
+  .app-nav .app-nav-link { flex: 1; justify-content: center; padding: 0 6px; font-size: 0.92rem; }
+  .app-nav .app-nav-link::after { left: 22%; right: 22%; }
+}

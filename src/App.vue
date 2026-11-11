@@ -15,9 +15,9 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
             Discover
           </RouterLink>
-          <RouterLink :to="{ name: 'planner' }" class="app-nav-link" :class="{ 'is-active': route.name === 'planner' }">
+          <RouterLink :to="{ name: 'planner' }" class="app-nav-link" title="Account Planner" aria-label="Account Planner" :class="{ 'is-active': route.name === 'planner' }">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" /></svg>
-            Account Planner
+            Planner
           </RouterLink>
         </nav>
         <AccountMenu />
