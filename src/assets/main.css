@@ -3692,3 +3692,36 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .save-plan-field input { height: 46px; text-transform: none; letter-spacing: 0; font-size: 1rem; }
 .save-plan-note { margin: 0 0 16px; color: var(--muted); font-size: 0.84rem; }
 .save-plan-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+
+/* plan controls: a plan switcher (opens a dropdown) with Save and Share beside it */
+.sp-icons { display: none; }
+.sp-bar { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.sp-menu { position: relative; min-width: 0; }
+.sp-switch { display: inline-flex; align-items: center; gap: 9px; max-width: 270px; height: 40px; padding: 0 12px 0 12px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-strong); color: var(--text); font: inherit; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+.sp-switch:hover, .sp-switch.open, .sp-switch:focus-visible { border-color: var(--gold); background: rgba(217, 175, 82, 0.08); outline: none; }
+.sp-switch-icon { flex: none; color: var(--gold-bright); }
+.sp-switch .sp-name { min-width: 0; max-width: none; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.9rem; font-weight: 600; }
+.sp-switch .sp-name.unsaved { color: var(--muted); font-weight: 400; font-style: italic; }
+.sp-switch .sp-count { position: static; flex: none; min-width: 20px; height: 20px; margin: 0; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: var(--panel-alt); border: 1px solid var(--border-strong); color: var(--gold-bright); font-size: 0.72rem; font-weight: 700; line-height: 18px; text-align: center; }
+.sp-caret { flex: none; color: var(--muted); transition: transform 0.15s; }
+.sp-switch.open .sp-caret { transform: rotate(180deg); color: var(--gold-bright); }
+.sp-bar .sp-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid var(--border-strong); color: var(--gold-bright); }
+.sp-bar .sp-icon:hover:not(:disabled), .sp-bar .sp-icon:focus-visible { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); }
+.sp-bar .sp-icon:disabled { opacity: 0.4; }
+
+/* the list floats over the page, it never pushes anything down */
+.sp-panel { position: absolute; top: calc(100% + 8px); right: auto; left: 0; z-index: 60; order: 0; flex: none; width: min(460px, calc(100vw - 32px)); max-height: min(70vh, 480px); margin: 0; padding: 12px 12px 12px; overflow-y: auto; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--panel); box-shadow: 0 18px 44px rgba(0, 0, 0, 0.6); }
+.sp-panel::before { content: ''; position: absolute; top: -6px; left: 28px; width: 10px; height: 10px; transform: rotate(45deg); background: var(--panel); border-left: 1px solid var(--border-strong); border-top: 1px solid var(--border-strong); }
+.sp-panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+.sp-panel-head b { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gold-bright); }
+.sp-panel-head span { color: var(--muted); font-size: 0.78rem; }
+.sp-panel .sp-note { margin: 0 0 10px; font-size: 0.8rem; }
+@media (max-width: 640px) {
+  .sp-bar { flex: 1 1 100%; }
+  .sp-menu { flex: 1; }
+  .sp-switch { width: 100%; max-width: none; }
+  .sp-switch .sp-name { flex: 1; text-align: left; }
+  .sp-bar .sp-icon { width: 44px; height: 40px; }
+  .sp-panel { width: calc(100% + 104px); max-width: calc(100vw - 32px); }
+  .sp-panel::before { left: 28px; }
+}
