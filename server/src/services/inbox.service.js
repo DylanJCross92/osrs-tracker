@@ -7,11 +7,11 @@ const MAX_TEXT = 200
 const KEEP_PER_USER = 200
 
 /** Adds one notification. A repeat of the same dedupeKey for the same account is ignored. Returns true when added. */
-export async function addNotification(userId, { type, text, link = '', dedupeKey = null }) {
+export async function addNotification(userId, { type, text, link = '', dedupeKey = null, subject = null }) {
   try {
     const { rowCount } = await pool.query(
-      `INSERT INTO notifications (user_id, type, text, link, dedupe_key) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
-      [userId, String(type).slice(0, 40), String(text).slice(0, MAX_TEXT), String(link).slice(0, 300), dedupeKey],
+      `INSERT INTO notifications (user_id, type, text, link, dedupe_key, subject) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
+      [userId, String(type).slice(0, 40), String(text).slice(0, MAX_TEXT), String(link).slice(0, 300), dedupeKey, subject ? String(subject).slice(0, 12) : null],
     )
     if (rowCount) {
       // Keep the inbox from growing forever: the newest KEEP_PER_USER stay.
@@ -38,10 +38,20 @@ export async function followersOfPlayer(playerId) {
 
 export async function listInbox(userId, limit = 50) {
   const { rows } = await pool.query(
-    `SELECT id, type, text, link, created_at, read_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
+    `SELECT id, type, text, link, subject, created_at, read_at FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2`,
     [userId, Math.min(Math.max(Number(limit) || 50, 1), 100)],
   )
-  return rows.map((r) => ({ id: r.id, type: r.type, text: r.text, link: r.link, createdAt: r.created_at, read: Boolean(r.read_at) }))
+  // Older notices have no subject; most link to the player they are about. A follower who stays anonymous never does.
+  const fromLink = (r) => {
+    if (r.type === 'new_follower') return null
+    const m = /^\/player\/([^/?#]+)/.exec(r.link || '')
+    try {
+      return m ? decodeURIComponent(m[1]) : null
+    } catch {
+      return null
+    }
+  }
+  return rows.map((r) => ({ id: r.id, type: r.type, text: r.text, link: r.link, subject: r.subject || fromLink(r), createdAt: r.created_at, read: Boolean(r.read_at) }))
 }
 
 export async function unreadCount(userId) {

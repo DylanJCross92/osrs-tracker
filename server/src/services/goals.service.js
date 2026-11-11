@@ -95,7 +95,7 @@ export async function checkGoals(playerId) {
   for (const r of done) {
     await pool.query('UPDATE profile_goals SET reached_at = now() WHERE id = $1 AND reached_at IS NULL', [r.id])
     const title = goalTitle({ skill: r.skill, type: r.target_type, target: Number(r.target_value) })
-    if (ownerId) await addNotification(ownerId, { type: 'goal_reached', text: `You reached your goal: ${title}!`, link, dedupeKey: `goal:${r.id}` })
-    for (const id of followers) await addNotification(id, { type: 'follow_goal', text: `${pl[0].display_name} reached their goal: ${title}`, link, dedupeKey: `goal:${r.id}` })
+    if (ownerId) await addNotification(ownerId, { type: 'goal_reached', text: `You reached your goal: ${title}!`, link, dedupeKey: `goal:${r.id}`, subject: pl[0].username })
+    for (const id of followers) await addNotification(id, { type: 'follow_goal', text: `${pl[0].display_name} reached their goal: ${title}`, link, dedupeKey: `goal:${r.id}`, subject: pl[0].username })
   }
 }

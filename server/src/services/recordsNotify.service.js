@@ -30,6 +30,7 @@ export async function checkRecords(playerId) {
           text: `New personal record: ${recordHeadline(r)}`,
           link: `/player/${encodeURIComponent(rows[0].username)}?tab=records&record=${encodeURIComponent(r.key)}`,
           dedupeKey: `record:${playerId}:${r.key}:${next[r.key]}`,
+          subject: rows[0].username,
         })
       }
     }

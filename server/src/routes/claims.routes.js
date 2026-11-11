@@ -111,7 +111,7 @@ claimsRouter.post(
   ...admin,
   handle(async (req, res) => {
     const claim = await approveByCode(req.user, req.body?.code)
-    await addNotification(claim.userId, { type: 'claim_approved', text: `Your claim on ${claim.player.displayName} was verified. It is now your profile.`, link: `/player/${encodeURIComponent(claim.player.username)}`, dedupeKey: `claim-approved:${claim.id}` })
+    await addNotification(claim.userId, { type: 'claim_approved', text: `Your claim on ${claim.player.displayName} was verified. It is now your profile.`, link: `/player/${encodeURIComponent(claim.player.username)}`, dedupeKey: `claim-approved:${claim.id}`, subject: claim.player.username })
     // Tell the new owner. A failed email never undoes the approval, but the owner is told whether it went out.
     const emailed = await sendMail({
       to: claim.email,
@@ -132,7 +132,7 @@ claimsRouter.post(
   ...admin,
   handle(async (req, res) => {
     const rejected = await rejectClaim(req.user, Number(req.params.id))
-    await addNotification(rejected.userId, { type: 'claim_rejected', text: `Your claim on ${rejected.player.displayName} was not approved. You can start again from the profile page.`, link: `/player/${encodeURIComponent(rejected.player.username)}`, dedupeKey: `claim-rejected:${req.params.id}` })
+    await addNotification(rejected.userId, { type: 'claim_rejected', text: `Your claim on ${rejected.player.displayName} was not approved. You can start again from the profile page.`, link: `/player/${encodeURIComponent(rejected.player.username)}`, dedupeKey: `claim-rejected:${req.params.id}`, subject: rejected.player.username })
     res.json({ ok: true })
   }),
 )

@@ -66,8 +66,8 @@ export async function fanOutMilestones(playerId, defs) {
   const followers = (await followersOfPlayer(playerId)).filter((id) => id !== ownerId)
   for (const d of defs) {
     const key = `milestone:${playerId}:${d.key}`
-    if (ownerId) await addNotification(ownerId, { type: 'milestone', text: `You reached ${d.title}!`, link, dedupeKey: key })
-    for (const id of followers) await addNotification(id, { type: 'follow_milestone', text: `${name} reached ${d.title}`, link, dedupeKey: key })
+    if (ownerId) await addNotification(ownerId, { type: 'milestone', text: `You reached ${d.title}!`, link, dedupeKey: key, subject: username })
+    for (const id of followers) await addNotification(id, { type: 'follow_milestone', text: `${name} reached ${d.title}`, link, dedupeKey: key, subject: username })
   }
 }
 

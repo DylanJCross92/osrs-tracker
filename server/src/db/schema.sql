@@ -269,3 +269,7 @@ CREATE TABLE IF NOT EXISTS profile_goals (
   reached_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS profile_goals_player_idx ON profile_goals (player_id, created_at DESC);
+
+-- The player a notification is about (its RSN), so the bell can show their picture. NULL when it is not about one
+-- player, or when the person should stay anonymous.
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS subject TEXT;

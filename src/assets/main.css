@@ -3341,3 +3341,5 @@ img.pavatar-photo, .profile-avatar img.pavatar-photo { width: 100% !important; h
 /* Number fields never show the browser's little up and down arrows. */
 input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
 input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.bell-av { flex: none; width: 34px; height: 34px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-strong); background: var(--bg); display: flex; align-items: center; justify-content: center; color: var(--muted); }
+.bell-item .bell-dot { margin-top: 12px; }

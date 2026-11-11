@@ -33,6 +33,7 @@ function image(src, width, height) {
 export function formatXp(xp) {
   const n = Number(xp) || 0
   const abs = Math.abs(n)
+  if (abs >= 1_000_000_000) return `${parseFloat((n / 1_000_000_000).toFixed(2))}B`
   if (abs >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2))}M`
   if (abs >= 1_000) return `${parseFloat((n / 1_000).toFixed(1))}K`
   return String(Math.round(n))
@@ -681,4 +682,107 @@ async function buildGoalCardTree({ displayName, goal }) {
 /** { displayName, goal } (see goals.service.js) -> PNG Buffer. */
 export async function renderGoalCardPng(data) {
   return renderPng(await buildGoalCardTree(data))
+}
+
+// --- Profile preview card (what a pasted profile link unfurls into) -------------------------------------------------
+
+import { avatarFor } from '../utils/avatar.js'
+
+const SHIELD = ['M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z']
+
+// The generated pixel picture, drawn the same way the site draws it, so a shared link shows the same face.
+function pixelAvatar(name, size) {
+  const art = avatarFor(name)
+  return node('div', { display: 'flex', width: size, height: size, backgroundImage: `linear-gradient(145deg, ${art.palette.bg1}, ${art.palette.bg2})` }, [
+    {
+      type: 'svg',
+      props: {
+        width: size,
+        height: size,
+        viewBox: '0 0 7 7',
+        children: art.cells.map((c) => ({ type: 'rect', props: { x: c.x, y: c.y, width: 1, height: 1, fill: art.palette.fg, fillOpacity: c.o } })),
+      },
+    },
+  ])
+}
+
+const chip = (children) =>
+  node('div', { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 24, color: COLORS.cream }, children)
+
+async function buildProfileCardTree(d) {
+  const [highestIcon, ...skillIcons] = await Promise.all([d.highest ? skillIconDataUri(d.highest.skill) : null, ...d.topSkills.map((s) => skillIconDataUri(s.skill))])
+  const AV = 230
+  const picture = node(
+    'div',
+    { display: 'flex', width: AV, height: AV, borderRadius: 44, overflow: 'hidden', border: `4px solid ${COLORS.gold}`, boxShadow: '0 0 70px rgba(240, 201, 118, 0.3)', flexShrink: 0 },
+    [d.photo ? image(d.photo, AV - 8, AV - 8) : pixelAvatar(d.username, AV - 8)],
+  )
+
+  // The marks next to the name: the gold shield for founders and admins, a green tick for any other claimed profile.
+  const marks = d.badge
+    ? [svgIcon(46, COLORS.gold, SHIELD)]
+    : d.claimed
+      ? [node('div', { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 22, backgroundColor: COLORS.green }, [svgIcon(28, '#16130e', ['M5.5 12.5l4 4 9-9.5'], { stroke: true })])]
+      : []
+
+  const stats = [
+    chip([node('div', { display: 'flex', color: COLORS.muted }, 'Overall'), node('div', { display: 'flex', fontWeight: 800 }, d.overallLevel.toLocaleString('en-US'))]),
+    chip([node('div', { display: 'flex', fontWeight: 800 }, formatXp(d.overallXp)), node('div', { display: 'flex', color: COLORS.muted }, 'XP')]),
+    ...(d.overallRank ? [chip([node('div', { display: 'flex', color: COLORS.muted }, 'Rank'), node('div', { display: 'flex', fontWeight: 800 }, `#${d.overallRank.toLocaleString('en-US')}`)])] : []),
+  ]
+
+  // The headline: this week's gain when there is one, otherwise the player's strongest skill.
+  const headline = d.weekXp > 0
+    ? [node('div', { fontSize: 78, fontWeight: 800, color: COLORS.green, lineHeight: 1 }, `+${formatXp(d.weekXp)}`), node('div', { fontSize: 30, fontWeight: 700, color: COLORS.muted, marginLeft: 14, marginTop: 28 }, 'XP this week')]
+    : d.highest
+      ? [node('div', { fontSize: 60, fontWeight: 800, color: COLORS.gold, lineHeight: 1.1 }, `${d.highest.skill} ${d.highest.level}`), node('div', { fontSize: 28, fontWeight: 700, color: COLORS.muted, marginLeft: 14, marginTop: 22 }, 'highest skill')]
+      : []
+
+  const topChips = d.topSkills.map((s, i) =>
+    chip([skillIcons[i] ? image(skillIcons[i], 28, 28) : null, node('div', { display: 'flex' }, s.skill), node('div', { display: 'flex', color: COLORS.green, fontWeight: 800 }, `+${formatXp(s.xp)}`)].filter(Boolean)),
+  )
+  if (!topChips.length && d.highest && d.weekXp > 0) topChips.push(chip([highestIcon ? image(highestIcon, 30, 30) : null, node('div', { display: 'flex' }, `Highest: ${d.highest.skill} ${d.highest.level}`)].filter(Boolean)))
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '40px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 18% 40%, #3a2e14 0%, #1d1810 45%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'OSRS player profile'),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', alignItems: 'center', gap: 44 }, [
+        picture,
+        node('div', { display: 'flex', flexDirection: 'column', flex: 1 }, [
+          node('div', { display: 'flex', alignItems: 'center', gap: 16 }, [node('div', { fontSize: 72, fontWeight: 800, color: COLORS.gold, lineHeight: 1.05 }, d.displayName), ...marks]),
+          node('div', { display: 'flex', gap: 12, marginTop: 18 }, stats),
+          node('div', { display: 'flex', alignItems: 'baseline', marginTop: 26 }, headline),
+          ...(topChips.length ? [node('div', { display: 'flex', gap: 10, marginTop: 22 }, topChips)] : []),
+        ]),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 28, fontWeight: 800, color: COLORS.gold }, 'XP history, records, goals and more'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** getProfileCardData(...) -> PNG Buffer. */
+export async function renderProfileCardPng(data) {
+  return renderPng(await buildProfileCardTree(data))
 }

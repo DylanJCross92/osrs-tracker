@@ -41,6 +41,7 @@ async function notifyNewFollower(followerId, playerId) {
       text: `${mine[0]?.display_name || 'Someone'} started following you`,
       link: `/player/${encodeURIComponent(mine[0]?.username || theirs[0]?.username || '')}`,
       dedupeKey: `follow:${followerId}:${playerId}`,
+      subject: mine[0]?.username || null,
     })
   } catch (err) {
     console.error('[follows] could not notify the owner:', err.message)

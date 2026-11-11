@@ -178,21 +178,27 @@ if (distExists) {
       ])
 
       const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      // The preview picture is drawn per player (see services/profileCard.service.js). The ?v= changes with every new
+      // snapshot and picture, so Discord and X fetch a fresh one instead of showing an old copy.
+      const version = latest ? `${new Date(latest.capturedAt).getTime()}` : ''
       const imageUrl = latest
-        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png`
+        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/profile/image.png?v=${version}`
         : `${SITE_URL}/og-default.png`
 
       let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
       if (latest) {
-        description = `${player.displayName}, Overall ${latest.overallLevel.toLocaleString('en-US')} (${formatXp(latest.overallXp)} XP). Explore ${player.displayName}'s OSRS stats, XP history, achievements, and progression on TickGains.`
-        if (weekly?.xpGained > 0) {
-          description += ` +${formatXp(weekly.xpGained)} XP this week.`
-        }
+        const top = Object.entries(latest.skills || {}).sort((x, y) => y[1].level - x[1].level || y[1].xp - x[1].xp)[0]
+        const parts = [`Total level ${latest.overallLevel.toLocaleString('en-US')}`, `${formatXp(latest.overallXp)} XP`]
+        if (latest.overallRank > 0) parts.push(`rank #${latest.overallRank.toLocaleString('en-US')}`)
+        description = `${parts.join(' · ')}.`
+        if (weekly?.xpGained > 0) description += ` +${formatXp(weekly.xpGained)} XP this week.`
+        if (top) description += ` Highest skill: ${top[0]} ${top[1].level}.`
+        description += ` See ${player.displayName}'s XP history, records and goals on TickGains.`
       }
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: `${player.displayName} | OSRS Player Profile | TickGains`,
+          title: latest ? `${player.displayName}, Level ${latest.overallLevel.toLocaleString('en-US')} | OSRS Player Profile | TickGains` : `${player.displayName} | OSRS Player Profile | TickGains`,
           description,
           imageUrl,
           pageUrl,

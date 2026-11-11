@@ -20,6 +20,10 @@
         <p v-if="loading && !inbox.length" class="bell-empty">Loading…</p>
         <a v-for="n in inbox" :key="n.id" class="bell-item" :class="{ 'is-unread': !n.read }" :href="n.link || undefined" @click.prevent="go(n)">
           <i class="bell-dot" aria-hidden="true" />
+          <span class="bell-av" aria-hidden="true">
+            <PlayerAvatar v-if="n.subject" :name="n.subject" />
+            <svg v-else viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6" /><path d="M5 20c.8-3.6 3.6-5.6 7-5.6s6.2 2 7 5.6" /></svg>
+          </span>
           <span class="bell-text">{{ n.text }}<small>{{ ago(n.createdAt) }}</small></span>
         </a>
 
@@ -33,10 +37,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { notificationsApi } from '@/api/notifications'
+import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import { usePlayersStore } from '@/stores/players'
 import { refreshNotifications, useAuth } from '@/composables/useAuth'
 
 const { notifications } = useAuth()
 const router = useRouter()
+const store = usePlayersStore()
 const rootEl = ref(null)
 const open = ref(false)
 const loading = ref(false)
@@ -50,6 +57,8 @@ async function toggle() {
   if (!open.value) return
   loading.value = true
   refreshNotifications()
+  // Pictures come from the player list, so make sure it is loaded.
+  if (!store.loaded) store.loadPlayers().catch(() => {})
   try {
     inbox.value = (await notificationsApi.inbox()).items
   } catch {
