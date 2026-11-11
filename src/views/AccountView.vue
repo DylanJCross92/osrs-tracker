@@ -26,7 +26,7 @@
       </div>
 
       <div class="acc-row">
-        <div><b>Players you follow</b><small>Up to {{ MAX_RIVALS }}. They show on your homepage, and you hear when they hit a big milestone.</small></div>
+        <div><b>Players you follow</b><small>They show on your homepage, and you hear when they hit a big milestone.</small></div>
         <p v-if="!rivals.length" class="acc-empty">None yet. Press Follow on a profile.</p>
         <ul v-else class="acc-rivals">
           <li v-for="r in rivals" :key="r">
@@ -74,7 +74,7 @@ import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import RoleBadges from '@/components/RoleBadges.vue'
 import { logOut, useAuth } from '@/composables/useAuth'
 import { useGainPeriod } from '@/composables/useGainPeriod'
-import { MAX_RIVALS, useRivals } from '@/composables/useRivals'
+import { useRivals } from '@/composables/useRivals'
 import { useFollowing } from '@/composables/useFollowing'
 import { claimsApi } from '@/api/claims'
 import { setPageMeta } from '@/utils/pageMeta'

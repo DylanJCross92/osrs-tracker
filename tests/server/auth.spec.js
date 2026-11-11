@@ -36,10 +36,10 @@ describe('sanitizeSettings', () => {
     expect(sanitizeSettings({ gainPeriod: 'week' })).toEqual({ gainPeriod: 'week' })
     expect(sanitizeSettings({ gainPeriod: 'year', me: 'x<y' })).toEqual({})
   })
-  it('allows clearing your name and caps followed players at 25', () => {
+  it('allows clearing your name and keeps a long list of followed players', () => {
     expect(sanitizeSettings({ me: '' })).toEqual({ me: '' })
-    const many = Array.from({ length: 40 }, (_, i) => `rival${i}`)
-    expect(sanitizeSettings({ rivals: many }).rivals).toHaveLength(25)
+    const many = Array.from({ length: 300 }, (_, i) => `rival${i}`)
+    expect(sanitizeSettings({ rivals: many }).rivals).toHaveLength(300)
   })
   it('handles junk input', () => {
     for (const bad of [null, undefined, 'x', 5, [], [1]]) expect(sanitizeSettings(bad)).toEqual({})

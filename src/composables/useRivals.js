@@ -4,7 +4,8 @@ import { ref, watch } from 'vue'
 // is sent to the server, so there is nothing to sign up for and nothing to lose track of.
 const ME_KEY = 'tickgains:me'
 const RIVALS_KEY = 'tickgains:rivals'
-export const MAX_RIVALS = 25
+// No limit on how many players you can follow. (This is only a safety bound against a damaged saved list.)
+const SAFETY_MAX = 5000
 
 function read(key, fallback) {
   try {
@@ -28,7 +29,7 @@ function write(key, value) {
 const loadedMe = read(ME_KEY, '')
 const loadedRivals = read(RIVALS_KEY, [])
 const me = ref(typeof loadedMe === 'string' ? loadedMe : '')
-const rivals = ref(Array.isArray(loadedRivals) ? loadedRivals.filter((n) => typeof n === 'string').slice(0, MAX_RIVALS) : [])
+const rivals = ref(Array.isArray(loadedRivals) ? loadedRivals.filter((n) => typeof n === 'string').slice(0, SAFETY_MAX) : [])
 
 watch(me, (v) => write(ME_KEY, v))
 watch(rivals, (v) => write(RIVALS_KEY, v), { deep: true })
@@ -49,8 +50,8 @@ export function useRivals() {
   }
   function addRival(name) {
     const n = String(name || '').trim()
-    if (!n || isMe(n) || isRival(n)) return false
-    if (rivals.value.length >= MAX_RIVALS) return false
+    // Following your own saved name is allowed too: that name is just a label for "you" on Compare.
+    if (!n || isRival(n)) return false
     rivals.value = [...rivals.value, n]
     return true
   }

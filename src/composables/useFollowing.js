@@ -18,10 +18,7 @@ export function useFollowing() {
   async function follow(name) {
     const n = String(name || '').trim()
     if (!n) return false
-    if (!isRival(n) && !addRival(n)) {
-      showToast('You can follow up to 25 players. Unfollow one first.')
-      return false
-    }
+    if (!isRival(n)) addRival(n)
     if (loggedIn.value) {
       try {
         await followsApi.follow(n)

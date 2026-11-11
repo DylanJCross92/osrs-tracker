@@ -3,7 +3,9 @@ import { listPlayers } from './players.service.js'
 import { achievementDefinitions } from './milestones.service.js'
 import { addNotification, ownerOfPlayer } from './inbox.service.js'
 
-export const MAX_FOLLOWS = 25
+// There is no limit on how many players an account can follow; these only bound a single request.
+const SAFETY_MAX = 5000
+const FEED_MAX = 200
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
 
 export class FollowError extends Error {
@@ -49,9 +51,6 @@ async function notifyNewFollower(followerId, playerId) {
 }
 
 export async function followPlayer(userId, playerId) {
-  const { rows } = await pool.query('SELECT count(*)::int AS n FROM follows WHERE user_id = $1', [userId])
-  const already = await pool.query('SELECT 1 FROM follows WHERE user_id = $1 AND player_id = $2', [userId, playerId])
-  if (!already.rowCount && rows[0].n >= MAX_FOLLOWS) throw new FollowError(`You can follow up to ${MAX_FOLLOWS} players. Unfollow one first.`)
   const { rowCount } = await pool.query('INSERT INTO follows (user_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [userId, playerId])
   if (rowCount) notifyNewFollower(userId, playerId)
 }
@@ -61,11 +60,11 @@ export async function unfollowPlayer(userId, playerId) {
 }
 
 /**
- * Makes the follow list exactly this set of names (tracked players only, up to MAX_FOLLOWS). Used when an account signs
+ * Makes the follow list exactly this set of names (tracked players only). Used when an account signs
  * in, to bring in the list the browser had. Names that are not tracked are skipped.
  */
 export async function setFollows(userId, names) {
-  const clean = [...new Set((Array.isArray(names) ? names : []).filter((n) => typeof n === 'string' && NAME_RE.test(n.trim())).map((n) => n.trim().toLowerCase()))].slice(0, MAX_FOLLOWS)
+  const clean = [...new Set((Array.isArray(names) ? names : []).filter((n) => typeof n === 'string' && NAME_RE.test(n.trim())).map((n) => n.trim().toLowerCase()))].slice(0, SAFETY_MAX)
   const { rows } = clean.length ? await pool.query('SELECT id FROM players WHERE lower(username) = ANY($1::text[])', [clean]) : { rows: [] }
   const ids = rows.map((r) => r.id)
   await pool.query('DELETE FROM follows WHERE user_id = $1 AND NOT (player_id = ANY($2::int[]))', [userId, ids])
@@ -80,11 +79,11 @@ const TITLES = new Map(achievementDefinitions().map((d) => [`${d.type}|${d.skill
 const FEED_DAYS = 30
 
 /**
- * The Following strip: for up to MAX_FOLLOWS names, each player's recent gains and latest milestone, plus the newest
+ * The Following strip: for the most recent FEED_MAX names, each player's recent gains and latest milestone, plus the newest
  * milestones across all of them. Public data only, so it works for visitors who follow players in their browser too.
  */
 export async function getFollowingFeed(rawNames) {
-  const names = [...new Set((Array.isArray(rawNames) ? rawNames : []).map((n) => String(n).trim()).filter((n) => NAME_RE.test(n)))].slice(0, MAX_FOLLOWS)
+  const names = [...new Set((Array.isArray(rawNames) ? rawNames : []).map((n) => String(n).trim()).filter((n) => NAME_RE.test(n)))].slice(-FEED_MAX)
   if (!names.length) return { players: [], events: [] }
   const found = await pool.query('SELECT id FROM players WHERE lower(username) = ANY($1::text[])', [names.map((n) => n.toLowerCase())])
   const ids = found.rows.map((r) => r.id)

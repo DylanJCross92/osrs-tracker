@@ -9,7 +9,7 @@
     <p v-else-if="!players.length" class="fol-empty">None of the players you follow have data yet.</p>
 
     <ul v-else class="fol-list">
-      <li v-for="p in players" :key="p.username">
+      <li v-for="p in shownPlayers" :key="p.username">
         <RouterLink class="fol-card" :to="{ name: 'playerDetail', params: { username: p.username } }">
           <span class="fol-avatar" aria-hidden="true"><PlayerAvatar :name="p.username" /></span>
           <span class="fol-main">
@@ -25,6 +25,7 @@
         </RouterLink>
       </li>
     </ul>
+    <button v-if="players.length > LIMIT" class="btn-text fol-toggle" type="button" @click="showAll = !showAll">{{ showAll ? 'Show fewer' : `Show all ${players.length}` }}</button>
   </section>
 </template>
 
@@ -41,10 +42,14 @@ const { following } = useFollowing()
 const players = ref([])
 const loading = ref(false)
 const shown = computed(() => following.value.length > 0)
+// Many follows would make a very long strip, so only the first few show until you ask for all.
+const LIMIT = 6
+const showAll = ref(false)
+const shownPlayers = computed(() => (showAll.value ? players.value : players.value.slice(0, LIMIT)))
 
 let stamp = 0
 async function load() {
-  const names = [...following.value]
+  const names = following.value.slice(-200)
   if (!names.length) {
     players.value = []
     return

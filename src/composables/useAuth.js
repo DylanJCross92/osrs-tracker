@@ -106,7 +106,7 @@ async function syncFollows() {
       seen.add(k)
       names.push(n)
     }
-    const res = await followsApi.setAll(names.slice(0, 25))
+    const res = await followsApi.setAll(names)
     rivals.value = res.players.map((p) => p.displayName)
   } catch {
     // Offline or not signed in any more: keep the browser's list as it is.
