@@ -5,7 +5,7 @@
       <input
         ref="inputEl"
         v-model="query"
-        type="text"
+        type="search"
         placeholder="Search players"
         aria-label="Search players"
         autocomplete="off"

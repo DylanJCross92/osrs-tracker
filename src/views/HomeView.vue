@@ -10,12 +10,12 @@
         <input
           ref="searchInput"
           v-model="newUsername"
-          type="text"
+          type="search"
           placeholder="Enter your OSRS username"
           :disabled="adding"
           autocomplete="off"
           maxlength="12"
-          name="rsn" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
+          name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
           aria-label="OSRS username"
           data-1p-ignore
           data-lpignore="true"

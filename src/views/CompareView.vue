@@ -10,7 +10,7 @@
       <form class="cmp-form" @submit.prevent="submit">
         <label class="cmp-field cmp-field-a">
           <i class="cmp-key cmp-key-a" aria-hidden="true" />
-          <input ref="elA" v-model="inputA" type="text" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
+          <input ref="elA" v-model="inputA" type="search" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
           <CompareSuggest v-if="focused === 'a' && options.length" :options="options" :heading="heading" :active="hi" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button type="button" class="cmp-swap" aria-label="Swap the two players" title="Swap players" @click="swapInputs">
@@ -19,7 +19,7 @@
         </button>
         <label class="cmp-field cmp-field-b">
           <i class="cmp-key cmp-key-b" aria-hidden="true" />
-          <input ref="elB" v-model="inputB" type="text" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true" @keydown="onKey('b', $event)" />
+          <input ref="elB" v-model="inputB" type="search" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true" @keydown="onKey('b', $event)" />
           <CompareSuggest v-if="focused === 'b' && options.length" :options="options" :heading="heading" :active="hi" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
         </label>
         <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit">Compare</button>

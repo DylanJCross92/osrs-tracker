@@ -25,7 +25,7 @@
         <div class="suggest-wrap">
         <label class="disc-search">
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
-          <input v-model="query" type="text" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" @focus="searchFocused = true" @blur="searchFocused = false" />
+          <input v-model="query" type="search" name="osrs-player-search" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" @focus="searchFocused = true" @blur="searchFocused = false" />
         </label>
         <RecentPlayers v-if="searchFocused && !query.trim()" @pick="(o) => router.push(profileTo(o.username))" />
         <ul v-if="suggestions.length || showNewRow" class="search-suggest">
