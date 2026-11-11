@@ -30,13 +30,13 @@
       </div>
 
       <div v-if="rivals.length" class="cmp-rivals">
-        <span class="cmp-rivals-label">Your rivals{{ me ? ` vs ${me}` : '' }}</span>
+        <span class="cmp-rivals-label">Following{{ me ? ` vs ${me}` : '' }}</span>
         <span v-for="r in rivals" :key="r" class="cmp-rival">
           <RouterLink :to="rivalLink(r)">{{ r }}</RouterLink>
-          <button type="button" :aria-label="`Remove ${r} from your rivals`" @click="removeRival(r)">×</button>
+          <button type="button" :aria-label="`Unfollow ${r}`" @click="unfollow(r)">×</button>
         </span>
       </div>
-      <p v-else-if="!hasNames" class="cmp-hint">Save a player as a rival after comparing and they will show up here next time. Rivals are kept in this browser<template v-if="!loggedIn">. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create an account</RouterLink> to keep them on every device.</template><template v-else> and saved to your account.</template></p>
+      <p v-else-if="!hasNames" class="cmp-hint">Follow a player after comparing and they will show up here next time, and on the homepage. Your list is kept in this browser<template v-if="!loggedIn">. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create an account</RouterLink> to keep them on every device.</template><template v-else> and saved to your account.</template></p>
 
       <div v-if="!hasNames && suggestedPairs.length" class="cmp-rivals">
         <span class="cmp-rivals-label">Try a matchup</span>
@@ -94,7 +94,7 @@
               <button class="btn btn-ghost" @click="copyLink">Copy link</button>
               <RouterLink class="btn btn-ghost" :to="pairLink(sideB.player.username, sideA.player.username)">Swap</RouterLink>
               <button v-if="!isMe(sideA.player.username)" class="btn btn-ghost" @click="iAm(sideA.player.displayName)">I am {{ sideA.player.displayName }}</button>
-              <button v-if="!isMe(sideB.player.username)" class="btn btn-ghost" @click="toggleRival(sideB.player.displayName)">{{ isRival(sideB.player.username) ? `Remove ${sideB.player.displayName} as rival` : `Save ${sideB.player.displayName} as rival` }}</button>
+              <button v-if="!isMe(sideB.player.username)" class="btn btn-ghost" @click="toggleRival(sideB.player.displayName)">{{ isFollowing(sideB.player.displayName) ? `Unfollow ${sideB.player.displayName}` : `Follow ${sideB.player.displayName}` }}</button>
             </div>
           </section>
 
@@ -122,6 +122,7 @@ import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { useRivals } from '@/composables/useRivals'
+import { useFollowing } from '@/composables/useFollowing'
 import { useAuth } from '@/composables/useAuth'
 import { ApiError } from '@/api/client'
 import { skillIconSrc, formatXp, formatSignedXp } from '@/utils/osrsSkills'
@@ -132,6 +133,7 @@ import { track } from '@/utils/analytics'
 import CompareSuggest from '@/components/compare/CompareSuggest.vue'
 import { useRecentPlayers, recordRecent } from '@/composables/useRecentPlayers'
 import { playersApi } from '@/api/players'
+import { notificationsApi } from '@/api/notifications'
 import CompareDays from '@/components/compare/CompareDays.vue'
 import CompareTape from '@/components/compare/CompareTape.vue'
 import CompareHighlights from '@/components/compare/CompareHighlights.vue'
@@ -143,7 +145,8 @@ const store = usePlayersStore()
 const { showToast } = useToast()
 const { period } = useGainPeriod()
 const { loggedIn } = useAuth()
-const { me, rivals, isMe, isRival, setMe, addRival, removeRival } = useRivals()
+const { me, rivals, isMe, setMe } = useRivals()
+const { isFollowing, follow, unfollow, toggle: toggleFollowing } = useFollowing()
 
 const PERIODS = [
   { key: 'day', label: 'Today' },
@@ -374,7 +377,11 @@ async function loadBoth() {
   }
   if (!store.loaded) await store.loadPlayers().catch(() => {})
   await Promise.all([loadSide('a', nameA.value, id), loadSide('b', nameB.value, id)])
-  if (id === runId) track('compare_view', { both_tracked: sideA.status === 'ready' && sideB.status === 'ready' })
+  if (id === runId) {
+    track('compare_view', { both_tracked: sideA.status === 'ready' && sideB.status === 'ready' })
+    // Arrived from a friend's challenge link and both players loaded: let the challenger's owner (if any) know.
+    if (fromChallenge.value && sideA.status === 'ready' && sideB.status === 'ready') notificationsApi.challengeAccepted(sideB.player.username, sideA.player.username).catch(() => {})
+  }
 }
 
 watch(
@@ -494,20 +501,12 @@ async function copyLink() {
 }
 function iAm(name) {
   setMe(name)
-  showToast(`Saved ${name} as you, rivals will compare against them.`)
+  showToast(`Saved ${name} as you, the players you follow will compare against them.`)
   track('compare_set_me')
 }
-function toggleRival(name) {
-  if (isRival(name)) {
-    removeRival(name)
-    showToast(`Removed ${name} from your rivals.`)
-    return
-  }
-  if (addRival(name)) {
-    showToast(`Saved ${name} as a rival.`)
-    track('compare_rival_save')
-  } else {
-    showToast('You can keep up to 10 rivals, remove one first.')
-  }
+async function toggleRival(name) {
+  const now = await toggleFollowing(name)
+  showToast(now ? `Following ${name}.` : `Unfollowed ${name}.`)
+  track(now ? 'follow' : 'unfollow', { source: 'compare' })
 }
 </script>

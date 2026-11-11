@@ -19,13 +19,15 @@ export class ClaimError extends Error {
 const shape = (r) => ({
   id: r.id,
   status: r.status,
-  player: { username: r.username, displayName: r.display_name },
+  player: { username: r.username, displayName: r.display_name, avatarV: r.avatar_v ? Number(r.avatar_v) : null },
   createdAt: r.created_at,
   expiresAt: r.expires_at,
   expired: r.status === 'pending' && new Date(r.expires_at) < new Date(),
 })
 
-const CLAIM_SELECT = `SELECT c.*, p.username, p.display_name, u.email FROM profile_claims c
+const CLAIM_SELECT = `SELECT c.*, p.username, p.display_name, u.email,
+  (SELECT extract(epoch from pp.avatar_updated_at)::bigint FROM profile_pages pp WHERE pp.player_id = p.id AND pp.avatar IS NOT NULL) AS avatar_v
+  FROM profile_claims c
   JOIN players p ON p.id = c.player_id JOIN users u ON u.id = c.user_id`
 
 async function ownerRow(playerId) {
@@ -101,7 +103,7 @@ export async function lookupByCode(rawCode) {
   const code = normalizeClaimCode(rawCode)
   if (!code) return null
   const { rows } = await pool.query(`${CLAIM_SELECT} WHERE c.code = $1 AND c.status = 'pending' AND c.expires_at > now()`, [code])
-  return rows[0] ? { ...shape(rows[0]), email: rows[0].email } : null
+  return rows[0] ? { ...shape(rows[0]), email: rows[0].email, userId: rows[0].user_id } : null
 }
 
 /** Approves the claim a code belongs to: that account now owns the profile. Returns the claim (with the owner's email). */
@@ -126,8 +128,13 @@ export async function approveByCode(admin, rawCode) {
 }
 
 export async function rejectClaim(admin, id) {
-  const { rowCount } = await pool.query(`UPDATE profile_claims SET status = 'rejected', decided_at = now(), decided_by = $2 WHERE id = $1 AND status = 'pending'`, [id, admin.id])
-  if (!rowCount) throw new ClaimError('That claim is not waiting any more.', 404)
+  const { rows } = await pool.query(
+    `UPDATE profile_claims c SET status = 'rejected', decided_at = now(), decided_by = $2 FROM players p
+     WHERE c.id = $1 AND c.status = 'pending' AND p.id = c.player_id RETURNING c.user_id, p.username, p.display_name`,
+    [id, admin.id],
+  )
+  if (!rows[0]) throw new ClaimError('That claim is not waiting any more.', 404)
+  return { userId: rows[0].user_id, player: { username: rows[0].username, displayName: rows[0].display_name } }
 }
 
 export async function revokeClaim(admin, id) {

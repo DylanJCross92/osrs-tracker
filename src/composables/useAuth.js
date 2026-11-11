@@ -1,7 +1,9 @@
 import { computed, ref, watch } from 'vue'
 import { authApi } from '@/api/auth'
 import { claimsApi } from '@/api/claims'
+import { followsApi } from '@/api/follows'
 import { notificationsApi } from '@/api/notifications'
+import { linkAccountData, unlinkAccountData } from '@/utils/accountData'
 import { useRivals } from '@/composables/useRivals'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 
@@ -15,7 +17,7 @@ const syncState = ref('idle')
 // Profiles this account owns (verified claims): [{ username, displayName }]. Shown in the account menu.
 const profiles = ref([])
 // Things that need this account's attention (see the avatar's red badge): { items, total }.
-const notifications = ref({ items: [], total: 0 })
+const notifications = ref({ items: [], unread: 0, total: 0 })
 
 const { me, rivals } = useRivals()
 const { period } = useGainPeriod()
@@ -82,7 +84,7 @@ export async function refreshProfiles() {
 /** Asks the server what needs attention. Quiet on failure: the badge just keeps its last value. */
 export async function refreshNotifications() {
   if (!user.value) {
-    notifications.value = { items: [], total: 0 }
+    notifications.value = { items: [], unread: 0, total: 0 }
     return
   }
   try {
@@ -92,15 +94,38 @@ export async function refreshNotifications() {
   }
 }
 
-function setUser(u) {
+/** Brings the follow list this browser had and the one on the account together (both are kept). */
+async function syncFollows() {
+  try {
+    const { players } = await followsApi.list()
+    const seen = new Set()
+    const names = []
+    for (const n of [...players.map((p) => p.displayName), ...rivals.value]) {
+      const k = String(n).toLowerCase()
+      if (!k || seen.has(k)) continue
+      seen.add(k)
+      names.push(n)
+    }
+    const res = await followsApi.setAll(names.slice(0, 25))
+    rivals.value = res.players.map((p) => p.displayName)
+  } catch {
+    // Offline or not signed in any more: keep the browser's list as it is.
+  }
+}
+
+async function setUser(u) {
   user.value = u
   if (u) {
     reconcile(u.settings)
     refreshProfiles()
     refreshNotifications()
+    await syncFollows()
+    // Planner plans, recent searches and similar data follow the account. Awaited so a screen opened right after
+    // signing in already sees them.
+    await linkAccountData()
   } else {
     profiles.value = []
-    notifications.value = { items: [], total: 0 }
+    notifications.value = { items: [], unread: 0, total: 0 }
   }
 }
 
@@ -125,19 +150,19 @@ export async function signUp({ email, password, confirmPassword, newsletter, web
 /** Uses the link from the confirmation email, which also signs the person in. */
 export async function confirmEmail(token) {
   const res = await authApi.verify(token)
-  setUser(res.user)
+  await setUser(res.user)
   return res.user
 }
 
 export async function logIn(email, password) {
   const res = await authApi.login(email, password)
-  setUser(res.user)
+  await setUser(res.user)
   return res.user
 }
 
 export async function resetPassword(token, password) {
   const res = await authApi.reset(token, password)
-  setUser(res.user)
+  await setUser(res.user)
   return res.user
 }
 
@@ -148,12 +173,13 @@ export async function logOut() {
     clearTimeout(timer)
     user.value = null
     profiles.value = []
-    notifications.value = { items: [], total: 0 }
+    notifications.value = { items: [], unread: 0, total: 0 }
     syncState.value = 'idle'
     // Leave nothing of this account behind on a shared computer: back to the defaults.
     me.value = ''
     rivals.value = []
     period.value = 'week'
+    unlinkAccountData()
     lastSaved = ''
   }
 }

@@ -107,6 +107,8 @@
       </div>
     </section>
 
+    <FollowingStrip />
+
     <!-- 2. Feature showcase -->
     <section id="features" class="home-section">
       <div class="home-features">
@@ -261,6 +263,7 @@ import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import { useAuth } from '@/composables/useAuth'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import RecentPlayers from '@/components/RecentPlayers.vue'

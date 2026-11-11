@@ -203,3 +203,69 @@ CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_code_pending_idx ON profile_cla
 CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_user_player_pending_idx ON profile_claims (user_id, player_id) WHERE status = 'pending';
 CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_player_owner_idx ON profile_claims (player_id) WHERE status = 'verified';
 CREATE INDEX IF NOT EXISTS profile_claims_user_idx ON profile_claims (user_id);
+
+-- The notification inbox. Unlike the live items on the avatar (waiting claims, codes still to send), these are stored
+-- events with a read state: "your claim was approved", "a player you follow reached 99". dedupe_key stops the same
+-- event from being added twice for one account.
+CREATE TABLE IF NOT EXISTS notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  text TEXT NOT NULL,
+  link TEXT NOT NULL DEFAULT '',
+  dedupe_key TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  read_at TIMESTAMPTZ
+);
+CREATE UNIQUE INDEX IF NOT EXISTS notifications_dedupe_idx ON notifications (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications (user_id, created_at DESC);
+
+-- Players an account follows. The Following strip on the homepage and the "a player you follow reached 99" notices
+-- both read from this.
+CREATE TABLE IF NOT EXISTS follows (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS follows_player_idx ON follows (player_id);
+
+-- The last record values we told a profile's owner about (see recordsNotify.service.js), so a new personal record can
+-- be spotted after each snapshot. NULL until the first check, which only records the starting values.
+ALTER TABLE players ADD COLUMN IF NOT EXISTS records_state JSONB;
+
+-- Browser data kept with the account so it follows the person to other devices: saved planner plans, the planner's
+-- working goals, recent searches, and which congratulations were already sent or hidden. One JSON object, each key
+-- { value, updatedAt } (see utils/userData.js for the shape and size limits).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- What the owner of a claimed profile has added to it: a short bio, a "currently training" line, a few links, which
+-- tabs to hide from visitors, and an uploaded picture. The picture is stored here (small, resized by the browser
+-- before upload) because the host's disk does not survive a redeploy.
+CREATE TABLE IF NOT EXISTS profile_pages (
+  player_id INTEGER PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
+  bio TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT '',
+  links JSONB NOT NULL DEFAULT '[]'::jsonb,
+  hidden_sections JSONB NOT NULL DEFAULT '[]'::jsonb,
+  avatar BYTEA,
+  avatar_type TEXT,
+  avatar_updated_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Public goals an owner sets on their profile ("99 Mining"), with a progress bar that moves as the profile's real XP
+-- does. target_type is 'level' or 'xp'. start_xp is the skill's XP when the goal was set, reached_at is stamped the
+-- first time the XP passes the target.
+CREATE TABLE IF NOT EXISTS profile_goals (
+  id SERIAL PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  skill TEXT NOT NULL,
+  target_type TEXT NOT NULL CHECK (target_type IN ('level', 'xp')),
+  target_value BIGINT NOT NULL,
+  start_xp BIGINT NOT NULL DEFAULT 0,
+  pinned BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  reached_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS profile_goals_player_idx ON profile_goals (player_id, created_at DESC);

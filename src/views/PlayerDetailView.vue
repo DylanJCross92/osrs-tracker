@@ -15,6 +15,14 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
             Compare
           </RouterLink>
+          <button v-if="player && isProfileOwner" class="btn btn-ghost" type="button" @click="customizeOpen = true">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" /></svg>
+            Customize
+          </button>
+          <button v-if="player && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" @click="toggleFollow">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1.1 8.7 3 5 6.4 5c2 0 3.4 1.1 4.2 2.4h2.8C14.2 6.1 15.6 5 17.6 5 21 5 22.9 8.7 21.3 11.9 19 16.4 12 21 12 21z" /></svg>
+            {{ isFollowing(player.displayName) ? 'Following' : 'Follow' }}
+          </button>
           <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
             {{ claim.mine === 'pending' ? 'Finish claim' : 'Claim' }}
@@ -35,6 +43,17 @@
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
+        <p v-if="page.status" class="pp-status"><span aria-hidden="true">●</span> {{ page.status }}</p>
+        <p v-if="page.bio" class="pp-bio">{{ page.bio }}</p>
+        <ul v-if="page.links.length" class="pp-links">
+          <li v-for="l in page.links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener nofollow ugc">{{ LINK_LABELS[l.kind] || l.kind }}</a></li>
+        </ul>
+        <button v-if="pinnedGoal" type="button" class="pp-goal" @click="setTab('goals')" :aria-label="`Goal: ${pinnedGoal.title}, ${pinnedGoal.percent} percent. Open goals`">
+          <span class="pp-goal-label">Goal</span>
+          <b>{{ pinnedGoal.title }}</b>
+          <span class="pp-goal-bar"><i :style="{ width: pinnedGoal.percent + '%' }" /></span>
+          <span class="pp-goal-pct">{{ pinnedGoal.percent }}%</span>
+        </button>
         <p v-if="latest" class="last-synced">
           <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
           <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
@@ -60,6 +79,8 @@
 
   <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
   <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
+  <GoalShareModal v-if="shareGoal && player" :username="player.username" :display-name="player.displayName" :goal="shareGoal" @close="shareGoal = null" />
+  <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
@@ -75,12 +96,15 @@
 
   <template v-else-if="snapshots.length">
     <nav class="profile-tabs" aria-label="Profile sections">
-      <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
+      <button v-for="t in visibleTabs" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
     <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" @challenge="openChallenge('overview')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileRecords v-else-if="tab === 'records'" :player="player" />
-    <ProfileGoals v-else-if="tab === 'goals'" :player="player" :snapshots="snapshots" />
+    <template v-else-if="tab === 'goals'">
+      <ProfileGoalsPublic v-if="goals.length || isProfileOwner" :username="player.username" :display-name="player.displayName" :goals="goals" :is-owner="isProfileOwner" :target-id="Number(route.query.goal) || null" @update="(g) => (goals = g)" @share="(g) => (shareGoal = g)" />
+      <ProfileGoals :player="player" :snapshots="snapshots" />
+    </template>
     <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
     <template v-else>
     <div class="stats-toolbar">
@@ -277,7 +301,13 @@ import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
 import ChallengeModal from '@/components/profile/ChallengeModal.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
+import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vue'
+import ProfileGoalsPublic from '@/components/profile/ProfileGoalsPublic.vue'
+import GoalShareModal from '@/components/profile/GoalShareModal.vue'
+import { goalsApi } from '@/api/goals'
+import { profilePageApi } from '@/api/profilePage'
 import { claimsApi } from '@/api/claims'
+import { useFollowing } from '@/composables/useFollowing'
 import { useAuth } from '@/composables/useAuth'
 import ProfileCelebrations from '@/components/profile/ProfileCelebrations.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
@@ -468,8 +498,60 @@ const refreshing = ref(false)
 const checkingWomHistory = ref(false)
 const shareModalOpen = ref(false)
 const shareSkill = ref('Overall')
-const claimOpen = ref(false)
+const { isFollowing, toggle: toggleFollowing } = useFollowing()
+async function toggleFollow() {
+  const name = player.value?.displayName
+  if (!name) return
+  const now = await toggleFollowing(name)
+  track(now ? 'follow' : 'unfollow', { source: 'profile' })
+}
+// How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)
+// What the owner added to this profile (bio, status, links, hidden tabs). Visitors get it too.
+const blankPage = () => ({ bio: '', status: '', links: [], hiddenSections: [], hasAvatar: false, avatarV: null })
+const page = ref(blankPage())
+const customizeOpen = ref(false)
+// Public goals the owner set, with live progress; the pinned one shows in the header.
+const goals = ref([])
+const shareGoal = ref(null)
+const pinnedGoal = computed(() => goals.value.find((g) => g.pinned) || null)
+watch(
+  () => player.value?.username,
+  async (name) => {
+    goals.value = []
+    if (!name) return
+    try {
+      goals.value = (await goalsApi.list(name)).goals
+    } catch {
+      goals.value = []
+    }
+  },
+  { immediate: true },
+)
+const isProfileOwner = computed(() => claim.value?.mine === 'owner')
+const LINK_LABELS = { discord: 'Discord', twitch: 'Twitch', youtube: 'YouTube', twitter: 'X' }
+watch(
+  () => player.value?.username,
+  async (name) => {
+    page.value = blankPage()
+    if (!name) return
+    try {
+      page.value = await profilePageApi.get(name)
+    } catch {
+      page.value = blankPage()
+    }
+  },
+  { immediate: true },
+)
+// Tabs the owner chose to hide are hidden from visitors only; the owner always sees them all. (Defined after the claim
+// state and the page it depends on.)
+const visibleTabs = computed(() => (isProfileOwner.value ? TABS : TABS.filter((t) => !page.value.hiddenSections.includes(t.key))))
+// Landing on a tab that has since been hidden falls back to the overview.
+watch(visibleTabs, (list) => {
+  // Wait until we know whether the visitor is the owner, who may open any tab.
+  if (claim.value && !list.some((t) => t.key === tab.value)) tab.value = 'overview'
+})
+const claimOpen = ref(false)
 const { loggedIn } = useAuth()
 function openClaim() {
   claimOpen.value = true

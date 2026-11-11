@@ -2,6 +2,7 @@ import { pool } from '../db.js'
 import { fetchHiscores } from './osrsHiscores.service.js'
 import { fetchWomHistory } from './wiseOldMan.service.js'
 import { syncMilestonesSafe } from './milestones.service.js'
+import { checkRecordsSafe } from './recordsNotify.service.js'
 
 // Local timezone used to decide where a calendar day starts for "today's" gains.
 const APP_TIMEZONE = process.env.APP_TIMEZONE || 'America/New_York'
@@ -65,6 +66,8 @@ function mapPlayerRow(row, { skillGains = false } = {}) {
     badge: row.badge || null,
     // True when a verified owner has claimed this profile (see claims.service.js). Never says by whom.
     claimed: Boolean(row.claimed),
+    // Version (a timestamp) of the owner's uploaded picture, or null when the generated one is used.
+    avatarV: row.avatar_v ? Number(row.avatar_v) : null,
     createdAt: row.created_at,
     lastCheckedAt: row.last_checked_at,
     latest: row.captured_at
@@ -147,6 +150,7 @@ export async function listPlayers({ skillGains = false, ids = null } = {}) {
     `
     SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at,
            EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed,
+           (SELECT extract(epoch from pp.avatar_updated_at)::bigint FROM profile_pages pp WHERE pp.player_id = p.id AND pp.avatar IS NOT NULL) AS avatar_v,
            p.wom_import_status, p.wom_imported_count,
            s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
            ${baselineColumns}
@@ -261,6 +265,7 @@ export async function recordSnapshot(playerId, stats) {
     await pool.query('UPDATE players SET last_xp_gain_at = now() WHERE id = $1', [playerId])
   }
   syncMilestonesSafe(playerId)
+  checkRecordsSafe(playerId)
   return { saved: true }
 }
 
@@ -301,6 +306,7 @@ export async function addPlayer(rawUsername) {
     liveCapturedAt = snapshot.rows[0].captured_at
     await client.query('COMMIT')
     syncMilestonesSafe(playerId)
+    checkRecordsSafe(playerId)
   } catch (err) {
     await client.query('ROLLBACK')
     throw err

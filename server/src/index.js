@@ -11,11 +11,16 @@ import { recordsRouter } from './routes/records.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { claimsRouter } from './routes/claims.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
+import { challengesRouter } from './routes/challenges.routes.js'
+import { followsRouter } from './routes/follows.routes.js'
+import { profilePagesRouter } from './routes/profilePages.routes.js'
+import { goalsRouter } from './routes/goals.routes.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
 import { getPlayerRecords } from './services/records.service.js'
+import { getGoal } from './services/goals.service.js'
 import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
@@ -33,7 +38,8 @@ app.use(
     credentials: true,
   }),
 )
-app.use(express.json())
+// Bigger than the default so saved plans can be synced; every endpoint still validates what it accepts.
+app.use(express.json({ limit: '700kb' }))
 
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
@@ -42,6 +48,10 @@ app.use('/api/newsletter', subscribersRouter)
 app.use('/api/auth', authRouter)
 app.use('/api', claimsRouter)
 app.use('/api', notificationsRouter)
+app.use('/api', challengesRouter)
+app.use('/api', followsRouter)
+app.use('/api', profilePagesRouter)
+app.use('/api', goalsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -219,6 +229,33 @@ if (distExists) {
         ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/records/${encodeURIComponent(record.key)}/image.png`
         : `${SITE_URL}/og-default.png`
       res.send(injectCardMeta(indexHtmlTemplate, { title, description, imageUrl, pageUrl, noindex: true }))
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // A shared goal. The SPA sends the visitor on to the profile's Goals tab; this gives the link its preview card.
+  app.get('/player/:username/goals/:id', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      const goal = await getGoal(player.id, Number(req.params.id))
+      const base = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      const title = goal ? `${player.displayName}'s goal: ${goal.title} | TickGains` : `${player.displayName}'s goals | TickGains`
+      const description = goal
+        ? goal.reached
+          ? `${player.displayName} reached their goal of ${goal.title} in Old School RuneScape. Follow their progress on TickGains.`
+          : `${player.displayName} is ${goal.percent}% of the way to ${goal.title} in Old School RuneScape. Follow their progress on TickGains.`
+        : `${player.displayName}'s Old School RuneScape goals on TickGains.`
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title,
+          description,
+          imageUrl: goal ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/goals/${goal.id}/image.png` : `${SITE_URL}/og-default.png`,
+          pageUrl: goal ? `${base}/goals/${goal.id}` : `${base}?tab=goals`,
+          noindex: true,
+        }),
+      )
     } catch (err) {
       next(err)
     }

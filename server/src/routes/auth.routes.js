@@ -16,6 +16,8 @@ import {
   deleteSession,
   finishPasswordReset,
   getUserBySession,
+  getUserData,
+  saveUserData,
   logIn,
   resendVerification,
   saveSettings,
@@ -175,6 +177,22 @@ authRouter.put(
   requireUser,
   handle(async (req, res) => {
     res.json({ settings: await saveSettings(req.user.id, req.body?.settings) })
+  }),
+)
+
+// Saved plans, planner goals, recent searches and similar browser data that follows the account.
+authRouter.get(
+  '/data',
+  requireUser,
+  handle(async (req, res) => {
+    res.json({ data: await getUserData(req.user.id) })
+  }),
+)
+authRouter.put(
+  '/data',
+  requireUser,
+  handle(async (req, res) => {
+    res.json({ data: await saveUserData(req.user.id, req.body?.data) })
   }),
 )
 

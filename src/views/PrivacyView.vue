@@ -19,8 +19,10 @@
     <p>
       You can create an account with an email address and a password. We store the email, a salted one-way hash of the password
       (never the password itself), when the account was made, and a few settings you choose to sync: your OSRS name, your rivals and
-      your preferred gain period. Signed-in browsers keep a cookie so you stay logged in for 30 days. Nothing else is tied to your account
-      yet, and an account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
+      your preferred gain period. Signed-in browsers keep a cookie so you stay logged in for 30 days. When you are signed in we also keep, with your account, the browser data that
+      makes the site follow you between devices: saved planner plans and goals, recent searches, the players you follow and which
+      congratulations you have sent or hidden, plus a list of notifications about things like claims and the players you follow.
+      An account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
       and you can ask us to delete your account and its saved settings from the contact page. Password reset emails are sent through Resend.
     </p>
     <h2>Profile claims</h2>
@@ -30,6 +32,12 @@
       owner enters it to approve it. A claimed profile shows a "Claimed" label to everyone, but never says which account owns it. If you
       delete your account (ask us on the contact page), your claims are removed and the profile becomes unclaimed. Claiming does not
       change anything on the OSRS account, and we never ask for your OSRS password.
+    </p>
+    <h2>Customised profiles</h2>
+    <p>
+      The owner of a claimed profile can add a short bio, a "currently training" line, links to Discord, Twitch, YouTube or X, public
+      goals, and a picture. This is shown to everyone who views that profile. Pictures are shrunk in your browser and stored with the
+      profile; you can remove them at any time, and site admins can remove content that breaks the rules.
     </p>
     <h2>Usage analytics</h2>
     <p>

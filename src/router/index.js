@@ -64,6 +64,11 @@ const routes = [
     path: '/player/:username/records/:key?',
     redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username }, query: { tab: 'records', ...(to.params.key ? { record: to.params.key } : {}) } }),
   },
+  // A shared goal: the server gives it a link preview, then it lands on the profile's Goals tab.
+  {
+    path: '/player/:username/goals/:id',
+    redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username }, query: { tab: 'goals', goal: to.params.id } }),
+  },
   {
     path: '/player/:username/card/weekly/:slug?',
     name: 'weeklyShareCard',

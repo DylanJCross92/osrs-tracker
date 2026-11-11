@@ -2,7 +2,7 @@
 // these few, small values no matter what a client sends.
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
 const PERIODS = ['day', 'week', 'month']
-export const MAX_RIVALS = 10
+export const MAX_RIVALS = 25
 
 const cleanName = (v) => (typeof v === 'string' && NAME_RE.test(v.trim()) ? v.trim() : null)
 

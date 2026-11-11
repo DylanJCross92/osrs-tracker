@@ -54,6 +54,7 @@
 import { nextTick, onMounted, reactive, ref } from 'vue'
 import { ApiError } from '@/api/client'
 import { claimsApi } from '@/api/claims'
+import { profilePageApi } from '@/api/profilePage'
 import { refreshNotifications } from '@/composables/useAuth'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
@@ -127,6 +128,16 @@ async function reject(c) {
     await claimsApi.admin.reject(c.id)
     if (openId.value === c.id) close()
     await load()
+  } catch (err) {
+    error.value = message(err)
+  }
+}
+
+async function resetPage(c) {
+  if (!window.confirm(`Remove all custom content (picture, bio, links, status) from ${c.player.displayName}?`)) return
+  try {
+    await profilePageApi.adminReset(c.player.username)
+    done.value = `${c.player.displayName}'s custom content was removed.`
   } catch (err) {
     error.value = message(err)
   }

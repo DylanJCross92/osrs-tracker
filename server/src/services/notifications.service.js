@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import { hasRole } from '../utils/roles.js'
 import { countPending } from './claims.service.js'
+import { unreadCount } from './inbox.service.js'
 
 /**
  * What needs this account's attention right now, worked out live from the data (nothing is stored, so there is nothing
@@ -26,5 +27,7 @@ export async function getNotifications(user) {
     items.push({ id: `claim-${r.id}`, type: 'claim_code', count: 1, text: `Send your code to finish claiming ${r.display_name}`, to: `/player/${encodeURIComponent(r.username)}` })
   }
 
-  return { items, total: items.reduce((sum, i) => sum + i.count, 0) }
+  // Stored events (the inbox) count by how many are still unread.
+  const unread = await unreadCount(user.id)
+  return { items, unread, total: items.reduce((sum, i) => sum + i.count, 0) + unread }
 }

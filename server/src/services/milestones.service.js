@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import crypto from 'node:crypto'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
+import { addNotification, followersOfPlayer, ownerOfPlayer } from './inbox.service.js'
 
 // Achievements are defined here in code (version-controlled, no registration
 // or manual awarding) and evaluated against recorded snapshots. What is
@@ -47,6 +48,29 @@ function metric(type, skill, snap) {
   return type === 'skill_level' ? s.level : s.xp
 }
 
+// News worth a notification: 99s, 200M XP, and the big overall marks. Smaller steps stay on the profile and in the feed.
+const FRESH_MS = 3 * 86_400_000
+export const isNotable = (d) =>
+  (d.type === 'skill_level' && d.value === 99) ||
+  (d.type === 'skill_xp' && d.value >= 200_000_000) ||
+  (d.type === 'total_level' && d.value >= 2000) ||
+  (d.type === 'total_xp' && d.value >= 1_000_000_000)
+
+/** Tells the profile's owner ("You reached...") and everyone following it ("<Name> reached...") about new milestones. */
+export async function fanOutMilestones(playerId, defs) {
+  const { rows } = await pool.query('SELECT username, display_name FROM players WHERE id = $1', [playerId])
+  if (!rows[0]) return
+  const { username, display_name: name } = rows[0]
+  const link = `/player/${encodeURIComponent(username)}`
+  const ownerId = await ownerOfPlayer(playerId)
+  const followers = (await followersOfPlayer(playerId)).filter((id) => id !== ownerId)
+  for (const d of defs) {
+    const key = `milestone:${playerId}:${d.key}`
+    if (ownerId) await addNotification(ownerId, { type: 'milestone', text: `You reached ${d.title}!`, link, dedupeKey: key })
+    for (const id of followers) await addNotification(id, { type: 'follow_milestone', text: `${name} reached ${d.title}`, link, dedupeKey: key })
+  }
+}
+
 const defKey = (d) => `${d.type}|${d.skill}|${d.value}`
 
 /**
@@ -86,16 +110,21 @@ export async function syncMilestones(playerId) {
     rows.push({ d, occurredAt: first === earliest ? null : first.at })
   }
   let written = 0
+  const fresh = []
   for (const { d, occurredAt } of rows) {
     const res = await pool.query(
       `INSERT INTO player_milestones (player_id, milestone_type, skill, value, occurred_at, source)
        VALUES ($1, $2, $3, $4, $5, 'snapshot')
        ON CONFLICT (player_id, milestone_type, skill, value)
-       DO UPDATE SET occurred_at = EXCLUDED.occurred_at WHERE player_milestones.occurred_at IS NULL AND EXCLUDED.occurred_at IS NOT NULL`,
+       DO UPDATE SET occurred_at = EXCLUDED.occurred_at WHERE player_milestones.occurred_at IS NULL AND EXCLUDED.occurred_at IS NOT NULL
+       RETURNING (xmax = 0) AS inserted`,
       [playerId, d.type, d.skill, d.value, occurredAt],
     )
     written += res.rowCount
+    // Only a brand-new row with a real, recent date is news (not history being filled in).
+    if (res.rows[0]?.inserted && occurredAt && Date.now() - new Date(occurredAt).getTime() < FRESH_MS && isNotable(d)) fresh.push(d)
   }
+  if (fresh.length) fanOutMilestones(playerId, fresh).catch((err) => console.error('[milestones] notify failed:', err.message))
   return written
 }
 

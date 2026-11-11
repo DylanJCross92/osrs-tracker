@@ -26,12 +26,12 @@
       </div>
 
       <div class="acc-row">
-        <div><b>Your rivals</b><small>Players you compare against, up to {{ MAX_RIVALS }}.</small></div>
-        <p v-if="!rivals.length" class="acc-empty">None yet. Save one from the Compare page.</p>
+        <div><b>Players you follow</b><small>Up to {{ MAX_RIVALS }}. They show on your homepage, and you hear when they hit a big milestone.</small></div>
+        <p v-if="!rivals.length" class="acc-empty">None yet. Press Follow on a profile.</p>
         <ul v-else class="acc-rivals">
           <li v-for="r in rivals" :key="r">
             <RouterLink :to="{ name: 'playerDetail', params: { username: r } }">{{ r }}</RouterLink>
-            <button type="button" :aria-label="`Remove ${r} from your rivals`" @click="removeRival(r)">×</button>
+            <button type="button" :aria-label="`Unfollow ${r}`" @click="unfollow(r)">×</button>
           </li>
         </ul>
       </div>
@@ -75,6 +75,7 @@ import RoleBadges from '@/components/RoleBadges.vue'
 import { logOut, useAuth } from '@/composables/useAuth'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { MAX_RIVALS, useRivals } from '@/composables/useRivals'
+import { useFollowing } from '@/composables/useFollowing'
 import { claimsApi } from '@/api/claims'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
@@ -84,7 +85,8 @@ setPageMeta({ title: 'Your account', description: 'Your TickGains account and se
 const router = useRouter()
 const { user, syncState } = useAuth()
 const { period } = useGainPeriod()
-const { rivals, removeRival } = useRivals()
+const { rivals } = useRivals()
+const { unfollow } = useFollowing()
 
 const since = computed(() => (user.value?.createdAt ? new Date(user.value.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : ''))
 const statusText = computed(() => ({ idle: '', saving: 'Saving…', saved: 'Saved to your account', error: 'Could not save, check your connection' })[syncState.value])

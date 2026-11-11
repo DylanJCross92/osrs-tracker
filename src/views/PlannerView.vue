@@ -2,8 +2,10 @@
   <div class="planner">
     <!-- 1. Player selection -->
     <section class="card planner-top">
-      <a v-if="backName" href="#" class="btn-text planner-back" @click.prevent="goBack">← Back to {{ backName }}'s profile</a>
-      <h1>OSRS Account Planner</h1>
+      <div class="planner-head">
+        <h1>OSRS Account Planner</h1>
+        <a v-if="backName" href="#" class="btn-text planner-back" @click.prevent="goBack">← {{ backName }}'s profile</a>
+      </div>
 
       <div v-if="player && !editingPlayer" class="planner-player planner-player-compact">
         <b>{{ player.displayName }}</b>
@@ -32,7 +34,25 @@
         <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan manually.</p>
         <p v-else-if="!player" class="planner-hint">No username? Skip this and enter your current level or XP when you add a goal.</p>
       </template>
+
+      <!-- Save the plan and open earlier ones from the top of the page -->
+      <PlannerSavedPlans
+        :plans="savedPlans"
+        :current-id="currentPlanId"
+        :current-name="currentPlanName"
+        :has-goals="goals.length > 0"
+        :import-result="importResult"
+        @save="(n) => saveCurrent(n, false)"
+        @save-new="(n) => saveCurrent(n, true)"
+        @load="loadSaved"
+        @duplicate="duplicateSaved"
+        @export="exportSaved"
+        @delete="deleteSaved"
+        @rename="renameSaved"
+        @import="importSaved"
+      />
     </section>
+
 
     <!-- 2. Plan overview -->
     <section class="card planner-overview" aria-label="Plan overview">
@@ -162,24 +182,6 @@
       </section>
     </template>
 
-    <!-- 6. Saved plans -->
-    <section class="card">
-      <PlannerSavedPlans
-        :plans="savedPlans"
-        :current-id="currentPlanId"
-        :current-name="currentPlanName"
-        :has-goals="goals.length > 0"
-        :import-result="importResult"
-        @save="(n) => saveCurrent(n, false)"
-        @save-new="(n) => saveCurrent(n, true)"
-        @load="loadSaved"
-        @duplicate="duplicateSaved"
-        @export="exportSaved"
-        @delete="deleteSaved"
-        @rename="renameSaved"
-        @import="importSaved"
-      />
-    </section>
 
     <PlannerAddGoal v-if="showAdd" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" @add="addGoal" @close="showAdd = false" />
   </div>

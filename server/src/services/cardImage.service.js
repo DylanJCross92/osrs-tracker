@@ -612,3 +612,73 @@ async function buildChallengeCardTree({ displayName, xpGained, overallLevel, top
 export async function renderChallengeCardPng(data) {
   return renderPng(await buildChallengeCardTree(data))
 }
+
+// --- Goal card ---------------------------------------------------------------------------------------------------
+
+const TARGET = ['M12 21a9 9 0 100-18 9 9 0 000 18z', 'M12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9z', 'M12 12.8a.8.8 0 100-1.6.8.8 0 000 1.6z']
+
+async function buildGoalCardTree({ displayName, goal }) {
+  const skillUri = await skillIconDataUri(goal.skill)
+  const done = goal.reached
+  const pct = Math.max(Math.min(goal.percent, 100), 0)
+  const barW = 700
+
+  const badge = node(
+    'div',
+    { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 280, height: 280, borderRadius: 140, backgroundColor: '#2a2314', border: `4px solid ${done ? COLORS.green : COLORS.gold}`, boxShadow: '0 0 80px rgba(240, 201, 118, 0.3)' },
+    [skillUri ? image(skillUri, 140, 140) : svgIcon(150, COLORS.gold, TARGET, { stroke: true })],
+  )
+
+  const bar = node('div', { display: 'flex', width: barW, height: 34, borderRadius: 17, backgroundColor: '#0e0c09', border: `2px solid ${COLORS.border}`, overflow: 'hidden' }, [
+    node('div', { display: 'flex', width: Math.max((barW - 4) * (pct / 100), pct > 0 ? 30 : 0), height: '100%', backgroundColor: done ? COLORS.green : COLORS.gold, borderRadius: 15 }, ''),
+  ])
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 82% 45%, #3a2e14 0%, #1d1810 42%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
+          svgIcon(34, COLORS.gold, TARGET, { stroke: true }),
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, done ? 'Goal reached' : 'Goal'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
+          node('div', { fontSize: 40, fontWeight: 800, color: COLORS.gold }, displayName),
+          node('div', { fontSize: 100, fontWeight: 800, color: COLORS.cream, lineHeight: 1.05, marginTop: 6 }, goal.title),
+          node('div', { display: 'flex', alignItems: 'center', gap: 18, marginTop: 22 }, [
+            bar,
+            node('div', { fontSize: 44, fontWeight: 800, color: done ? COLORS.green : COLORS.gold }, `${pct}%`),
+          ]),
+          node('div', { fontSize: 26, color: COLORS.muted, marginTop: 14 }, done ? 'Done!' : `${formatXp(goal.currentXp)} of ${formatXp(goal.targetXp)} XP`),
+        ]),
+        badge,
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 30, fontWeight: 800, color: COLORS.gold }, done ? 'Next stop: the next goal.' : 'Follow my progress.'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** { displayName, goal } (see goals.service.js) -> PNG Buffer. */
+export async function renderGoalCardPng(data) {
+  return renderPng(await buildGoalCardTree(data))
+}

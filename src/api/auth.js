@@ -11,6 +11,9 @@ export const authApi = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   logout: () => api.post('/auth/logout'),
   saveSettings: (settings) => api.put('/auth/settings', { settings }),
+  // Browser data that follows the account (see utils/accountData.js).
+  getData: () => api.get('/auth/data'),
+  saveData: (data) => api.put('/auth/data', { data }),
   forgot: (email) => api.post('/auth/forgot', { email }),
   reset: (token, password) => api.post('/auth/reset', { token, password }),
   changePassword: (current, next) => api.post('/auth/password', { current, next }),

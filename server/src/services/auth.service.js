@@ -3,6 +3,7 @@ import { pool } from '../db.js'
 import { normalizeEmail } from '../utils/email.js'
 import { DUMMY_HASH, hashPassword, passwordProblem, verifyPassword } from '../utils/password.js'
 import { sanitizeSettings } from '../utils/settings.js'
+import { sanitizeUserData } from '../utils/userData.js'
 import { OWNER_ROLES, hasRole, isOwnerEmail, normalizeRoles } from '../utils/roles.js'
 
 export const SESSION_DAYS = 30
@@ -154,6 +155,21 @@ export async function saveSettings(userId, input) {
   const patch = sanitizeSettings(input)
   const { rows } = await pool.query(`UPDATE users SET settings = settings || $2::jsonb WHERE id = $1 RETURNING settings`, [userId, JSON.stringify(patch)])
   return rows[0]?.settings || {}
+}
+
+// --- browser data ---------------------------------------------------------------------------------------------------
+
+export async function getUserData(userId) {
+  const { rows } = await pool.query('SELECT data FROM users WHERE id = $1', [userId])
+  return rows[0]?.data || {}
+}
+
+/** Replaces only the keys that are sent (after cleaning them), and returns everything now saved. */
+export async function saveUserData(userId, input) {
+  const patch = sanitizeUserData(input)
+  if (!Object.keys(patch).length) return getUserData(userId)
+  const { rows } = await pool.query(`UPDATE users SET data = data || $2::jsonb WHERE id = $1 RETURNING data`, [userId, JSON.stringify(patch)])
+  return rows[0]?.data || {}
 }
 
 // --- passwords ----------------------------------------------------------------------------------------------------

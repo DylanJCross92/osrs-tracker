@@ -3,9 +3,10 @@
     <template v-if="!loggedIn">
       <RouterLink class="btn btn-ghost acct-login" :to="{ name: 'login', query: nextQuery }">Log in</RouterLink>
     </template>
-    <div v-else ref="rootEl" class="acct-wrap">
-      <button type="button" class="acct-avatar" :aria-expanded="open" aria-haspopup="menu" :aria-label="notifications.total > 0 ? `Account menu, ${notifications.total} ${notifications.total === 1 ? 'notification' : 'notifications'}` : `Account menu for ${user.email}`" @click="toggle" @keydown.esc="open = false">{{ initial }}</button>
-      <span v-if="notifications.total > 0" class="acct-badge" aria-hidden="true">{{ notifications.total > 9 ? '9+' : notifications.total }}</span>
+    <template v-else>
+    <NotificationBell />
+    <div ref="rootEl" class="acct-wrap">
+      <button type="button" class="acct-avatar" :aria-expanded="open" aria-haspopup="menu" :aria-label="`Account menu for ${user.email}`" @click="toggle" @keydown.esc="open = false"><img v-if="photo" class="acct-avatar-img" :src="photo" alt="" draggable="false" /><template v-else>{{ initial }}</template></button>
       <div v-if="open" class="acct-menu" role="menu">
         <div v-if="profiles.length" class="acct-profiles">
           <RouterLink v-for="p in profiles" :key="p.username" class="acct-profile" :title="`Signed in as ${user.email}`" :to="{ name: 'playerDetail', params: { username: p.username } }" @click="open = false">{{ p.displayName }}</RouterLink>
@@ -16,12 +17,15 @@
         <button class="acct-item" type="button" role="menuitem" @click="doLogout">Log out</button>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import NotificationBell from '@/components/NotificationBell.vue'
+import { profilePageApi } from '@/api/profilePage'
 import { logOut, refreshNotifications, refreshProfiles, useAuth } from '@/composables/useAuth'
 import { track } from '@/utils/analytics'
 
@@ -31,6 +35,11 @@ const router = useRouter()
 const open = ref(false)
 const rootEl = ref(null)
 
+// An owner who uploaded a picture for their profile sees it here instead of their initial.
+const photo = computed(() => {
+  const p = profiles.value.find((x) => x.avatarV)
+  return p ? profilePageApi.avatarUrl(p.username, p.avatarV) : ''
+})
 const initial = computed(() => (user.value?.email || '?').charAt(0).toUpperCase())
 // Log in from a profile and come back to that profile.
 const nextQuery = computed(() => (['login', 'signup', 'forgotPassword', 'resetPassword', 'verifyEmail'].includes(route.name) ? undefined : { next: route.fullPath }))

@@ -35,6 +35,9 @@ watch(
   { deep: true },
 )
 
+// Sign-in (or sign-out) can change the saved list behind our back, so the list is read again when that happens.
+if (typeof window !== 'undefined') window.addEventListener('tickgains:data-synced', () => (recent.value = read()))
+
 const same = (a, b) => String(a).toLowerCase() === String(b).toLowerCase()
 
 /** Remember a player the user searched for (call it only with a real, tracked player, and only for typed searches). */

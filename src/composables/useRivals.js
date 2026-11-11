@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 // is sent to the server, so there is nothing to sign up for and nothing to lose track of.
 const ME_KEY = 'tickgains:me'
 const RIVALS_KEY = 'tickgains:rivals'
-export const MAX_RIVALS = 10
+export const MAX_RIVALS = 25
 
 function read(key, fallback) {
   try {

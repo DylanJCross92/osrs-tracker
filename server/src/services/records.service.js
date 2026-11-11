@@ -7,9 +7,9 @@ const CACHE_MS = 60_000
 const cache = new Map()
 
 /** { since, trackedDays, today, records } for a player (see utils/records.js). */
-export async function getPlayerRecords(player) {
+export async function getPlayerRecords(player, { fresh = false } = {}) {
   const hit = cache.get(player.id)
-  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value
+  if (!fresh && hit && Date.now() - hit.at < CACHE_MS) return hit.value
 
   const { rows } = await pool.query(
     'SELECT captured_at, overall_xp, overall_level, skills FROM snapshots WHERE player_id = $1 ORDER BY captured_at ASC',
