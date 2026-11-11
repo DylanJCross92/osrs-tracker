@@ -83,7 +83,7 @@
           </details>
         </div>
       </div>
-      <button class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :aria-disabled="saveState === 'blocked'" :title="saveTitle" @click="onSaveClick">
+      <button v-if="saveState !== 'clean'" class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :aria-disabled="saveState === 'blocked'" :title="saveTitle" @click="onSaveClick">
         <svg v-if="saveState === 'blocked'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
         <svg v-else-if="saveState === 'clean'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
         <svg v-else-if="saveState === 'dirty'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14" /></svg>
