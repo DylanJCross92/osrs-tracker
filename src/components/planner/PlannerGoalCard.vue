@@ -1,12 +1,26 @@
 <template>
   <article class="goal-card" :class="{ open: expanded, overridden: isOverride }">
     <header class="goal-card-head">
+      <button
+        class="goal-grip"
+        type="button"
+        :aria-label="`Reorder ${goal.skill}: drag, or use the up and down arrow keys`"
+        title="Drag to reorder"
+        @pointerdown.prevent="$emit('drag-start', $event)"
+        @keydown.up.prevent="$emit('move', -1)"
+        @keydown.down.prevent="$emit('move', 1)"
+      >
+        <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="3" r="1.6" /><circle cx="10" cy="3" r="1.6" /><circle cx="4" cy="9" r="1.6" /><circle cx="10" cy="9" r="1.6" /><circle cx="4" cy="15" r="1.6" /><circle cx="10" cy="15" r="1.6" /></g></svg>
+      </button>
       <button class="goal-card-toggle" type="button" :aria-expanded="expanded" :aria-controls="`goal-body-${goal.skill}`" @click="$emit('toggle')">
         <span class="goal-card-chevron" :class="{ open: expanded }" aria-hidden="true">▸</span>
         <img :src="skillIconSrc(goal.skill)" :alt="goal.skill" width="28" height="28" />
         <span class="goal-card-title">
           <b>{{ goal.skill }}</b>
           <em>{{ startLevel }} → {{ endLevel }}</em>
+          <span v-if="reqState === 'blocked'" class="goal-card-req is-unmet" title="This route uses a method you are missing a requirement for. Open the goal for details.">⚠ Missing requirement</span>
+          <span v-else-if="reqState === 'unconfirmed'" class="goal-card-req is-unknown" title="Some requirements for this route are not confirmed yet. Open the goal to confirm them.">? Check requirements</span>
+          <span v-if="progress && (progress.done || progress.gained > 0)" class="goal-card-live" :class="{ done: progress.done }">{{ progress.done ? '✓ Complete' : `Now level ${progress.liveLevel} · ${pctText}` }}</span>
         </span>
         <span class="goal-card-stats">
           <span><small>XP left</small>{{ formatNum(plan.remainingXp) }}</span>
@@ -20,17 +34,26 @@
         <button class="btn-text" type="button" :disabled="index === count - 1" :aria-label="`Move ${goal.skill} down`" title="Train later" @click="$emit('move', 1)">↓</button>
         <button class="btn btn-ghost planner-remove" type="button" :aria-label="`Remove ${goal.skill}`" @click="$emit('remove')">Remove</button>
       </span>
+      <span v-if="progress" class="goal-card-progress" :class="{ done: progress.done }" role="progressbar" :aria-valuenow="Math.round(progress.pct * 100)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${goal.skill} progress`"><i :style="{ width: progress.pct * 100 + '%' }" /></span>
     </header>
 
     <div v-if="expanded" :id="`goal-body-${goal.skill}`" class="goal-card-body">
-      <div v-if="staleXp != null" class="planner-notice">
-        Newer player stats are available: {{ formatNum(staleXp) }} XP now, this goal starts from {{ formatNum(goal.currentXp) }} XP.
-        <button class="btn-text" type="button" @click="$emit('refresh')">Refresh this goal</button>
-      </div>
-
       <div v-if="goal.allowedMethodIds?.length" class="planner-notice">
         This goal only uses {{ goal.allowedMethodIds.length }} chosen method{{ goal.allowedMethodIds.length === 1 ? '' : 's' }} (set in the skill calculator).
         <button class="btn-text" type="button" @click="$emit('patch', { allowedMethodIds: null })">Use all methods</button>
+      </div>
+
+      <div class="goal-levels-row">
+        <label>
+          <span>Start level</span>
+          <NumberInput :model-value="startLevel" :min="1" :max="MAX_VIRTUAL_LEVEL" @update:model-value="setStartLevel" />
+        </label>
+        <span class="goal-levels-arrow" aria-hidden="true">→</span>
+        <label>
+          <span>Target level</span>
+          <NumberInput :model-value="endLevel" :min="2" :max="MAX_VIRTUAL_LEVEL" @update:model-value="setTargetLevel" />
+        </label>
+        <small class="planner-hint">Change either level and the timeline recalculates.</small>
       </div>
 
       <div class="goal-method-row">
@@ -47,8 +70,31 @@
       <p v-if="method" class="planner-hint">
         {{ method.description }} · {{ method.intensity }} intensity ·
         <GpTip :method="method">{{ method.gpPerHour == null ? 'no GP data' : `${formatGp(method.gpPerHour)}/h` }}</GpTip>
-        <template v-if="method.requirements"> · Needs: {{ method.requirements }}</template>
       </p>
+
+      <section v-if="routeMethods.length" class="goal-reqs" aria-label="Requirements for this route">
+        <h4 class="goal-section-title">Requirements for this route</h4>
+        <p v-if="chosenBlocked" class="planner-warning">
+          ⚠ {{ chosenBlocked.method.name }} may not be accessible: {{ unmetNames(chosenBlocked) }} {{ chosenBlocked.unmet.length === 1 ? 'is' : 'are' }} marked as missing.
+          <button class="btn-text" type="button" @click="$emit('patch', { methodId: GLOBAL_STRATEGY })">Use the global strategy instead</button>
+        </p>
+        <p v-else-if="blockedInRoute.length" class="planner-warning">
+          <template v-if="respect">⚠ Part of this route uses {{ blockedInRoute.map((a) => a.method.name).join(', ') }}, which you are missing something for. No other method covers that stretch of levels.</template>
+          <template v-else>⚠ This route uses {{ blockedInRoute.map((a) => a.method.name).join(', ') }}, which you are missing something for, because "Skip methods I can't use yet" is off.</template>
+        </p>
+        <p v-else-if="routeState === 'unconfirmed'" class="planner-hint">Confirm what you already have. Anything you are not sure about is treated as available, so nothing is hidden from you.</p>
+        <div v-for="a in routeMethods" :key="a.method.id" class="goal-req-method" :class="`is-${a.state}`">
+          <div class="goal-req-head">
+            <b>{{ a.method.name }}</b>
+            <span class="goal-req-state">{{ STATE_TEXT[a.state] }}</span>
+          </div>
+          <RequirementList :items="a.items" />
+        </div>
+        <p class="planner-hint goal-reqs-save">
+          <template v-if="loggedIn">Your answers are saved to your account and used in every plan. <RouterLink :to="{ name: 'account', hash: '#quests' }">Open your quest tracker</RouterLink></template>
+          <template v-else>Your answers are saved in this browser. <RouterLink :to="{ name: 'login', query: { next: '/account' } }">Log in</RouterLink> to keep them on your account and use them on every device.</template>
+        </p>
+      </section>
 
       <div class="planner-goal-summary">
         <div>
@@ -69,7 +115,7 @@
       <PlannerQuests
         :model-value="goal.quests"
         :skill="goal.skill"
-        :current-xp="goal.currentXp"
+        :current-xp="planned.currentXp"
         :target-xp="goal.targetXp"
         :method-id="resolvedId"
         :gp-value="gpValue"
@@ -93,7 +139,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerQuests from '@/components/planner/PlannerQuests.vue'
@@ -102,6 +148,11 @@ import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
 import MethodPicker from '@/components/planner/MethodPicker.vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
+import RequirementList from '@/components/planner/RequirementList.vue'
+import { methodAvailability } from '@/utils/requirements'
+import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
+import { useRequirements } from '@/composables/useRequirements'
+import { useAuth } from '@/composables/useAuth'
 import { getMethod } from '@/data/trainingMethods'
 import {
   AUTO_FAST,
@@ -111,6 +162,9 @@ import {
   GLOBAL_STRATEGY,
   isAuto,
   levelAtXp,
+  xpAtLevel,
+  MAX_VIRTUAL_LEVEL,
+  MAX_XP,
   relevantMethods,
   profitableMethods,
   formatNum,
@@ -129,18 +183,60 @@ const props = defineProps({
   expanded: { type: Boolean, default: false },
   index: { type: Number, required: true },
   count: { type: Number, required: true },
-  staleXp: { type: Number, default: null },
+  // The goal as it stands today (start moved up to tracked XP). The plain `goal` keeps the original start for progress.
+  liveGoal: { type: Object, default: null },
+  progress: { type: Object, default: null },
 })
-defineEmits(['toggle', 'remove', 'move', 'patch', 'pick', 'refresh'])
+const emit = defineEmits(['toggle', 'remove', 'move', 'patch', 'pick', 'drag-start'])
 
+const pctText = computed(() => {
+  const p = (props.progress?.pct || 0) * 100
+  return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
+})
+// Requirements of every method the route uses, plus the one picked by hand.
+const reqCtx = inject(plannerRequirementContext, null)
+const { respect } = useRequirements()
+const { loggedIn } = useAuth()
+const STATE_TEXT = { blocked: 'Requirement missing', unconfirmed: 'Needs confirming', planned: 'Your plan covers it', available: 'Requirements met' }
+const routeMethods = computed(() => {
+  const seen = new Map()
+  for (const seg of props.plan.segments || []) {
+    const m = seg.method
+    if (m?.id && m.requirements && !seen.has(m.id)) seen.set(m.id, methodAvailability(m, reqCtx?.value || {}))
+  }
+  if (method.value?.requirements && !seen.has(method.value.id)) seen.set(method.value.id, methodAvailability(method.value, reqCtx?.value || {}))
+  return [...seen.values()].filter((a) => a.items.length)
+})
+const routeState = computed(() => {
+  const states = routeMethods.value.map((a) => a.state)
+  return states.includes('blocked') ? 'blocked' : states.includes('unconfirmed') ? 'unconfirmed' : 'available'
+})
+const reqState = computed(() => (props.progress?.done ? 'available' : routeState.value))
+const chosenBlocked = computed(() => {
+  const a = method.value ? routeMethods.value.find((x) => x.method.id === method.value.id) : null
+  return a && a.state === 'blocked' ? a : null
+})
+const blockedInRoute = computed(() => routeMethods.value.filter((a) => a.state === 'blocked' && a.method.id !== method.value?.id))
+const unmetNames = (a) => a.unmet.map((i) => i.req.label).join(', ')
 const isOverride = computed(() => props.goal.methodId !== GLOBAL_STRATEGY)
 const resolvedId = computed(() => (props.goal.methodId === GLOBAL_STRATEGY ? props.globalStrategy : props.goal.methodId))
-const resolved = computed(() => ({ ...props.goal, methodId: resolvedId.value, gpValuePerHour: props.gpValue }))
+const planned = computed(() => props.liveGoal || props.goal)
+const resolved = computed(() => ({ ...planned.value, methodId: resolvedId.value, gpValuePerHour: props.gpValue }))
 const method = computed(() => (isAuto(resolvedId.value) || resolvedId.value === 'custom' ? null : getMethod(resolvedId.value)))
 const startLevel = computed(() => levelAtXp(props.goal.currentXp, true))
 const endLevel = computed(() => levelAtXp(props.goal.targetXp, true))
+// Edit the start or target level in place. Blank while typing is ignored; the target never drops below the start.
+function setStartLevel(level) {
+  if (!level) return
+  emit('patch', { currentXp: xpAtLevel(Math.min(level, MAX_VIRTUAL_LEVEL)) })
+}
+function setTargetLevel(level) {
+  if (!level) return
+  emit('patch', { targetXp: Math.min(xpAtLevel(Math.min(level, MAX_VIRTUAL_LEVEL)), MAX_XP) })
+}
+const plannedLevel = computed(() => levelAtXp(planned.value.currentXp, true))
 const methods = computed(() => {
-  const list = relevantMethods(props.goal.skill, startLevel.value, endLevel.value)
+  const list = relevantMethods(props.goal.skill, plannedLevel.value, endLevel.value)
   const picked = getMethod(props.goal.methodId)
   return picked && !list.some((x) => x.id === picked.id) ? [...list, picked] : list
 })
@@ -151,7 +247,7 @@ const methodRoutes = computed(() => [
   { value: AUTO_BALANCED, label: 'Balanced route' },
   ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Best gp per hour route' }] : []),
 ])
-const profitable = computed(() => profitableMethods(props.goal.skill, startLevel.value, endLevel.value))
+const profitable = computed(() => profitableMethods(props.goal.skill, plannedLevel.value, endLevel.value))
 const strategyText = computed(() => {
   const id = resolvedId.value
   const label = isAuto(id) ? STRATEGY_LABELS[id] : id === 'custom' ? 'Custom rate' : method.value?.name || 'Method'

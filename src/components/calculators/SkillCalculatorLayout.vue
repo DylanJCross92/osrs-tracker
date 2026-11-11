@@ -223,6 +223,7 @@ import { track } from '@/utils/analytics'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 import { questsForSkill } from '@/data/quests'
+import { useRequirements } from '@/composables/useRequirements'
 import { SKILL_INFO } from '@/data/skillInfo'
 import { goalsForSkill } from '@/data/calculatorGoals'
 import {
@@ -284,6 +285,7 @@ const strategy = ref(AUTO_FAST)
 const methodChoice = ref('strategy')
 const customXp = ref(intParam(q.rate, 1, 10_000_000) ?? 50000)
 const customGp = ref(intParam(q.gp, 0, 1_000_000_000))
+const { doneQuestIds } = useRequirements()
 const quests = ref([])
 // Methods the user switched off, so routes only use the rest. Stored as the ones to skip.
 const allSkillMethods = methodsForSkill(skill)
@@ -369,6 +371,7 @@ const goal = computed(() => ({
   customGpPerHour: methodChoice.value === 'custom' && customGp.value != null ? customGp.value : undefined,
   gpValuePerHour: DEFAULT_GP_VALUE,
   quests: quests.value,
+  doneQuestIds: doneQuestIds.value,
   allowedMethodIds: allowedIds.value,
 }))
 const allCount = allSkillMethods.length

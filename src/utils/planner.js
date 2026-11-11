@@ -31,8 +31,12 @@ export function levelAtXp(xp, allowVirtual = false) {
 // Best catalog method usable at a given level (null if none). 'fast' picks the
 // highest xp/hr; 'cheap' picks the lowest cost per xp (net gp / xp, so profit
 // methods win), ignoring methods with no trustworthy gp figure.
-function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null) {
-  const usable = methodsForSkill(skill).filter((meth) => meth.minLevel <= level && (meth.maxLevel == null || level <= meth.maxLevel) && (!allowed || allowed.has(meth.id)))
+function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null, blocked = null) {
+  const candidates = methodsForSkill(skill).filter((meth) => meth.minLevel <= level && (meth.maxLevel == null || level <= meth.maxLevel) && (!allowed || allowed.has(meth.id)))
+  // Methods with a confirmed unmet requirement are not recommended. If nothing else covers this level they are used anyway
+  // (and flagged in the route) rather than leaving a gap in the plan.
+  const open = blocked ? candidates.filter((meth) => !blocked.has(meth.id)) : candidates
+  const usable = open.length ? open : candidates
   if (!usable.length) return null
   const byFast = (a, b) => b.xpPerHour - a.xpPerHour
   if (mode === 'balanced') {
@@ -64,7 +68,7 @@ function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VAL
  * e.g. copper -> iron -> Motherlode -> Blast Mine on the way to granite.
  * Pieces with no catalog method come back with method: null.
  */
-function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null) {
+function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP_VALUE, allowed = null, blocked = null) {
   if (toXp <= fromXp) return []
   const cuts = new Set([fromXp, toXp])
   for (const meth of methodsForSkill(skill)) {
@@ -78,7 +82,7 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
   const points = [...cuts].sort((x, y) => x - y)
   const pieces = []
   for (let i = 0; i < points.length - 1; i++) {
-    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour, allowed)
+    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour, allowed, blocked)
     const last = pieces[pieces.length - 1]
     if (last && last.method === method) last.toXp = points[i + 1]
     else pieces.push({ method, fromXp: points[i], toXp: points[i + 1] })
@@ -122,18 +126,23 @@ export const GLOBAL_STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED]
  *    fastest available methods ('prep'), runs it ('main') while valid, then
  *    continues with the fastest available ('post') if it caps out first;
  *  - 'custom': a single segment at your own xp/hr.
- * goal.quests are quest ids whose flat xp rewards are counted as already done.
+ * goal.quests are quest ids whose flat xp rewards are counted as already done. goal.doneQuestIds are quests the player has
+ * finished, which are never counted.
  */
 export function planGoal(goal) {
   const currentXp = Math.max(Math.floor(goal.currentXp || 0), 0)
   const targetXp = Math.min(Math.floor(goal.targetXp || 0), MAX_XP)
-  const questXp = Math.min(questXpFor(goal.quests, goal.skill), Math.max(targetXp - currentXp, 0))
+  // Quests the player has already finished cannot give their reward again.
+  const doneQuests = Array.isArray(goal.doneQuestIds) && goal.doneQuestIds.length ? new Set(goal.doneQuestIds) : null
+  const questXp = Math.min(questXpFor(doneQuests ? (goal.quests || []).filter((id) => !doneQuests.has(id)) : goal.quests, goal.skill), Math.max(targetXp - currentXp, 0))
   const startXp = currentXp + questXp
   const remainingXp = Math.max(targetXp - startXp, 0)
   const auto = isAuto(goal.methodId) ? goal.methodId : null
   const chosen = goal.methodId === 'custom' || auto ? null : getMethod(goal.methodId)
   // Optional: only route through these methods (a list of method ids). Empty or missing means any method.
   const allowedSet = Array.isArray(goal.allowedMethodIds) && goal.allowedMethodIds.length ? new Set(goal.allowedMethodIds) : null
+  // Optional: method ids with a confirmed unmet requirement, skipped when the planner picks methods itself.
+  const blockedSet = Array.isArray(goal.blockedMethodIds) && goal.blockedMethodIds.length ? new Set(goal.blockedMethodIds) : null
 
   const result = { currentXp, startXp, questXp, targetXp, remainingXp, method: chosen, segments: [], hours: null, netGp: null, gpPartial: false, warning: null, complete: true }
   if (remainingXp === 0) return { ...result, hours: 0, netGp: 0 }
@@ -141,7 +150,7 @@ export function planGoal(goal) {
   let segments = []
   if (auto) {
     const mode = auto === AUTO_CHEAP ? 'cheap' : auto === AUTO_PROFIT ? 'profit' : auto === AUTO_BALANCED ? 'balanced' : 'fast'
-    segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'auto' }))
+    segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet, blockedSet).map((x) => ({ ...x, kind: 'auto' }))
   } else if (!chosen) {
     const rate = Math.floor(goal.customXpPerHour || 0)
     if (!rate) return { ...result, complete: false, warning: 'Pick a training method or enter an XP/hour rate.' }
@@ -150,12 +159,12 @@ export function planGoal(goal) {
     const mainStart = xpAtLevel(chosen.minLevel)
     const mainEnd = chosen.maxLevel == null ? Infinity : xpAtLevel(chosen.maxLevel + 1)
     const prepEnd = Math.min(targetXp, mainStart)
-    segments.push(...fillRoute(chosen.skill, startXp, prepEnd, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'prep' })))
+    segments.push(...fillRoute(chosen.skill, startXp, prepEnd, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet, blockedSet).map((x) => ({ ...x, kind: 'prep' })))
     const mainFrom = Math.max(startXp, mainStart)
     const mainTo = Math.min(targetXp, mainEnd)
     if (mainTo > mainFrom) segments.push({ method: chosen, fromXp: mainFrom, toXp: mainTo, kind: 'main' })
     if (targetXp > mainEnd) {
-      segments.push(...fillRoute(chosen.skill, Math.max(mainEnd, startXp), targetXp, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet).map((x) => ({ ...x, kind: 'post' })))
+      segments.push(...fillRoute(chosen.skill, Math.max(mainEnd, startXp), targetXp, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet, blockedSet).map((x) => ({ ...x, kind: 'post' })))
     }
   }
 
@@ -270,7 +279,7 @@ export function formatGp(gp) {
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
 // Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.
-export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget }) {
+export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt }) {
   const params = new URLSearchParams()
   if (username) params.set('u', username)
   params.set('h', String(hoursPerDay))
@@ -283,6 +292,9 @@ export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, bu
   if (strategy && strategy !== AUTO_FAST) params.set('s', strategy)
   if (gpValue && gpValue !== DEFAULT_GP_VALUE) params.set('v', String(Math.round(gpValue)))
   if (budget) params.set('b', String(Math.round(budget)))
+  // When the goals' starting stats were captured: the baseline live progress is measured from.
+  const at = statsAt ? new Date(statsAt).getTime() : NaN
+  if (Number.isFinite(at)) params.set('t', String(at))
   return params
 }
 
@@ -305,5 +317,7 @@ export function decodePlan(query, validSkills) {
   const strategy = GLOBAL_STRATEGIES.includes(query.s) ? query.s : AUTO_FAST
   const gpValue = Math.min(Math.max(parseInt(query.v, 10) || DEFAULT_GP_VALUE, 0), 1_000_000_000)
   const budget = Math.min(Math.max(parseInt(query.b, 10) || 0, 0), 100_000_000_000)
-  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null }
+  const t = parseInt(query.t, 10)
+  const statsAt = Number.isFinite(t) && t > 0 && t <= Date.now() + 86_400_000 ? new Date(t).toISOString() : null
+  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt }
 }

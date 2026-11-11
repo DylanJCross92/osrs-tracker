@@ -140,9 +140,21 @@ export function hoursToXp(plan, xp) {
   return hours
 }
 
+/** Skill categories used to colour the timeline rail. */
+export const SKILL_CATEGORIES = {
+  combat: { label: 'Combat', skills: ['Attack', 'Strength', 'Defence', 'Hitpoints', 'Ranged', 'Prayer', 'Magic'] },
+  gathering: { label: 'Gathering', skills: ['Mining', 'Woodcutting', 'Fishing', 'Farming', 'Hunter'] },
+  artisan: { label: 'Artisan', skills: ['Smithing', 'Crafting', 'Cooking', 'Fletching', 'Herblore', 'Runecraft', 'Construction', 'Firemaking'] },
+  support: { label: 'Support', skills: ['Agility', 'Thieving', 'Slayer', 'Sailing'] },
+}
+export function categoryOfSkill(skill) {
+  return Object.keys(SKILL_CATEGORIES).find((k) => SKILL_CATEGORIES[k].skills.includes(skill)) || 'support'
+}
+
 /**
  * Sequential timeline in the order given (skills are not trained at the same time).
  * Returns per-skill start/end dates, level milestones and the running gp balance, plus the overall finish.
+ * Every entry also carries its position in training hours so a chart can draw it to scale.
  */
 export function buildTimeline(goals, plans, hoursPerDay, startDate = new Date()) {
   const hpd = Number(hoursPerDay) > 0 ? Number(hoursPerDay) : null
@@ -154,28 +166,101 @@ export function buildTimeline(goals, plans, hoursPerDay, startDate = new Date())
     const hours = plan.hours || 0
     const startHours = clock
     const milestones = []
+    const targetLevel = levelAtXp(plan.targetXp, true)
     if (hours > 0) {
       for (const lvl of MILESTONE_LEVELS) {
         const xp = xpAtLevel(lvl)
-        if (xp > plan.startXp && xp <= plan.targetXp) milestones.push({ level: lvl, date: dateAt(startHours + hoursToXp(plan, xp)) })
+        if (xp > plan.startXp && xp <= plan.targetXp) {
+          const at = startHours + hoursToXp(plan, xp)
+          milestones.push({ level: lvl, date: dateAt(at), hours: at })
+        }
       }
-      const endLevel = levelAtXp(plan.targetXp, true)
-      if (!MILESTONE_LEVELS.includes(endLevel)) milestones.push({ level: endLevel, date: dateAt(startHours + hours) })
+      if (!MILESTONE_LEVELS.includes(targetLevel)) milestones.push({ level: targetLevel, date: dateAt(startHours + hours), hours: startHours + hours })
     }
     clock += hours
     balance += plan.netGp ?? 0
     return {
       skill: g.skill,
+      category: categoryOfSkill(g.skill),
       hours,
+      startHours,
+      endHours: clock,
       startDate: dateAt(startHours),
       endDate: dateAt(clock),
       balance,
       netGp: plan.netGp,
       milestones,
+      targetLevel,
       done: hours === 0,
     }
   })
+
   return { entries, totalHours: clock, totalDays: hpd ? clock / hpd : null, finishDate: dateAt(clock) }
+}
+
+// --- Live progress ----------------------------------------------------------
+
+/**
+ * A goal as it stands today. A goal keeps the XP it started from (so progress is always measured against the original
+ * starting point); this returns a copy whose start is moved up to the tracked XP, capped at the target.
+ */
+export function liveGoalFor(goal, trackedXp) {
+  const xp = Number(trackedXp)
+  if (trackedXp == null || !Number.isFinite(xp)) return goal
+  const current = Math.max(goal.currentXp, Math.min(xp, goal.targetXp))
+  return current === goal.currentXp ? goal : { ...goal, currentXp: current }
+}
+
+/**
+ * Progress against the original plan.
+ * `originalPlans` were calculated from each goal's starting XP, `livePlans` from today's XP. The schedule compares the
+ * training hours actually done so far with the hours the plan expected to be done by now at the same daily playtime, so
+ * changing playtime never makes a plan look ahead or behind on its own.
+ */
+export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursPerDay, baselineAt, now = new Date()) {
+  const per = goals.map((g, i) => {
+    const live = liveGoals[i].currentXp
+    const total = Math.max(0, g.targetXp - g.currentXp)
+    const gained = Math.max(0, live - g.currentXp)
+    const remaining = Math.max(0, g.targetXp - live)
+    const done = remaining === 0
+    return {
+      skill: g.skill,
+      total,
+      gained,
+      remaining,
+      done,
+      pct: total > 0 ? Math.min(1, gained / total) : done ? 1 : 0,
+      startLevel: levelAtXp(g.currentXp, true),
+      liveLevel: levelAtXp(live, true),
+      targetLevel: levelAtXp(g.targetXp, true),
+    }
+  })
+  const totalXp = per.reduce((a, p) => a + p.total, 0)
+  const gainedXp = per.reduce((a, p) => a + p.gained, 0)
+  const completedGoals = per.filter((p) => p.done).length
+  const sumHours = (plans) => plans.reduce((a, p) => a + (p?.hours || 0), 0)
+  const originalHours = sumHours(originalPlans)
+  const liveHours = sumHours(livePlans)
+  const hpd = Number(hoursPerDay) > 0 ? Number(hoursPerDay) : null
+  const baseline = baselineAt ? new Date(baselineAt) : null
+  const elapsedDays = baseline && !Number.isNaN(baseline.getTime()) ? Math.max(0, (now - baseline) / 86_400_000) : null
+  const aheadDays = hpd && elapsedDays != null ? Math.max(0, originalHours - liveHours) / hpd - elapsedDays : null
+  return {
+    per,
+    totalXp,
+    gainedXp,
+    remainingXp: Math.max(0, totalXp - gainedXp),
+    pct: totalXp > 0 ? Math.min(1, gainedXp / totalXp) : per.length && completedGoals === per.length ? 1 : 0,
+    completedGoals,
+    goalCount: per.length,
+    complete: per.length > 0 && completedGoals === per.length,
+    originalHours,
+    liveHours,
+    elapsedDays,
+    aheadDays,
+    schedule: aheadDays == null ? null : aheadDays > 0.5 ? 'ahead' : aheadDays < -0.5 ? 'behind' : 'on',
+  }
 }
 
 // --- Saved plans (browser storage only, no accounts) -------------------------

@@ -36,4 +36,11 @@ describe('sanitizeUserData', () => {
     expect(sanitizeUserData({ evil: { value: 1 }, plans: 'x' })).toEqual({})
     for (const bad of [null, undefined, 5, 'x', []]) expect(sanitizeUserData(bad)).toEqual({})
   })
+  it('keeps requirement answers with valid ids and values only', () => {
+    const out = sanitizeUserData({
+      requirements: { value: { 'quest:monkey-madness-ii': 'have', 'equipment:toxic-blowpipe': 'missing', 'unlock:ancient-magicks': 'unknown', 'quest:x': 'maybe', 'BAD ID': 'have', 'quest:y': 7 }, updatedAt: T },
+    })
+    expect(out.requirements.value).toEqual({ 'quest:monkey-madness-ii': 'have', 'equipment:toxic-blowpipe': 'missing', 'unlock:ancient-magicks': 'unknown' })
+    expect(sanitizeUserData({ requirements: { value: ['x'], updatedAt: T } })).toEqual({})
+  })
 })

@@ -37,6 +37,8 @@
       </div>
     </section>
 
+    <QuestTracker />
+
     <section class="card">
       <h2>Your profiles</h2>
       <p class="acc-note">RuneScape profiles you own or are claiming. To claim one, open its profile page and press Claim.</p>
@@ -68,10 +70,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import RoleBadges from '@/components/RoleBadges.vue'
+import QuestTracker from '@/components/QuestTracker.vue'
 import { logOut, useAuth } from '@/composables/useAuth'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { useRivals } from '@/composables/useRivals'
@@ -83,6 +86,7 @@ import { track } from '@/utils/analytics'
 setPageMeta({ title: 'Your account', description: 'Your TickGains account and settings.', path: '/account', noindex: true })
 
 const router = useRouter()
+const route = useRoute()
 const { user, syncState } = useAuth()
 const { period } = useGainPeriod()
 const { rivals } = useRivals()
@@ -96,6 +100,8 @@ const claims = ref([])
 const claimContact = ref('')
 const claimsLoading = ref(true)
 onMounted(async () => {
+  // A link to #quests (from the planner) lands on the quest tracker.
+  if (route.hash === '#quests') nextTick(() => document.getElementById('quests')?.scrollIntoView({ block: 'start' }))
   try {
     const res = await claimsApi.mine()
     claims.value = res.claims

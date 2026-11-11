@@ -38,7 +38,12 @@
                 <i v-if="m.id === topProfitId" class="mpick-tag tag-profit">Most profitable</i>
                 <i v-else-if="m.gpPerHour > 0" class="mpick-tag tag-profit soft">Profitable</i>
                 <i v-if="m.id === cheapestId && !(m.gpPerHour > 0)" class="mpick-tag tag-cheap">Cheapest per XP</i>
+                <i v-if="avail(m).state === 'blocked'" class="mpick-tag tag-blocked" :title="`Missing: ${unmetText(avail(m))}`">Missing requirement</i>
               </span>
+              <small v-if="avail(m).items.length" class="mpick-req">
+                Needs
+                <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="k < avail(m).items.length - 1">, </template></span>
+              </small>
             </span>
             <span class="mpick-cell mpick-lvl"><small>Level</small>{{ m.minLevel }}{{ m.maxLevel != null ? `-${m.maxLevel}` : '+' }}</span>
             <span class="mpick-cell mpick-xp">
@@ -60,8 +65,10 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatNum, formatGp } from '@/utils/planner'
+import { methodAvailability, unmetText } from '@/utils/requirements'
+import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 
 // A readable replacement for the long method dropdown: every method in a table with XP/hr and GP/hr bars, sortable
 // columns, and tags for the fastest, cheapest and most profitable options.
@@ -74,6 +81,9 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 
+const reqCtx = inject(plannerRequirementContext, null)
+const availCache = computed(() => new Map(props.methods.map((m) => [m.id, methodAvailability(m, reqCtx?.value || {})])))
+const avail = (m) => availCache.value.get(m.id) || methodAvailability(m, {})
 const open = ref(false)
 const root = ref(null)
 const sortKey = ref('level')

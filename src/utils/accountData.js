@@ -14,6 +14,7 @@ export const KEYS = {
   recents: 'tickgains:recent-searches',
   cheered: 'tickgains-congrats-cheered',
   dismissed: 'tickgains-congrats-dismissed',
+  requirements: 'tickgains-planner-requirements-v1',
 }
 const NAMES = Object.keys(KEYS)
 const BY_STORAGE_KEY = Object.fromEntries(NAMES.map((n) => [KEYS[n], n]))
@@ -68,6 +69,7 @@ const nowIso = () => new Date().toISOString()
 const isEmpty = (name, value) => {
   if (value == null) return true
   if (name === 'planner') return !Array.isArray(value.goals) || value.goals.length === 0
+  if (name === 'requirements') return typeof value !== 'object' || Object.keys(value).length === 0
   return Array.isArray(value) && value.length === 0
 }
 
@@ -113,7 +115,7 @@ export async function flush() {
   for (const name of names) {
     const value = readRaw(name)
     // An emptied piece is still sent, so clearing it on one device clears it everywhere.
-    payload[name] = { value: value ?? (name === 'planner' ? { goals: [] } : []), updatedAt: meta[name]?.ts || nowIso() }
+    payload[name] = { value: value ?? (name === 'planner' ? { goals: [] } : name === 'requirements' ? {} : []), updatedAt: meta[name]?.ts || nowIso() }
   }
   try {
     await authApi.saveData(payload)
@@ -176,6 +178,11 @@ export async function linkAccountData() {
     if (name === 'cheered' || name === 'dismissed') {
       merged = union(Array.isArray(local) ? local : [], Array.isArray(remoteValue) ? remoteValue : [])
       pushIt = JSON.stringify(merged) !== JSON.stringify(remoteValue || [])
+    } else if (name === 'requirements') {
+      // Answers about quests and gear: keep those from both sides, this browser's answer winning where both have one.
+      const remoteMap = remoteValue && typeof remoteValue === 'object' && !Array.isArray(remoteValue) ? remoteValue : {}
+      merged = { ...remoteMap, ...(local && typeof local === 'object' && !Array.isArray(local) ? local : {}) }
+      pushIt = JSON.stringify(merged) !== JSON.stringify(remoteMap)
     } else if (name === 'recents') {
       merged = mergeRecents(local, remoteValue)
       pushIt = JSON.stringify(merged) !== JSON.stringify(remoteValue || [])
@@ -204,7 +211,7 @@ export async function linkAccountData() {
       changedLocal = true
     }
     meta[name] = { ts: pushIt ? nowIso() : remote?.updatedAt || localTs || nowIso(), linked: true }
-    if (pushIt) toPush[name] = { value: merged ?? [], updatedAt: meta[name].ts }
+    if (pushIt) toPush[name] = { value: merged ?? (name === 'requirements' ? {} : []), updatedAt: meta[name].ts }
   }
 
   writeMeta(meta)

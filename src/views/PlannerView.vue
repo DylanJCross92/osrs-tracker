@@ -54,66 +54,77 @@
     </section>
 
 
-    <!-- 2. Plan overview -->
-    <section class="card planner-overview" aria-label="Plan overview">
-      <div class="planner-overview-head">
-        <h2>Plan overview</h2>
+    <!-- 3. Training goals -->
+    <section id="add-goal" class="card planner-goals-card">
+      <div class="planner-goals-head">
+        <h2>Training goals</h2>
         <span v-if="goals.length" class="planner-calc">Calculated {{ formatRelative(calcAt.toISOString()) }}</span>
+        <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
 
-      <div v-if="staleCount > 0" class="planner-notice">
-        Newer player stats are available for {{ staleCount }} skill{{ staleCount === 1 ? '' : 's' }}. Your goals still start from the stats they were created with.
-        <button class="btn btn-ghost" type="button" @click="refreshFromPlayer">Refresh from player stats</button>
-      </div>
+      <PlannerProgress
+        v-if="progress"
+        :progress="progress"
+        :updated-at="player?.latest?.capturedAt || ''"
+        :baseline-at="statsAt || ''"
+        :since="sinceVisit"
+        @rebase="refreshFromPlayer"
+      />
 
       <div v-if="goals.length" class="plan-tiles">
         <div class="plan-tile"><span>XP remaining</span><b>{{ formatNum(totals.totalXp) }}</b><small>{{ goals.length }} skill{{ goals.length === 1 ? '' : 's' }}</small></div>
-        <div class="plan-tile"><span>Training time</span><b>{{ formatHours(totals.totalHours) }}</b><small>at the planned playtime</small></div>
+        <div class="plan-tile">
+          <span>Training time</span>
+          <b>{{ formatHours(totals.totalHours) }}</b>
+          <small>{{ totals.days == null ? 'at the planned playtime' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'} at ${hoursPerDay} h/day` }}</small>
+        </div>
         <div class="plan-tile">
           <span>Net GP</span>
           <b :class="gpClass(totals.netGp)">{{ totals.netGp == null ? 'No GP data' : formatGp(totals.netGp) }}</b>
           <small v-if="totals.gpIncomplete && totals.netGp != null" class="gp-incomplete">Incomplete: some steps are unpriced</small>
           <small v-else-if="totals.netGp != null">{{ totals.netGp >= 0 ? 'estimated profit' : 'estimated cost' }}</small>
         </div>
-        <div class="plan-tile plan-tile-finish">
-          <span>Completion</span>
-          <b>{{ totals.days == null ? '-' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'}` }}</b>
-          <small v-if="totals.completionDate">≈ {{ totals.completionDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) }} at {{ hoursPerDay }} h/day</small>
-        </div>
-      </div>
-      <p v-else class="empty-hint">No goals yet. Add a skill goal below and the totals will appear here.</p>
-
-      <label class="planner-playtime">
-        <span>Daily playtime: <b>{{ hoursPerDay }} h</b></span>
-        <input type="range" min="0.5" max="12" step="0.5" v-model.number="hoursPerDay" aria-label="Daily playtime in hours" />
-      </label>
-    </section>
-
-    <!-- 3. Training goals -->
-    <section id="add-goal" class="card planner-goals-card">
-      <div class="planner-goals-head">
-        <h2>Training goals</h2>
-        <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
       </div>
 
-      <div class="strategy-bar" role="group" aria-label="Global training strategy">
-        <div class="strategy-main">
-          <span class="strategy-label">Strategy for all goals</span>
-          <div class="range-tabs strategy-tabs">
-            <button v-for="s in GLOBAL_STRATEGIES" :key="s" type="button" :class="{ active: globalStrategy === s }" :title="STRATEGY_HINTS[s]" @click="setGlobalStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
+      <!-- How long you play each day: the one number that moves every date below -->
+      <div class="playtime" role="group" aria-label="Daily playtime">
+        <div class="playtime-main">
+          <span class="playtime-label">Hours played per day</span>
+          <div class="playtime-presets">
+            <button v-for="h in PLAYTIME_PRESETS" :key="h" type="button" :class="{ active: hoursPerDay === h }" :aria-pressed="hoursPerDay === h" @click="setHours(h)">{{ h }}h</button>
+          </div>
+          <div class="playtime-stepper">
+            <button type="button" aria-label="Half an hour less" :disabled="hoursPerDay <= MIN_HOURS" @click="setHours(hoursPerDay - 0.5)">−</button>
+            <input type="number" inputmode="decimal" step="0.5" :min="MIN_HOURS" :max="MAX_HOURS" :value="hoursPerDay" aria-label="Hours played per day" @change="onHoursTyped" />
+            <span>h</span>
+            <button type="button" aria-label="Half an hour more" :disabled="hoursPerDay >= MAX_HOURS" @click="setHours(hoursPerDay + 0.5)">+</button>
           </div>
         </div>
-        <p class="strategy-hint">{{ STRATEGY_HINTS[globalStrategy] }}</p>
-        <p v-if="overrideCount" class="strategy-overrides">
-          {{ overrideCount }} goal{{ overrideCount === 1 ? '' : 's' }} override{{ overrideCount === 1 ? 's' : '' }} this strategy.
-          <button class="btn-text" type="button" @click="resetAllOverrides">Reset all to global</button>
-        </p>
+        <input class="playtime-slider" type="range" min="0.5" max="12" step="0.5" :value="Math.min(hoursPerDay, 12)" aria-label="Daily playtime in hours" @input="setHours(Number($event.target.value))" />
       </div>
 
-      <div v-if="goals.length" class="goal-list">
+      <PlannerTimeline v-if="goals.length" :timeline="timeline" :hours-per-day="hoursPerDay">
+        <div class="strategy-pick" role="group" aria-label="Training strategy for all goals">
+          <span class="strategy-label">Strategy for all goals</span>
+          <div class="range-tabs strategy-tabs">
+            <button v-for="s in GLOBAL_STRATEGIES" :key="s" type="button" :class="{ active: globalStrategy === s }" :aria-pressed="globalStrategy === s" :title="STRATEGY_HINTS[s]" @click="setGlobalStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
+          </div>
+          <button v-if="overrideCount" class="btn-text strategy-reset" type="button" @click="resetAllOverrides">Reset {{ overrideCount }} override{{ overrideCount === 1 ? '' : 's' }}</button>
+        </div>
+        <div class="req-summary">
+          <label class="req-toggle" title="When on, the planner does not suggest methods you have said you cannot use. Methods you pick yourself are always used.">
+            <input v-model="respect" type="checkbox" />
+            <span>Skip methods I can't use yet</span>
+          </label>
+          <span v-if="routeIssues.blocked" class="req-flag is-unmet">⚠ {{ routeIssues.blocked }} goal{{ routeIssues.blocked === 1 ? '' : 's' }} use a method with a missing requirement</span>
+          <span v-else-if="routeIssues.unconfirmed" class="req-flag is-unknown">? {{ routeIssues.unconfirmed }} goal{{ routeIssues.unconfirmed === 1 ? '' : 's' }} have requirements to confirm</span>
+        </div>
+      </PlannerTimeline>
+
+      <div v-if="goals.length" ref="goalListEl" class="goal-list" :class="{ dragging: !!dragSkill }">
+        <div v-for="(g, i) in goals" :key="g.skill" class="goal-row" :data-skill="g.skill" :class="{ dragged: dragSkill === g.skill }">
+        <PlannerGoalRail :entry="timeline.entries[i]" :total-hours="timeline.totalHours" :first="i === 0" :roomy="expanded.has(g.skill)" />
         <PlannerGoalCard
-          v-for="(g, i) in goals"
-          :key="g.skill"
           :goal="g"
           :plan="plans[i]"
           :compare="compares[i]"
@@ -123,14 +134,16 @@
           :expanded="expanded.has(g.skill)"
           :index="i"
           :count="goals.length"
-          :stale-xp="staleXpFor(g)"
+          :live-goal="liveGoals[i]"
+          :progress="progress ? progress.per[i] : null"
           @toggle="toggleExpanded(g.skill)"
           @remove="removeGoal(i)"
           @move="(dir) => moveGoal(i, dir)"
+          @drag-start="(e) => startDrag(g.skill, e)"
           @patch="(patch) => patchGoal(i, patch)"
           @pick="(id) => pickRoute(i, id)"
-          @refresh="refreshGoal(i)"
         />
+        </div>
       </div>
       <button v-if="goals.length" class="goal-add-bottom" type="button" @click="openAdd">+ Add another skill</button>
       <div v-if="!goals.length" class="planner-empty">
@@ -140,7 +153,7 @@
     </section>
 
     <template v-if="goals.length">
-      <!-- 4. Whole-plan strategy comparison + budget -->
+      <!-- 4. Whole-plan strategy comparison -->
       <section class="card">
         <div v-if="planStrategies" class="planner-compare">
           <div class="planner-compare-head">
@@ -160,20 +173,15 @@
             </table>
           </div>
         </div>
-
-        <PlannerBudget v-model:budget="budget" :result="budgetResult" :start-needed="budgetStartNeeded" @apply="applyBudget" />
       </section>
 
-      <!-- 5. Timeline -->
+      <!-- 5. Itemised steps and sharing -->
       <section class="card">
-        <PlannerTimeline :timeline="timeline" :hours-per-day="hoursPerDay" />
-        <details class="planner-all-methods">
-          <summary>Itemised steps and costs</summary>
-          <div v-for="(g, i) in goals" :key="g.skill" class="receipt-items">
-            <h3><img :src="skillIconSrc(g.skill)" :alt="g.skill" width="18" height="18" /> {{ g.skill }}</h3>
-            <PlannerRoute :segments="plans[i].segments" />
-          </div>
-        </details>
+        <h2 class="planner-itemised-title">Itemised steps and costs</h2>
+        <div v-for="(g, i) in goals" :key="g.skill" class="receipt-items">
+          <h3><img :src="skillIconSrc(g.skill)" :alt="g.skill" width="18" height="18" /> {{ g.skill }}</h3>
+          <PlannerRoute :segments="plans[i].segments" />
+        </div>
         <p class="planner-hint">GP and time figures are rough estimates from approximate community rates, not guarantees. GP is net per hour of training, so it already nets out supplies and any loot.</p>
         <div class="planner-share">
           <button class="btn btn-primary" type="button" @click="copyLink">Copy plan link</button>
@@ -188,13 +196,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerGoalCard from '@/components/planner/PlannerGoalCard.vue'
 import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
-import PlannerBudget from '@/components/planner/PlannerBudget.vue'
 import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
+import PlannerGoalRail from '@/components/planner/PlannerGoalRail.vue'
+import PlannerProgress from '@/components/planner/PlannerProgress.vue'
+import { useRequirements } from '@/composables/useRequirements'
+import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
+import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
+import { TRAINING_METHODS } from '@/data/trainingMethods'
 import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
@@ -206,6 +219,7 @@ import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
+import { readVisit, writeVisit, gainedSince } from '@/utils/plannerVisits'
 import {
   planGoal,
   planTotals,
@@ -230,9 +244,9 @@ import {
 import {
   STRATEGY_LABELS,
   resolveGoal,
-  optimiseBudget,
-  startingGpNeeded,
   buildTimeline,
+  buildProgress,
+  liveGoalFor,
   listSavedPlans,
   snapshotPlan,
   savePlan,
@@ -312,6 +326,7 @@ function pickSuggestion(sg) {
   loadPlayer({ typed: true })
 }
 
+let playersFreshened = false
 // `typed` is true when the user searched for this name; restoring a saved plan loads the player without it.
 async function loadPlayer({ typed = false } = {}) {
   suggestions.value = []
@@ -326,7 +341,11 @@ async function loadPlayer({ typed = false } = {}) {
   lookupError.value = ''
   track('player_search', { source: 'planner', username_length: name.length })
   try {
-    if (!store.loaded) await store.loadPlayers()
+    // Re-read the player list once per planner visit so the plan shows the newest tracked XP.
+    if (!store.loaded || !playersFreshened) {
+      await store.loadPlayers()
+      playersFreshened = true
+    }
     const find = () => store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
     // Existing TickGains players load straight from the database; unknown ones are added through the
     // normal tracking flow (Hiscores lookup + history import), so searching here also starts tracking them.
@@ -342,8 +361,11 @@ async function loadPlayer({ typed = false } = {}) {
     if (typed) recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
-    // Goals keep the stats they were created with. Newer stats are offered through "Refresh from player stats".
+    // Goals keep the stats they were created with, and progress is measured from them.
     if (!goals.value.length) statsAt.value = found.latest.capturedAt
+    // A plan from a link that does not say when it started: if every goal starts exactly at this player's current XP, it was
+    // made from these stats, so tracking can begin from them.
+    else if (!statsAt.value && goals.value.every((g) => g.currentXp === found.latest.skills?.[g.skill]?.xp)) statsAt.value = found.latest.capturedAt
   } catch (err) {
     lookupError.value = err?.message || 'Could not find that player on the OSRS Hiscores.'
     track('player_search_result', { source: 'planner', result: 'error' })
@@ -357,9 +379,21 @@ const playerXp = (skill) => player.value?.latest?.skills?.[skill]?.xp ?? null
 // --- Plan state ---------------------------------------------------------------
 const goals = ref([])
 const hoursPerDay = ref(2)
+function onHoursTyped(e) {
+  const raw = e.target.value
+  if (raw !== '') setHours(Number(raw))
+  e.target.value = hoursPerDay.value // snap the box back to the real value (also fixes blanks and out of range numbers)
+}
+const PLAYTIME_PRESETS = [1, 2, 3, 4, 6, 8]
+const MIN_HOURS = 0.5
+const MAX_HOURS = 24
+// Typed, stepped or dragged: always lands on a half hour between 0.5 and 24.
+function setHours(v) {
+  if (!Number.isFinite(v)) return
+  hoursPerDay.value = Math.min(MAX_HOURS, Math.max(MIN_HOURS, Math.round(v * 2) / 2))
+}
 const globalStrategy = ref(AUTO_FAST)
 const gpValue = ref(DEFAULT_GP_VALUE)
-const budget = ref(null)
 const statsAt = ref(null)
 const calcAt = ref(new Date())
 const expanded = ref(new Set())
@@ -371,7 +405,28 @@ const isMobile = () => typeof window !== 'undefined' && window.matchMedia('(max-
 
 // Goals (with the global strategy applied) and their results. Results are cached by inputs so a change only
 // recalculates the goals it touches.
-const resolved = computed(() => goals.value.map((g) => resolveGoal(g, globalStrategy.value, gpValue.value)))
+// Goals keep the XP they started from. Once a tracked player is loaded, estimates run from today's tracked XP instead, and
+// progress is measured against the original start.
+const tracking = computed(() => !!player.value?.latest && !!statsAt.value)
+const liveGoals = computed(() => goals.value.map((g) => (tracking.value ? liveGoalFor(g, playerXp(g.skill)) : g)))
+// Quest, gear and level requirements. Methods with a confirmed missing requirement are left out of the planner's own
+// recommendations (a method the player picks by hand is always used), unless the player turns that off.
+const { respect, confirmations, doneQuestIds } = useRequirements()
+const reqCtx = computed(() => {
+  const skills = player.value?.latest?.skills
+  const levels = {}
+  if (skills) for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
+  return {
+    levels: skills ? levels : null,
+    planned: Object.fromEntries(goals.value.map((g) => [g.skill, levelAtXp(g.targetXp, true)])),
+    confirmations: confirmations.value,
+  }
+})
+provide(plannerRequirementContext, reqCtx)
+const blockedIds = computed(() => (respect.value ? blockedMethodIds(TRAINING_METHODS, reqCtx.value) : []))
+const withBlocked = (g) => ({ ...g, blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value })
+const resolved = computed(() => liveGoals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
+const resolvedOriginal = computed(() => goals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
 const planCache = new Map()
 const compareCache = new Map()
 function memo(cache, key, fn) {
@@ -381,8 +436,10 @@ function memo(cache, key, fn) {
   cache.set(key, value)
   return value
 }
-const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.allowedMethodIds || null])
+const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null])
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
+const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
+const progress = computed(() => (tracking.value && goals.value.length ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value) : null))
 const compares = computed(() => resolved.value.map((g) => memo(compareCache, goalKey(g, false), () => compareStrategies(g))))
 const totals = computed(() => planTotals(plans.value, hoursPerDay.value))
 
@@ -405,27 +462,18 @@ const strategyVerdict = computed(() => {
   return tradeoffText(tradeoff({ hours: st.fast.totalHours, netGp: st.fast.netGp }, { hours: st.cheap.totalHours, netGp: st.cheap.netGp }))
 })
 
-// --- Budget ---------------------------------------------------------------------
-const budgetResult = computed(() => (budget.value ? optimiseBudget(resolved.value, budget.value) : null))
-const budgetStartNeeded = computed(() => {
-  const r = budgetResult.value
-  if (!r || !r.picks.length) return 0
-  const bySkill = new Map(r.picks.map((p) => [p.skill, p.option.plan]))
-  return startingGpNeeded(goals.value.map((g) => bySkill.get(g.skill) || plans.value[goals.value.indexOf(g)]))
-})
-function applyBudget(picks) {
-  for (const p of picks) {
-    const g = goals.value.find((x) => x.skill === p.skill)
-    if (g) g.methodId = p.option.methodId === globalStrategy.value ? GLOBAL_STRATEGY : p.option.methodId
-  }
-  track('planner_budget_applied', { skills: picks.length })
-  showToast('Applied the budget routes to your goals.')
-}
-watch(budget, (b, prev) => {
-  if (b && !prev) track('planner_budget_set')
-})
-
 // --- Timeline ------------------------------------------------------------------
+// How many goals run through a method the player is missing something for, or has not confirmed yet.
+const routeIssues = computed(() => {
+  let blocked = 0
+  let unconfirmed = 0
+  plans.value.forEach((plan) => {
+    const states = plan.segments.filter((seg) => seg.method?.requirements).map((seg) => methodAvailability(seg.method, reqCtx.value).state)
+    if (states.includes('blocked')) blocked++
+    else if (states.includes('unconfirmed')) unconfirmed++
+  })
+  return { blocked, unconfirmed }
+})
 const timeline = computed(() => buildTimeline(goals.value, plans.value, hoursPerDay.value))
 
 // --- Goals ----------------------------------------------------------------------
@@ -455,6 +503,71 @@ function moveGoal(i, dir) {
   goals.value = next
   track('planner_goal_reordered')
 }
+// --- Drag to reorder (mouse, pen and touch) ------------------------------------
+// The grip button starts a drag. The row follows the pointer and the list reorders live whenever the row's centre crosses a
+// neighbour's centre, so the rails, dates and finish line update as you move.
+const goalListEl = ref(null)
+const dragSkill = ref('')
+let drag = null
+function startDrag(skill, e) {
+  if (drag || (e.pointerType === 'mouse' && e.button !== 0)) return
+  const row = goalListEl.value?.querySelector(`[data-skill="${skill}"]`)
+  if (!row) return
+  drag = { skill, grab: e.clientY - row.getBoundingClientRect().top, y: e.clientY, timer: 0, busy: false }
+  dragSkill.value = skill
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
+  // Also ticks on a timer so holding the pointer near an edge keeps scrolling the page.
+  drag.timer = setInterval(dragFrame, 30)
+}
+function onDragMove(e) {
+  if (!drag) return
+  drag.y = e.clientY
+  dragFrame()
+}
+async function dragFrame() {
+  if (!drag) return
+  if (!drag.busy) {
+    drag.busy = true
+    const list = goalListEl.value
+    const row = list?.querySelector(`[data-skill="${drag.skill}"]`)
+    if (row) {
+      // Scroll the page when the pointer is near the top or bottom edge.
+      if (drag.y < 80) window.scrollBy(0, -Math.min(18, (80 - drag.y) / 3 + 4))
+      else if (drag.y > window.innerHeight - 80) window.scrollBy(0, Math.min(18, (drag.y - (window.innerHeight - 80)) / 3 + 4))
+      row.style.transform = ''
+      const rows = [...list.children]
+      const idx = rows.indexOf(row)
+      const rect = row.getBoundingClientRect()
+      const centre = drag.y - drag.grab + rect.height / 2
+      const mid = (el) => el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2
+      let swap = 0
+      if (idx > 0 && centre < mid(rows[idx - 1])) swap = -1
+      else if (idx < rows.length - 1 && centre > mid(rows[idx + 1])) swap = 1
+      if (swap) {
+        moveGoal(idx, swap)
+        await nextTick()
+      }
+      const after = row.getBoundingClientRect()
+      row.style.transform = `translateY(${drag.y - drag.grab - after.top}px)`
+    }
+    if (drag) drag.busy = false
+  }
+}
+function endDrag() {
+  if (!drag) return
+  clearInterval(drag.timer)
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
+  const row = goalListEl.value?.querySelector(`[data-skill="${drag.skill}"]`)
+  if (row) row.style.transform = ''
+  drag = null
+  dragSkill.value = ''
+}
+onBeforeUnmount(endDrag)
+
 function patchGoal(i, patch) {
   Object.assign(goals.value[i], patch)
   if (patch.methodId) track('planner_method_changed', { skill: goals.value[i].skill, method: patch.methodId })
@@ -477,30 +590,56 @@ function resetAllOverrides() {
   for (const g of goals.value) g.methodId = GLOBAL_STRATEGY
 }
 
-// --- Player stat refresh ------------------------------------------------------
-// Only ever offered, never applied automatically. XP can only go up, targets and strategies are untouched.
-const staleXpFor = (g) => {
-  const xp = playerXp(g.skill)
-  return xp != null && xp > g.currentXp ? xp : null
-}
-const staleCount = computed(() => goals.value.filter((g) => staleXpFor(g) != null).length)
-function refreshGoal(i) {
-  const xp = staleXpFor(goals.value[i])
-  if (xp != null) goals.value[i].currentXp = xp
-}
+// --- Restart tracking ------------------------------------------------------------
+// Progress is measured from the stats a plan started with. This moves every goal's start up to today's tracked XP (and the
+// start date to when those stats were captured), so progress begins again from 0%. Targets and strategies are untouched.
 function refreshFromPlayer() {
   let changed = 0
   for (const g of goals.value) {
-    const xp = staleXpFor(g)
-    if (xp != null) {
-      g.currentXp = xp
+    const xp = playerXp(g.skill)
+    if (xp != null && xp > g.currentXp) {
+      g.currentXp = Math.min(xp, g.targetXp)
       changed++
     }
   }
   if (player.value) statsAt.value = player.value.latest.capturedAt
-  track('planner_refresh_stats', { skills: changed })
-  showToast(`Refreshed ${changed} skill${changed === 1 ? '' : 's'} from ${player.value?.displayName}'s stats.`)
+  track('planner_restart_progress', { skills: changed })
+  showToast(`Progress restarted from ${player.value?.displayName}'s stats today.`)
 }
+
+// --- Since your last visit -----------------------------------------------------------
+// The previous visit is read once per player, and today's tracked XP is stored when the page closes so the next visit can
+// say what has been gained since.
+const previousVisit = ref(null)
+const visitFor = ref('')
+watch(
+  () => player.value?.username,
+  (name) => {
+    if (!name || name === visitFor.value) return
+    visitFor.value = name
+    previousVisit.value = readVisit(name)
+  },
+  { immediate: true },
+)
+const trackedXpByGoal = () => {
+  const out = {}
+  for (const g of goals.value) {
+    const xp = playerXp(g.skill)
+    if (xp != null) out[g.skill] = xp
+  }
+  return out
+}
+const sinceVisit = computed(() => (tracking.value ? gainedSince(previousVisit.value, trackedXpByGoal()) : null))
+function rememberVisit() {
+  if (!player.value || !goals.value.length) return
+  writeVisit(player.value.username, trackedXpByGoal())
+}
+const onHide = () => document.visibilityState === 'hidden' && rememberVisit()
+onMounted(() => document.addEventListener('visibilitychange', onHide))
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', onHide)
+  rememberVisit()
+})
 
 // --- Helpers ----------------------------------------------------------------------
 function gpClass(gp) {
@@ -510,7 +649,7 @@ function gpClass(gp) {
 
 // --- Share ------------------------------------------------------------------------
 function planState() {
-  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: budget.value }
+  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value }
 }
 function planUrl() {
   const params = encodePlan({ ...planState(), username: player.value?.username || '' })
@@ -532,7 +671,7 @@ function copySummary() {
   track('planner_share', { method: 'summary', goals: goals.value.length })
   const lines = goals.value.map((g, i) => {
     const p = plans.value[i]
-    return `${g.skill} ${levelAtXp(g.currentXp, true)} → ${levelAtXp(g.targetXp, true)}: ${formatHours(p.hours)}, ${formatNum(p.remainingXp)} xp${p.netGp != null ? `, ${formatGp(p.netGp)}` : ''}`
+    return `${g.skill} ${levelAtXp(liveGoals.value[i].currentXp, true)} → ${levelAtXp(g.targetXp, true)}: ${formatHours(p.hours)}, ${formatNum(p.remainingXp)} xp${p.netGp != null ? `, ${formatGp(p.netGp)}` : ''}`
   })
   const t = totals.value
   const text = [
@@ -558,7 +697,7 @@ function currentSnapshotState() {
     statsAt: statsAt.value,
     globalStrategy: globalStrategy.value,
     gpValue: gpValue.value,
-    budget: budget.value,
+    budget: null,
     hoursPerDay: hoursPerDay.value,
     goals: goals.value,
   }
@@ -578,7 +717,6 @@ function applyPlan(plan) {
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
-  budget.value = plan.budget
   statsAt.value = plan.statsAt
   expanded.value = isMobile() || !goals.value.length ? new Set() : new Set([goals.value[0].skill])
 }
@@ -642,7 +780,7 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, player, globalStrategy, gpValue, budget],
+  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt],
   () => {
     calcAt.value = new Date()
     const state = planState()
@@ -681,7 +819,6 @@ onMounted(async () => {
     username.value = restored.username || ''
     if (GLOBAL_STRATEGIES.includes(restored.strategy)) globalStrategy.value = restored.strategy
     if (restored.gpValue > 0) gpValue.value = restored.gpValue
-    budget.value = restored.budget || null
     statsAt.value = restored.statsAt || null
   }
   // Only one goal card is open by default (none on phones).

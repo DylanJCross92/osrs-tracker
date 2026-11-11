@@ -1,43 +1,31 @@
 <template>
-  <div class="planner-timeline">
-    <div class="planner-compare-head">
-      <b>Training timeline</b>
-      <span>Estimates only. Skills are trained one after another in the order shown, at {{ hoursPerDay }} h/day.</span>
-    </div>
+  <div v-if="timeline.entries.length" class="ptl-summary">
     <p v-if="timeline.finishDate" class="ptl-finish">
-      Estimated completion <b>{{ fmtDate(timeline.finishDate) }}</b> · about {{ formatDays(timeline.totalDays) }} remaining
+      <span class="ptl-finish-label">Finish line</span>
+      <b>{{ fmtDate(timeline.finishDate) }}</b>
+      <small>about {{ formatDays(timeline.totalDays) }} at {{ hoursPerDay }} h/day · skills are trained in the order shown</small>
     </p>
-    <ol class="ptl-list">
-      <li v-for="(e, i) in timeline.entries" :key="e.skill" class="ptl-item" :class="{ done: e.done }">
-        <span class="ptl-dot" aria-hidden="true" />
-        <div class="ptl-main">
-          <div class="ptl-row">
-            <img :src="skillIconSrc(e.skill)" :alt="e.skill" width="22" height="22" />
-            <b>{{ e.skill }}</b>
-            <span class="ptl-order">#{{ i + 1 }}</span>
-            <span class="ptl-hours">{{ e.done ? 'Already there' : formatHours(e.hours) }}</span>
-          </div>
-          <div v-if="!e.done" class="ptl-dates">
-            {{ fmtDate(e.startDate) }} → <b>{{ fmtDate(e.endDate) }}</b>
-            <span v-if="e.netGp != null" class="ptl-gp" :class="e.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(e.netGp) }}</span>
-            <span v-if="e.netGp != null" class="ptl-balance">running balance <i :class="e.balance >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(e.balance) }}</i></span>
-          </div>
-          <div v-if="e.milestones.length" class="ptl-milestones">
-            <span v-for="m in e.milestones" :key="m.level" class="ptl-chip">Lvl {{ m.level }} · {{ fmtDate(m.date) }}</span>
-          </div>
-        </div>
-      </li>
-    </ol>
+    <p v-else-if="timeline.totalHours === 0" class="planner-hint">Every goal is already reached, so there is nothing left to train.</p>
+
+    <slot />
+    <div v-if="usedCategories.length > 1" class="ptl-legend" aria-label="Skill categories">
+      <span v-for="c in usedCategories" :key="c.key" class="ptl-legend-item"><i :class="`cat-${c.key}`" />{{ c.label }}</span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours, formatGp } from '@/utils/planner'
+import { computed } from 'vue'
+import { SKILL_CATEGORIES } from '@/utils/plannerTools'
 
-defineProps({
+const props = defineProps({
   timeline: { type: Object, required: true },
   hoursPerDay: { type: Number, required: true },
+})
+
+const usedCategories = computed(() => {
+  const seen = new Set(props.timeline.entries.filter((e) => !e.done).map((e) => e.category))
+  return Object.keys(SKILL_CATEGORIES).filter((k) => seen.has(k)).map((k) => ({ key: k, label: SKILL_CATEGORIES[k].label }))
 })
 
 const fmtDate = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '-')

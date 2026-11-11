@@ -40,6 +40,19 @@ function cleanRecents(list) {
   return out
 }
 
+// Answers to "do you have this quest, item or unlock?", keyed by requirement id ("quest:monkey-madness-ii").
+export const MAX_REQUIREMENTS = 600
+function cleanRequirements(map) {
+  if (!isObj(map)) return null
+  const out = {}
+  for (const [id, v] of Object.entries(map)) {
+    if (!/^[a-z]+:[a-z0-9:'-]{1,80}$/.test(id) || !['have', 'missing', 'unknown'].includes(v)) continue
+    out[id] = v
+    if (Object.keys(out).length >= MAX_REQUIREMENTS) break
+  }
+  return out
+}
+
 function cleanSet(list) {
   if (!Array.isArray(list)) return null
   return [...new Set(list.filter((v) => typeof v === 'string' && v.length > 0 && v.length <= 80))].slice(-MAX_SET)
@@ -60,5 +73,6 @@ export function sanitizeUserData(input) {
   take('recents', cleanRecents)
   take('cheered', cleanSet)
   take('dismissed', cleanSet)
+  take('requirements', cleanRequirements)
   return out
 }
