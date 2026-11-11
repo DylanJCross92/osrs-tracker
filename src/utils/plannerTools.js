@@ -347,6 +347,16 @@ export function snapshotPlan(state, name, existing = {}) {
   }
 }
 
+/** What makes two versions of a plan "the same" for saving: the goals and the settings that change its numbers. */
+export function planFingerprint(p) {
+  return JSON.stringify([
+    Number(p.hoursPerDay),
+    p.globalStrategy,
+    Number(p.gpValue),
+    (p.goals || []).map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.customXpPerHour || 0, [...(g.quests || [])], g.allowedMethodIds?.length ? [...g.allowedMethodIds] : null]),
+  ])
+}
+
 export function savePlan(plan) {
   const list = readSaved()
   const i = list.findIndex((p) => p.id === plan.id)

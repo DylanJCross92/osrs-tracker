@@ -2,7 +2,7 @@
   <div class="modal-overlay" @click.self="$emit('close')">
     <form class="modal-card save-plan" role="dialog" aria-modal="true" aria-labelledby="save-plan-title" @submit.prevent="submit(false)">
       <div class="share-modal-header">
-        <h2 id="save-plan-title">{{ forShare ? 'Name your plan to share it' : exists ? 'Save plan' : 'Save this plan' }}</h2>
+        <h2 id="save-plan-title">{{ forShare ? 'Name your plan to share it' : asNew ? 'Save as a new plan' : 'Save this plan' }}</h2>
         <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
       </div>
 
@@ -35,6 +35,8 @@ const props = defineProps({
   exists: { type: Boolean, default: false },
   // Opened by Share on a plan that was never saved: it has to be named first.
   forShare: { type: Boolean, default: false },
+  // Saving a copy of the plan on screen as a separate plan.
+  asNew: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close', 'confirm'])
 

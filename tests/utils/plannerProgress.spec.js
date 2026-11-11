@@ -102,3 +102,23 @@ describe('visits', () => {
     expect(gainedSince(null, {})).toBeNull()
   })
 })
+
+describe('planFingerprint', () => {
+  const base = { hoursPerDay: 2, globalStrategy: 'auto-fast', gpValue: 2_000_000, goals: [{ skill: 'Mining', currentXp: 100, targetXp: 5000, methodId: 'global', customXpPerHour: 0, quests: [] }] }
+
+  it('is the same for a saved copy and the plan on screen, whatever extra fields they carry', async () => {
+    const { planFingerprint } = await import('@/utils/plannerTools')
+    const saved = { ...base, id: 'p_1', name: 'x', updatedAt: 'now', goals: [{ ...base.goals[0], extra: 1 }] }
+    expect(planFingerprint(saved)).toBe(planFingerprint(base))
+  })
+
+  it('changes when the goals or the settings that change the numbers change', async () => {
+    const { planFingerprint } = await import('@/utils/plannerTools')
+    const f = planFingerprint(base)
+    expect(planFingerprint({ ...base, hoursPerDay: 3 })).not.toBe(f)
+    expect(planFingerprint({ ...base, globalStrategy: 'auto-cheap' })).not.toBe(f)
+    expect(planFingerprint({ ...base, goals: [{ ...base.goals[0], targetXp: 6000 }] })).not.toBe(f)
+    expect(planFingerprint({ ...base, goals: [{ ...base.goals[0], quests: ['the-grand-tree'] }] })).not.toBe(f)
+    expect(planFingerprint({ ...base, goals: [] })).not.toBe(f)
+  })
+})

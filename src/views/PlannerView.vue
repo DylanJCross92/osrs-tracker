@@ -68,6 +68,7 @@
           :current-id="currentPlanId"
           :current-name="currentPlanName"
           :has-goals="goals.length > 0"
+          :dirty="dirty"
           :import-result="importResult"
           @save="(n) => saveCurrent(n, false)"
           @save-new="(n) => saveCurrent(n, true)"
@@ -277,6 +278,7 @@ import {
   listSavedPlans,
   snapshotPlan,
   savePlan,
+  planFingerprint,
   deletePlan,
   renamePlan,
   duplicatePlan,
@@ -730,7 +732,14 @@ function currentSnapshotState() {
     goals: goals.value,
   }
 }
+// A saved plan keeps what was saved until it is updated: changes made since are "unsaved".
+const dirty = computed(() => {
+  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+  if (!saved) return false
+  return planFingerprint(saved) !== planFingerprint({ hoursPerDay: hoursPerDay.value, globalStrategy: globalStrategy.value, gpValue: gpValue.value, goals: goals.value })
+})
 function saveCurrent(name, asNew) {
+  const wasSaved = !asNew && !!currentPlanId.value && savedPlans.value.some((p) => p.id === currentPlanId.value)
   const existing = !asNew && currentPlanId.value ? savedPlans.value.find((p) => p.id === currentPlanId.value) || {} : {}
   const plan = savePlan(snapshotPlan(currentSnapshotState(), name || currentPlanName.value, existing))
   if (!plan) return showToast('Could not save, browser storage is unavailable.')
@@ -738,7 +747,7 @@ function saveCurrent(name, asNew) {
   currentPlanName.value = plan.name
   refreshSaved()
   track('planner_plan_saved', { goals: plan.goals.length })
-  showToast(`Saved "${plan.name}".`)
+  showToast(wasSaved ? `Updated "${plan.name}".` : `Saved "${plan.name}".`)
 }
 // --- Using someone else's public plan ---------------------------------------------------------
 // "Use this plan" opens the planner with ?template=<slug>. The plan's goals, targets, methods, order and strategy come

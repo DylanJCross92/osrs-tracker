@@ -3752,3 +3752,20 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 
 /* the dropdown always sits under windows (modal overlays are z-index 50) */
 .sp-panel { z-index: 40; }
+
+/* save / update button: says what it will do */
+.sp-save { position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px 0 13px; border-radius: 12px; border: 1px solid transparent; font: inherit; font-size: 0.88rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: transform 0.12s, filter 0.12s, box-shadow 0.12s, background 0.12s; }
+.sp-save.is-new, .sp-save.is-dirty { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); color: var(--gold-ink); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 16px rgba(217, 175, 82, 0.22); }
+.sp-save.is-new:hover:not(:disabled), .sp-save.is-dirty:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+.sp-save.is-new:active:not(:disabled), .sp-save.is-dirty:active:not(:disabled) { transform: translateY(0); }
+.sp-save.is-new:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+.sp-save.is-dirty { animation: sp-glow 2.4s ease-in-out infinite; }
+.sp-save.is-clean { background: rgba(124, 184, 105, 0.08); border-color: rgba(124, 184, 105, 0.35); color: var(--xp-green); cursor: default; }
+@keyframes sp-glow { 0%, 100% { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 16px rgba(217, 175, 82, 0.22); } 50% { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset, 0 6px 22px rgba(217, 175, 82, 0.5); } }
+@media (prefers-reduced-motion: reduce) { .sp-save.is-dirty { animation: none; } }
+.sp-dirty { flex: none; width: 8px; height: 8px; border-radius: 50%; background: #e0a86a; box-shadow: 0 0 0 3px rgba(224, 168, 106, 0.22); }
+.sp-panel-head b span { margin-left: 6px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.sp-new { padding: 4px 10px; border-radius: 999px; background: none; border: 1px solid var(--border-strong); color: var(--gold-bright); font: inherit; font-size: 0.78rem; cursor: pointer; }
+.sp-new:hover:not(:disabled) { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); }
+.sp-new:disabled { opacity: 0.4; cursor: default; }
+@media (max-width: 640px) { .sp-bar { flex-wrap: wrap; } .sp-menu { flex: 1 1 100%; } .sp-save { flex: 1; justify-content: center; height: 44px; } }

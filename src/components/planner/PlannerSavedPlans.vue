@@ -5,11 +5,15 @@
         <button class="sp-switch" :class="{ open }" type="button" aria-haspopup="true" :aria-expanded="open" title="Your saved plans" @click="open = !open">
           <svg class="sp-switch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
           <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : 'Unsaved plan' }}</span>
+          <i v-if="dirty" class="sp-dirty" title="You have changes that are not saved yet. Press Update plan to save them." aria-label="Unsaved changes" />
           <span class="sp-count" aria-label="saved plans">{{ plans.length }}</span>
           <svg class="sp-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
         <div v-if="open" class="sp-panel" role="region" aria-label="Saved plans">
-          <div class="sp-panel-head"><b>Saved plans</b><span>{{ plans.length }}</span></div>
+          <div class="sp-panel-head">
+          <b>Saved plans <span>{{ plans.length }}</span></b>
+          <button class="sp-new" type="button" :disabled="!hasGoals" @click="openSaveAsNew">+ Save as new</button>
+        </div>
           <p class="sp-note">
             <template v-if="loggedIn">Saved to your account, so they are on every device you log in on.</template>
             <template v-else>Stored in this browser. <RouterLink :to="{ name: 'login', query: { next: '/planner' } }">Log in</RouterLink> to keep them on every device.</template>
@@ -75,20 +79,23 @@
           </details>
         </div>
       </div>
-      <button class="sp-icon" type="button" :disabled="!hasGoals" title="Save plan" aria-label="Save plan" @click="openSave(false)">
-        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
+      <button class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :title="saveTitle" @click="onSaveClick">
+        <svg v-if="saveState === 'clean'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+        <svg v-else-if="saveState === 'dirty'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14" /></svg>
+        <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
+        <span>{{ saveLabel }}</span>
       </button>
       <button class="sp-icon" type="button" :disabled="!hasGoals" title="Share plan" aria-label="Share plan" @click="onShare">
         <ShareIcon name="share" :size="19" />
       </button>
     </div>
 
-    <SavePlanModal v-if="saving" :initial-name="currentName" :exists="!!currentId" :for-share="savingForShare" @close="saving = false" @confirm="onConfirm" />
+    <SavePlanModal v-if="saving" :initial-name="modalName" :exists="false" :for-share="savingForShare" :as-new="savingAsNew" @close="saving = false" @confirm="onConfirm" />
   </div>
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useSharedPlans } from '@/composables/useSharedPlans'
 import ShareIcon from '@/components/ShareIcon.vue'
@@ -99,6 +106,8 @@ const props = defineProps({
   currentId: { type: String, default: '' },
   currentName: { type: String, default: '' },
   hasGoals: { type: Boolean, default: false },
+  // The plan on screen has changes its saved copy does not have yet.
+  dirty: { type: Boolean, default: false },
   importResult: { type: Object, default: null },
 })
 const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current'])
@@ -112,10 +121,31 @@ function shareRow(p) {
   open.value = false
   emit('share', p)
 }
-function openSave(forShare) {
+const savingAsNew = ref(false)
+const modalName = ref('')
+function openSave(forShare, asNew = false) {
   open.value = false
   savingForShare.value = forShare
+  savingAsNew.value = asNew
+  modalName.value = asNew && props.currentId ? `${props.currentName} (copy)`.slice(0, 60) : props.currentName
   saving.value = true
+}
+const openSaveAsNew = () => openSave(false, true)
+
+// One button that says what pressing it will do: save a new plan, update the saved one, or (nothing to do) show it is saved.
+const saveState = computed(() => (!props.currentId ? 'new' : props.dirty ? 'dirty' : 'clean'))
+const saveLabel = computed(() => ({ new: 'Save plan', dirty: 'Update plan', clean: 'Saved' })[saveState.value])
+const saveTitle = computed(
+  () =>
+    ({
+      new: 'Name this plan and save it',
+      dirty: 'You changed this plan. Update the saved copy to keep the changes.',
+      clean: 'This plan is saved and up to date',
+    })[saveState.value],
+)
+function onSaveClick() {
+  if (saveState.value === 'new') openSave(false)
+  else if (saveState.value === 'dirty') emit('save', props.currentName)
 }
 function onShare() {
   open.value = false
@@ -125,7 +155,7 @@ function onShare() {
 function onConfirm({ name, asNew }) {
   saving.value = false
   if (savingForShare.value) return emit('share-current', name)
-  emit(asNew ? 'save-new' : 'save', name)
+  emit(savingAsNew.value ? 'save-new' : 'save', name)
 }
 const open = ref(false)
 const rootEl = ref(null)
