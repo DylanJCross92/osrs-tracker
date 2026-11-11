@@ -70,6 +70,8 @@
           :plans="savedPlans"
           :current-id="currentPlanId"
           :current-name="currentPlanName"
+          :player-name="player?.username || ''"
+          :player-label="player?.displayName || ''"
           :has-goals="goals.length > 0"
           :dirty="dirty"
           :import-result="importResult"
@@ -371,6 +373,17 @@ function pickSuggestion(sg) {
 }
 
 let playersFreshened = false
+const sameName = (a, b) => String(a || '').toLowerCase().replace(/[\s_-]+/g, '') === String(b || '').toLowerCase().replace(/[\s_-]+/g, '')
+function switchPlanToPlayer(found) {
+  const was = currentPlanName.value
+  for (const g of goals.value) g.currentXp = Math.min(found.latest.skills?.[g.skill]?.xp ?? 0, g.targetXp)
+  statsAt.value = found.latest.capturedAt
+  currentPlanId.value = ''
+  currentPlanName.value = ''
+  template.value = null
+  track('planner_plan_switched_player', { goals: goals.value.length })
+  showToast(`Now planning for ${found.displayName}: every goal starts from their stats.${was ? ` "${was}" is still saved for the other player.` : ''}`)
+}
 // `typed` is true when the user searched for this name; restoring a saved plan loads the player without it.
 async function loadPlayer({ typed = false } = {}) {
   suggestions.value = []
@@ -401,11 +414,15 @@ async function loadPlayer({ typed = false } = {}) {
     const found = find()
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
+    const previous = player.value
     player.value = found
     if (typed) recordRecent(found)
     username.value = found.displayName
     editingPlayer.value = false
     if (templatePending.value) personalizeTemplate()
+    // Searching for a different player while a plan is open: the goals were measured from the old player, so they are
+    // re-measured from the new one, and the open plan (made for the old player) is left alone in Saved plans.
+    else if (typed && previous && goals.value.length && sameName(previous.username, found.username) === false) switchPlanToPlayer(found)
     // Goals keep the stats they were created with, and progress is measured from them.
     else if (!goals.value.length) statsAt.value = found.latest.capturedAt
     // A plan from a link that does not say when it started: if every goal starts exactly at this player's current XP, it was

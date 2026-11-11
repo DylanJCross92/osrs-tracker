@@ -3832,3 +3832,6 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .rp-or { display: flex; align-items: center; gap: 12px; margin: 18px 0 10px; color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.08em; }
 .rp-or::before, .rp-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 @media (max-width: 640px) { .rp-grid { grid-template-columns: 1fr; } }
+
+.sp-others { display: block; width: 100%; margin: 2px 0 8px; padding: 8px 12px; border-radius: 10px; background: none; border: 1px dashed var(--border-strong); color: var(--muted); font: inherit; font-size: 0.82rem; text-align: left; cursor: pointer; }
+.sp-others:hover { color: var(--gold-bright); border-color: var(--gold); }

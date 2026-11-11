@@ -6,12 +6,12 @@
           <svg class="sp-switch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
           <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : 'Unsaved plan' }}</span>
           <i v-if="dirty" class="sp-dirty" title="You have changes that are not saved yet. Press Update plan to save them." aria-label="Unsaved changes" />
-          <span class="sp-count" aria-label="saved plans">{{ plans.length }}</span>
+          <span class="sp-count" aria-label="saved plans">{{ visiblePlans.length }}</span>
           <svg class="sp-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
         <div v-if="open" class="sp-panel" role="region" aria-label="Saved plans">
           <div class="sp-panel-head">
-          <b>Saved plans <span>{{ plans.length }}</span></b>
+          <b>{{ playerName ? `Plans for ${playerLabel}` : 'Saved plans' }} <span>{{ visiblePlans.length }}</span></b>
           <button class="sp-new" type="button" :disabled="!hasGoals" @click="openSaveAsNew">+ Save as new</button>
         </div>
           <p class="sp-note">
@@ -19,9 +19,9 @@
             <template v-else>Stored in this browser. <RouterLink :to="{ name: 'login', query: { next: '/planner' } }">Log in</RouterLink> to keep them on every device.</template>
           </p>
 
-          <ul v-if="plans.length" class="saved-list">
+          <ul v-if="visiblePlans.length" class="saved-list">
             <li
-              v-for="p in plans"
+              v-for="p in visiblePlans"
               :key="p.id"
               :class="{ current: p.id === currentId, renaming: renaming === p.id }"
               :role="renaming === p.id ? null : 'button'"
@@ -63,7 +63,10 @@
               </div>
             </li>
           </ul>
-          <p v-else class="planner-hint">No saved plans yet. Add a goal, name the plan above and press Save plan.</p>
+          <p v-else class="planner-hint">{{ plans.length ? `No saved plans for ${playerLabel} yet.` : 'No saved plans yet. Add a goal and press Save plan.' }}</p>
+          <button v-if="hiddenCount || showAll" class="sp-others" type="button" @click="showAll = !showAll">
+            {{ showAll ? `Only show plans for ${playerLabel}` : `${hiddenCount} plan${hiddenCount === 1 ? '' : 's'} for other players. Show` }}
+          </button>
 
           <details class="planner-all-methods">
             <summary>Import a plan</summary>
@@ -103,6 +106,9 @@ import SavePlanModal from '@/components/planner/SavePlanModal.vue'
 
 const props = defineProps({
   plans: { type: Array, required: true },
+  // The player the planner is showing. Saved plans belong to the player they were made for, so only theirs are listed.
+  playerName: { type: String, default: '' },
+  playerLabel: { type: String, default: '' },
   currentId: { type: String, default: '' },
   currentName: { type: String, default: '' },
   hasGoals: { type: Boolean, default: false },
@@ -121,6 +127,15 @@ function shareRow(p) {
   open.value = false
   emit('share', p)
 }
+// A plan belongs to the profile it was made for. With a player loaded, only that player's plans are listed (plans not made for
+// anyone in particular are always listed), so plans for your own profile never turn up while you look at someone else's.
+const norm = (n) => String(n || '').toLowerCase().replace(/[\s_-]+/g, '')
+const showAll = ref(false)
+watch(() => props.playerName, () => (showAll.value = false))
+const belongsHere = (p) => !props.playerName || !p.player?.rsn || norm(p.player.rsn) === norm(props.playerName)
+const visiblePlans = computed(() => (showAll.value ? props.plans : props.plans.filter(belongsHere)))
+const hiddenCount = computed(() => props.plans.length - props.plans.filter(belongsHere).length)
+
 const savingAsNew = ref(false)
 const modalName = ref('')
 function openSave(forShare, asNew = false) {
