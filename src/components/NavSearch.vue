@@ -9,6 +9,11 @@
         placeholder="Search players"
         aria-label="Search players"
         autocomplete="off"
+        name="player-search"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        enterkeyhint="search"
         maxlength="12"
         data-1p-ignore
         data-lpignore="true"

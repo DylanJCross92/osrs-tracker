@@ -3162,3 +3162,16 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .cl-verified li .cl-name { font-size: 1rem; }
 .cl-verified li .cl-reject { margin-left: auto; }
 @media (max-width: 520px) { .cl-actions { width: 100%; } .cl-actions .btn { flex: 1; } .cl-verify-row .btn { flex: 1; } }
+
+/* Profile header on phones: the back link on its own line, the action buttons in a tidy two-column grid instead of a
+   row that runs off the screen, and the avatar below them instead of overlapping. */
+@media (max-width: 640px) {
+  .detail-header .profile-banner { flex-direction: column; align-items: stretch; gap: 10px; min-height: 0; padding: 12px 14px; }
+  .profile-banner .back-link { align-self: flex-start; margin: 0; padding: 4px 2px; white-space: nowrap; }
+  .profile-banner .banner-actions { margin-left: 0; width: 100%; display: grid; grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .profile-banner .banner-actions .btn { width: 100%; justify-content: center; padding: 10px 8px; white-space: nowrap; }
+  .profile-banner .banner-actions > :last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .detail-body { padding: 0 14px 16px; gap: 12px; }
+  .detail-body .profile-avatar { margin-top: 14px; }
+  .detail-body .detail-info { min-width: 0; flex-basis: 100%; }
+}

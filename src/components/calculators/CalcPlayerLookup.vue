@@ -9,9 +9,7 @@
     </div>
     <div v-else class="suggest-wrap">
       <form class="add-player-form" @submit.prevent="find">
-        <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-        <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-        <input v-model="name" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS username" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
+        <input v-model="name" type="text" name="rsn" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS username" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
         <button class="btn btn-primary" type="submit" :disabled="loading || !name.trim()">{{ loading ? 'Finding…' : 'Load my stats' }}</button>
         <button v-if="player" class="btn btn-ghost" type="button" @click="editing = false">Cancel</button>
       </form>

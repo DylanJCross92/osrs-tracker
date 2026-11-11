@@ -7,11 +7,6 @@
 
       <div class="suggest-wrap home-suggest-wrap">
       <form class="home-search" @submit.prevent="submitAdd">
-        <!-- Decoy fields so Firefox/Chrome's login-manager autofill (which
-             ignores autocomplete="off" on a field it suspects is a login
-             username) latches onto these instead of the real RSN input. -->
-        <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-        <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
         <input
           ref="searchInput"
           v-model="newUsername"
@@ -20,7 +15,7 @@
           :disabled="adding"
           autocomplete="off"
           maxlength="12"
-          name="rsn"
+          name="rsn" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
           aria-label="OSRS username"
           data-1p-ignore
           data-lpignore="true"

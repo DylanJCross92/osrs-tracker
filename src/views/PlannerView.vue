@@ -17,9 +17,7 @@
         <p class="planner-intro">Load your stats by username (or enter them by hand), then add skill goals and compare ways to reach them. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
         <div class="suggest-wrap">
           <form class="add-player-form" @submit.prevent="loadPlayer({ typed: true })">
-            <input type="text" name="username" autocomplete="username" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-            <input type="password" name="password" autocomplete="current-password" class="autofill-decoy" tabindex="-1" aria-hidden="true" />
-            <input v-model="username" type="text" name="rsn" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
+            <input v-model="username" type="text" name="rsn" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS username (optional)" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
             <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">{{ lookingUp ? 'Finding…' : 'Find Player' }}</button>
             <button v-if="player" class="btn btn-ghost" type="button" @click="editingPlayer = false">Cancel</button>
           </form>
