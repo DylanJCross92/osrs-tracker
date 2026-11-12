@@ -15,55 +15,43 @@
       </template>
 
       <template v-else>
-        <p v-if="!current && autoPublish && busy" class="ps-lead">Creating the public link for <b>{{ plan.name }}</b>…</p>
-        <p v-else-if="!current" class="ps-lead">
-          <b>{{ plan.name }}</b> is private. Make it public to get a link anyone can open, no account needed. They can look at it and copy it, but never change yours. Your account is never shown.
-        </p>
-        <p v-else class="ps-lead ps-live"><span class="ps-dot" aria-hidden="true" /> <b>{{ plan.name }}</b> is public. Anyone with the link can view it.<template v-if="autoPublish"> It is not saved to your account.</template></p>
-
-        <fieldset class="ps-modes">
-          <legend>What people see</legend>
-          <label class="ps-mode" :class="{ on: mode === 'static' }">
-            <input v-model="mode" type="radio" value="static" />
-            <span><b>Static plan</b><small>The goals, methods, hours, gp and finish time as they are now. It does not change as you play.</small></span>
-          </label>
-          <label class="ps-mode" :class="{ on: mode === 'live', off: !canLive }">
-            <input v-model="mode" type="radio" value="live" :disabled="!canLive" />
-            <span>
-              <b>Live progress</b>
-              <small v-if="canLive">Also shows how far {{ plan.player.rsn }} has got, updating from their tracked XP.</small>
-              <small v-else>Needs a player on the plan. Load your RSN in the planner and save again.</small>
-            </span>
-          </label>
-        </fieldset>
-
-        <p v-if="error" class="planner-error" role="alert">{{ error }}</p>
-
-        <div class="share-actions">
-          <button class="btn btn-primary share-wide" type="button" :disabled="busy" @click="publish">
-            {{ busy ? 'Saving…' : current ? 'Update the public copy' : 'Make public' }}
-          </button>
-        </div>
-        <p v-if="current" class="empty-hint share-modal-hint">The public copy is a snapshot. When you change this plan, press Update to publish the changes.</p>
+        <p v-if="!current && autoPublish && busy" class="ps-lead">Creating the public link…</p>
+        <p v-else-if="!current" class="ps-lead">Make <b>{{ plan.name }}</b> public to get a link anyone can open. They can view and copy it, never change yours.</p>
+        <p v-else class="ps-lead ps-live"><span class="ps-dot" aria-hidden="true" /> Public: anyone with the link can view <b>{{ plan.name }}</b>.<template v-if="autoPublish"> It is not saved to your account.</template></p>
 
         <template v-if="current">
           <div class="ps-link">
             <input type="text" readonly :value="url" aria-label="Public link" @focus="$event.target.select()" />
-            <button class="btn btn-ghost" type="button" @click="copyLink">Copy link</button>
+            <button class="btn btn-primary" type="button" @click="copyLink">Copy link</button>
           </div>
-
-          <SharePreview :src="cardSrc" :alt="`Preview of ${plan.name}`" :filename="`${slugify(plan.name)}-plan.png`" loading-text="Drawing the preview…" @download="track('plan_share', { method: 'download' })" />
-
-          <div class="share-actions">
+          <div class="share-actions ps-socials">
             <a class="btn share-x" :href="xUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'x' })"><ShareIcon name="x" />Post on X</a>
             <a class="btn btn-ghost" :href="redditUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'reddit' })"><ShareIcon name="reddit" />Reddit</a>
-            <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare"><ShareIcon name="share" />More…</button>
+            <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare"><ShareIcon name="share" />More</button>
           </div>
-          <p class="empty-hint share-modal-hint">Pasting the link into Discord, X or Reddit shows the preview above.</p>
+        </template>
+
+        <label v-if="canLive" class="ps-toggle">
+          <input v-model="live" type="checkbox" :disabled="busy" @change="current && publish()" />
+          <span>Show live progress<small>Also shows how far {{ plan.player.rsn }} has got, from their tracked XP.</small></span>
+        </label>
+
+        <p v-if="error" class="planner-error" role="alert">{{ error }}</p>
+
+        <div v-if="!current" class="share-actions">
+          <button class="btn btn-primary share-wide" type="button" :disabled="busy" @click="publish">{{ busy ? 'Saving…' : 'Make public' }}</button>
+        </div>
+
+        <template v-if="current">
+          <details class="ps-preview">
+            <summary>Preview</summary>
+            <SharePreview :src="cardSrc" :alt="`Preview of ${plan.name}`" :filename="`${slugify(plan.name)}-plan.png`" loading-text="Drawing the preview…" @download="track('plan_share', { method: 'download' })" />
+          </details>
 
           <div class="ps-stop">
             <template v-if="!confirmStop">
-              <button class="btn-text" type="button" @click="confirmStop = true">Stop sharing</button>
+              <button class="btn-text" type="button" :disabled="busy" title="The public copy is a snapshot: press this after you change the plan" @click="publish">{{ busy ? 'Updating…' : 'Update public copy' }}</button>
+              <button class="btn-text ps-off" type="button" @click="confirmStop = true">Stop sharing</button>
             </template>
             <template v-else>
               <span>The link will stop working for everyone.</span>
@@ -100,7 +88,8 @@ const { showToast } = useToast()
 
 const current = computed(() => shareFor(props.plan.id))
 const canLive = computed(() => !!props.plan.player?.rsn)
-const mode = ref(current.value?.mode === 'live' && canLive.value ? 'live' : 'static')
+const live = ref(current.value?.mode === 'live' && canLive.value)
+const mode = computed(() => (live.value && canLive.value ? 'live' : 'static'))
 const busy = ref(false)
 const error = ref('')
 const confirmStop = ref(false)
