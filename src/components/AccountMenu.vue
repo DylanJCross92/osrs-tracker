@@ -12,7 +12,7 @@
           <RouterLink v-for="p in profiles" :key="p.username" class="acct-profile" :title="`Signed in as ${user.email}`" :to="{ name: 'playerDetail', params: { username: p.username } }" @click="open = false">{{ p.displayName }}</RouterLink>
         </div>
         <p v-else class="acct-email" :title="user.email">{{ user.email }}</p>
-        <RouterLink class="acct-item" role="menuitem" :to="{ name: 'account' }" @click="open = false">Account and settings<span v-if="countOf('claim_code')" class="acct-count" :aria-label="`${countOf('claim_code')} to finish`">{{ countOf('claim_code') }}</span></RouterLink>
+        <RouterLink class="acct-item" role="menuitem" :to="{ name: 'account' }" @click="open = false">My account<span v-if="countOf('claim_code')" class="acct-count" :aria-label="`${countOf('claim_code')} to finish`">{{ countOf('claim_code') }}</span></RouterLink>
         <RouterLink v-if="isAdmin" class="acct-item" role="menuitem" :to="{ name: 'adminClaims' }" @click="open = false">Profile claims<span v-if="countOf('claims_waiting')" class="acct-count" :aria-label="`${countOf('claims_waiting')} waiting`">{{ countOf('claims_waiting') }}</span></RouterLink>
         <button class="acct-item" type="button" role="menuitem" @click="doLogout">Log out</button>
       </div>

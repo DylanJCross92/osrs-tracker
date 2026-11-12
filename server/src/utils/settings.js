@@ -1,3 +1,5 @@
+import { NOTICE_GROUP_IDS } from './noticeGroups.js'
+
 // The preferences an account keeps. Anything not listed here is dropped, so the settings column can only ever hold
 // these few, small values no matter what a client sends.
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
@@ -24,5 +26,7 @@ export function sanitizeSettings(input) {
     }
   }
   if (PERIODS.includes(input.gainPeriod)) out.gainPeriod = input.gainPeriod
+  // Notice groups the account has switched off (see noticeGroups.js).
+  if (Array.isArray(input.muteNotices)) out.muteNotices = [...new Set(input.muteNotices.filter((id) => NOTICE_GROUP_IDS.includes(id)))]
   return out
 }

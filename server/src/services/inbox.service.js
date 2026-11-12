@@ -1,4 +1,5 @@
 import { pool } from '../db.js'
+import { isTypeMuted } from '../utils/noticeGroups.js'
 
 // The stored notification inbox (see the notifications table in schema.sql). Producers call addNotification; nothing
 // here can throw into a visitor's request, because a notification must never break the action that caused it.
@@ -6,9 +7,20 @@ import { pool } from '../db.js'
 const MAX_TEXT = 200
 const KEEP_PER_USER = 200
 
+/** Has this account switched off the group `type` belongs to? */
+async function isMuted(userId, type) {
+  try {
+    const { rows } = await pool.query(`SELECT settings->'muteNotices' AS muted FROM users WHERE id = $1`, [userId])
+    return isTypeMuted(type, rows[0]?.muted)
+  } catch {
+    return false
+  }
+}
+
 /** Adds one notification. A repeat of the same dedupeKey for the same account is ignored. Returns true when added. */
 export async function addNotification(userId, { type, text, link = '', dedupeKey = null, subject = null }) {
   try {
+    if (await isMuted(userId, type)) return false
     const { rowCount } = await pool.query(
       `INSERT INTO notifications (user_id, type, text, link, dedupe_key, subject) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
       [userId, String(type).slice(0, 40), String(text).slice(0, MAX_TEXT), String(link).slice(0, 300), dedupeKey, subject ? String(subject).slice(0, 12) : null],
@@ -35,6 +47,7 @@ export const dayStamp = (date = new Date()) => date.toISOString().slice(0, 10)
  */
 export async function addOrRefreshNotification(userId, { type, text, link = '', dedupeKey, subject = null }) {
   try {
+    if (await isMuted(userId, type)) return false
     const { rows } = await pool.query(
       `INSERT INTO notifications (user_id, type, text, link, dedupe_key, subject) VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (user_id, dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE SET text = EXCLUDED.text, link = EXCLUDED.link

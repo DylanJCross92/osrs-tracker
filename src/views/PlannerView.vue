@@ -1035,6 +1035,14 @@ watch(
 )
 
 onMounted(async () => {
+  // A link from the account page: open that saved plan.
+  if (typeof route.query.plan === 'string') {
+    const wanted = savedPlans.value.find((p) => p.id === route.query.plan)
+    if (wanted) {
+      await loadSaved(wanted, { silent: true })
+      return
+    }
+  }
   // A plain visit while signed in opens the person's own profile. With several claimed profiles, the one used last.
   const plainVisit = !Object.keys(route.query).length
   let ownDefault = null
