@@ -78,6 +78,9 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8" /><path d="M3 3v5h5" /></svg>
         <span>{{ confirmRevert ? 'Discard changes?' : 'Revert' }}</span>
       </button>
+      <button class="sp-icon" type="button" :disabled="!hasGoals" title="Copy plan link" aria-label="Copy plan link" @click="$emit('copy-link')">
+        <ShareIcon name="link" :size="19" />
+      </button>
       <button class="sp-icon" type="button" :disabled="!hasGoals" title="Share plan" aria-label="Share plan" @click="onShare">
         <ShareIcon name="share" :size="19" />
       </button>
@@ -108,7 +111,7 @@ const props = defineProps({
   canSave: { type: Boolean, default: true },
   saveBlockedReason: { type: String, default: '' },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert', 'copy-link'])
 
 const { loggedIn } = useAuth()
 const { shareFor } = useSharedPlans()

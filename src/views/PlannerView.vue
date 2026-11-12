@@ -86,6 +86,7 @@
           @share-current="shareCurrent"
           @blocked="showToast(saveBlockedReason)"
           @revert="revertPlan"
+          @copy-link="copyLink"
         />
       </div>
       <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
@@ -224,10 +225,6 @@
           <PlannerRoute :segments="plans[i].segments" />
         </div>
         <p class="planner-hint">GP and time figures are rough estimates from approximate community rates, not guarantees. GP is net per hour of training, so it already nets out supplies and any loot.</p>
-        <div class="planner-share">
-          <button class="btn btn-primary" type="button" @click="copyLink">Copy plan link</button>
-          <button class="btn btn-ghost" type="button" @click="copySummary">Copy text summary</button>
-        </div>
       </section>
     </template>
 
@@ -774,21 +771,6 @@ async function copy(text, message) {
 function copyLink() {
   track('planner_share', { method: 'link', goals: goals.value.length })
   copy(planUrl(), 'Plan link copied')
-}
-function copySummary() {
-  track('planner_share', { method: 'summary', goals: goals.value.length })
-  const lines = goals.value.map((g, i) => {
-    const p = plans.value[i]
-    return `${g.skill} ${levelAtXp(liveGoals.value[i].currentXp, true)} → ${levelAtXp(g.targetXp, true)}: ${formatHours(p.hours)}, ${formatNum(p.remainingXp)} xp${p.netGp != null ? `, ${formatGp(p.netGp)}` : ''}`
-  })
-  const t = totals.value
-  const text = [
-    `${player.value ? player.value.displayName + "'s " : ''}OSRS plan | TickGains Account Planner`,
-    ...lines,
-    `Total: ${formatNum(t.totalXp)} xp · ${formatHours(t.totalHours)}${t.netGp != null ? ` · ${formatGp(t.netGp)}` : ''}${t.days != null ? ` · ~${t.days.toLocaleString('en-US')} days at ${hoursPerDay.value}h/day` : ''}`,
-    planUrl(),
-  ].join('\n')
-  copy(text, 'Summary copied')
 }
 
 // --- Saved plans (browser storage) ---------------------------------------------------
