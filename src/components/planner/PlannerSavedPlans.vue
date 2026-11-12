@@ -55,9 +55,6 @@
                 <button class="saved-icon" type="button" title="Duplicate" aria-label="Duplicate" @click="$emit('duplicate', p.id)">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V6a2 2 0 012-2h9" /></svg>
                 </button>
-                <button class="saved-icon" type="button" title="Export" aria-label="Export" @click="$emit('export', p)">
-                  <ShareIcon name="download" :size="18" />
-                </button>
                 <button class="saved-icon saved-delete" type="button" title="Delete" aria-label="Delete" @click="$emit('delete', p.id)">
                   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
                 </button>
@@ -68,19 +65,6 @@
           <button v-if="hiddenCount || showAll" class="sp-others" type="button" @click="showAll = !showAll">
             {{ showAll ? `Only show plans for ${playerLabel}` : `${hiddenCount} plan${hiddenCount === 1 ? '' : 's'} for other players. Show` }}
           </button>
-
-          <details class="planner-all-methods">
-            <summary>Import a plan</summary>
-            <textarea v-model="importText" rows="5" placeholder="Paste exported plan JSON here" aria-label="Plan JSON" />
-            <div class="saved-import-actions">
-              <button class="btn btn-ghost" type="button" :disabled="!importText.trim()" @click="doImport">Import from text</button>
-              <label class="btn btn-ghost saved-file">
-                Choose a file
-                <input type="file" accept="application/json,.json" @change="onFile" />
-              </label>
-            </div>
-            <p v-if="importMessage" :class="importOk ? 'planner-hint' : 'planner-error'">{{ importMessage }}</p>
-          </details>
         </div>
       </div>
       <button v-if="saveState !== 'clean'" class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :aria-disabled="saveState === 'blocked'" :title="saveTitle" @click="onSaveClick">
@@ -123,9 +107,8 @@ const props = defineProps({
   // Plans can only be saved for the player's own profile (or for no player at all).
   canSave: { type: Boolean, default: true },
   saveBlockedReason: { type: String, default: '' },
-  importResult: { type: Object, default: null },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'export', 'delete', 'rename', 'import', 'share', 'share-current', 'blocked', 'revert'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert'])
 
 const { loggedIn } = useAuth()
 const { shareFor } = useSharedPlans()
@@ -221,9 +204,6 @@ onBeforeUnmount(() => {
 })
 const renaming = ref(null)
 const renameText = ref('')
-const importText = ref('')
-const importMessage = ref('')
-const importOk = ref(false)
 
 function startRename(p) {
   renaming.value = p.id
@@ -234,24 +214,4 @@ function doRename(p) {
   emit('rename', p.id, renameText.value)
   renaming.value = null
 }
-function doImport() {
-  emit('import', importText.value)
-}
-function onFile(e) {
-  const file = e.target.files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => emit('import', String(reader.result || ''))
-  reader.readAsText(file)
-  e.target.value = ''
-}
-watch(
-  () => props.importResult,
-  (r) => {
-    if (!r) return
-    importOk.value = !r.error
-    importMessage.value = r.error || `Imported "${r.plan.name}".${r.warnings?.length ? ' ' + r.warnings.join(' ') : ''}`
-    if (!r.error) importText.value = ''
-  },
-)
 </script>

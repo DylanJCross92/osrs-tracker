@@ -459,10 +459,6 @@ export function duplicatePlan(id) {
   return copy
 }
 
-export function exportPlan(plan) {
-  return JSON.stringify({ format: PLAN_FORMAT, version: PLAN_VERSION, plan }, null, 2)
-}
-
 const num = (v, lo, hi, fallback) => {
   const n = Number(v)
   return Number.isFinite(n) ? Math.min(Math.max(n, lo), hi) : fallback
@@ -532,16 +528,6 @@ export function validatePlan(raw) {
     goals,
   }
   return { plan, warnings }
-}
-
-/** Save an imported plan under a fresh id so it never overwrites an existing one. */
-export function importPlan(raw) {
-  const res = validatePlan(raw)
-  if (res.error) return res
-  const now = new Date().toISOString()
-  const plan = { ...res.plan, id: newId(), updatedAt: now }
-  if (!savePlan(plan)) return { error: 'Could not store the plan in this browser.' }
-  return { plan, warnings: res.warnings }
 }
 
 // --- Materials ----------------------------------------------------------------

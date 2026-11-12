@@ -76,15 +76,12 @@
           :dirty="dirty"
           :can-save="canSavePlan"
           :save-blocked-reason="saveBlockedReason"
-          :import-result="importResult"
           @save="(n) => saveCurrent(n, false)"
           @save-new="(n) => saveCurrent(n, true)"
           @load="loadSaved"
           @duplicate="duplicateSaved"
-          @export="exportSaved"
           @delete="deleteSaved"
           @rename="renameSaved"
-          @import="importSaved"
           @share="openShare"
           @share-current="shareCurrent"
           @blocked="showToast(saveBlockedReason)"
@@ -306,8 +303,6 @@ import {
   deletePlan,
   renamePlan,
   duplicatePlan,
-  exportPlan,
-  importPlan,
   validatePlan,
 } from '@/utils/plannerTools'
 
@@ -800,7 +795,6 @@ function copySummary() {
 const savedPlans = ref(listSavedPlans())
 const currentPlanId = ref('')
 const currentPlanName = ref('')
-const importResult = ref(null)
 const refreshSaved = () => (savedPlans.value = listSavedPlans())
 
 function currentSnapshotState() {
@@ -1011,22 +1005,6 @@ function deleteSaved(id) {
   deletePlan(id)
   if (id === currentPlanId.value) currentPlanId.value = ''
   refreshSaved()
-}
-function exportSaved(plan) {
-  const blob = new Blob([exportPlan(plan)], { type: 'application/json' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `${plan.name.replace(/[^A-Za-z0-9 _-]+/g, '').trim().replace(/\s+/g, '-') || 'tickgains-plan'}.json`
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
-  track('planner_plan_exported')
-}
-function importSaved(text) {
-  importResult.value = importPlan(text)
-  refreshSaved()
-  if (!importResult.value.error) track('planner_plan_imported')
 }
 
 // --- Persistence ----------------------------------------------------------------------

@@ -1840,9 +1840,6 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .saved-actions { display: flex; flex-wrap: wrap; gap: 2px 10px; }
 .saved-delete { color: #d98a78; }
 .planner-saved textarea { width: 100%; margin: 10px 0; padding: 10px 12px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 10px; font: inherit; resize: vertical; }
-.saved-import-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.saved-file { position: relative; cursor: pointer; }
-.saved-file input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
 /* add goal dialog */
 .add-goal-modal { max-width: 640px; width: calc(100% - 32px); }
