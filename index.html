@@ -1,10 +1,12 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Internal traffic flag: visit /?internal=1 once in a browser to mark it as yours (/?internal=0 clears it).
-         Runs before Tag Manager so the very first pageview is already tagged traffic_type=internal. -->
+    <!-- Internal traffic: local addresses, browsers marked with /?internal=1 (cleared with /?internal=0), and browsers with an
+         admin or owner account signed in never load Tag Manager at all, so none of it reaches Google Analytics.
+         Keep in step with src/utils/analytics.js. -->
     <script>
       (function () {
+        var internal = false;
         try {
           var q = new URLSearchParams(location.search);
           var v = q.get('internal');
@@ -15,20 +17,20 @@
             var rest = q.toString();
             history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
           }
-          if (localStorage.getItem('tickgains-internal') === '1') {
-            window.dataLayer = window.dataLayer || [];
-            window.dataLayer.push({ traffic_type: 'internal' });
-          }
+          var host = location.hostname;
+          var local = /^(localhost|127\.\d+\.\d+\.\d+|\[?::1\]?|0\.0\.0\.0|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|.+\.(localhost|local|test))$/i.test(host);
+          internal = local || localStorage.getItem('tickgains-internal') === '1' || localStorage.getItem('tickgains-internal-account') === '1';
         } catch (e) {}
+        window.__tickgainsInternal = internal;
+        if (internal) return;
+        // Google Tag Manager
+        (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-K6756RQ3');
       })();
     </script>
-    <!-- Google Tag Manager -->
-    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-    })(window,document,'script','dataLayer','GTM-K6756RQ3');</script>
-    <!-- End Google Tag Manager -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OSRS XP Tracker & Hiscores History | TickGains</title>

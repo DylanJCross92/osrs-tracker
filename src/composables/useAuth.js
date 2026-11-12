@@ -6,6 +6,7 @@ import { notificationsApi } from '@/api/notifications'
 import { linkAccountData, unlinkAccountData } from '@/utils/accountData'
 import { useRivals } from '@/composables/useRivals'
 import { useGainPeriod } from '@/composables/useGainPeriod'
+import { setAccountInternal } from '@/utils/analytics'
 
 // Accounts keep a few preferences (your OSRS name, your rivals, the gain period) so they follow you between devices.
 // Everything still works with no account: the same values live in this browser's localStorage as before. When you are
@@ -139,6 +140,8 @@ async function syncFollows() {
 
 async function setUser(u) {
   user.value = u
+  // The site's own admin and owner accounts are not counted in analytics while signed in.
+  setAccountInternal(!!u?.roles?.some((r) => r === 'admin' || r === 'owner'))
   profilesReady.value = !u
   if (u) {
     reconcile(u.settings)
@@ -197,6 +200,7 @@ export async function logOut() {
   } finally {
     clearTimeout(timer)
     user.value = null
+    setAccountInternal(false)
     profiles.value = []
     notifications.value = { items: [], unread: 0, total: 0 }
     syncState.value = 'idle'
