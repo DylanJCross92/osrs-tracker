@@ -100,3 +100,24 @@ export function publicShape(row) {
     updatedAt: row.updated_at,
   }
 }
+
+export const SHARE_EVENTS = ['view', 'use']
+const DAY_MS = 86_400_000
+
+/**
+ * What the owner sees for one public plan, from its per-day counts: [{ day: 'YYYY-MM-DD', views, uses }].
+ * Totals, the last 7 days, and a 14-day series (oldest first, quiet days as zeros) for the little chart.
+ */
+export function summarizeStats(rows, today) {
+  const byDay = new Map(rows.map((r) => [r.day, r]))
+  const at = (offset) => new Date(Date.parse(`${today}T12:00:00Z`) + offset * DAY_MS).toISOString().slice(0, 10)
+  const series = []
+  for (let i = 13; i >= 0; i--) {
+    const day = at(-i)
+    const r = byDay.get(day)
+    series.push({ day, views: r?.views || 0, uses: r?.uses || 0 })
+  }
+  const sum = (list, key) => list.reduce((a, r) => a + (r[key] || 0), 0)
+  const week = series.slice(-7)
+  return { views: sum(rows, 'views'), uses: sum(rows, 'uses'), viewsWeek: sum(week, 'views'), usesWeek: sum(week, 'uses'), series }
+}

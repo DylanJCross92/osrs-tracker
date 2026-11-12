@@ -295,3 +295,13 @@ CREATE TABLE IF NOT EXISTS shared_plans (
   UNIQUE (user_id, plan_id)
 );
 CREATE INDEX IF NOT EXISTS shared_plans_user_idx ON shared_plans (user_id, updated_at DESC);
+
+-- How much a public plan is used: plain counts per plan per day, nothing about who. A "view" is someone opening the link, a
+-- "use" is someone starting their own plan from it. Removed together with the plan when sharing is turned off.
+CREATE TABLE IF NOT EXISTS shared_plan_stats (
+  share_id INTEGER NOT NULL REFERENCES shared_plans(id) ON DELETE CASCADE,
+  day DATE NOT NULL,
+  views INTEGER NOT NULL DEFAULT 0,
+  uses INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (share_id, day)
+);

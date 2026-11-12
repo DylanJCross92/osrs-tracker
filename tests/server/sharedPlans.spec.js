@@ -72,3 +72,29 @@ describe('slugs and public shape', () => {
     expect(Object.keys(shape).sort()).toEqual(['createdAt', 'mode', 'name', 'plan', 'rsn', 'slug', 'summary', 'updatedAt'])
   })
 })
+
+describe('summarizeStats', () => {
+  it('totals the counts, takes the last 7 days, and fills a 14-day series with zeros for quiet days', async () => {
+    const { summarizeStats } = await import('../../server/src/utils/sharedPlans.js')
+    const rows = [
+      { day: '2026-11-01', views: 10, uses: 2 },
+      { day: '2026-11-08', views: 4, uses: 1 },
+      { day: '2026-11-11', views: 6, uses: 3 },
+    ]
+    const s = summarizeStats(rows, '2026-11-11')
+    expect(s.views).toBe(20)
+    expect(s.uses).toBe(6)
+    // The last 7 days are Nov 5 to Nov 11.
+    expect(s.viewsWeek).toBe(10)
+    expect(s.usesWeek).toBe(4)
+    expect(s.series).toHaveLength(14)
+    expect(s.series[0].day).toBe('2026-10-29')
+    expect(s.series[13]).toEqual({ day: '2026-11-11', views: 6, uses: 3 })
+    expect(s.series[12]).toEqual({ day: '2026-11-10', views: 0, uses: 0 })
+  })
+
+  it('is all zeros for a plan nobody has opened', async () => {
+    const { summarizeStats } = await import('../../server/src/utils/sharedPlans.js')
+    expect(summarizeStats([], '2026-11-11')).toMatchObject({ views: 0, uses: 0, viewsWeek: 0, usesWeek: 0 })
+  })
+})

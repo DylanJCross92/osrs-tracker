@@ -259,6 +259,7 @@ import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
 import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
+import { recordPlanEvent } from '@/utils/planEvents'
 import { useRivals } from '@/composables/useRivals'
 import { useAuth, waitForAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
@@ -934,6 +935,7 @@ async function loadTemplate(slug) {
   // Someone who has saved their own name elsewhere on the site is taken straight to their own numbers.
   if (!username.value && me.value) username.value = me.value
   track('planner_template_used', { goals: goals.value.length })
+  recordPlanEvent(slug, 'use')
   return true
 }
 

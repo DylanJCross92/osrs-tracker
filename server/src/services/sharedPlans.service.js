@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
-import { MAX_SHARES_PER_USER, SharePlanError, cleanSharedPlan, isSlug, newSlug, publicShape } from '../utils/sharedPlans.js'
+import { MAX_SHARES_PER_USER, SHARE_EVENTS, SharePlanError, cleanSharedPlan, isSlug, newSlug, publicShape, summarizeStats } from '../utils/sharedPlans.js'
+import { localDay } from '../utils/dates.js'
 
 const ownerShape = (row) => ({ ...publicShape(row), planId: row.plan_id })
 
@@ -34,7 +35,31 @@ export async function shareMyPlan(userId, body) {
 
 export async function listMyShares(userId) {
   const { rows } = await pool.query('SELECT * FROM shared_plans WHERE user_id = $1 ORDER BY updated_at DESC', [userId])
-  return rows.map(ownerShape)
+  if (!rows.length) return []
+  const { rows: counts } = await pool.query(
+    `SELECT share_id, to_char(day, 'YYYY-MM-DD') AS day, views, uses FROM shared_plan_stats WHERE share_id = ANY($1::int[])`,
+    [rows.map((r) => r.id)],
+  )
+  const today = localDay(new Date())
+  return rows.map((row) => ({ ...ownerShape(row), stats: summarizeStats(counts.filter((c) => c.share_id === row.id), today) }))
+}
+
+/**
+ * Counts one view or one use of a public plan. Only a count goes in, never who it was. The owner opening their own plan
+ * is not counted. Returns false when the plan does not exist or the event is not one we know.
+ */
+export async function recordShareEvent(slug, type, viewerUserId = null) {
+  if (!isSlug(slug) || !SHARE_EVENTS.includes(type)) return false
+  const { rows } = await pool.query('SELECT id, user_id FROM shared_plans WHERE slug = $1', [slug])
+  if (!rows[0]) return false
+  if (viewerUserId != null && viewerUserId === rows[0].user_id) return true
+  const column = type === 'view' ? 'views' : 'uses'
+  await pool.query(
+    `INSERT INTO shared_plan_stats (share_id, day, ${column}) VALUES ($1, $2::date, 1)
+     ON CONFLICT (share_id, day) DO UPDATE SET ${column} = shared_plan_stats.${column} + 1`,
+    [rows[0].id, localDay(new Date())],
+  )
+  return true
 }
 
 /** Turns sharing off: the row and so the link are gone. True when something was removed. */

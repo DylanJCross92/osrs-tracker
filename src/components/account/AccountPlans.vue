@@ -20,6 +20,13 @@
             <span>{{ formatHours(r.summary.totalHours) }}<template v-if="r.summary.days != null"> · {{ r.summary.days.toLocaleString('en-US') }} days at {{ r.plan.hoursPerDay }} h/day</template></span>
             <span>Updated {{ formatRelative(r.plan.updatedAt) }}</span>
           </div>
+          <div v-if="r.share" class="hp-stats" :aria-label="`${r.share.stats.views} views, ${r.share.stats.uses} people used this plan`">
+            <div class="hp-stat"><b>{{ r.share.stats.views.toLocaleString('en-US') }}</b><span>views</span><small v-if="r.share.stats.viewsWeek">+{{ r.share.stats.viewsWeek.toLocaleString('en-US') }} this week</small></div>
+            <div class="hp-stat"><b>{{ r.share.stats.uses.toLocaleString('en-US') }}</b><span>{{ r.share.stats.uses === 1 ? 'person used it' : 'people used it' }}</span><small v-if="r.share.stats.usesWeek">+{{ r.share.stats.usesWeek.toLocaleString('en-US') }} this week</small></div>
+            <div class="hp-spark" role="img" :aria-label="`Views over the last 14 days`">
+              <i v-for="d in r.share.stats.series" :key="d.day" :style="{ height: barHeight(d.views, r.share.stats) + '%' }" :title="`${d.day}: ${d.views} view${d.views === 1 ? '' : 's'}, ${d.uses} use${d.uses === 1 ? '' : 's'}`" />
+            </div>
+          </div>
           <div class="hp-skills" aria-hidden="true">
             <img v-for="g in r.plan.goals.slice(0, 10)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="18" height="18" :title="g.skill" />
             <span v-if="r.plan.goals.length > 10">+{{ r.plan.goals.length - 10 }}</span>
@@ -51,7 +58,9 @@ import { formatHours } from '@/utils/planner'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 
-const { shareFor, stop } = useSharedPlans()
+const { shareFor, stop, reload } = useSharedPlans()
+// Counts move while you are away, so read them fresh whenever this opens.
+reload()
 const { showToast } = useToast()
 const plans = ref(listSavedPlans())
 const confirming = ref('')
@@ -61,6 +70,7 @@ watch(confirming, (id) => id && nextTick(() => (Array.isArray(confirmBtn.value) 
 
 const rows = computed(() => plans.value.map((plan) => ({ plan, share: shareFor(plan.id), summary: summarizePlan(plan) })))
 
+const barHeight = (n, stats) => (n ? Math.max(12, Math.round((n / Math.max(...stats.series.map((d) => d.views), 1)) * 100)) : 4)
 async function copyShare(share) {
   try {
     await navigator.clipboard.writeText(sharedPlansApi.pageUrl(share.slug))

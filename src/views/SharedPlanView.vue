@@ -85,6 +85,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
+import { recordPlanEvent } from '@/utils/planEvents'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { getMethod } from '@/data/trainingMethods'
@@ -110,6 +111,7 @@ onMounted(async () => {
     share.value = (await sharedPlansApi.get(route.params.slug)).plan
     setPageMeta({ title: `${share.value.name}${share.value.rsn ? ` by ${share.value.rsn}` : ''}`, description: `A shared Old School RuneScape training plan on TickGains.`, path: route.path, noindex: true })
     track('shared_plan_viewed', { mode: share.value.mode })
+    recordPlanEvent(route.params.slug, 'view')
     if (share.value.mode === 'live' && !store.loaded) await store.loadPlayers().catch(() => {})
   } catch (err) {
     error.value = err?.status === 404 ? 'That plan is not shared, or the owner has turned sharing off.' : 'Could not load that plan right now. Please try again.'

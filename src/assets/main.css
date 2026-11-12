@@ -3969,3 +3969,13 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .hp-actions .sp-icon { width: 40px; height: 40px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(0, 0, 0, 0.22); }
 .hp-actions .sp-icon:hover:not(:disabled) { border-color: var(--gold); }
 .hp-actions .hp-del { color: var(--muted); }
+
+/* usage of a public plan */
+.hp-stats { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 22px; margin-top: 10px; padding: 8px 12px; border-radius: 10px; background: rgba(124, 184, 105, 0.06); border: 1px solid rgba(124, 184, 105, 0.25); }
+.hp-stat { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; }
+.hp-stat b { font-size: 1.2rem; color: var(--text); }
+.hp-stat span { color: var(--muted); font-size: 0.82rem; }
+.hp-stat small { flex-basis: 100%; color: var(--xp-green); font-size: 0.74rem; font-weight: 600; }
+.hp-spark { display: flex; align-items: flex-end; gap: 2px; height: 30px; margin-left: auto; }
+.hp-spark i { display: block; width: 6px; border-radius: 2px 2px 0 0; background: var(--xp-green); opacity: 0.75; }
+.hp-spark i[style*="height: 4%"] { background: var(--border-strong); opacity: 1; }
