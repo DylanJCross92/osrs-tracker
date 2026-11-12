@@ -26,15 +26,14 @@
           </div>
         </div>
         <div class="hp-actions">
+          <button v-if="r.share" class="sp-icon" type="button" title="Copy public link" aria-label="Copy public link" @click="copyShare(r.share)">
+            <ShareIcon name="link" :size="19" />
+          </button>
           <RouterLink class="btn btn-ghost" :to="{ name: 'planner', query: { plan: r.plan.id } }">Open</RouterLink>
-          <button v-if="r.share" class="btn-text" type="button" @click="copyShare(r.share)">Copy public link</button>
-          <template v-if="confirming !== r.plan.id">
-            <button class="btn-text hp-del" type="button" @click="confirming = r.plan.id">Delete</button>
-          </template>
-          <template v-else>
-            <button class="btn-text hp-del" type="button" @click="remove(r.plan)">Yes, delete</button>
-            <button class="btn-text" type="button" @click="confirming = ''">Keep</button>
-          </template>
+          <button v-if="confirming !== r.plan.id" class="sp-icon hp-del" type="button" title="Delete plan" aria-label="Delete plan" @click="confirming = r.plan.id">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
+          </button>
+          <button v-else class="hp-confirm" type="button" title="Press again to delete this plan" ref="confirmBtn" @click="remove(r.plan)" @blur="confirming = ''">Delete?</button>
         </div>
       </li>
     </ul>
@@ -42,7 +41,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import ShareIcon from '@/components/ShareIcon.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useSharedPlans } from '@/composables/useSharedPlans'
 import { useToast } from '@/composables/useToast'
@@ -55,6 +55,9 @@ const { shareFor, stop } = useSharedPlans()
 const { showToast } = useToast()
 const plans = ref(listSavedPlans())
 const confirming = ref('')
+const confirmBtn = ref(null)
+// The confirm button takes focus so clicking anywhere else cancels the delete.
+watch(confirming, (id) => id && nextTick(() => (Array.isArray(confirmBtn.value) ? confirmBtn.value[0] : confirmBtn.value)?.focus()))
 
 const rows = computed(() => plans.value.map((plan) => ({ plan, share: shareFor(plan.id), summary: summarizePlan(plan) })))
 
