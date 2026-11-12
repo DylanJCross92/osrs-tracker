@@ -3979,3 +3979,36 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .hp-spark { display: flex; align-items: flex-end; gap: 2px; height: 30px; margin-left: auto; }
 .hp-spark i { display: block; width: 6px; border-radius: 2px 2px 0 0; background: var(--xp-green); opacity: 0.75; }
 .hp-spark i[style*="height: 4%"] { background: var(--border-strong); opacity: 1; }
+
+/* Checkboxes in the site's own colours instead of the browser's bright white box */
+input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  display: inline-grid;
+  place-content: center;
+  border-radius: 5px;
+  border: 1.5px solid var(--border-strong);
+  background: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+}
+input[type="checkbox"]::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--gold-ink, #1a1409);
+  clip-path: polygon(14% 52%, 0 66%, 38% 100%, 100% 22%, 86% 8%, 38% 72%);
+  transform: scale(0);
+  transition: transform 0.12s;
+}
+input[type="checkbox"]:hover:not(:disabled) { border-color: var(--gold); }
+input[type="checkbox"]:checked { background: var(--check-color, var(--gold)); border-color: var(--check-color, var(--gold)); }
+input[type="checkbox"]:checked::after { transform: scale(1); }
+input[type="checkbox"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.3); }
+input[type="checkbox"]:disabled { opacity: 0.5; cursor: default; }
+.qt-item { --check-color: var(--xp-green); }
+.qt-item input { width: 18px; height: 18px; }
