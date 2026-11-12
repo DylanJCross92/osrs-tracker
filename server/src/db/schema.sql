@@ -233,6 +233,8 @@ CREATE INDEX IF NOT EXISTS follows_player_idx ON follows (player_id);
 -- The last record values we told a profile's owner about (see recordsNotify.service.js), so a new personal record can
 -- be spotted after each snapshot. NULL until the first check, which only records the starting values.
 ALTER TABLE players ADD COLUMN IF NOT EXISTS records_state JSONB;
+-- The records already announced today ({ day, headlines: { recordKey: text } }), so a day's new records are one notice.
+ALTER TABLE players ADD COLUMN IF NOT EXISTS records_day JSONB;
 
 -- Browser data kept with the account so it follows the person to other devices: saved planner plans, the planner's
 -- working goals, recent searches, and which congratulations were already sent or hidden. One JSON object, each key
