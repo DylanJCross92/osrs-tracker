@@ -6,6 +6,7 @@ import { getMethod } from '@/data/trainingMethods'
 import { getQuest } from '@/data/quests'
 import { MATERIALS } from '@/data/methodMaterials'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { startOfGameDay } from '@/utils/gameDay'
 import {
   MAX_XP,
   AUTO_FAST,
@@ -310,6 +311,26 @@ export function projectFinish({ snapshots, goals, remainingXp, plannedDays, base
     planned,
     diffDays,
   }
+}
+
+/**
+ * XP gained since the game day began (6 AM Eastern, the same day the rest of the site uses), in the goal skills only.
+ * `snapshots` is the tracked history, oldest first; `currentXp` maps skill to its XP now. The day starts from the newest
+ * snapshot taken before 6 AM, or from the first snapshot when there is none. Null when nothing was gained.
+ */
+export function gainedToday(snapshots, currentXp, now = Date.now()) {
+  const rows = (snapshots || []).map((s) => ({ t: new Date(s.capturedAt).getTime(), skills: s.skills || {} })).filter((r) => !Number.isNaN(r.t)).sort((a, b) => a.t - b.t)
+  if (!rows.length) return null
+  const dayStart = startOfGameDay(now)
+  const before = [...rows].reverse().find((r) => r.t <= dayStart) || rows[0]
+  const skills = []
+  for (const [skill, xp] of Object.entries(currentXp)) {
+    const start = Number(before.skills[skill]?.xp)
+    if (Number.isFinite(start) && Number.isFinite(xp) && xp > start) skills.push({ skill, gained: xp - start })
+  }
+  if (!skills.length) return null
+  skills.sort((a, b) => b.gained - a.gained)
+  return { total: skills.reduce((a, x) => a + x.gained, 0), skills }
 }
 
 // --- Sharing ------------------------------------------------------------------

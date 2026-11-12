@@ -46,10 +46,10 @@
       <b>{{ paceLine.headline }}</b>
       <span>{{ paceLine.detail }}</span>
     </p>
-    <p v-if="since" class="pp-since">
-      <b>Since your last visit</b> ({{ formatRelative(since.at) }}): +{{ formatNum(since.total) }} XP
-      <span v-for="s in since.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
-      <span v-if="since.skills.length > 4" class="pp-more">and {{ since.skills.length - 4 }} more</span>
+    <p v-if="today" class="pp-since">
+      <b>XP today</b> +{{ formatNum(today.total) }} XP
+      <span v-for="s in today.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
+      <span v-if="today.skills.length > 4" class="pp-more">and {{ today.skills.length - 4 }} more</span>
     </p>
     <p v-if="!readonly" class="pp-foot">
       Progress is measured from the stats this plan started with. Estimates are based on your latest tracked XP.
@@ -68,7 +68,8 @@ const props = defineProps({
   progress: { type: Object, required: true },
   updatedAt: { type: String, default: '' },
   baselineAt: { type: String, default: '' },
-  since: { type: Object, default: null },
+  // XP the goal skills have gained today (null when none).
+  today: { type: Object, default: null },
   // The timeline entries (same order as the goals), for each goal's finish date.
   entries: { type: Array, default: () => [] },
   hoursPerDay: { type: Number, default: 2 },

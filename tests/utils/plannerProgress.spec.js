@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { buildProgress, liveGoalFor } from '@/utils/plannerTools'
 import { xpAtLevel } from '@/utils/planner'
-import { gainedSince, readVisit, writeVisit, VISIT_GRACE_MS } from '@/utils/plannerVisits'
 
 const goal = (skill, from, to) => ({ skill, currentXp: xpAtLevel(from), targetXp: xpAtLevel(to) })
 // Flat 100k xp/h so hours are easy to reason about.
@@ -85,32 +84,23 @@ describe('buildProgress', () => {
   })
 })
 
-describe('visits', () => {
-  beforeEach(() => localStorage.clear())
+describe('gainedToday', () => {
+  const now = new Date('2026-11-11T20:00:00Z').getTime() // 3 PM Eastern, so the game day began at 6 AM Eastern = 11:00 UTC
+  const snap = (iso, xp) => ({ capturedAt: iso, skills: { Mining: { xp }, Attack: { xp: 500 } } })
 
-  it('keeps the baseline through quick reloads and promotes a finished visit after the grace period', () => {
-    const t0 = new Date('2027-01-01T10:00:00Z')
-    expect(readVisit('Zezima', t0)).toBeNull()
-    // Visit 1 ends: nothing to compare against yet.
-    writeVisit('Zezima', { Mining: 1000 }, t0)
-    expect(readVisit('zezima', new Date(t0.getTime() + 60_000))).toBeNull()
-    // Visit 2, a day later: visit 1 is now the baseline.
-    const day = new Date(t0.getTime() + 24 * 3600_000)
-    expect(readVisit('Zezima', day).xp.Mining).toBe(1000)
-    // Visit 2 ends, and a reload right away still compares against visit 1.
-    writeVisit('Zezima', { Mining: 3000 }, new Date(day.getTime() + 60_000))
-    expect(readVisit('Zezima', new Date(day.getTime() + 2 * 60_000)).xp.Mining).toBe(1000)
-    // A later visit compares against visit 2.
-    expect(readVisit('Zezima', new Date(day.getTime() + VISIT_GRACE_MS + 120_000)).xp.Mining).toBe(3000)
+  it('counts XP gained in the goal skills since 6 AM Eastern, largest first', async () => {
+    const { gainedToday } = await import('@/utils/plannerTools')
+    const rows = [snap('2026-11-10T20:00:00Z', 1000), snap('2026-11-11T10:00:00Z', 1200), snap('2026-11-11T14:00:00Z', 1500)]
+    const g = gainedToday(rows, { Mining: 1900, Attack: 800 }, now)
+    // Before 11:00 UTC the newest snapshot is 1200 for Mining, 500 for Attack.
+    expect(g.total).toBe(700 + 300)
+    expect(g.skills.map((s) => s.skill)).toEqual(['Mining', 'Attack'])
   })
 
-  it('reports gains per skill, largest first, only for skills in the snapshot', () => {
-    const visit = { at: '2027-01-01T00:00:00Z', xp: { Mining: 1000, Attack: 500 } }
-    const g = gainedSince(visit, { Mining: 1500, Attack: 4500, Magic: 99 })
-    expect(g.total).toBe(4500)
-    expect(g.skills.map((s) => s.skill)).toEqual(['Attack', 'Mining'])
-    expect(gainedSince(visit, { Mining: 1000, Attack: 500 })).toBeNull()
-    expect(gainedSince(null, {})).toBeNull()
+  it('is null when nothing was gained today or there is no history', async () => {
+    const { gainedToday } = await import('@/utils/plannerTools')
+    expect(gainedToday([snap('2026-11-11T10:00:00Z', 1200)], { Mining: 1200 }, now)).toBeNull()
+    expect(gainedToday([], { Mining: 1200 }, now)).toBeNull()
   })
 })
 

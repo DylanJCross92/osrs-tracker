@@ -98,7 +98,7 @@
         :progress="progress"
         :updated-at="player?.latest?.capturedAt || ''"
         :baseline-at="statsAt || ''"
-        :since="sinceVisit"
+        :today="gainedTodayNow"
         :entries="timeline.entries"
         :hours-per-day="hoursPerDay"
         :projection="projection"
@@ -270,7 +270,6 @@ import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
-import { readVisit, writeVisit, gainedSince } from '@/utils/plannerVisits'
 import {
   planGoal,
   planTotals,
@@ -298,6 +297,7 @@ import {
   buildTimeline,
   buildProgress,
   projectFinish,
+  gainedToday,
   liveGoalFor,
   listSavedPlans,
   snapshotPlan,
@@ -742,38 +742,16 @@ function refreshFromPlayer() {
   showToast(`Progress restarted from ${player.value?.displayName}'s stats today.`)
 }
 
-// --- Since your last visit -----------------------------------------------------------
-// The previous visit is read once per player, and today's tracked XP is stored when the page closes so the next visit can
-// say what has been gained since.
-const previousVisit = ref(null)
-const visitFor = ref('')
-watch(
-  () => player.value?.username,
-  (name) => {
-    if (!name || name === visitFor.value) return
-    visitFor.value = name
-    previousVisit.value = readVisit(name)
-  },
-  { immediate: true },
-)
-const trackedXpByGoal = () => {
-  const out = {}
+// --- XP gained today ---------------------------------------------------------------
+// What the goal skills have gained since the game day began (6 AM Eastern), from the tracked snapshot history.
+const gainedTodayNow = computed(() => {
+  if (!tracking.value || history.value.id !== player.value?.id) return null
+  const xp = {}
   for (const g of goals.value) {
-    const xp = playerXp(g.skill)
-    if (xp != null) out[g.skill] = xp
+    const v = playerXp(g.skill)
+    if (v != null) xp[g.skill] = v
   }
-  return out
-}
-const sinceVisit = computed(() => (tracking.value ? gainedSince(previousVisit.value, trackedXpByGoal()) : null))
-function rememberVisit() {
-  if (!player.value || !goals.value.length) return
-  writeVisit(player.value.username, trackedXpByGoal())
-}
-const onHide = () => document.visibilityState === 'hidden' && rememberVisit()
-onMounted(() => document.addEventListener('visibilitychange', onHide))
-onBeforeUnmount(() => {
-  document.removeEventListener('visibilitychange', onHide)
-  rememberVisit()
+  return gainedToday(history.value.rows, xp)
 })
 
 // --- Helpers ----------------------------------------------------------------------
