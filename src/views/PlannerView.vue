@@ -177,13 +177,25 @@
         />
         </div>
       </div>
-      <button v-if="goals.length" class="goal-add-bottom" type="button" @click="openAdd">+ Add another skill</button>
+      <button v-if="goals.length" class="goal-add-bottom" type="button" @click="openAdd()">+ Add another skill</button>
       <div v-if="!goals.length" class="rp-empty">
         <h3>Start from a recommended plan</h3>
         <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ player ? `${player.displayName}'s` : 'your' }} stats. Change anything afterwards.</p>
         <RecommendedPlans :limit="8" :skills="player?.latest?.skills || null" :has-player="!!player?.latest" :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @use="useRecommended" />
         <div class="rp-or"><span>or build your own</span></div>
-        <button class="btn btn-primary" type="button" @click="openAdd">+ Add Skill Goal</button>
+        <div class="byo">
+          <div class="byo-copy">
+            <h3>Build your own plan</h3>
+            <p>Pick a skill to aim at, then choose a target level and how you want to train it. Add as many goals as you like and the planner lines them up on a timeline.</p>
+            <button class="btn btn-primary byo-go" type="button" @click="openAdd()">+ Add a skill goal</button>
+          </div>
+          <div class="byo-skills" role="group" aria-label="Start with a skill">
+            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="openAdd(s)">
+              <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
+              <span>{{ s }}</span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -229,7 +241,7 @@
     </template>
 
 
-    <PlannerAddGoal v-if="showAdd" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" @add="addGoal" @close="showAdd = false" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" @add="addGoal" @close="showAdd = false" />
   </div>
 </template>
 
@@ -604,7 +616,9 @@ const routeIssues = computed(() => {
 const timeline = computed(() => buildTimeline(goals.value, plans.value, hoursPerDay.value))
 
 // --- Goals ----------------------------------------------------------------------
-function openAdd() {
+const addSkill = ref('')
+function openAdd(skill) {
+  addSkill.value = typeof skill === 'string' ? skill : ''
   showAdd.value = true
   track('planner_add_goal_open')
 }

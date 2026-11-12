@@ -80,13 +80,16 @@ const props = defineProps({
   existingSkills: { type: Array, default: () => [] },
   globalStrategy: { type: String, required: true },
   gpValue: { type: Number, required: true },
+  // A skill to start on (picked from the build-your-own panel).
+  initialSkill: { type: String, default: '' },
 })
 const emit = defineEmits(['add', 'close'])
 
 const taken = computed(() => new Set(props.existingSkills))
 const firstFree = SKILL_NAMES.find((s) => !props.existingSkills.includes(s)) || SKILL_NAMES[0]
 
-const form = reactive({ skill: firstFree, currentXp: 0, targetMode: 'level', targetLevel: 99, targetXp: xpAtLevel(99), methodId: GLOBAL_STRATEGY })
+const startSkill = SKILL_NAMES.includes(props.initialSkill) && !props.existingSkills.includes(props.initialSkill) ? props.initialSkill : firstFree
+const form = reactive({ skill: startSkill, currentXp: 0, targetMode: 'level', targetLevel: 99, targetXp: xpAtLevel(99), methodId: GLOBAL_STRATEGY })
 const error = ref('')
 
 const playerXp = (skill) => props.player?.latest?.skills?.[skill]?.xp ?? null
