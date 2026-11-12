@@ -20,7 +20,7 @@
             <span>{{ formatHours(r.summary.totalHours) }}<template v-if="r.summary.days != null"> · {{ r.summary.days.toLocaleString('en-US') }} days at {{ r.plan.hoursPerDay }} h/day</template></span>
             <span>Updated {{ formatRelative(r.plan.updatedAt) }}</span>
           </div>
-          <div v-if="r.share" class="hp-stats" :aria-label="`${r.share.stats.views} views, ${r.share.stats.uses} people used this plan`">
+          <div v-if="r.share && (r.share.stats.views || r.share.stats.uses)" class="hp-stats" :aria-label="`${r.share.stats.views} views, ${r.share.stats.uses} people used this plan`">
             <div class="hp-stat"><b>{{ r.share.stats.views.toLocaleString('en-US') }}</b><span>views</span><small v-if="r.share.stats.viewsWeek">+{{ r.share.stats.viewsWeek.toLocaleString('en-US') }} this week</small></div>
             <div class="hp-stat"><b>{{ r.share.stats.uses.toLocaleString('en-US') }}</b><span>{{ r.share.stats.uses === 1 ? 'person used it' : 'people used it' }}</span><small v-if="r.share.stats.usesWeek">+{{ r.share.stats.usesWeek.toLocaleString('en-US') }} this week</small></div>
             <div class="hp-spark" role="img" :aria-label="`Views over the last 14 days`">
