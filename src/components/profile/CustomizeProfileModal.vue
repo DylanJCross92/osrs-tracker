@@ -8,24 +8,40 @@
 
       <div class="cz-body">
         <section class="cz-block">
-          <h3>Picture</h3>
-          <div class="cz-pic">
-            <span class="cz-pic-frame"><PlayerAvatar :name="username" :key="pictureKey" /></span>
-            <div class="cz-pic-actions">
-              <label class="btn btn-ghost cz-upload" :class="{ 'is-busy': busyPic }">
-                {{ busyPic ? 'Uploading…' : 'Upload a picture' }}
-                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" :disabled="busyPic" @change="pickPicture" />
-              </label>
-              <button v-if="current.hasAvatar" class="btn-text cz-remove" type="button" :disabled="busyPic" @click="removePicture">Remove</button>
-              <small>Squares work best. It is shrunk to 256 pixels before upload.</small>
+          <h3>Picture and bio</h3>
+          <div class="cz-profile">
+            <div class="cz-pic" :class="{ 'is-busy': busyPic }">
+              <span class="cz-pic-frame">
+                <PlayerAvatar :name="username" :key="pictureKey" />
+                <span class="cz-pic-overlay">
+                  <label class="cz-pic-btn">
+                    {{ busyPic ? 'Uploading…' : 'Upload' }}
+                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" :disabled="busyPic" aria-label="Upload a picture" @change="pickPicture" />
+                  </label>
+                  <button v-if="current.hasAvatar" class="cz-pic-btn is-remove" type="button" :disabled="busyPic" @click="removePicture">Remove</button>
+                </span>
+              </span>
+            </div>
+            <div class="cz-bio">
+              <textarea v-model="form.bio" maxlength="300" aria-label="Bio" placeholder="Write a bio: a line or two about you and your account"></textarea>
+              <small class="cz-bio-count" aria-hidden="true">{{ form.bio.length }}/300</small>
             </div>
           </div>
+          <small class="cz-pic-hint">Hover your picture to change or remove it. Squares work best; it is shrunk to 256 pixels before upload.</small>
           <p v-if="picError" class="auth-error" role="alert">{{ picError }}</p>
         </section>
 
         <section class="cz-block">
-          <h3>About</h3>
-          <label class="cz-field"><span>Bio <small>{{ form.bio.length }}/300</small></span><textarea v-model="form.bio" maxlength="300" rows="3" placeholder="A line or two about you and your account"></textarea></label>
+          <h3>Pinned achievement</h3>
+          <label class="cz-field">
+            <span>Shown at the top of your profile</span>
+            <select v-model="form.pinned" :disabled="!pinChoices.length">
+              <option value="">{{ pinChoices.length ? 'None' : 'Nothing earned yet' }}</option>
+              <optgroup v-for="g in pinChoices" :key="g.category" :label="g.category">
+                <option v-for="a in g.items" :key="a.key" :value="a.key">{{ a.title }}</option>
+              </optgroup>
+            </select>
+          </label>
         </section>
 
         <section class="cz-block">
@@ -58,11 +74,14 @@ import { usePlayersStore } from '@/stores/players'
 import { refreshProfiles } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { squareJpeg } from '@/utils/imageResize'
+import { pinOptions } from '@/utils/badges'
 import { track } from '@/utils/analytics'
 
 const props = defineProps({
   username: { type: String, required: true },
   page: { type: Object, required: true },
+  // The profile's achievements, so the owner can pin one they have earned.
+  achievements: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['close', 'saved'])
 const { showToast } = useToast()
@@ -76,7 +95,8 @@ const KINDS = [
 ]
 
 const current = reactive({ ...props.page })
-const form = reactive({ bio: props.page.bio || '', links: (props.page.links || []).map((l) => ({ ...l })) })
+const pinChoices = pinOptions(props.achievements)
+const form = reactive({ bio: props.page.bio || '', pinned: props.page.pinnedAchievement || '', links: (props.page.links || []).map((l) => ({ ...l })) })
 const busy = ref(false)
 const busyPic = ref(false)
 const error = ref('')
@@ -128,7 +148,7 @@ async function save() {
   error.value = ''
   try {
     const links = form.links.filter((l) => l.url.trim()).map((l) => ({ kind: l.kind, url: l.url.trim() }))
-    const saved = await profilePageApi.save(props.username, { bio: form.bio, links })
+    const saved = await profilePageApi.save(props.username, { bio: form.bio, links, pinnedAchievement: form.pinned })
     track('profile_customize')
     showToast('Profile saved.')
     emit('saved', saved)

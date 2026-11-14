@@ -28,3 +28,14 @@ export async function getPlayerRecord(player, key) {
   const { records } = await getPlayerRecords(player)
   return records.find((r) => r.key === key && !r.locked) || null
 }
+
+/**
+ * The days-in-a-row streak shown on a profile: { current, longest }. A day with XP is a game day (6 AM to 6 AM Eastern)
+ * where the player gained any; the current run is not broken by a day that is still in progress. Comes from the same
+ * records as the Records tab, so the two always agree.
+ */
+export async function getStreak(player) {
+  const { records } = await getPlayerRecords(player)
+  const r = records.find((x) => x.key === 'longest-streak' && !x.locked)
+  return { current: r?.current?.value || 0, longest: r?.value || 0 }
+}

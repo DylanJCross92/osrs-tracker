@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
 import { MAX_AVATAR_BYTES, sanitizeProfilePage, sniffImageType } from '../utils/profilePage.js'
+import { getProfileAchievements } from './milestones.service.js'
 
 export class PageError extends Error {
   constructor(message, status = 400) {
@@ -17,13 +18,14 @@ export async function isOwner(userId, playerId) {
 /** The public parts of a profile's page. Everything has an empty default, so an uncustomised profile returns a blank page. */
 export async function getProfilePage(playerId) {
   const { rows } = await pool.query(
-    `SELECT bio, links, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
+    `SELECT bio, links, pinned_achievement, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
     [playerId],
   )
   const r = rows[0]
   return {
     bio: r?.bio || '',
     links: r?.links || [],
+    pinnedAchievement: r?.pinned_achievement || null,
     hasAvatar: Boolean(r?.has_avatar),
     avatarV: r?.has_avatar ? Number(r.avatar_v) : null,
   }
@@ -32,14 +34,21 @@ export async function getProfilePage(playerId) {
 /** Saves the fields that were sent (after cleaning them). */
 export async function saveProfilePage(playerId, input) {
   const patch = sanitizeProfilePage(input)
+  // Only an achievement the profile has really earned can be pinned.
+  if (patch.pinnedAchievement) {
+    const { achievements } = await getProfileAchievements(playerId)
+    if (!achievements.some((a) => a.key === patch.pinnedAchievement && a.completed)) throw new PageError('You can only pin an achievement this profile has earned.')
+  }
+  const hasPinned = 'pinnedAchievement' in patch
   await pool.query(
-    `INSERT INTO profile_pages (player_id, bio, links)
-     VALUES ($1, COALESCE($2, ''), COALESCE($3::jsonb, '[]'::jsonb))
+    `INSERT INTO profile_pages (player_id, bio, links, pinned_achievement)
+     VALUES ($1, COALESCE($2, ''), COALESCE($3::jsonb, '[]'::jsonb), $5::text)
      ON CONFLICT (player_id) DO UPDATE SET
        bio = COALESCE($2, profile_pages.bio),
        links = COALESCE($3::jsonb, profile_pages.links),
+       pinned_achievement = CASE WHEN $4::boolean THEN $5::text ELSE profile_pages.pinned_achievement END,
        updated_at = now()`,
-    [playerId, patch.bio ?? null, patch.links ? JSON.stringify(patch.links) : null],
+    [playerId, patch.bio ?? null, patch.links ? JSON.stringify(patch.links) : null, hasPinned, hasPinned && patch.pinnedAchievement ? patch.pinnedAchievement : null],
   )
   return getProfilePage(playerId)
 }

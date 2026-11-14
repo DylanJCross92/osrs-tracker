@@ -99,6 +99,17 @@ for (const g of goalPages) {
   goalPagesBySkill.get(g.slug).push(g)
 }
 const goalPageByPath = new Map(goalPages.map((g) => [g.path, g]))
+// Plan guide pages (/plans/max-cape) and the XP table (/osrs-xp-table), also computed at build time (see vite.config.js).
+const readBuilt = (name, fallback) => {
+  try {
+    return JSON.parse(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), `../../dist/${name}`), 'utf-8'))
+  } catch {
+    return fallback
+  }
+}
+const planGuides = readBuilt('plan-guides.json', [])
+const planGuideByPath = new Map(planGuides.map((g) => [g.path, g]))
+const xpTable = readBuilt('xp-table.json', null)
 
 // Generated from the live player list rather than a static file, so newly
 // tracked (or removed) players show up without a redeploy.
@@ -123,6 +134,9 @@ app.get('/sitemap.xml', async (req, res) => {
     { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
     ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
     ...goalPages.map((g) => ({ path: g.path, changefreq: 'monthly', priority: g.from === 1 && g.to === 99 ? '0.8' : '0.7' })),
+    ...(xpTable ? [{ path: xpTable.path, changefreq: 'monthly', priority: '0.8' }] : []),
+    ...(planGuides.length ? [{ path: '/plans', changefreq: 'monthly', priority: '0.8' }] : []),
+    ...planGuides.map((g) => ({ path: g.path, changefreq: 'monthly', priority: '0.7' })),
     ...players.map((p) => ({
       path: `/player/${encodeURIComponent(p.username)}`,
       changefreq: 'daily',
@@ -535,6 +549,81 @@ if (distExists) {
       }),
     )
   })
+
+  // The XP table, in HTML a crawler can read before any script runs.
+  if (xpTable) {
+    app.get(xpTable.path, (req, res) => {
+      const pageUrl = `${SITE_URL}${xpTable.path}`
+      const num = (n) => n.toLocaleString('en-US')
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: xpTable.title,
+          description: xpTable.description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl,
+          jsonLd: [
+            { '@context': 'https://schema.org', '@type': 'WebPage', name: xpTable.title.replace(' | TickGains', ''), url: pageUrl, description: xpTable.description, isPartOf: { '@type': 'WebSite', name: 'TickGains', url: SITE_URL } },
+            { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: xpTable.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+          ],
+          bodyHtml: `<main><h1>${escapeHtml(xpTable.h1)}</h1><p>${escapeHtml(xpTable.lead)}</p><table><thead><tr><th>Level</th><th>Total XP</th><th>XP to next level</th></tr></thead><tbody>${xpTable.rows
+            .map((r) => `<tr><td>${r.level}</td><td>${num(r.xp)}</td><td>${r.toNext == null ? '' : num(r.toNext)}</td></tr>`)
+            .join('')}</tbody></table><h2>Common questions</h2>${xpTable.faq.map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`).join('')}<p><a href="/calculators">Skill calculators</a> · <a href="/plans">Plan guides</a> · <a href="/planner">Account Planner</a></p></main>`,
+        }),
+      )
+    })
+  }
+
+  // Plan guides: an index, and one page per whole-account goal.
+  if (planGuides.length) {
+    app.get('/plans', (req, res) => {
+      const description = 'Plan guides for Old School RuneScape: how long and how much XP a max cape, all 90s, all 70s or a total level goal takes, with the plan ready to open in the Account Planner.'
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: 'OSRS Plan Guides: Max Cape, All 90s and Total Level Plans | TickGains',
+          description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}/plans`,
+          bodyHtml: `<main><h1>OSRS Plan Guides</h1><p>${escapeHtml(description)}</p><ul>${planGuides
+            .map((g) => `<li><a href="${g.path}">${escapeHtml(g.h1)}</a>: ${escapeHtml(g.summary)}</li>`)
+            .join('')}</ul><p><a href="/planner">Account Planner</a> · <a href="/calculators">Skill calculators</a> · <a href="/osrs-xp-table">OSRS XP table</a></p></main>`,
+        }),
+      )
+    })
+
+    app.get('/plans/:slug', (req, res) => {
+      const page = planGuideByPath.get(`/plans/${String(req.params.slug).toLowerCase()}`)
+      if (!page) return res.redirect(302, '/plans')
+      if (req.params.slug !== page.slug) return res.redirect(301, page.path)
+      const pageUrl = `${SITE_URL}${page.path}`
+      const num = (n) => n.toLocaleString('en-US')
+      const others = planGuides.filter((g) => g.slug !== page.slug)
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: page.title,
+          description: page.description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl,
+          jsonLd: [
+            { '@context': 'https://schema.org', '@type': 'WebPage', name: page.title.replace(' | TickGains', ''), url: pageUrl, description: page.description, isPartOf: { '@type': 'WebSite', name: 'TickGains', url: SITE_URL } },
+            { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: page.faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+            {
+              '@context': 'https://schema.org',
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: 'Plan guides', item: `${SITE_URL}/plans` },
+                { '@type': 'ListItem', position: 2, name: page.name, item: pageUrl },
+              ],
+            },
+          ],
+          bodyHtml: `<main><h1>${escapeHtml(page.h1)}</h1><p>${escapeHtml(page.lead)}</p><h2>Quick answer</h2><p>${escapeHtml(page.summary)}</p><h2>Skill by skill, in training order</h2><table><thead><tr><th>Order</th><th>Skill</th><th>Levels</th><th>XP</th><th>Time</th><th>Net GP</th></tr></thead><tbody>${page.skills
+            .map((s) => `<tr><td>${s.order}</td><td><a href="${s.calcPath}">${escapeHtml(s.skill)}</a></td><td>${s.from} to ${s.to}</td><td>${num(s.xp)}</td><td>${escapeHtml(s.hoursText)}</td><td>${escapeHtml(s.gpText)}</td></tr>`)
+            .join('')}</tbody></table><p><a href="${escapeHtml(page.plannerHref)}">Open this plan in the Account Planner</a></p><h2>Common questions</h2>${page.faq.map((f) => `<h3>${escapeHtml(f.q)}</h3><p>${escapeHtml(f.a)}</p>`).join('')}<nav><h2>More plan guides</h2>${others
+            .map((g) => `<a href="${g.path}">${escapeHtml(g.name)}</a>`)
+            .join(' ')}</nav><p><a href="/plans">All plan guides</a> · <a href="/osrs-xp-table">OSRS XP table</a> · <a href="/calculators">Skill calculators</a></p></main>`,
+        }),
+      )
+    })
+  }
 
   app.get('/discover', (req, res) => {
     res.send(

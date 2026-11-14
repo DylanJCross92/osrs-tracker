@@ -36,6 +36,33 @@ export function recordWhenText(r, today) {
   return `${recordDayText(r.start, today)} to ${recordDayText(r.end, today, true)}`
 }
 
+// What a record that is being set right now is called: "record streak", "record day" and so on.
+const NOW_NOUN = {
+  'longest-streak': 'record streak',
+  'best-day': 'record day',
+  'best-week': 'record week',
+  'best-month': 'record 30-day stretch',
+  'most-levels-day': 'record day for levels',
+  'most-skills-day': 'record day for skills',
+}
+export const recordNowNoun = (r) => NOW_NOUN[r?.key] || 'new record'
+
+/** The small tag on a record in progress: "Record streak". */
+export function recordNowTag(r) {
+  const noun = recordNowNoun(r)
+  return noun[0].toUpperCase() + noun.slice(1)
+}
+
+/**
+ * The banner sentence for the records being set right now, in two parts so the first can be bold:
+ * one record is "A record streak" + "is underway.", several are "3 records" + "are underway: longest streak, biggest day."
+ */
+export function recordNowParts(records) {
+  const list = Array.isArray(records) ? records : []
+  if (list.length === 1) return { lead: `A ${recordNowNoun(list[0])}`, rest: 'is underway.' }
+  return { lead: `${list.length} records`, rest: `are underway: ${list.map((r) => String(r.title || '').toLowerCase()).join(', ')}.` }
+}
+
 // Just the distance to the record: "+468K XP to beat it".
 export function recordGapText(r) {
   const c = r.current

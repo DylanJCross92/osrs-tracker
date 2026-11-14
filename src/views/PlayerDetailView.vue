@@ -47,6 +47,7 @@
           <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
           <span><b>{{ formatCount(followCounts.following) }}</b> following</span>
         </p>
+        <ProfileFlair v-if="profile" :streak="profile.streak" :achievements="profile.achievements" :pinned-key="page.pinnedAchievement || ''" :is-owner="isProfileOwner" @open-achievements="setTab('achievements')" @customize="customizeOpen = true" />
         <p v-if="page.bio" class="pp-bio">{{ page.bio }}</p>
         <ul v-if="page.links.length" class="pp-links">
           <li v-for="l in page.links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener nofollow ugc">{{ LINK_LABELS[l.kind] || l.kind }}</a></li>
@@ -83,7 +84,7 @@
   <DayRecapModal v-if="recapDay && player" :day="recapDay" :days="weekDays" :username="player.username" :display-name="player.displayName" @close="recapDay = null" @records="recapDay = null; setTab('records')" />
   <QuickPlannerModal v-if="plannerSkill && latest" :skill="plannerSkill" :xp="xpForSkill(latest, plannerSkill)" :username="player?.username || usernameParam" @close="plannerSkill = ''" />
   <GoalShareModal v-if="shareGoal && player" :username="player.username" :display-name="player.displayName" :goal="shareGoal" @close="shareGoal = null" />
-  <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" @saved="(p) => (page = p)" @close="customizeOpen = false" />
+  <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" :achievements="profile?.achievements || []" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
@@ -305,6 +306,7 @@ import ShareCardModal from '@/components/ShareCardModal.vue'
 import ChallengeModal from '@/components/profile/ChallengeModal.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
 import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vue'
+import ProfileFlair from '@/components/profile/ProfileFlair.vue'
 import ProfileGoalsPublic from '@/components/profile/ProfileGoalsPublic.vue'
 import GoalShareModal from '@/components/profile/GoalShareModal.vue'
 import { goalsApi } from '@/api/goals'
@@ -528,7 +530,7 @@ async function toggleFollow() {
 // How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)
 // What the owner added to this profile (bio, status, links, hidden tabs). Visitors get it too.
-const blankPage = () => ({ bio: '', links: [], hasAvatar: false, avatarV: null })
+const blankPage = () => ({ bio: '', links: [], pinnedAchievement: null, hasAvatar: false, avatarV: null })
 const page = ref(blankPage())
 const customizeOpen = ref(false)
 // Public goals the owner set, with live progress; the pinned one shows in the header.

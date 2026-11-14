@@ -59,6 +59,7 @@
 
     <section class="card">
       <h2>{{ content.skill }} XP milestones</h2>
+      <p class="planner-hint">See every level in the <RouterLink to="/osrs-xp-table">full OSRS XP table</RouterLink>.</p>
       <div class="planner-table-scroll">
         <table class="planner-table">
           <caption class="sr-only">{{ content.skill }} XP needed per level</caption>

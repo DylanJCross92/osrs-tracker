@@ -38,6 +38,11 @@ function calculatorMeta() {
       try {
         const goals = await loader.ssrLoadModule('/src/data/calculatorGoals.js')
         writeFileSync(`${dir}/calculator-goals.json`, JSON.stringify(goals.allGoalPages()))
+        // The XP table and the plan guide pages (/osrs-xp-table, /plans/max-cape) are computed the same way.
+        const guides = await loader.ssrLoadModule('/src/data/planGuides.js')
+        writeFileSync(`${dir}/plan-guides.json`, JSON.stringify(guides.allPlanGuides()))
+        const table = await loader.ssrLoadModule('/src/data/xpTable.js')
+        writeFileSync(`${dir}/xp-table.json`, JSON.stringify(table.buildXpTable()))
       } finally {
         await loader.close()
       }

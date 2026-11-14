@@ -31,11 +31,16 @@ export function cleanLink(link) {
   return out.length <= 200 ? { kind, url: out } : null
 }
 
+// An achievement key looks like "skill_level:Mining:99", "total_level::2000" or "skill_xp:Fishing:200000000".
+export const ACHIEVEMENT_KEY = /^[a-z_]{3,20}:[A-Za-z]{0,12}:\d{1,12}$/
+
 /** Keeps the known fields with valid values. A missing field stays missing so a partial save never wipes the rest. */
 export function sanitizeProfilePage(input) {
   const out = {}
   if (!input || typeof input !== 'object' || Array.isArray(input)) return out
   if ('bio' in input) out.bio = plain(input.bio, MAX_BIO)
+  // '' clears the pin; anything that is not shaped like an achievement key is treated as clearing too.
+  if ('pinnedAchievement' in input) out.pinnedAchievement = typeof input.pinnedAchievement === 'string' && ACHIEVEMENT_KEY.test(input.pinnedAchievement.trim()) ? input.pinnedAchievement.trim() : ''
   if (Array.isArray(input.links)) {
     const seen = new Set()
     out.links = []

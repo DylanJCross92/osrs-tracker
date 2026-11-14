@@ -13,7 +13,7 @@
 
     <div v-else class="ov-rec-grid">
       <button v-for="r in picked" :key="r.key" type="button" class="ov-rec" :class="{ 'is-locked': r.locked, 'is-fire': r.onFire, 'is-close': r.close }" @click="$emit('records')">
-        <span v-if="r.onFire" class="ov-rec-tag is-fire">Falling now</span>
+        <span v-if="r.onFire" class="ov-rec-tag is-fire">{{ recordNowTag(r) }}</span>
         <span v-else-if="r.close" class="ov-rec-tag">Within reach</span>
         <span class="ov-rec-ico"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="d in iconForRecord(r)" :key="d" :d="d" /></svg></span>
         <span class="ov-rec-title">{{ r.title }}</span>
@@ -35,7 +35,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordWhenText, recordChaseText } from '@/utils/recordText'
+import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordWhenText, recordChaseText, recordNowNoun, recordNowTag } from '@/utils/recordText'
 
 defineEmits(['records'])
 const props = defineProps({
@@ -60,7 +60,7 @@ const picked = computed(() =>
 
 const subtitle = computed(() => {
   const fire = picked.value.find((r) => r.onFire)
-  if (fire) return `${fire.title} is falling right now.`
+  if (fire) return `A ${recordNowNoun(fire)} is underway.`
   const close = picked.value.find((r) => r.close)
   if (close) return `${close.title} is within reach.`
   return 'The numbers to chase. A big session could break them.'

@@ -22,6 +22,10 @@ const routes = [
     name: 'discover',
     component: () => import('@/views/DiscoverView.vue'),
   },
+  // Search landing pages: the XP table, and whole-account plan guides that open in the planner.
+  { path: '/osrs-xp-table', name: 'xpTable', component: () => import('@/views/XpTableView.vue') },
+  { path: '/plans', name: 'planGuides', component: () => import('@/views/PlanGuidesView.vue') },
+  { path: '/plans/:slug', name: 'planGuide', component: () => import('@/views/PlanGuideView.vue') },
   { path: '/calculators', name: 'calculators', component: () => import('@/views/CalculatorsView.vue') },
   { path: '/calculators/:skill', name: 'skillCalculator', component: () => import('@/views/SkillCalculatorView.vue') },
   { path: '/calculators/:skill/:goal', name: 'skillGoalCalculator', component: () => import('@/views/SkillGoalView.vue') },

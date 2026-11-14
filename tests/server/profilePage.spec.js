@@ -56,3 +56,19 @@ describe('sniffImageType', () => {
     expect(sniffImageType(null)).toBeNull()
   })
 })
+
+describe('pinned achievement', () => {
+  it('keeps a well-formed achievement key and clears anything else', async () => {
+    const { sanitizeProfilePage } = await import('../../server/src/utils/profilePage.js')
+    expect(sanitizeProfilePage({ pinnedAchievement: 'skill_level:Mining:99' })).toEqual({ pinnedAchievement: 'skill_level:Mining:99' })
+    expect(sanitizeProfilePage({ pinnedAchievement: 'total_level::2000' })).toEqual({ pinnedAchievement: 'total_level::2000' })
+    expect(sanitizeProfilePage({ pinnedAchievement: 'skill_xp:Fishing:200000000' })).toEqual({ pinnedAchievement: 'skill_xp:Fishing:200000000' })
+    expect(sanitizeProfilePage({ pinnedAchievement: '' })).toEqual({ pinnedAchievement: '' })
+    expect(sanitizeProfilePage({ pinnedAchievement: '<script>alert(1)</script>' })).toEqual({ pinnedAchievement: '' })
+    expect(sanitizeProfilePage({ pinnedAchievement: 42 })).toEqual({ pinnedAchievement: '' })
+  })
+  it('leaves the pin alone when the field is not sent', async () => {
+    const { sanitizeProfilePage } = await import('../../server/src/utils/profilePage.js')
+    expect('pinnedAchievement' in sanitizeProfilePage({ bio: 'hi' })).toBe(false)
+  })
+})

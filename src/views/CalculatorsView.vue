@@ -32,6 +32,14 @@
     <p v-if="!groups.length" class="empty-hint">No skill matches "{{ query }}".</p>
 
     <section class="card">
+      <h2>Guides and tables</h2>
+      <ul class="calc-grid">
+        <li><RouterLink to="/plans" class="calc-card"><span><b>Plan guides</b><small>Max cape, all 90s, total level plans</small></span></RouterLink></li>
+        <li><RouterLink to="/osrs-xp-table" class="calc-card"><span><b>OSRS XP table</b><small>XP for every level, 1 to 126</small></span></RouterLink></li>
+      </ul>
+    </section>
+
+    <section class="card">
       <h2>Planning more than one skill?</h2>
       <p class="calc-lead">The <RouterLink to="/planner">Account Planner</RouterLink> combines goals from every skill, compares strategies, and totals your time and gp. Every calculator has an "Add to Account Planner" button.</p>
     </section>

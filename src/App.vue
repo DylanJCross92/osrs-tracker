@@ -102,6 +102,8 @@ const footerCols = computed(() => [
     links: [
       { label: 'Account Planner', to: { name: 'planner' } },
       { label: 'Skill calculators', to: { name: 'calculators' } },
+      { label: 'Plan guides', to: { name: 'planGuides' } },
+      { label: 'OSRS XP table', to: { name: 'xpTable' } },
       { label: 'Add a skill goal', to: { name: 'planner', hash: '#add-goal' } },
     ],
   },

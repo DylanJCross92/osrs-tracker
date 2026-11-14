@@ -260,6 +260,9 @@ CREATE TABLE IF NOT EXISTS profile_pages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- The achievement an owner pins to the top of their profile (an achievement key such as "skill_level:Mining:99").
+ALTER TABLE profile_pages ADD COLUMN IF NOT EXISTS pinned_achievement TEXT;
+
 -- Public goals an owner sets on their profile ("99 Mining"), with a progress bar that moves as the profile's real XP
 -- does. target_type is 'level' or 'xp'. start_xp is the skill's XP when the goal was set, reached_at is stamped the
 -- first time the XP passes the target.

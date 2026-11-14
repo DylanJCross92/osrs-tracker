@@ -13,8 +13,8 @@
       <!-- Records being set right now -->
       <div v-if="onFire.length" class="rec-fire" role="status">
         <span class="rec-fire-dot" aria-hidden="true" />
-        <b>Record day.</b>
-        <span>{{ onFire.length === 1 ? 'A record is falling' : `${onFire.length} records are falling` }} right now: {{ onFire.map((r) => r.title.toLowerCase()).join(', ') }}.</span>
+        <b>{{ nowText.lead }}</b>
+        <span>{{ nowText.rest }}</span>
       </div>
 
       <!-- Hero: the one number to beat -->
@@ -120,7 +120,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { recordsApi } from '@/api/records'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
-import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordDayText, recordWhenText, recordGapText, recordChaseText } from '@/utils/recordText'
+import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordDayText, recordWhenText, recordGapText, recordChaseText, recordNowParts } from '@/utils/recordText'
 import { track } from '@/utils/analytics'
 import RecordShareModal from '@/components/profile/RecordShareModal.vue'
 
@@ -162,6 +162,7 @@ const chasing = computed(() =>
 )
 // Records that are being set today.
 const onFire = computed(() => records.value.filter((r) => !r.locked && r.fresh && r.end === data.value.today && r.current && r.current.value >= r.value))
+const nowText = computed(() => recordNowParts(onFire.value))
 const target = computed(() => (typeof route.query.record === 'string' ? route.query.record : ''))
 
 // --- wording (shared with the profile overview) ----------------------------------------------------------------

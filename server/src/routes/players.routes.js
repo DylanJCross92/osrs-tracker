@@ -12,6 +12,7 @@ import { syncAllPlayers } from '../jobs/sync.js'
 import { getProfileAchievements, getCelebrations, addCheer, visitorHash } from '../services/milestones.service.js'
 import { searchPlayers } from '../services/discover.service.js'
 import { getFollowCounts } from '../services/follows.service.js'
+import { getStreak } from '../services/records.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
 
 const importLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many player lookups, try again in a minute.' })
@@ -49,8 +50,8 @@ playersRouter.get('/:id/profile', async (req, res, next) => {
   try {
     const player = await getPlayer(req.params.id)
     if (!player) return res.status(404).json({ error: 'Player not found.' })
-    const [profile, celebrations] = await Promise.all([getProfileAchievements(player.id), getCelebrations(player.id, visitorHash(req.ip))])
-    res.json({ ...profile, celebrations })
+    const [profile, celebrations, streak] = await Promise.all([getProfileAchievements(player.id), getCelebrations(player.id, visitorHash(req.ip)), getStreak(player)])
+    res.json({ ...profile, celebrations, streak })
   } catch (err) {
     next(err)
   }
