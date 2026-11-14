@@ -483,10 +483,21 @@ watch(
   { deep: true },
 )
 
+// Copied links say they were shared, so the site can count the people who arrive through them.
+function withShareMark(url) {
+  try {
+    const u = new URL(url, window.location.origin)
+    u.searchParams.set('from', 'share')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
 async function copyLink() {
   track('calc_share', { skill })
   try {
-    await navigator.clipboard.writeText(shareUrl())
+    await navigator.clipboard.writeText(withShareMark(shareUrl()))
     showToast('Calculator link copied')
   } catch {
     showToast('Could not copy, select and copy the address bar instead.')

@@ -1,6 +1,8 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { START_LOCATION, createRouter, createWebHistory } from 'vue-router'
 import { nextTick } from 'vue'
-import { track } from '@/utils/analytics'
+import { isInternalTraffic, track } from '@/utils/analytics'
+import { statsApi } from '@/api/stats'
+import { claimVisit, referrerSource, sharedLinkKind } from '@/utils/shareEvents'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
 import { useRivals } from '@/composables/useRivals'
 import { authReady, useAuth } from '@/composables/useAuth'
@@ -47,6 +49,7 @@ const routes = [
   { path: '/reset-password', name: 'resetPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'reset' } },
   { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
   { path: '/admin/claims', name: 'adminClaims', component: () => import('@/views/AdminClaimsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/stats', name: 'adminStats', component: () => import('@/views/AdminStatsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {
@@ -110,6 +113,22 @@ export function createAppRouter() {
     nextTick(() =>
       setTimeout(() => track('spa_page_view', { page_path: to.fullPath, page_title: document.title, route_name: String(to.name || '') }), 0),
     )
+  })
+  // The site's own count of people arriving through a shared link (a challenge, record, goal, card or plan). Only the page a
+  // person lands on counts, never moving around the site, and each kind is counted once a day per browser. Link previews
+  // (Discord, X) are fetched by bots that do not run this, so they are not counted.
+  router.afterEach((to, from, failure) => {
+    if (failure || from !== START_LOCATION || isInternalTraffic()) return
+    try {
+      const source = referrerSource(document.referrer, window.location.hostname)
+      const asked = to.redirectedFrom || to
+      const kind = sharedLinkKind(asked.path, asked.query)
+      if (kind && claimVisit(`${kind}:${asked.path}`)) statsApi.visit(kind, source).catch(() => {})
+      // Every first visit of the day, so the admin page can say how many people arrive through shared links.
+      if (claimVisit('site')) statsApi.visit('site', source).catch(() => {})
+    } catch {
+      /* counting must never break navigation */
+    }
   })
   // A page whose file is gone after a deploy: load it fresh instead of leaving the tab stuck.
   router.onError((err, to) => {

@@ -560,7 +560,9 @@ const highlightB = computed(() => (ready.value ? highlightFor(sideB, 'b') : { na
 async function copyLink() {
   track('compare_share_copy')
   try {
-    await navigator.clipboard.writeText(window.location.href)
+    const link = new URL(window.location.href)
+    link.searchParams.set('from', 'share')
+    await navigator.clipboard.writeText(link.toString())
     showToast('Link copied.')
   } catch {
     showToast('Could not copy, copy the address bar instead.')

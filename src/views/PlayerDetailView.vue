@@ -43,6 +43,10 @@
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
+        <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
+          <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
+          <span><b>{{ formatCount(followCounts.following) }}</b> following</span>
+        </p>
         <p v-if="page.bio" class="pp-bio">{{ page.bio }}</p>
         <ul v-if="page.links.length" class="pp-links">
           <li v-for="l in page.links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener nofollow ugc">{{ LINK_LABELS[l.kind] || l.kind }}</a></li>
@@ -431,6 +435,22 @@ async function loadProfile() {
   }
 }
 watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true })
+
+// Who follows this profile and who its owner follows. Counts only.
+const followCounts = ref(null)
+const formatCount = (n) => Number(n).toLocaleString('en-US')
+async function loadFollowCounts() {
+  if (!playerId.value) return
+  try {
+    followCounts.value = await playersApi.followCounts(playerId.value)
+  } catch {
+    followCounts.value = null
+  }
+}
+watch(playerId, () => {
+  followCounts.value = null
+  loadFollowCounts()
+}, { immediate: true })
 // One event per profile opened (not per refresh).
 watch(
   playerId,
@@ -503,6 +523,7 @@ async function toggleFollow() {
   if (!name) return
   const now = await toggleFollowing(name)
   track(now ? 'follow' : 'unfollow', { source: 'profile' })
+  loadFollowCounts()
 }
 // How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)

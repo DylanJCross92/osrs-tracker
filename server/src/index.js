@@ -16,6 +16,7 @@ import { followsRouter } from './routes/follows.routes.js'
 import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
 import { plansRouter } from './routes/plans.routes.js'
+import { statsRouter } from './routes/stats.routes.js'
 import { getPublicShare } from './services/sharedPlans.service.js'
 import { startScheduler } from './jobs/sync.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
@@ -55,6 +56,7 @@ app.use('/api', followsRouter)
 app.use('/api', profilePagesRouter)
 app.use('/api', goalsRouter)
 app.use('/api', plansRouter)
+app.use('/api', statsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())

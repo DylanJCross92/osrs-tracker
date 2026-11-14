@@ -25,6 +25,17 @@ export async function listFollows(userId) {
 }
 
 /**
+ * How many accounts follow a profile, and how many players the account that owns it follows. A profile nobody has claimed
+ * has no account behind it, so it follows no one. Follows made while signed out live only in that browser and are not counted.
+ */
+export async function getFollowCounts(playerId) {
+  const [followers, ownerId] = await Promise.all([pool.query('SELECT count(*)::int AS n FROM follows WHERE player_id = $1', [playerId]), ownerOfPlayer(playerId)])
+  let following = 0
+  if (ownerId) following = (await pool.query('SELECT count(*)::int AS n FROM follows WHERE user_id = $1', [ownerId])).rows[0].n
+  return { followers: followers.rows[0].n, following }
+}
+
+/**
  * Tells the account that owns a profile that someone started following it. The follower is named only when they own a
  * profile themselves (their RSN is public); otherwise it says "Someone", never an email. Once per follower per profile,
  * so unfollowing and following again does not notify twice. Never throws.

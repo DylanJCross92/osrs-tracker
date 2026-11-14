@@ -309,3 +309,16 @@ CREATE TABLE IF NOT EXISTS shared_plan_stats (
   uses INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (share_id, day)
 );
+
+-- Daily counts of people sharing links and images from the site, and of visits that arrive through those links. Counts
+-- only, never who: type 'share' keeps the method (link, image or social post) in `detail`; type 'visit' keeps where the
+-- visitor came from (discord, x, reddit, direct ...). kind says what was shared (record, goal, plan ...); a visit of kind
+-- 'site' is any first visit of the day, the yardstick for how many arrive through shared links.
+CREATE TABLE IF NOT EXISTS share_stats (
+  day DATE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('share', 'visit')),
+  kind TEXT NOT NULL,
+  detail TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, type, kind, detail)
+);

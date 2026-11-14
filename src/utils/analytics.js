@@ -1,3 +1,6 @@
+import { statsApi } from '@/api/stats'
+import { shareFromEvent } from '@/utils/shareEvents'
+
 // Thin wrapper over Google Tag Manager's dataLayer. The container itself
 // (GTM-K6756RQ3) is loaded in index.html; this just pushes events to it, and
 // is a safe no-op if the tag is blocked (ad blockers, privacy settings).
@@ -40,6 +43,9 @@ export function setAccountInternal(on) {
 export function track(event, params = {}) {
   try {
     if (isInternalTraffic()) return
+    // The site's own share count (anonymous, just a tally): a link or image being shared.
+    const share = shareFromEvent(event, params)
+    if (share) statsApi.share(share.kind, share.method).catch(() => {})
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({ event, ...params })
   } catch {

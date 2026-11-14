@@ -7,6 +7,8 @@ export const playersApi = {
   refresh: (id) => api.post(`/players/${id}/refresh`),
   checkWomHistory: (id) => api.post(`/players/${id}/check-wom-history`),
   profile: (id) => api.get(`/players/${id}/profile`),
+  // { followers, following }: accounts following this profile, and players its owner follows.
+  followCounts: (id) => api.get(`/players/${id}/follow-counts`),
   cheer: (id, milestone) => api.post(`/players/${id}/cheer`, milestone),
   search: (q) => api.get(`/players/search?q=${encodeURIComponent(q)}`),
   discover: () => api.get('/discover'),
