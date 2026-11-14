@@ -11,7 +11,8 @@ const routes = [
   {
     path: '/',
     name: 'players',
-    component: () => import('@/views/HomeView.vue'),
+    // Signed in: the dashboard. Everyone else: the welcome page.
+    component: () => import('@/views/HomeGate.vue'),
   },
   { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
   { path: '/privacy', name: 'privacy', component: () => import('@/views/PrivacyView.vue') },
