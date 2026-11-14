@@ -4,7 +4,7 @@
       <div class="sp-menu">
         <button class="sp-switch" :class="{ open }" type="button" aria-haspopup="true" :aria-expanded="open" title="Your saved plans" @click="open = !open">
           <svg class="sp-switch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
-          <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : 'Unsaved plan' }}</span>
+          <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : hasGoals ? 'Unsaved plan' : 'No plan selected' }}</span>
           <i v-if="dirty" class="sp-dirty" title="You have changes that are not saved yet. Press Update plan to save them." aria-label="Unsaved changes" />
           <span class="sp-count" aria-label="saved plans">{{ visiblePlans.length }}</span>
           <svg class="sp-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
@@ -12,13 +12,17 @@
         <div v-if="open" class="sp-panel" role="region" aria-label="Saved plans">
           <div class="sp-panel-head">
           <b>{{ playerName ? `Plans for ${playerLabel}` : 'Saved plans' }} <span>{{ visiblePlans.length }}</span></b>
-          <button class="sp-new" type="button" :disabled="!hasGoals" :title="canSave ? '' : saveBlockedReason" @click="canSave ? openSaveAsNew() : $emit('blocked')">{{ canSave ? '+ Save as new' : 'Can\'t save' }}</button>
         </div>
           <p v-if="!canSave" class="sp-note sp-note-warn">{{ saveBlockedReason }}</p>
           <p class="sp-note">
             <template v-if="loggedIn">Saved to your account, so they are on every device you log in on.</template>
             <template v-else>Stored in this browser. <RouterLink :to="{ name: 'login', query: { next: '/planner' } }">Log in</RouterLink> to keep them on every device.</template>
           </p>
+
+          <button v-if="hasGoals || currentId" class="sp-newrow" :class="{ confirm: confirmNew }" type="button" @click="onNew">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            <span><b>{{ confirmNew ? 'Discard this plan and start new?' : 'New plan' }}</b><small>{{ confirmNew ? 'Press again to confirm' : 'Start blank, or work with no plan at all' }}</small></span>
+          </button>
 
           <ul v-if="visiblePlans.length" class="saved-list">
             <li
@@ -78,9 +82,6 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8" /><path d="M3 3v5h5" /></svg>
         <span>{{ confirmRevert ? 'Discard changes?' : 'Revert' }}</span>
       </button>
-      <button class="sp-icon" type="button" :disabled="!hasGoals" title="Copy plan link" aria-label="Copy plan link" @click="$emit('copy-link')">
-        <ShareIcon name="link" :size="19" />
-      </button>
       <button class="sp-icon" type="button" :disabled="!hasGoals" title="Share plan" aria-label="Share plan" @click="onShare">
         <ShareIcon name="share" :size="19" />
       </button>
@@ -111,7 +112,7 @@ const props = defineProps({
   canSave: { type: Boolean, default: true },
   saveBlockedReason: { type: String, default: '' },
 })
-const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert', 'copy-link'])
+const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert', 'new'])
 
 const { loggedIn } = useAuth()
 const { shareFor } = useSharedPlans()
@@ -140,7 +141,6 @@ function openSave(forShare, asNew = false) {
   modalName.value = asNew && props.currentId ? `${props.currentName} (copy)`.slice(0, 60) : props.currentName
   saving.value = true
 }
-const openSaveAsNew = () => openSave(false, true)
 
 // One button that says what pressing it will do: save a new plan, update the saved one, or (nothing to do) show it is saved.
 const saveState = computed(() => {
@@ -176,10 +176,26 @@ function onSaveClick() {
   if (saveState.value === 'new') openSave(false)
   else if (saveState.value === 'dirty') emit('save', props.currentName)
 }
+// Sharing never needs a saved plan: the link carries the whole plan.
 function onShare() {
   open.value = false
-  if (props.currentId) emit('share-current', props.currentName)
-  else openSave(true)
+  emit('share-current', props.currentName)
+}
+// Starting over asks once when it would throw something away: a plan with changes, or one that was never saved.
+const confirmNew = ref(false)
+let newTimer = null
+function onNew() {
+  const wouldLose = props.hasGoals && (!props.currentId || props.dirty)
+  if (wouldLose && !confirmNew.value) {
+    confirmNew.value = true
+    clearTimeout(newTimer)
+    newTimer = setTimeout(() => (confirmNew.value = false), 6000)
+    return
+  }
+  clearTimeout(newTimer)
+  confirmNew.value = false
+  open.value = false
+  emit('new')
 }
 function onConfirm({ name, asNew }) {
   saving.value = false

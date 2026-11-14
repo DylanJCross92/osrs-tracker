@@ -54,6 +54,11 @@ export function cleanSharedPlan(body) {
       methodId,
       customXpPerHour: methodId === 'custom' ? int(g.customXpPerHour, 0, 10_000_000, 0) : 0,
       quests: (Array.isArray(g.quests) ? g.quests : []).filter((q) => typeof q === 'string' && METHOD_RE.test(q)).slice(0, 20),
+      // Manual method choices for sets of levels: [{ fromLevel, toLevel, methodId }]
+      overrides: (Array.isArray(g.overrides) ? g.overrides : [])
+        .map((o) => ({ fromLevel: int(o?.fromLevel, 1, 126, 0), toLevel: int(o?.toLevel, 1, 126, 0), methodId: o?.methodId }))
+        .filter((o) => o.fromLevel >= 1 && o.toLevel > o.fromLevel && typeof o.methodId === 'string' && METHOD_RE.test(o.methodId))
+        .slice(0, 30),
     })
   }
   if (!goals.length) throw new SharePlanError('Add at least one skill goal before sharing.')

@@ -107,6 +107,70 @@ function finishSegment(seg, kind) {
   }
 }
 
+/**
+ * Manual choices for sets of levels: [{ fromLevel, toLevel, methodId }], each meaning "train from fromLevel up to toLevel with
+ * this method". They sit on top of whatever route the goal's strategy gives and never overlap each other.
+ */
+export function cleanOverrides(list) {
+  if (!Array.isArray(list)) return []
+  return list
+    .map((o) => ({ fromLevel: Math.floor(Number(o?.fromLevel)), toLevel: Math.floor(Number(o?.toLevel)), methodId: o?.methodId }))
+    .filter((o) => Number.isFinite(o.fromLevel) && Number.isFinite(o.toLevel) && o.fromLevel >= 1 && o.toLevel > o.fromLevel && o.toLevel <= MAX_VIRTUAL_LEVEL && typeof o.methodId === 'string' && o.methodId)
+    .sort((a, b) => a.fromLevel - b.fromLevel)
+}
+
+/**
+ * Sets (or, with a null methodId, clears) the manual method for the levels from..to. Whatever was chosen before for any of those
+ * levels is replaced, and a choice that only partly overlaps is trimmed to the levels left over. Neighbours with the same method join up.
+ */
+export function setOverrideRange(list, fromLevel, toLevel, methodId) {
+  const kept = []
+  for (const o of cleanOverrides(list)) {
+    if (o.toLevel <= fromLevel || o.fromLevel >= toLevel) kept.push(o)
+    else {
+      if (o.fromLevel < fromLevel) kept.push({ ...o, toLevel: fromLevel })
+      if (o.toLevel > toLevel) kept.push({ ...o, fromLevel: toLevel })
+    }
+  }
+  if (methodId) kept.push({ fromLevel, toLevel, methodId })
+  kept.sort((a, b) => a.fromLevel - b.fromLevel)
+  const merged = []
+  for (const o of kept) {
+    const last = merged[merged.length - 1]
+    if (last && last.methodId === o.methodId && last.toLevel === o.fromLevel) last.toLevel = o.toLevel
+    else merged.push({ ...o })
+  }
+  return merged
+}
+
+// Lays the manual choices over a route: wherever one covers part of a piece, that part uses the chosen method.
+function applyOverrides(segments, overrides, startXp, targetXp) {
+  const ranges = cleanOverrides(overrides)
+    .map((o) => ({ method: getMethod(o.methodId), from: Math.max(xpAtLevel(o.fromLevel), startXp), to: Math.min(xpAtLevel(o.toLevel), targetXp) }))
+    .filter((r) => r.method && r.to > r.from)
+  if (!ranges.length) return segments
+  const out = []
+  const push = (piece) => {
+    const last = out[out.length - 1]
+    if (last && last.toXp === piece.fromXp && last.kind === piece.kind && last.method === piece.method) last.toXp = piece.toXp
+    else out.push(piece)
+  }
+  for (const seg of segments) {
+    const cuts = new Set([seg.fromXp, seg.toXp])
+    for (const r of ranges) {
+      if (r.from > seg.fromXp && r.from < seg.toXp) cuts.add(r.from)
+      if (r.to > seg.fromXp && r.to < seg.toXp) cuts.add(r.to)
+    }
+    const points = [...cuts].sort((a, b) => a - b)
+    for (let i = 0; i < points.length - 1; i++) {
+      const [from, to] = [points[i], points[i + 1]]
+      const r = ranges.find((x) => from >= x.from && to <= x.to)
+      push(r ? { method: r.method, fromXp: from, toXp: to, kind: 'manual' } : { ...seg, fromXp: from, toXp: to })
+    }
+  }
+  return out
+}
+
 export const AUTO_FAST = 'auto-fast'
 export const AUTO_CHEAP = 'auto-cheap'
 export const AUTO_PROFIT = 'auto-profit'
@@ -168,6 +232,7 @@ export function planGoal(goal) {
     }
   }
 
+  segments = applyOverrides(segments, goal.overrides, startXp, targetXp)
   const finished = segments.map((seg) => finishSegment(seg, seg.kind))
   const gaps = finished.filter((seg) => !seg.method)
   const timed = finished.filter((seg) => seg.hours != null)
@@ -230,7 +295,9 @@ export function tradeoffText(t) {
 }
 
 /** One row per catalog method relevant to the goal, each planned on its own (with climb-up routes). */
-export function compareMethods(goal) {
+export function compareMethods(rawGoal) {
+  // Each row is the whole goal on one method, so any manual choices for sets of levels are left out here.
+  const goal = { ...rawGoal, overrides: undefined }
   const fromLevel = levelAtXp(goal.currentXp, true)
   const toLevel = levelAtXp(goal.targetXp, true)
   const fast = planGoal({ ...goal, methodId: AUTO_FAST })
@@ -286,7 +353,7 @@ export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, bu
   params.set(
     'g',
     goals
-      .map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.methodId === 'custom' ? g.customXpPerHour || 0 : '', (g.quests || []).join('.')].join('~'))
+      .map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.methodId === 'custom' ? g.customXpPerHour || 0 : '', (g.quests || []).join('.'), cleanOverrides(g.overrides).map((o) => `${o.fromLevel}:${o.toLevel}:${o.methodId}`).join('.')].join('~'))
       .join(','),
   )
   if (strategy && strategy !== AUTO_FAST) params.set('s', strategy)
@@ -303,7 +370,7 @@ export function decodePlan(query, validSkills) {
     .split(',')
     .map((chunk) => chunk.split('~'))
     .filter((p) => validSkills.includes(p[0]))
-    .map(([skill, cur, tgt, methodId, custom, quests]) => ({
+    .map(([skill, cur, tgt, methodId, custom, quests, ranges]) => ({
       skill,
       currentXp: Math.min(Math.max(parseInt(cur, 10) || 0, 0), MAX_XP),
       targetXp: Math.min(Math.max(parseInt(tgt, 10) || 0, 0), MAX_XP),
@@ -311,6 +378,7 @@ export function decodePlan(query, validSkills) {
       methodId: methodId === GLOBAL_STRATEGY || methodId === AUTO_FAST ? GLOBAL_STRATEGY : methodId === 'custom' || isAuto(methodId) || getMethod(methodId) ? methodId : GLOBAL_STRATEGY,
       customXpPerHour: parseInt(custom, 10) || 0,
       quests: String(quests || '').split('.').filter((id) => getQuest(id)),
+      overrides: cleanOverrides(String(ranges || '').split('.').filter(Boolean).map((r) => { const [f, t, id] = r.split(':'); return { fromLevel: f, toLevel: t, methodId: id } })).filter((o) => getMethod(o.methodId)?.skill === skill),
     }))
     .slice(0, 24)
   const hours = Math.min(Math.max(parseFloat(query.h) || 2, 0.25), 24)

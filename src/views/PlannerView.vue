@@ -7,13 +7,12 @@
           <h1>Account Planner</h1>
           <p>Set skill goals, compare routes, and watch your progress.</p>
         </div>
-        <a v-if="backName" href="#" class="pt-back" @click.prevent="goBack">← {{ backName }}'s profile</a>
       </div>
 
       <div v-if="player && !editingPlayer" class="pt-player">
-        <span class="pt-avatar"><PlayerAvatar :name="player.username" /></span>
+        <RouterLink class="pt-avatar pt-profile-link" :to="{ name: 'playerDetail', params: { username: player.username } }" :aria-label="`Open ${player.displayName}'s profile`"><PlayerAvatar :name="player.username" /></RouterLink>
         <div class="pt-player-main">
-          <b>{{ player.displayName }}</b>
+          <RouterLink class="pt-name" :to="{ name: 'playerDetail', params: { username: player.username } }">{{ player.displayName }}</RouterLink>
           <span class="pt-stats">
             <span>Total level <i>{{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
             <span><i>{{ formatNum(player.latest.overallXp) }}</i> XP</span>
@@ -86,10 +85,14 @@
           @share-current="shareCurrent"
           @blocked="showToast(saveBlockedReason)"
           @revert="revertPlan"
-          @copy-link="copyLink"
+          @new="startNew"
         />
       </div>
       <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
+
+      <p v-if="scratch && goals.length && !currentPlanId" class="ps-explore" role="status">
+        <b>Just exploring.</b> This plan is not saved or tracked. Share the link, or press Save plan to start tracking your progress.
+      </p>
 
       <PlannerProgress
         v-if="progress"
@@ -97,24 +100,31 @@
         :updated-at="player?.latest?.capturedAt || ''"
         :baseline-at="statsAt || ''"
         :today="gainedTodayNow"
-        :entries="timeline.entries"
         :hours-per-day="hoursPerDay"
-        :projection="projection"
+        :projection="shownProjection"
+        :series="series"
+        :focus="focusIdx >= 0 ? focusSkill : ''"
+        @focus="(skill) => (focusSkill = skill)"
         @rebase="refreshFromPlayer"
       />
 
-      <div v-if="goals.length" class="plan-tiles">
-        <div class="plan-tile"><span>XP remaining</span><b>{{ formatNum(totals.totalXp) }}</b><small>{{ goals.length }} skill{{ goals.length === 1 ? '' : 's' }}</small></div>
-        <div class="plan-tile">
-          <span>Training time</span>
+      <div v-if="goals.length" class="plan-glance">
+        <div class="pg-item" :title="`${formatNum(totals.totalXp)} XP to go`">
+          <span>XP left</span>
+          <b>{{ formatXp(totals.totalXp) }}</b>
+          <small>{{ goals.length }} skill{{ goals.length === 1 ? '' : 's' }}</small>
+        </div>
+        <div class="pg-item">
+          <span>Time</span>
           <b>{{ formatHours(totals.totalHours) }}</b>
           <small>{{ totals.days == null ? 'at the planned playtime' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'} at ${hoursPerDay} h/day` }}</small>
         </div>
-        <div class="plan-tile">
+        <div class="pg-item">
           <span>Net GP</span>
-          <b :class="gpClass(totals.netGp)">{{ totals.netGp == null ? 'No GP data' : formatGp(totals.netGp) }}</b>
-          <small v-if="totals.gpIncomplete && totals.netGp != null" class="gp-incomplete">Incomplete: some steps are unpriced</small>
-          <small v-else-if="totals.netGp != null">{{ totals.netGp >= 0 ? 'estimated profit' : 'estimated cost' }}</small>
+          <b :class="gpClass(totals.netGp)">{{ totals.netGp == null ? 'No data' : formatGp(totals.netGp) }}</b>
+          <small v-if="totals.netGp == null" />
+          <small v-else-if="totals.gpIncomplete" class="gp-incomplete" title="Some steps are unpriced">incomplete</small>
+          <small v-else>{{ totals.netGp >= 0 ? 'profit' : 'cost' }}</small>
         </div>
       </div>
 
@@ -155,7 +165,7 @@
 
       <div v-if="goals.length" ref="goalListEl" class="goal-list" :class="{ dragging: !!dragSkill }">
         <div v-for="(g, i) in goals" :key="g.skill" class="goal-row" :data-skill="g.skill" :class="{ dragged: dragSkill === g.skill }">
-        <PlannerGoalRail :entry="timeline.entries[i]" :total-hours="timeline.totalHours" :first="i === 0" :roomy="expanded.has(g.skill)" />
+        <PlannerGoalRail :entry="timeline.entries[i]" :index="i" />
         <PlannerGoalCard
           :goal="g"
           :plan="plans[i]"
@@ -167,6 +177,8 @@
           :index="i"
           :count="goals.length"
           :live-goal="liveGoals[i]"
+          :entry="timeline.entries[i]"
+          :total-hours="timeline.totalHours"
           :progress="progress ? progress.per[i] : null"
           @toggle="toggleExpanded(g.skill)"
           @remove="removeGoal(i)"
@@ -207,28 +219,6 @@
     </section>
 
     <template v-if="goals.length">
-      <!-- 4. Whole-plan strategy comparison -->
-      <section class="card">
-        <div v-if="planStrategies" class="planner-compare">
-          <div class="planner-compare-head">
-            <b>Whole plan by strategy</b>
-            <span>{{ strategyVerdict }}</span>
-          </div>
-          <div class="planner-table-scroll">
-            <table class="planner-table">
-              <thead><tr><th>Everything on the...</th><th class="num">Hours</th><th class="num">Net GP</th></tr></thead>
-              <tbody>
-                <tr v-for="row in strategyRows" :key="row.id">
-                  <td>{{ row.label }}</td>
-                  <td class="num">{{ formatHours(row.totals.totalHours) }}</td>
-                  <td class="num" :class="gpClass(row.totals.netGp)">{{ row.totals.netGp == null ? '-' : formatGp(row.totals.netGp) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
       <!-- 5. Itemised steps and sharing -->
       <section class="card">
         <h2 class="planner-itemised-title">Itemised steps and costs</h2>
@@ -247,7 +237,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerGoalCard from '@/components/planner/PlannerGoalCard.vue'
 import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
@@ -275,20 +265,16 @@ import { recordRecent } from '@/composables/useRecentPlayers'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
-import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
+import { SKILL_NAMES, formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import {
   planGoal,
   planTotals,
   compareStrategies,
-  profitableMethods,
   levelAtXp,
-  tradeoff,
-  tradeoffText,
   AUTO_FAST,
   AUTO_CHEAP,
   AUTO_BALANCED,
-  AUTO_PROFIT,
   GLOBAL_STRATEGY,
   GLOBAL_STRATEGIES,
   DEFAULT_GP_VALUE,
@@ -304,6 +290,7 @@ import {
   buildTimeline,
   buildProgress,
   projectFinish,
+  paceSeries,
   gainedToday,
   liveGoalFor,
   listSavedPlans,
@@ -318,7 +305,6 @@ import {
 
 const store = usePlayersStore()
 const route = useRoute()
-const router = useRouter()
 const { showToast } = useToast()
 
 setPageMeta({
@@ -341,15 +327,6 @@ const player = ref(null)
 const editingPlayer = ref(false)
 const lookingUp = ref(false)
 const lookupError = ref('')
-
-// A way back to the profile you came from: the loaded player, or ?u= from a profile link.
-const cameFromProfile = typeof window !== 'undefined' && String(window.history.state?.back || '').startsWith('/player/')
-const backName = computed(() => player.value?.displayName || (typeof route.query.u === 'string' ? route.query.u : ''))
-function goBack() {
-  if (cameFromProfile) return router.back()
-  const target = player.value?.username || route.query.u
-  router.push({ name: 'playerDetail', params: { username: target } })
-}
 
 function startChangePlayer() {
   editingPlayer.value = true
@@ -547,10 +524,12 @@ function memo(cache, key, fn) {
   cache.set(key, value)
   return value
 }
-const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null])
+const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.overrides || null, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null])
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
-const progress = computed(() => (tracking.value && goals.value.length ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value) : null))
+// A plan that is just being explored (not saved to anything) is not tracked: progress only starts once it is saved.
+const scratch = ref(false)
+const progress = computed(() => (tracking.value && goals.value.length && !(scratch.value && !currentPlanId.value) ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value) : null))
 // How fast the player has really been gaining XP in these skills (their tracked daily history) and what that means for the finish date.
 const history = ref({ id: null, rows: [] })
 watch(
@@ -578,29 +557,36 @@ const projection = computed(() => {
     remainingXp: progress.value.remainingXp,
     plannedDays: hpd > 0 ? progress.value.originalHours / hpd : null,
     baselineAt: statsAt.value,
+    per: progress.value.per,
+    liveHours: progress.value.liveHours,
   })
+})
+// The plan against the real history: the chart, and the XP a day it asks for.
+// Clicking a skill in the progress bar looks at that skill's part of the plan on its own.
+const focusSkill = ref('')
+const focusIdx = computed(() => (progress.value && focusSkill.value ? goals.value.findIndex((g) => g.skill === focusSkill.value) : -1))
+const series = computed(() => {
+  if (!progress.value || progress.value.complete) return null
+  return paceSeries({
+    only: focusIdx.value,
+    snapshots: history.value.id === player.value?.id ? history.value.rows : [],
+    goals: goals.value,
+    progress: progress.value,
+    hoursPerDay: hoursPerDay.value,
+    baselineAt: statsAt.value,
+    projection: projection.value,
+  })
+})
+// For one skill the finish date is that skill's: planned end of its stretch against when it would really finish.
+const shownProjection = computed(() => {
+  const pr = projection.value
+  const sr = series.value
+  if (focusIdx.value < 0 || !pr || pr.status === 'none' || !sr || sr.projectedDay == null) return pr
+  const diff = sr.plannedDays - sr.projectedDay
+  return { ...pr, diffDays: diff, status: diff > 0.5 ? 'early' : diff < -0.5 ? 'late' : 'on', projected: new Date(sr.baseline.getTime() + sr.projectedDay * 86_400_000), daysLeft: sr.projectedDay - sr.nowDay }
 })
 const compares = computed(() => resolved.value.map((g) => memo(compareCache, goalKey(g, false), () => compareStrategies(g))))
 const totals = computed(() => planTotals(plans.value, hoursPerDay.value))
-
-const strategyTotals = (key) => planTotals(compares.value.map((c) => c[key]), hoursPerDay.value)
-const planStrategies = computed(() => (goals.value.length ? { fast: strategyTotals('fast'), cheap: strategyTotals('cheap'), balanced: strategyTotals('balanced'), profit: strategyTotals('profit') } : null))
-const strategyRows = computed(() => {
-  const st = planStrategies.value
-  if (!st) return []
-  const rows = [
-    { id: AUTO_FAST, label: 'Fastest routes', totals: st.fast },
-    { id: AUTO_CHEAP, label: 'Cheapest routes', totals: st.cheap },
-    { id: AUTO_BALANCED, label: 'Balanced routes', totals: st.balanced },
-  ]
-  if (goals.value.some((g) => profitableMethods(g.skill, levelAtXp(g.currentXp, true), levelAtXp(g.targetXp, true)).length)) rows.push({ id: AUTO_PROFIT, label: 'Best gp per hour routes', totals: st.profit })
-  return rows
-})
-const strategyVerdict = computed(() => {
-  const st = planStrategies.value
-  if (!st) return ''
-  return tradeoffText(tradeoff({ hours: st.fast.totalHours, netGp: st.fast.netGp }, { hours: st.cheap.totalHours, netGp: st.cheap.netGp }))
-})
 
 // --- Timeline ------------------------------------------------------------------
 // How many goals run through a method the player is missing something for, or has not confirmed yet.
@@ -771,23 +757,6 @@ function gpClass(gp) {
 function planState() {
   return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value }
 }
-function planUrl() {
-  const params = encodePlan({ ...planState(), username: player.value?.username || '' })
-  return `${window.location.origin}/planner?${params.toString()}`
-}
-async function copy(text, message) {
-  try {
-    await navigator.clipboard.writeText(text)
-    showToast(message)
-  } catch {
-    showToast('Could not copy, select and copy manually.')
-  }
-}
-function copyLink() {
-  track('planner_share', { method: 'link', goals: goals.value.length })
-  copy(planUrl(), 'Plan link copied')
-}
-
 // --- Saved plans (browser storage) ---------------------------------------------------
 const savedPlans = ref(listSavedPlans())
 const currentPlanId = ref('')
@@ -835,6 +804,7 @@ function saveCurrent(name, asNew) {
   if (!plan) return showToast('Could not save, browser storage is unavailable.')
   currentPlanId.value = plan.id
   currentPlanName.value = plan.name
+  scratch.value = false
   refreshSaved()
   track('planner_plan_saved', { goals: plan.goals.length })
   showToast(wasSaved ? `Updated "${plan.name}".` : `Saved "${plan.name}".`)
@@ -914,6 +884,7 @@ async function loadTemplate(slug) {
     return false
   }
   keepCurrentPlanBefore(share.name)
+  scratch.value = false
   unsavedShareId.value = ''
   goals.value = share.plan.goals.map((g) => ({
     skill: g.skill,
@@ -922,6 +893,7 @@ async function loadTemplate(slug) {
     methodId: g.methodId,
     customXpPerHour: g.customXpPerHour || 0,
     quests: [...(g.quests || [])],
+    overrides: (g.overrides || []).map((o) => ({ ...o })),
   }))
   hoursPerDay.value = share.plan.hoursPerDay
   globalStrategy.value = share.plan.globalStrategy
@@ -951,21 +923,26 @@ function openShare(stored, { auto = false } = {}) {
 // Sharing the plan on screen: save it first (so the public copy matches what is shown), then open the share window.
 function shareCurrent(name) {
   if (!goals.value.length) return
-  if (!canSavePlan.value) return shareWithoutSaving(name)
-  saveCurrent(name, false)
-  const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
-  if (saved) openShare(saved)
+  // A saved plan is brought up to date first so the public copy matches what is on screen. Anything else is shared as it is,
+  // the link carries the whole plan, so there is nothing to save.
+  if (currentPlanId.value && canSavePlan.value) {
+    saveCurrent(name, false)
+    const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
+    if (saved) return openShare(saved)
+  }
+  shareWithoutSaving(name)
 }
 // Share the plan on screen as it is, without putting it in Saved plans. Used for plans about a profile that is not yours.
 function shareWithoutSaving(name) {
   const id = currentPlanId.value || unsavedShareId.value || `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
   if (!currentPlanId.value) unsavedShareId.value = id
   const plan = snapshotPlan(currentSnapshotState(), name || currentPlanName.value || 'Shared plan', { id })
-  openShare(plan, { auto: true })
+  openShare(plan)
 }
 function applyPlan(plan) {
+  scratch.value = false
   unsavedShareId.value = ''
-  goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests] }))
+  goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests], ...(g.overrides ? { overrides: g.overrides.map((o) => ({ ...o })) } : {}) }))
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -988,6 +965,19 @@ async function loadSaved(stored, { silent = false } = {}) {
   }
   track(silent ? 'planner_plan_autoloaded' : 'planner_plan_loaded', { goals: res.plan.goals.length })
   if (!silent) showToast(`Loaded "${res.plan.name}".`)
+}
+// A blank planner with no plan picked: play with the calculators, share what you put together, save it only if you want to.
+function startNew() {
+  goals.value = []
+  currentPlanId.value = ''
+  currentPlanName.value = ''
+  unsavedShareId.value = ''
+  template.value = null
+  templatePending.value = false
+  expanded.value = new Set()
+  statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
+  scratch.value = true
+  track('planner_new_plan')
 }
 function duplicateSaved(id) {
   const copy = duplicatePlan(id)
@@ -1018,18 +1008,19 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId],
+  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
   () => {
     calcAt.value = new Date()
     const state = planState()
     try {
       // The saved plan this working copy came from is remembered too, so coming back shows it as that plan.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value, planId: currentPlanId.value, planName: currentPlanName.value, shareId: unsavedShareId.value }))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, statsAt: statsAt.value, planId: currentPlanId.value, planName: currentPlanName.value, shareId: unsavedShareId.value, scratch: scratch.value }))
     } catch {
       /* storage unavailable, URL sharing still works */
     }
     // history.replaceState (not router.replace) so syncing the URL never triggers the router's scroll-to-top.
-    const qs = goals.value.length ? `?${encodePlan(state).toString()}` : ''
+    // Signed in, the plan is kept in the account and this browser, so the address stays a plain /planner. Signed out, it carries the plan.
+    const qs = goals.value.length && !loggedIn.value ? `?${encodePlan(state).toString()}` : ''
     window.history.replaceState(window.history.state, '', `/planner${qs}`)
     setRobots(goals.value.length ? 'noindex, follow' : 'index, follow')
   },
@@ -1037,6 +1028,10 @@ watch(
 )
 
 onMounted(async () => {
+  // Signed in, the address no longer carries the plan, so refreshing the page has to bring back exactly what was on screen.
+  const nav = typeof performance !== 'undefined' ? performance.getEntriesByType?.('navigation')?.[0] : null
+  const reloaded = nav?.type === 'reload' && !window.__tgPlannerMounted
+  window.__tgPlannerMounted = true
   // A link from the account page: open that saved plan.
   if (typeof route.query.plan === 'string') {
     const wanted = savedPlans.value.find((p) => p.id === route.query.plan)
@@ -1061,17 +1056,21 @@ onMounted(async () => {
     }
   }
   let restored = null
+  let keepScratch = false
+  // A link made by Share carries the plan and nothing about who made it: opened as a shared plan.
+  const fromShare = route.query.from === 'share' && !!route.query.g && typeof route.query.u !== 'string'
   if (route.query.g) restored = decodePlan(route.query, SKILL_NAMES)
   else if (typeof route.query.u === 'string') restored = { username: route.query.u, goals: [], hoursPerDay: 2 }
   else {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
       // The working copy is kept only when it is already for one of the person's own profiles; anyone else's is dropped.
-      const forSomeoneElse = ownDefault && saved?.username && !sameName(saved.username, ownDefault.username) && !profiles.value.some((p) => sameName(p.username, saved.username))
+      const forSomeoneElse = !reloaded && ownDefault && saved?.username && !sameName(saved.username, ownDefault.username) && !profiles.value.some((p) => sameName(p.username, saved.username))
       if (saved && Array.isArray(saved.goals) && !forSomeoneElse) {
         // Plans stored before global strategies pinned every goal to a method; the old default now follows the global strategy.
         saved.goals = saved.goals.map((g) => ({ ...g, methodId: g.methodId === AUTO_FAST || !g.methodId ? GLOBAL_STRATEGY : g.methodId, quests: g.quests || [], customXpPerHour: g.customXpPerHour || 0 }))
         restored = saved
+        keepScratch = !!saved.scratch
       }
     } catch {
       restored = null
@@ -1084,6 +1083,13 @@ onMounted(async () => {
     if (GLOBAL_STRATEGIES.includes(restored.strategy)) globalStrategy.value = restored.strategy
     if (restored.gpValue > 0) gpValue.value = restored.gpValue
     statsAt.value = restored.statsAt || null
+    scratch.value = keepScratch
+  }
+  if (fromShare && goals.value.length) {
+    template.value = { slug: '', name: 'Shared plan', rsn: '' }
+    templatePending.value = true
+    scratch.value = true
+    track('planner_share_link_opened', { goals: goals.value.length })
   }
   if (typeof route.query.template === 'string') await loadTemplate(route.query.template)
   else if (goals.value.length) {
@@ -1100,18 +1106,19 @@ onMounted(async () => {
     // A saved plan only matches when it was made for the player on screen (or for nobody in particular).
     const forThisPlayer = (p) => !p.player?.rsn || !username.value || sameName(p.player.rsn, username.value)
     const match = (sameAsRemembered && savedPlans.value.find((p) => p.id === remembered.planId && forThisPlayer(p))) || savedPlans.value.find((p) => forThisPlayer(p) && planFingerprint(p) === here)
-    if (match) {
+    if (match && !fromShare) {
       currentPlanId.value = match.id
       currentPlanName.value = match.name
+      scratch.value = false
       // Changes that were never saved to the plan are not kept: coming back shows the plan as it was last saved.
       if (planFingerprint(match) !== here) {
         await loadSaved(match, { silent: true })
         showToast(`"${match.name}" opened as you last saved it. Changes you did not save were not kept.`)
       }
-    } else if (sameAsRemembered && remembered.shareId) {
+    } else if (sameAsRemembered && remembered.shareId && !fromShare) {
       unsavedShareId.value = remembered.shareId
     }
-  } else if (ownDefault) {
+  } else if (ownDefault && !keepScratch) {
     // Signed in with a claimed profile: that profile, with its latest saved plan if it has one (otherwise a blank planner).
     const mine = savedPlans.value.find((p) => p.player?.rsn && (sameName(p.player.rsn, ownDefault.username) || sameName(p.player.rsn, ownDefault.displayName)))
     if (mine) await loadSaved(mine, { silent: true })
@@ -1120,7 +1127,7 @@ onMounted(async () => {
     // A link to plan for one player (from their profile): their latest saved plan, if they have one.
     const theirs = savedPlans.value.find((p) => p.player?.rsn && sameName(p.player.rsn, route.query.u))
     if (theirs) await loadSaved(theirs, { silent: true })
-  } else if (plainVisit && savedPlans.value.length) {
+  } else if (plainVisit && savedPlans.value.length && !keepScratch) {
     // A plain visit with nothing in progress: pick up the most recently saved plan.
     await loadSaved(savedPlans.value[0], { silent: true })
   }

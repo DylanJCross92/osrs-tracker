@@ -1,5 +1,5 @@
 <template>
-  <article class="goal-card" :class="{ open: expanded, overridden: isOverride }">
+  <article class="goal-card" :class="[entry ? `cat-${entry.category}` : '', { open: expanded, overridden: isOverride }]">
     <header class="goal-card-head">
       <button
         class="goal-grip"
@@ -12,32 +12,42 @@
       >
         <svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="3" r="1.6" /><circle cx="10" cy="3" r="1.6" /><circle cx="4" cy="9" r="1.6" /><circle cx="10" cy="9" r="1.6" /><circle cx="4" cy="15" r="1.6" /><circle cx="10" cy="15" r="1.6" /></g></svg>
       </button>
-      <button class="goal-card-toggle" type="button" :aria-expanded="expanded" :aria-controls="`goal-body-${goal.skill}`" @click="$emit('toggle')">
-        <span class="goal-card-chevron" :class="{ open: expanded }" aria-hidden="true">▸</span>
-        <img :src="skillIconSrc(goal.skill)" :alt="goal.skill" width="28" height="28" />
-        <span class="goal-card-title">
-          <b>{{ goal.skill }}</b>
-          <em>{{ startLevel }} → {{ endLevel }}</em>
-          <span v-if="reqState === 'blocked'" class="goal-card-req is-unmet" title="This route uses a method you are missing a requirement for. Open the goal for details.">⚠ Missing requirement</span>
-          <span v-else-if="reqState === 'unconfirmed'" class="goal-card-req is-unknown" title="Some requirements for this route are not confirmed yet. Open the goal to confirm them.">? Check requirements</span>
-          <span v-if="progress && (progress.done || progress.gained > 0)" class="goal-card-live" :class="{ done: progress.done }">{{ progress.done ? '✓ Complete' : `Now level ${progress.liveLevel} · ${pctText}` }}</span>
+      <button class="goal-card-toggle gc-toggle" type="button" :aria-expanded="expanded" :aria-controls="`goal-body-${goal.skill}`" @click="$emit('toggle')">
+        <img :src="skillIconSrc(goal.skill)" :alt="goal.skill" width="30" height="30" />
+        <span class="gc-title">
+          <span class="gc-name"><b>{{ goal.skill }}</b><em>{{ startLevel }} → {{ endLevel }}</em></span>
+          <span class="gc-sub">
+            <span class="gc-strategy">{{ strategyText }}<i v-if="isOverride" class="goal-override-tag">Override</i></span>
+            <span v-if="overrideCount" class="gc-custom" :title="`You picked the method for ${overrideCount} set${overrideCount === 1 ? '' : 's'} of levels`">✎ {{ overrideCount }} custom</span>
+            <span v-if="progress && (progress.done || progress.gained > 0)" class="goal-card-live" :class="{ done: progress.done }">{{ progress.done ? '✓ Complete' : `Now level ${progress.liveLevel} · ${pctText}` }}</span>
+            <span v-if="reqState === 'blocked'" class="goal-card-req is-unmet" title="This route uses a method you are missing a requirement for. Open the goal for details.">⚠ Missing requirement</span>
+            <span v-else-if="reqState === 'unconfirmed'" class="goal-card-req is-unknown" title="Some requirements for this route are not confirmed yet. Open the goal to confirm them.">? Check requirements</span>
+          </span>
         </span>
-        <span class="goal-card-stats">
+        <span v-if="entry && !entry.done" class="gc-when">
+          <span class="gc-dates">{{ fmtShort(entry.startDate) }} <i aria-hidden="true">→</i> {{ fmtShort(entry.endDate) }}</span>
+          <span class="gc-strip" aria-hidden="true"><i :style="stripStyle" /></span>
+          <small>{{ daysShort }}</small>
+        </span>
+        <span class="gc-stats">
           <span><small>XP left</small>{{ formatNum(plan.remainingXp) }}</span>
-          <span class="goal-card-strategy"><small>Strategy</small>{{ strategyText }}<i v-if="isOverride" class="goal-override-tag">Override</i></span>
           <span><small>Time</small>{{ plan.remainingXp === 0 ? 'Done' : formatHours(plan.hours) }}</span>
-          <span><small>Net GP</small><b :class="gpClass(plan.netGp)">{{ plan.netGp == null ? 'No GP data' : formatGp(plan.netGp) }}</b></span>
+          <span><small>Net GP</small><b :class="gpClass(plan.netGp)">{{ plan.netGp == null ? 'No GP' : formatGp(plan.netGp) }}</b></span>
         </span>
+        <span class="goal-card-chevron" :class="{ open: expanded }" aria-hidden="true">▸</span>
       </button>
-      <span class="goal-card-actions">
-        <button class="btn-text" type="button" :disabled="index === 0" :aria-label="`Move ${goal.skill} up`" title="Train earlier" @click="$emit('move', -1)">↑</button>
-        <button class="btn-text" type="button" :disabled="index === count - 1" :aria-label="`Move ${goal.skill} down`" title="Train later" @click="$emit('move', 1)">↓</button>
-        <button class="btn btn-ghost planner-remove" type="button" :aria-label="`Remove ${goal.skill}`" @click="$emit('remove')">Remove</button>
-      </span>
+      <button class="gc-remove" type="button" :aria-label="`Remove ${goal.skill}`" title="Remove this goal" @click="$emit('remove')">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
       <span v-if="progress" class="goal-card-progress" :class="{ done: progress.done }" role="progressbar" :aria-valuenow="Math.round(progress.pct * 100)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${goal.skill} progress`"><i :style="{ width: progress.pct * 100 + '%' }" /></span>
     </header>
 
     <div v-if="expanded" :id="`goal-body-${goal.skill}`" class="goal-card-body">
+      <div class="gc-order" role="group" :aria-label="`Training order for ${goal.skill}`">
+        <span>Training order</span>
+        <button class="btn btn-ghost" type="button" :disabled="index === 0" @click="$emit('move', -1)">↑ Train earlier</button>
+        <button class="btn btn-ghost" type="button" :disabled="index === count - 1" @click="$emit('move', 1)">↓ Train later</button>
+      </div>
       <div v-if="goal.allowedMethodIds?.length" class="planner-notice">
         This goal only uses {{ goal.allowedMethodIds.length }} chosen method{{ goal.allowedMethodIds.length === 1 ? '' : 's' }} (set in the skill calculator).
         <button class="btn-text" type="button" @click="$emit('patch', { allowedMethodIds: null })">Use all methods</button>
@@ -123,7 +133,24 @@
       />
 
       <h4 class="goal-section-title">Level-by-level route</h4>
-      <PlannerRoute :segments="plan.segments" />
+      <p v-if="overrideCount" class="planner-notice">
+        You picked the method for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels. The rest follows {{ isOverride ? 'this goal\'s strategy' : 'the global strategy' }}.
+        <button class="btn-text" type="button" @click="$emit('patch', { overrides: [] })">Back to recommended</button>
+      </p>
+      <PlannerRoute :segments="plan.segments" :skill="goal.skill" @set="setRange" />
+      <div class="route-range">
+        <button class="btn-text" type="button" :aria-expanded="rangeOpen" @click="toggleRange">{{ rangeOpen ? 'Close' : '+ Pick a method for a range of levels' }}</button>
+        <div v-if="rangeOpen" class="route-range-form">
+          <label><span>From level</span><NumberInput :model-value="rangeFrom" :min="startLevel" :max="endLevel - 1" @update:model-value="(v) => v && (rangeFrom = Math.min(Math.max(v, startLevel), endLevel - 1))" /></label>
+          <span class="goal-levels-arrow" aria-hidden="true">→</span>
+          <label><span>To level</span><NumberInput :model-value="rangeTo" :min="startLevel + 1" :max="endLevel" @update:model-value="(v) => v && (rangeTo = Math.min(Math.max(v, startLevel + 1), endLevel))" /></label>
+          <div class="route-range-pick">
+            <span>Method</span>
+            <MethodPicker v-if="rangeMethods.length && rangeTo > rangeFrom" inline model-value="" :methods="rangeMethods" :allow-custom="false" @update:model-value="applyRange" />
+            <small v-else class="planner-hint">{{ rangeTo > rangeFrom ? 'No single method covers all of those levels. Try a shorter range.' : 'Pick a target level above the start level.' }}</small>
+          </div>
+        </div>
+      </div>
       <p v-if="plan.warning" class="planner-warning">⚠ {{ plan.warning }}</p>
 
       <PlannerMaterials :plan="plan" />
@@ -139,7 +166,7 @@
 </template>
 
 <script setup>
-import { computed, inject } from 'vue'
+import { computed, inject, ref } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerQuests from '@/components/planner/PlannerQuests.vue'
@@ -147,6 +174,7 @@ import PlannerCompare from '@/components/planner/PlannerCompare.vue'
 import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
 import MethodPicker from '@/components/planner/MethodPicker.vue'
 import GpTip from '@/components/planner/GpTip.vue'
+import { methodsForSkill } from '@/data/trainingMethods'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { methodAvailability } from '@/utils/requirements'
@@ -165,6 +193,7 @@ import {
   xpAtLevel,
   MAX_VIRTUAL_LEVEL,
   MAX_XP,
+  setOverrideRange,
   relevantMethods,
   profitableMethods,
   formatNum,
@@ -186,6 +215,9 @@ const props = defineProps({
   // The goal as it stands today (start moved up to tracked XP). The plain `goal` keeps the original start for progress.
   liveGoal: { type: Object, default: null },
   progress: { type: Object, default: null },
+  // This goal's slot on the plan's timeline (dates and place in the whole plan).
+  entry: { type: Object, default: null },
+  totalHours: { type: Number, default: 0 },
 })
 const emit = defineEmits(['toggle', 'remove', 'move', 'patch', 'pick', 'drag-start'])
 
@@ -253,13 +285,45 @@ const strategyText = computed(() => {
   const label = isAuto(id) ? STRATEGY_LABELS[id] : id === 'custom' ? 'Custom rate' : method.value?.name || 'Method'
   return isOverride.value ? label : `${label} (global)`
 })
-const gpPerHour = computed(() => (props.plan.netGp != null && props.plan.hours > 0 ? props.plan.netGp / props.plan.hours : null))
+const gpPerHour = computed(() => (props.plan.netGp != null && props.plan.hours > 0 ? Math.round(props.plan.netGp / props.plan.hours) : null))
 const daysText = computed(() => {
   const h = props.plan.hours
   if (h == null || !(props.hoursPerDay > 0)) return ''
   const d = Math.ceil(h / props.hoursPerDay)
   return `${d.toLocaleString('en-US')} day${d === 1 ? '' : 's'} at ${props.hoursPerDay} h/day`
 })
+const fmtShort = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '')
+const daysShort = computed(() => {
+  const h = props.plan.hours
+  if (!(h > 0) || !(props.hoursPerDay > 0)) return ''
+  const d = Math.ceil(h / props.hoursPerDay)
+  return `${d.toLocaleString('en-US')} day${d === 1 ? '' : 's'}`
+})
+// Where this skill sits in the whole plan, to scale.
+const stripStyle = computed(() => {
+  const t = props.totalHours || 1
+  return { left: (props.entry.startHours / t) * 100 + '%', width: Math.max((props.entry.hours / t) * 100, 4) + '%' }
+})
+// Manual choices for sets of levels: from the route rows, or from a range typed in below the route.
+const overrideCount = computed(() => (props.goal.overrides || []).length)
+function setRange({ fromLevel, toLevel, methodId }) {
+  emit('patch', { overrides: setOverrideRange(props.goal.overrides, fromLevel, toLevel, methodId) })
+}
+const rangeOpen = ref(false)
+const rangeFrom = ref(1)
+const rangeTo = ref(2)
+function toggleRange() {
+  rangeOpen.value = !rangeOpen.value
+  if (rangeOpen.value) {
+    rangeFrom.value = Math.min(startLevel.value, endLevel.value - 1)
+    rangeTo.value = Math.min(endLevel.value, rangeFrom.value + 10)
+  }
+}
+const rangeMethods = computed(() => methodsForSkill(props.goal.skill).filter((m) => m.minLevel <= rangeFrom.value && (m.maxLevel == null || m.maxLevel >= rangeTo.value - 1)))
+function applyRange(id) {
+  setRange({ fromLevel: rangeFrom.value, toLevel: rangeTo.value, methodId: id })
+  rangeOpen.value = false
+}
 const gpClass = (gp) => (gp == null ? '' : gp >= 0 ? 'planner-gain' : 'planner-cost')
 
 function methodLabel(meth, list) {

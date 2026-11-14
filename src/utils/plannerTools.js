@@ -20,6 +20,7 @@ import {
   planGoal,
   planTotals,
   compareMethods,
+  cleanOverrides,
   xpAtLevel,
   levelAtXp,
 } from '@/utils/planner'
@@ -276,15 +277,20 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
  * `snapshots` is the player's tracked history (oldest first, each with capturedAt and skills[skill].xp). The pace is measured
  * over the last `windowDays` days, or since the plan started when that is shorter, and compared with the planned finish date.
  * Returns { status: 'early' | 'late' | 'on', ... } or { status: 'none', reason } when there is too little to go on.
+ *
+ * XP a day is not the same in every skill, so one blended rate cannot be carried from one skill to the next. When the plan's
+ * per-goal numbers (`per`, from buildProgress) and the hours still to train (`liveHours`) are given, the recent gains are turned
+ * into hours of planned training instead (each skill's XP divided by that skill's own planned XP an hour). That says how many
+ * hours a day are really being trained, and every skill still to come is then finished at its own rate.
  */
-export function projectFinish({ snapshots, goals, remainingXp, plannedDays, baselineAt, now = new Date(), windowDays = 14 }) {
+export function projectFinish({ snapshots, goals, remainingXp, plannedDays, baselineAt, now = new Date(), windowDays = 14, per = null, liveHours = null }) {
   if (!remainingXp || remainingXp <= 0) return { status: 'none', reason: 'complete' }
   const baseline = baselineAt ? new Date(baselineAt) : null
   if (!baseline || Number.isNaN(baseline.getTime()) || !goals?.length) return { status: 'none', reason: 'no-baseline' }
   const windowStart = new Date(Math.max(baseline.getTime(), now.getTime() - windowDays * 86_400_000))
   const sumAt = (snap) => goals.reduce((a, g) => a + (Number(snap.skills?.[g.skill]?.xp) || 0), 0)
   const rows = (snapshots || [])
-    .map((s) => ({ t: new Date(s.capturedAt).getTime(), xp: sumAt(s) }))
+    .map((s) => ({ t: new Date(s.capturedAt).getTime(), xp: sumAt(s), skills: s.skills }))
     .filter((r) => !Number.isNaN(r.t) && r.t <= now.getTime())
     .sort((a, b) => a.t - b.t)
   if (!rows.length) return { status: 'none', reason: 'no-history' }
@@ -298,18 +304,160 @@ export function projectFinish({ snapshots, goals, remainingXp, plannedDays, base
   const gained = Math.max(0, rows[rows.length - 1].xp - startXp)
   if (gained <= 0) return { status: 'none', reason: 'no-gain' }
   const xpPerDay = gained / days
-  const daysLeft = remainingXp / xpPerDay
+  // Each goal skill's own gain in the window (never past its target), and what that is worth in planned training hours.
+  const last = rows[rows.length - 1]
+  const skillGain = {}
+  let hoursDone = 0
+  goals.forEach((g, i) => {
+    const from = Math.max(g.currentXp, before ? Number(before.skills?.[g.skill]?.xp) || 0 : windowStart.getTime() === baseline.getTime() ? g.currentXp : Number(rows[0].skills?.[g.skill]?.xp) || 0)
+    const gain = Math.max(0, Math.min(Number(last.skills?.[g.skill]?.xp) || 0, g.targetXp) - from)
+    skillGain[g.skill] = gain / days
+    const p = per?.[i]
+    if (p && p.hours > 0) hoursDone += gain / (p.total / p.hours)
+  })
+  const byHours = !!per && liveHours != null
+  const effHoursPerDay = byHours ? hoursDone / days : null
+  if (byHours && !(effHoursPerDay > 0)) return { status: 'none', reason: 'no-gain' }
+  const daysLeft = byHours ? liveHours / effHoursPerDay : remainingXp / xpPerDay
   const projected = new Date(now.getTime() + daysLeft * 86_400_000)
   const planned = plannedDays != null ? new Date(baseline.getTime() + plannedDays * 86_400_000) : null
   const diffDays = planned ? (planned.getTime() - projected.getTime()) / 86_400_000 : null
   return {
     status: diffDays == null ? 'none' : diffDays > 0.5 ? 'early' : diffDays < -0.5 ? 'late' : 'on',
     xpPerDay,
+    skillGain,
+    effHoursPerDay,
     windowDays: Math.max(1, Math.round(days)),
     daysLeft,
     projected,
     planned,
     diffDays,
+  }
+}
+
+/**
+ * Everything the pace chart draws, in days since the plan's stats were taken (day 0) and XP gained in the goal skills.
+ *  - planned:   the plan's own schedule, goal after goal (each goal climbs at its own planned XP per hour of play)
+ *  - actual:    what the tracked history says was really gained, ending at the live total
+ *  - projected: from now, at the pace the player has really kept, to the full amount (null when there is no pace to go on)
+ * Also the pace the plan needs from now on to land on its planned date. Null when there is nothing to draw.
+ */
+export function paceSeries({ snapshots, goals, progress, hoursPerDay, baselineAt, projection, only = -1, now = new Date() }) {
+  const hpd = Number(hoursPerDay)
+  const baseline = baselineAt ? new Date(baselineAt) : null
+  // `only` is the position of one goal to look at on its own. It keeps its place on the timeline (it starts when the goals before it
+  // are done); everything else about the plan is left out of the numbers and the lines.
+  const solo = only >= 0 && only < (progress?.per?.length || 0) ? progress.per[only] : null
+  const totalXp = solo ? solo.total : progress?.totalXp
+  const gainedXp = solo ? solo.gained : progress?.gainedXp
+  const remainingXp = solo ? solo.remaining : progress?.remainingXp
+  if (!progress || !goals?.length || !(hpd > 0) || !baseline || Number.isNaN(baseline.getTime()) || !(totalXp > 0)) return null
+  const DAY = 86_400_000
+  const dayOf = (t) => (t - baseline.getTime()) / DAY
+  const nowDay = Math.max(0, dayOf(now.getTime()))
+
+  // Planned: a straight climb through each goal in training order.
+  const planned = [{ day: 0, xp: 0 }]
+  const marks = []
+  const endDays = []
+  let hours = 0
+  let xp = 0
+  progress.per.forEach((p, i) => {
+    const startDay = hours / hpd
+    hours += p.hours
+    const point = { day: hours / hpd, xp: solo ? p.total : (xp += p.total) }
+    endDays.push(point.day)
+    if (solo) {
+      // Flat until this goal's turn, then up to its own total.
+      if (i === only) {
+        if (startDay > 0) planned.push({ day: startDay, xp: 0 })
+        planned.push(point)
+      }
+      return
+    }
+    planned.push(point)
+    if (p.total > 0) marks.push({ skill: p.skill, targetLevel: p.targetLevel, ...point })
+  })
+  const plannedDays = solo ? endDays[only] : hours / hpd
+
+  // Actual: the goal skills' XP since the start, at each tracked snapshot, never counting past a goal's own target.
+  const counted = solo ? [goals[only]] : goals
+  const gainedAt = (skills) => counted.reduce((a, g) => a + Math.max(0, Math.min(Number(skills?.[g.skill]?.xp) || 0, g.targetXp) - g.currentXp), 0)
+  const rows = (snapshots || [])
+    .map((s) => ({ t: new Date(s.capturedAt).getTime(), skills: s.skills }))
+    .filter((r) => !Number.isNaN(r.t) && r.t > baseline.getTime() && r.t < now.getTime())
+    .sort((a, b) => a.t - b.t)
+  const actual = [{ day: 0, xp: 0 }]
+  let best = 0
+  for (const r of rows) {
+    best = Math.max(best, gainedAt(r.skills)) // XP only ever goes up; a stray lower reading never dips the line
+    actual.push({ day: dayOf(r.t), xp: Math.min(best, totalXp) })
+  }
+  actual.push({ day: nowDay, xp: Math.min(Math.max(best, gainedXp), totalXp) })
+
+  const hasPace = projection && projection.status !== 'none' && projection.xpPerDay > 0
+  // With the real hours a day known, every skill still to come is drawn at its own rate: the line bends where the plan moves on.
+  let projected = null
+  let projectedDay = null
+  if (hasPace) {
+    projected = [{ day: nowDay, xp: gainedXp }]
+    if (projection.effHoursPerDay > 0) {
+      let day = nowDay
+      let at = gainedXp
+      for (let i = 0; i < progress.per.length; i++) {
+        const p = progress.per[i]
+        if (p.done) continue
+        if (solo && i > only) break
+        const next = day + p.hoursLeft / projection.effHoursPerDay
+        if (solo && i < only) {
+          day = next // goals before it take their time first; this one stays where it is
+          continue
+        }
+        if (solo && day > nowDay) projected.push({ day, xp: at })
+        day = next
+        at += p.remaining
+        projected.push({ day, xp: at })
+      }
+      projectedDay = day
+    } else {
+      projectedDay = nowDay + projection.daysLeft
+      projected.push({ day: projectedDay, xp: totalXp })
+    }
+  }
+
+  // The skill being trained now: what finishing it on schedule asks, and what it is really getting.
+  const curIdx = solo ? (solo.done ? -1 : only) : progress.per.findIndex((p) => !p.done)
+  let current = null
+  if (curIdx >= 0) {
+    const p = progress.per[curIdx]
+    const left = endDays[curIdx] - nowDay
+    current = {
+      skill: p.skill,
+      remaining: p.remaining,
+      endDay: endDays[curIdx],
+      neededPerDay: p.remaining > 0 && left >= 1 ? p.remaining / left : null,
+      paceXpPerDay: hasPace && projection.skillGain ? projection.skillGain[p.skill] ?? 0 : null,
+    }
+  }
+
+  // What the plan asks of the player from here: the rest of the XP spread over the days left before the planned finish.
+  const daysLeftPlanned = plannedDays - nowDay
+  const neededPerDay = remainingXp > 0 && daysLeftPlanned >= 1 ? remainingXp / daysLeftPlanned : null
+  return {
+    baseline,
+    totalXp,
+    nowDay,
+    plannedDays,
+    plannedPerDay: plannedDays > 0 ? totalXp / plannedDays : null,
+    neededPerDay,
+    current,
+    overdue: remainingXp > 0 && daysLeftPlanned < 1,
+    projectedDay,
+    planned,
+    marks,
+    actual,
+    projected,
+    endDay: Math.max(plannedDays, projectedDay ?? 0, nowDay),
   }
 }
 
@@ -412,6 +560,7 @@ export function snapshotPlan(state, name, existing = {}) {
       customXpPerHour: g.customXpPerHour || 0,
       quests: [...(g.quests || [])],
       ...(g.allowedMethodIds?.length ? { allowedMethodIds: [...g.allowedMethodIds] } : {}),
+      ...(cleanOverrides(g.overrides).length ? { overrides: cleanOverrides(g.overrides) } : {}),
     })),
   }
 }
@@ -422,7 +571,7 @@ export function planFingerprint(p) {
     Number(p.hoursPerDay),
     p.globalStrategy,
     Number(p.gpValue),
-    (p.goals || []).map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.customXpPerHour || 0, [...(g.quests || [])], g.allowedMethodIds?.length ? [...g.allowedMethodIds] : null]),
+    (p.goals || []).map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.customXpPerHour || 0, [...(g.quests || [])], g.allowedMethodIds?.length ? [...g.allowedMethodIds] : null, cleanOverrides(g.overrides).map((o) => [o.fromLevel, o.toLevel, o.methodId])]),
   ])
 }
 
@@ -509,6 +658,7 @@ export function validatePlan(raw) {
       customXpPerHour: Math.floor(num(g.customXpPerHour, 0, 10_000_000, 0)),
       quests: Array.isArray(g.quests) ? g.quests.filter((id) => getQuest(id)) : [],
       ...(Array.isArray(g.allowedMethodIds) ? { allowedMethodIds: g.allowedMethodIds.filter((id) => getMethod(id)?.skill === g.skill) } : {}),
+      ...(Array.isArray(g.overrides) ? { overrides: cleanOverrides(g.overrides).filter((o) => getMethod(o.methodId)?.skill === g.skill) } : {}),
     })
   }
   if (!goals.length) return { error: 'That plan has no usable goals.' }

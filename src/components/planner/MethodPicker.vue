@@ -1,6 +1,6 @@
 <template>
-  <div ref="root" class="mpick" :class="{ open }">
-    <button class="mpick-trigger" type="button" :aria-expanded="open" aria-haspopup="listbox" @click="open = !open" @keydown.esc="open = false">
+  <div ref="root" class="mpick" :class="{ open: open || inline, inline }">
+    <button v-if="!inline" class="mpick-trigger" type="button" :aria-expanded="open" aria-haspopup="listbox" @click="open = !open" @keydown.esc="open = false">
       <span class="mpick-trigger-main">
         <b>{{ current.name }}</b>
         <small v-if="current.sub">{{ current.sub }}</small>
@@ -12,7 +12,7 @@
       <span class="mpick-caret" aria-hidden="true">▾</span>
     </button>
 
-    <div v-if="open" class="mpick-panel" role="listbox" @keydown.esc="open = false">
+    <div v-if="open || inline" class="mpick-panel" role="listbox" @keydown.esc="open = false">
       <ul v-if="routes.length" class="mpick-routes">
         <li v-for="r in routes" :key="r.value">
           <button type="button" role="option" :aria-selected="modelValue === r.value" :class="{ active: modelValue === r.value }" @click="pick(r.value, true)">
@@ -78,6 +78,8 @@ const props = defineProps({
   // Route choices shown on top, for example Best route or Follow global: [{ value, label, sub }]
   routes: { type: Array, default: () => [] },
   allowCustom: { type: Boolean, default: true },
+  // Shown open as part of the page (no dropdown button), so it can sit inside a box without being cut off.
+  inline: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:modelValue'])
 

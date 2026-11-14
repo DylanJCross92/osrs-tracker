@@ -38,7 +38,7 @@
           <div class="plan-tile"><span>XP to gain</span><b>{{ formatNum(totals.totalXp) }}</b><small>{{ plan.goals.length }} skill{{ plan.goals.length === 1 ? '' : 's' }}</small></div>
         </div>
 
-        <PlannerProgress v-if="progress" readonly :progress="progress" :updated-at="player?.latest?.capturedAt || ''" :baseline-at="plan.statsAt || ''" :entries="timeline.entries" :hours-per-day="plan.hoursPerDay" />
+        <PlannerProgress v-if="progress" readonly :progress="progress" :updated-at="player?.latest?.capturedAt || ''" :baseline-at="plan.statsAt || ''" :hours-per-day="plan.hoursPerDay" />
         <p v-else-if="share.mode === 'live'" class="planner-hint">Live progress needs {{ share.rsn }} to be tracked on TickGains. Showing the plan as it was made.</p>
 
         <h2 class="sp-goals-title">Goals, in training order</h2>
