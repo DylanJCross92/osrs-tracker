@@ -6,11 +6,14 @@ import { renderEmail } from '../utils/emailTemplate.js'
 import { notifyClaimStarted } from '../services/notify.service.js'
 import { attachUser, requireRole, requireUser } from './auth.routes.js'
 import { addNotification } from '../services/inbox.service.js'
-import { ClaimError, adminOverview, approveByCode, cancelClaim, claimContact, getClaimState, listMyClaims, lookupByCode, rejectClaim, revokeClaim, startClaim } from '../services/claims.service.js'
+import { ClaimError, adminOverview, approveByCode, cancelClaim, claimContact, getClaimState, listMyClaims, lookupByCode, readAvailability, rejectClaim, reservePing, revokeClaim, saveAvailability, startClaim } from '../services/claims.service.js'
+import { discordConfigured, pingMessage, postToDiscord, startedMessage, windowMessage } from '../services/discord.service.js'
 
 export const claimsRouter = Router()
 
 const startLimiter = rateLimit({ windowMs: 3_600_000, max: 12, message: 'Too many claim requests, please try again later.' })
+const pingLimiter = rateLimit({ windowMs: 3_600_000, max: 10, message: 'Too many pings, please try again later.' })
+const windowLimiter = rateLimit({ windowMs: 3_600_000, max: 30, message: 'Too many changes, please try again later.' })
 const adminLimiter = rateLimit({ windowMs: 60_000, max: 90 })
 
 const handle = (fn) => async (req, res, next) => {
@@ -54,9 +57,51 @@ claimsRouter.post(
   handle(async (req, res) => {
     const player = await playerOr404(req, res)
     if (!player) return
+    // A window sent with the start is checked first, so a bad one never leaves a half-made claim behind.
+    const window = readAvailability(req.body)
     const result = await startClaim(req.user, player)
-    if (result.created) notifyClaimStarted({ email: req.user.email, playerName: player.displayName }).catch(() => {})
+    if (window) await saveAvailability(req.user, player, window)
+    if (result.created) {
+      notifyClaimStarted({ email: req.user.email, playerName: player.displayName }).catch(() => {})
+      postToDiscord(startedMessage({ playerName: player.displayName, from: window?.from, until: window?.until })).catch(() => {})
+    }
     res.status(result.created ? 201 : 200).json(await getClaimState(player, req.user))
+  }),
+)
+
+// Say when you will be in game (or send nothing to clear it), so the owner knows when to log on.
+claimsRouter.post(
+  '/players/:username/claim/online',
+  attachUser,
+  requireUser,
+  windowLimiter,
+  handle(async (req, res) => {
+    const player = await playerOr404(req, res)
+    if (!player) return
+    const window = readAvailability(req.body)
+    await saveAvailability(req.user, player, window)
+    if (window) postToDiscord(windowMessage({ playerName: player.displayName, from: window.from, until: window.until })).catch(() => {})
+    res.json(await getClaimState(player, req.user))
+  }),
+)
+
+// "I'm in game now": nudges the owner on Discord, at most once every half hour per claim.
+claimsRouter.post(
+  '/players/:username/claim/ping',
+  attachUser,
+  requireUser,
+  pingLimiter,
+  handle(async (req, res) => {
+    const player = await playerOr404(req, res)
+    if (!player) return
+    if (!discordConfigured()) throw new ClaimError('Pinging is not set up yet. Send your code in game when you are both online.', 503)
+    const claim = await reservePing(req.user, player)
+    const delivered = await postToDiscord(pingMessage({ playerName: player.displayName, from: claim.from, until: claim.until }))
+    if (!delivered) {
+      await claim.release()
+      throw new ClaimError('The ping could not be sent right now. Please try again in a moment.', 502)
+    }
+    res.json(await getClaimState(player, req.user))
   }),
 )
 

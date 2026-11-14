@@ -1,10 +1,13 @@
 import { pool } from '../db.js'
 import { generateClaimCode, normalizeClaimCode } from '../utils/claimCode.js'
+import { parseAvailability, pingWaitMinutes } from '../utils/claimAvailability.js'
+import { discordConfigured } from './discord.service.js'
 
 // Who to message in game. Change it with CLAIM_CONTACT_RSN if the account ever changes.
 export const claimContact = () => process.env.CLAIM_CONTACT_RSN || 'Dylanz297'
 
 export const CLAIM_DAYS = 14
+export const PING_COOLDOWN_MINUTES = 30
 const MAX_PENDING_PER_USER = 3
 const MAX_OWNED_PER_USER = 5
 
@@ -23,7 +26,17 @@ const shape = (r) => ({
   createdAt: r.created_at,
   expiresAt: r.expires_at,
   expired: r.status === 'pending' && new Date(r.expires_at) < new Date(),
+  onlineFrom: r.online_from || null,
+  onlineUntil: r.online_until || null,
+  lastPingAt: r.last_ping_at || null,
 })
+
+/** Checks the availability part of a request body. Throws a ClaimError when it is not usable; null means no window. */
+export function readAvailability(body) {
+  const parsed = parseAvailability(body)
+  if (!parsed.ok) throw new ClaimError(parsed.error, 400)
+  return parsed.value
+}
 
 const CLAIM_SELECT = `SELECT c.*, p.username, p.display_name, u.email,
   (SELECT extract(epoch from pp.avatar_updated_at)::bigint FROM profile_pages pp WHERE pp.player_id = p.id AND pp.avatar IS NOT NULL) AS avatar_v
@@ -41,13 +54,26 @@ async function ownerRow(playerId) {
  */
 export async function getClaimState(player, user) {
   const owner = await ownerRow(player.id)
-  const state = { claimed: Boolean(owner), mine: 'none', contact: claimContact() }
+  const state = { claimed: Boolean(owner), mine: 'none', contact: claimContact(), canPing: discordConfigured() }
   if (!user) return state
   if (owner && owner.user_id === user.id) return { ...state, mine: 'owner' }
   if (owner) return { ...state, mine: 'taken' }
   const { rows } = await pool.query(`SELECT * FROM profile_claims WHERE user_id = $1 AND player_id = $2 AND status = 'pending'`, [user.id, player.id])
   const pending = rows[0]
-  if (pending && new Date(pending.expires_at) > new Date()) return { ...state, mine: 'pending', code: pending.code, expiresAt: pending.expires_at }
+  if (pending && new Date(pending.expires_at) > new Date()) {
+    // A window that has already passed is not worth showing.
+    const live = pending.online_until && new Date(pending.online_until) > new Date()
+    const wait = pingWaitMinutes(pending.last_ping_at, PING_COOLDOWN_MINUTES)
+    return {
+      ...state,
+      mine: 'pending',
+      code: pending.code,
+      expiresAt: pending.expires_at,
+      onlineFrom: live ? pending.online_from : null,
+      onlineUntil: live ? pending.online_until : null,
+      pingWaitMinutes: wait,
+    }
+  }
   return state
 }
 
@@ -80,6 +106,38 @@ export async function startClaim(user, player) {
     }
   }
   throw new ClaimError('Could not create a code, please try again.', 500)
+}
+
+/** Saves (or, with null, clears) the window in which the claimant will be in game. */
+export async function saveAvailability(user, player, window) {
+  const { rowCount } = await pool.query(
+    `UPDATE profile_claims SET online_from = $3, online_until = $4 WHERE user_id = $1 AND player_id = $2 AND status = 'pending' AND expires_at > now()`,
+    [user.id, player.id, window?.from ?? null, window?.until ?? null],
+  )
+  if (!rowCount) throw new ClaimError('Start the claim first, then say when you will be online.', 400)
+}
+
+/**
+ * Lets the claimant nudge the owner at most once every PING_COOLDOWN_MINUTES. Returns the claim's window so the message can
+ * mention it. Throws when there is no waiting claim or a ping went out too recently; release() undoes the stamp if the
+ * message could not be delivered.
+ */
+export async function reservePing(user, player) {
+  const { rows } = await pool.query(
+    `UPDATE profile_claims SET last_ping_at = now()
+     WHERE user_id = $1 AND player_id = $2 AND status = 'pending' AND expires_at > now()
+       AND (last_ping_at IS NULL OR last_ping_at < now() - make_interval(mins => $3))
+     RETURNING id, online_from, online_until`,
+    [user.id, player.id, PING_COOLDOWN_MINUTES],
+  )
+  if (!rows[0]) {
+    const { rows: pending } = await pool.query(`SELECT last_ping_at FROM profile_claims WHERE user_id = $1 AND player_id = $2 AND status = 'pending' AND expires_at > now()`, [user.id, player.id])
+    if (!pending[0]) throw new ClaimError('Start the claim first.', 400)
+    const wait = pingWaitMinutes(pending[0].last_ping_at, PING_COOLDOWN_MINUTES) || 1
+    throw new ClaimError(`You already pinged recently. You can ping again in ${wait} minute${wait === 1 ? '' : 's'}.`, 429)
+  }
+  const claim = rows[0]
+  return { from: claim.online_from, until: claim.online_until, release: () => pool.query(`UPDATE profile_claims SET last_ping_at = NULL WHERE id = $1`, [claim.id]).catch(() => {}) }
 }
 
 export async function cancelClaim(user, player) {

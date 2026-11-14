@@ -17,6 +17,7 @@
           <div class="cl-who">
             <RouterLink class="cl-name" :to="{ name: 'playerDetail', params: { username: c.player.username } }" target="_blank">{{ c.player.displayName }}</RouterLink>
             <span class="cl-meta">{{ c.email }} · {{ c.expired ? 'expired' : `started ${ago(c.createdAt)}` }}</span>
+            <span v-if="!c.expired && presence(c)" class="cl-presence" :class="`is-${presence(c).kind}`">{{ presence(c).text }}</span>
           </div>
           <div v-if="openId !== c.id" class="cl-actions">
             <button class="btn btn-primary" type="button" :disabled="c.expired" @click="startVerify(c)">Verify</button>
@@ -58,6 +59,7 @@ import { profilePageApi } from '@/api/profilePage'
 import { refreshNotifications } from '@/composables/useAuth'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
+import { describeWindow } from '@/utils/claimWindow'
 
 setPageMeta({ title: 'Profile claims', description: 'Verify profile claims.', path: '/admin/claims', noindex: true })
 
@@ -76,9 +78,25 @@ function ago(iso) {
   return days === 1 ? 'yesterday' : `${days} days ago`
 }
 
+// Whether the player said they would be in game, and whether they have just pinged: the cue to log on.
+function presence(c) {
+  const now = Date.now()
+  const ping = c.lastPingAt ? now - new Date(c.lastPingAt).getTime() : null
+  if (ping != null && ping < 30 * 60_000) return { kind: 'now', text: `In game now, pinged ${Math.max(1, Math.round(ping / 60_000))} min ago` }
+  if (c.onlineFrom && c.onlineUntil) {
+    if (new Date(c.onlineUntil).getTime() < now) return { kind: 'past', text: `Said they would be online ${describeWindow(c.onlineFrom, c.onlineUntil)} (over)` }
+    const live = new Date(c.onlineFrom).getTime() <= now
+    return { kind: live ? 'now' : 'soon', text: `${live ? 'Online now: ' : 'Online '}${describeWindow(c.onlineFrom, c.onlineUntil)}` }
+  }
+  return null
+}
+
 async function load() {
   try {
-    Object.assign(data, await claimsApi.admin.overview())
+    const overview = await claimsApi.admin.overview()
+    const rank = (c) => (presence(c)?.kind === 'now' ? 0 : presence(c)?.kind === 'soon' ? 1 : 2)
+    overview.pending.sort((a, b) => rank(a) - rank(b))
+    Object.assign(data, overview)
     refreshNotifications()
   } finally {
     loading.value = false

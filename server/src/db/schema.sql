@@ -203,6 +203,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_code_pending_idx ON profile_cla
 CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_user_player_pending_idx ON profile_claims (user_id, player_id) WHERE status = 'pending';
 CREATE UNIQUE INDEX IF NOT EXISTS profile_claims_player_owner_idx ON profile_claims (player_id) WHERE status = 'verified';
 CREATE INDEX IF NOT EXISTS profile_claims_user_idx ON profile_claims (user_id);
+-- When the claimant says they will be in game (so the owner knows when to log on), and when they last pinged the owner.
+ALTER TABLE profile_claims ADD COLUMN IF NOT EXISTS online_from TIMESTAMPTZ;
+ALTER TABLE profile_claims ADD COLUMN IF NOT EXISTS online_until TIMESTAMPTZ;
+ALTER TABLE profile_claims ADD COLUMN IF NOT EXISTS last_ping_at TIMESTAMPTZ;
 
 -- The notification inbox. Unlike the live items on the avatar (waiting claims, codes still to send), these are stored
 -- events with a read state: "your claim was approved", "a player you follow reached 99". dedupe_key stops the same

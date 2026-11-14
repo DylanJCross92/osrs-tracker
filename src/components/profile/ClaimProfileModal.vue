@@ -33,7 +33,15 @@
           <li>Send a private message to <b class="claim-contact">{{ state.contact }}</b> with just the code above.</li>
           <li>Once the code is checked you will get an email, and the profile becomes yours.</li>
         </ol>
+        <ClaimAvailability :contact="state.contact" :saved="state.onlineFrom ? state : null" saveable :busy="busy" @change="draft = $event" @save="saveWindow" />
+        <div v-if="state.canPing" class="claim-ping">
+          <button class="btn btn-primary" type="button" :disabled="busy || state.pingWaitMinutes > 0" @click="ping">
+            {{ state.pingWaitMinutes > 0 ? `Pinged. You can ping again in ${state.pingWaitMinutes} min` : `I'm in game now, ping ${state.contact}` }}
+          </button>
+          <p class="claim-ping-hint">Sends {{ state.contact }} a Discord notification. Stay logged in, and send your code once they are online.</p>
+        </div>
         <p class="empty-hint share-modal-hint">The message has to come from {{ displayName }}, since that is how we know it is you. The code works until {{ expires }}. You can close this and come back any time, your code stays on your profile page and your account page.</p>
+        <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
         <button class="btn-text claim-cancel" type="button" :disabled="busy" @click="cancel">Cancel this claim</button>
       </template>
 
@@ -45,6 +53,7 @@
           <li>Send that code in game to <b class="claim-contact">{{ state.contact }}</b> from {{ displayName }}.</li>
           <li>Once the code is checked you will get an email, and the profile becomes yours.</li>
         </ol>
+        <ClaimAvailability :contact="state.contact" @change="draft = $event" />
         <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
         <button class="btn btn-primary claim-start" type="button" :disabled="busy" @click="start">{{ busy ? 'Starting…' : 'Start claim' }}</button>
       </template>
@@ -54,6 +63,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import ClaimAvailability from '@/components/profile/ClaimAvailability.vue'
 import { ApiError } from '@/api/client'
 import { claimsApi } from '@/api/claims'
 import { refreshNotifications } from '@/composables/useAuth'
@@ -71,6 +81,8 @@ const { showToast } = useToast()
 
 const busy = ref(false)
 const error = ref('')
+// The window being picked in the form ({ onlineFrom, onlineUntil } or null).
+const draft = ref(null)
 
 const next = computed(() => `/player/${encodeURIComponent(props.username)}`)
 const expires = computed(() => (props.state.expiresAt ? new Date(props.state.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : ''))
@@ -84,9 +96,37 @@ async function start() {
   busy.value = true
   error.value = ''
   try {
-    emit('update', await claimsApi.start(props.username))
+    emit('update', await claimsApi.start(props.username, draft.value))
     refreshNotifications()
     track('claim_started')
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : 'Something went wrong, please try again.'
+  } finally {
+    busy.value = false
+  }
+}
+
+async function saveWindow(window) {
+  busy.value = true
+  error.value = ''
+  try {
+    emit('update', await claimsApi.online(props.username, window))
+    showToast(window ? `Saved. ${props.state.contact} can see when you will be online.` : 'Window cleared.')
+    if (window) track('claim_window_saved')
+  } catch (err) {
+    error.value = err instanceof ApiError ? err.message : 'Something went wrong, please try again.'
+  } finally {
+    busy.value = false
+  }
+}
+
+async function ping() {
+  busy.value = true
+  error.value = ''
+  try {
+    emit('update', await claimsApi.ping(props.username))
+    showToast(`${props.state.contact} has been pinged. Stay logged in.`)
+    track('claim_pinged')
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Something went wrong, please try again.'
   } finally {
