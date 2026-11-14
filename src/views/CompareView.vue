@@ -10,8 +10,8 @@
       <form class="cmp-form" @submit.prevent="submit">
         <label class="cmp-field cmp-field-a">
           <i class="cmp-key cmp-key-a" aria-hidden="true" />
-          <input ref="elA" v-model="inputA" type="search" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
-          <CompareSuggest v-if="focused === 'a' && options.length" :options="options" :heading="heading" :active="hi" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
+          <input ref="elA" v-model="inputA" type="search" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" aria-autocomplete="list" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
+          <CompareSuggest v-if="focused === 'a' && (options.length || newNameFor('a'))" :options="options" :heading="heading" :active="hi" :new-name="newNameFor('a')" :adding="adding" :error="failed.k === 'a' ? failed.message : ''" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" @track="trackNew('a')" />
         </label>
         <button type="button" class="cmp-swap" aria-label="Swap the two players" title="Swap players" @click="swapInputs">
           <span class="cmp-swap-vs">VS</span>
@@ -20,9 +20,9 @@
         <label class="cmp-field cmp-field-b">
           <i class="cmp-key cmp-key-b" aria-hidden="true" />
           <input ref="elB" v-model="inputB" type="search" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true" @keydown="onKey('b', $event)" />
-          <CompareSuggest v-if="focused === 'b' && options.length" :options="options" :heading="heading" :active="hi" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" />
+          <CompareSuggest v-if="focused === 'b' && (options.length || newNameFor('b'))" :options="options" :heading="heading" :active="hi" :new-name="newNameFor('b')" :adding="adding" :error="failed.k === 'b' ? failed.message : ''" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" @track="trackNew('b')" />
         </label>
-        <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit">Compare</button>
+        <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit || adding">{{ adding ? 'Checking…' : 'Compare' }}</button>
       </form>
 
       <div v-if="hasNames" class="cmp-period range-tabs" role="group" aria-label="Gain period">
@@ -189,6 +189,12 @@ const elB = ref(null)
 const focused = ref('')
 const hi = ref(-1)
 const found = ref([])
+// Whether the search for what is typed has come back, so a name that matched nothing can be offered for tracking.
+const searched = ref(false)
+const adding = ref(false)
+// A name that could not be added, shown in that box's dropdown: which box, the name and why. The page stays where it is.
+const failed = reactive({ k: '', name: '', message: '' })
+const clearFailed = () => Object.assign(failed, { k: '', name: '', message: '' })
 let searchTimer = null
 const inputOf = (k) => (k === 'a' ? inputA : inputB)
 const termOf = (k) => inputOf(k).value.trim()
@@ -240,6 +246,7 @@ function onType(k) {
   if (focused.value !== k) return
   hi.value = -1
   clearTimeout(searchTimer)
+  searched.value = false
   const term = termOf(k)
   if (term.length < 2) {
     found.value = []
@@ -248,14 +255,59 @@ function onType(k) {
   searchTimer = setTimeout(async () => {
     try {
       const rows = await playersApi.search(term)
-      if (focused.value === k && termOf(k) === term) found.value = rows
+      if (focused.value === k && termOf(k) === term) {
+        found.value = rows
+        searched.value = true
+      }
     } catch {
       found.value = []
     }
   }, 200)
 }
-watch(inputA, () => onType('a'))
-watch(inputB, () => onType('b'))
+
+// The typed name, when it is a valid RSN nobody has tracked yet: the dropdown offers to track it.
+const VALID_NAME = /^[A-Za-z0-9 _-]{1,12}$/
+function newNameFor(k) {
+  if (failed.k === k && failed.name === termOf(k)) return failed.name
+  if (focused.value !== k || !searched.value) return ''
+  const term = termOf(k)
+  if (term.length < 2 || !VALID_NAME.test(term) || term.toLowerCase() === otherName(k)) return ''
+  const q = term.toLowerCase()
+  const tracked = found.value.some((p) => p.username.toLowerCase() === q || (p.displayName || '').toLowerCase() === q) || store.players.some((p) => p.username.toLowerCase() === q)
+  return tracked ? '' : term
+}
+// Makes sure a typed name is a tracked player, adding it from the OSRS hiscores when needed. Returns an error message, or '' when
+// the player is there. Nothing changes on the page either way.
+async function ensureTracked(name) {
+  if (findPlayer(name)) return ''
+  if (!VALID_NAME.test(name)) return 'Usernames are 1 to 12 characters: letters, numbers, spaces, hyphens or underscores.'
+  try {
+    if (!store.loaded) await store.loadPlayers()
+    if (findPlayer(name)) return ''
+    await store.addPlayer(name)
+    track('player_added', { source: 'compare', is_new_player: true, player_name: name })
+    showToast(`Now tracking ${name}, history is importing in the background.`)
+  } catch (err) {
+    // Someone else added them a moment ago: fine, carry on as if it worked.
+    if (!(err instanceof ApiError && err.status === 409)) return err instanceof ApiError && err.message ? err.message : 'Could not add that player.'
+  }
+  return ''
+}
+// The Track button in the dropdown.
+async function trackNew(k) {
+  const name = newNameFor(k)
+  if (!name || adding.value) return
+  adding.value = true
+  clearFailed()
+  track('player_search', { source: 'compare', username_length: name.length })
+  const problem = await ensureTracked(name)
+  adding.value = false
+  if (problem) return Object.assign(failed, { k, name, message: problem })
+  const hit = findPlayer(name)
+  pick(k, { username: hit?.username || name, displayName: hit?.displayName || name, recent: false })
+}
+watch(inputA, () => { if (failed.k === 'a' && failed.name !== inputA.value.trim()) clearFailed(); onType('a') })
+watch(inputB, () => { if (failed.k === 'b' && failed.name !== inputB.value.trim()) clearFailed(); onType('b') })
 
 // Only names typed into a box (or picked from the search results / recent list) count as searches, a link to a
 // matchup or a recommended pick does not. `input` events come from the keyboard only, never from picking.
@@ -297,9 +349,23 @@ function swapInputs() {
   inputB.value = a
 }
 
-function submit() {
-  if (!canSubmit.value) return
+async function submit() {
+  if (!canSubmit.value || adding.value) return
   track('compare_submit', { source: 'form' })
+  // Check both names first: an unknown one is added from the hiscores, or its problem is shown in its own dropdown and the page stays put.
+  adding.value = true
+  clearFailed()
+  const names = { a: inputA.value.trim(), b: inputB.value.trim() }
+  const problems = await Promise.all([ensureTracked(names.a), ensureTracked(names.b)])
+  adding.value = false
+  const bad = ['a', 'b'].find((k, i) => problems[i])
+  if (bad) {
+    Object.assign(failed, { k: bad, name: names[bad], message: problems[['a', 'b'].indexOf(bad)] })
+    focused.value = bad
+    inputOf(bad).value = names[bad]
+    ;(bad === 'a' ? elA : elB).value?.focus()
+    return
+  }
   // Close any open suggestion list, the results are what you want to see.
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
   for (const k of ['a', 'b']) {
@@ -329,6 +395,7 @@ const sideB = reactive(emptySide('b'))
 const sideOf = (key) => (key === 'a' ? sideA : sideB)
 const tracking = ref('')
 let runId = 0
+
 
 const findPlayer = (name) => store.players.find((p) => p.username.toLowerCase() === name.toLowerCase()) ?? null
 

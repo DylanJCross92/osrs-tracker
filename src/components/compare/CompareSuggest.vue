@@ -1,5 +1,5 @@
 <template>
-  <div class="cmp-suggest" role="listbox" :aria-label="heading" @mousedown.prevent>
+  <div class="cmp-suggest" role="listbox" :aria-label="heading || 'Players'" @mousedown.prevent>
     <template v-for="(o, i) in options" :key="o.username">
       <span v-if="i === 0 || !!o.recent !== !!options[i - 1].recent" class="cmp-suggest-head">{{ o.recent ? 'Recent' : heading }}</span>
       <div class="cmp-suggest-row">
@@ -11,6 +11,12 @@
         </button>
       </div>
     </template>
+    <!-- A name that is not tracked yet, offered for tracking right here like in the search box -->
+    <div v-if="newName" class="cmp-suggest-new">
+      <span class="sg-avatar sg-avatar-new" aria-hidden="true">+</span>
+      <span class="sg-main"><span class="sg-name">{{ newName }}</span><small class="sg-sub" :class="{ 'suggest-new-error': error }">{{ error || 'Not tracked yet' }}</small></span>
+      <button v-if="!error" class="disc-track-btn" type="button" :disabled="adding" @click="$emit('track')">{{ adding ? 'Adding…' : 'Track' }}</button>
+    </div>
   </div>
 </template>
 
@@ -21,6 +27,10 @@ defineProps({
   options: { type: Array, required: true },
   heading: { type: String, default: '' },
   active: { type: Number, default: -1 },
+  // A typed name that is not tracked yet (empty when there is none), with the state of adding it.
+  newName: { type: String, default: '' },
+  adding: { type: Boolean, default: false },
+  error: { type: String, default: '' },
 })
-defineEmits(['pick', 'hover', 'remove'])
+defineEmits(['pick', 'hover', 'remove', 'track'])
 </script>

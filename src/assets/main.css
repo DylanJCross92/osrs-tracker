@@ -4114,3 +4114,10 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .pp-focus { padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 999px; background: none; color: var(--gold-bright); font: inherit; font-size: 0.76rem; font-weight: 600; cursor: pointer; }
 .pp-focus:hover, .pp-focus:focus-visible { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); outline: none; }
 
+
+/* compare dropdown: a typed name that is not tracked yet, offered for tracking */
+.cmp-suggest-new { display: flex; align-items: center; gap: 12px; margin-top: 4px; padding: 10px 12px; border-top: 1px solid var(--border); }
+.cmp-suggest-new:first-child { margin-top: 0; border-top: 0; }
+.cmp-suggest-new .sg-sub { color: var(--muted); font-size: 0.78rem; }
+.cmp-suggest-new .sg-sub.suggest-new-error { color: #d98a78; white-space: normal; }
+.cmp-suggest-new .disc-track-btn { margin: 0; flex: none; }
