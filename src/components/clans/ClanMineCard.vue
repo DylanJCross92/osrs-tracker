@@ -15,13 +15,15 @@
     <ul v-if="clan.competitions.length" class="clan-mine-comps">
       <li v-for="c in clan.competitions" :key="c.id">
         <RouterLink class="clan-mine-comp" :to="{ name: 'competition', params: { id: c.id } }">
-          <span class="clan-mine-comp-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path v-for="d in RECORD_ICONS.trophy" :key="d" :d="d" /></svg></span>
+          <span class="clan-mine-comp-ico" aria-hidden="true"><img :src="skillIconSrc(skillOf(c))" alt="" width="22" height="22" /></span>
           <span class="clan-mine-comp-text">
-            <b>{{ c.title }}</b>
+            <span class="clan-mine-comp-top">
+              <b>{{ c.title }}</b>
+              <span class="clan-status" :class="c.status === 'running' ? 'is-running' : 'is-scheduled'">{{ c.status === 'running' ? 'Running' : 'Upcoming' }}</span>
+            </span>
             <small>{{ c.label }} · {{ c.entrants }} {{ c.entrants === 1 ? 'member' : 'members' }}</small>
-            <small>{{ fullDateTime(c.startsAt) }} to {{ fullDateTime(c.endsAt) }}</small>
+            <small class="clan-mine-when"><span>{{ dayText(c.startsAt) }}, {{ timeText(c.startsAt) }}</span> <span class="clan-mine-to">to {{ dayText(c.endsAt) }}, {{ timeText(c.endsAt) }}</span></small>
           </span>
-          <span class="clan-status" :class="c.status === 'running' ? 'is-running' : 'is-scheduled'">{{ c.status === 'running' ? 'Running' : 'Upcoming' }}</span>
         </RouterLink>
       </li>
     </ul>
@@ -41,10 +43,12 @@
 
 <script setup>
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
-import { fullDateTime } from '@/utils/competitionForm'
-import { formatXp } from '@/utils/osrsSkills'
-import { RECORD_ICONS } from '@/utils/recordText'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 
 defineProps({ clan: { type: Object, required: true } })
+// The skill behind a label such as "Agility XP" (or "Overall XP"), for its icon.
+const skillOf = (c) => String(c.label || '').replace(/ XP$/, '') || 'Overall'
+const dayText = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', ...(new Date(d).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })
+const timeText = (d) => new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
 const ROLE_LABELS = { owner: 'Owner', mod: 'Moderator', member: 'Member' }
 </script>
