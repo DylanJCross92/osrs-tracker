@@ -43,6 +43,9 @@
             <RouterLink class="btn btn-primary" :to="{ name: 'discover' }">Browse players</RouterLink>
           </section>
 
+          <!-- Your clans -->
+          <DashClans />
+
           <!-- Plans -->
           <section class="card dash-card is-compact" aria-labelledby="dash-plans-h">
             <header class="dash-card-head">
@@ -129,6 +132,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashInbox from '@/components/dashboard/DashInbox.vue'

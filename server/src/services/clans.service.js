@@ -2,7 +2,7 @@ import { pool } from '../db.js'
 import { HiscoresUnavailableError, PlayerNotFoundError } from './osrsHiscores.service.js'
 import { addPlayer, getPlayerByUsername } from './players.service.js'
 import { addNotification, ownerOfPlayer } from './inbox.service.js'
-import { addEntrantToOpenCompetitions, listClanCompetitions, removeEntrantFromOpenCompetitions } from './competitions.service.js'
+import { addEntrantToOpenCompetitions, getCompetition, listClanCompetitions, removeEntrantFromOpenCompetitions } from './competitions.service.js'
 import { MAX_CLANS_PER_USER, MAX_MEMBERS, MAX_PENDING_REQUESTS, cleanClanInput, cleanRsn, newInviteToken, newSlug, summarizeClans } from '../utils/clans.js'
 import { metricLabel } from '../utils/competitions.js'
 
@@ -138,6 +138,7 @@ export async function myClans(user) {
   const { clans } = await summarize(rows)
   const bySlug = new Map(clans.map((c) => [c.slug, c]))
   const waiting = new Map((await pendingRequestCounts(user.id)).map((r) => [r.slug, r.n]))
+  await addMyStandings(clans, owned)
   return rows.map((r) => {
     const c = bySlug.get(r.slug)
     const owner = r.owner_user_id === user.id
@@ -145,9 +146,30 @@ export async function myClans(user) {
   })
 }
 
+/**
+ * For each running competition in these clans, where the account's own profiles stand in it: `my` = { username, displayName, rank,
+ * gain, of } for the best placed of them, or null when none of them is an entrant. At most a dozen competitions are looked up.
+ */
+async function addMyStandings(clans, ownedIds) {
+  const running = clans.flatMap((c) => c.competitions.filter((k) => k.status === 'running'))
+  if (!running.length || !ownedIds.length) return
+  const { rows } = await pool.query('SELECT lower(username) AS u FROM players WHERE id = ANY($1::int[])', [ownedIds])
+  const mine = new Set(rows.map((r) => r.u))
+  for (const k of running.slice(0, 12)) {
+    k.my = null
+    try {
+      const detail = await getCompetition(k.id)
+      const table = detail?.standings || []
+      const best = table.filter((r) => mine.has(String(r.username).toLowerCase())).sort((a, b) => a.rank - b.rank)[0]
+      if (best) k.my = { username: best.username, displayName: best.displayName, rank: best.rank, gain: best.gain, pending: Boolean(best.pending), of: table.length }
+    } catch (err) {
+      console.error('[clans] could not work out a standing:', err.message)
+    }
+  }
+}
+
 // --- joining and leaving ---------------------------------------------------------------------------------------------
 
-/** Joins through an invite link with an RSN. A name not tracked yet is added; the hiscores must know it. */
 /** The tracked player with this name; one not tracked yet is added from the OSRS hiscores first. */
 async function resolvePlayer(name) {
   let player = await getPlayerByUsername(name)
