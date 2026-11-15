@@ -341,6 +341,8 @@ CREATE TABLE IF NOT EXISTS clans (
 CREATE INDEX IF NOT EXISTS clans_owner_idx ON clans (owner_user_id);
 -- Every clan is listed on the Clans page now (the column is kept; nothing can set it to unlisted any more).
 ALTER TABLE clans ALTER COLUMN visibility SET DEFAULT 'public';
+-- Whether the invite link takes new join requests. The owner can switch it off (people already waiting stay answerable).
+ALTER TABLE clans ADD COLUMN IF NOT EXISTS accepting_requests BOOLEAN NOT NULL DEFAULT true;
 UPDATE clans SET visibility = 'public' WHERE visibility <> 'public';
 
 -- Members are players (RSNs). user_id is set when the account that owns that RSN (a verified claim) joined, which is what the
@@ -354,6 +356,18 @@ CREATE TABLE IF NOT EXISTS clan_members (
   PRIMARY KEY (clan_id, player_id)
 );
 CREATE INDEX IF NOT EXISTS clan_members_player_idx ON clan_members (player_id);
+
+-- Someone who opened the invite link and asked to join. Only waiting requests are kept: approving one makes the player a member
+-- and declining one removes it. user_id is the account that asked, when signed in (it earns the verified tick if it owns the RSN).
+CREATE TABLE IF NOT EXISTS clan_join_requests (
+  id SERIAL PRIMARY KEY,
+  clan_id INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (clan_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS clan_join_requests_clan_idx ON clan_join_requests (clan_id, created_at);
 
 -- A competition: who gained the most XP (in one skill, or overall) between two moments. status moves scheduled, running, then
 -- finished (or cancelled). results is the frozen final standing, written once when it finishes.

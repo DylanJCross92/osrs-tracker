@@ -2,6 +2,8 @@ import crypto from 'node:crypto'
 
 // Rules for clans: how big they may be, what a name may contain, and the tokens that make a page and an invite link.
 // Pure, so they can be tested without a database.
+// Requests waiting for an answer, per clan, so a flood of them cannot bury the real ones.
+export const MAX_PENDING_REQUESTS = 50
 export const MAX_MEMBERS = 100
 export const MAX_CLANS_PER_USER = 3
 export const MAX_ACTIVE_COMPETITIONS = 3
@@ -55,8 +57,8 @@ export const newInviteToken = () => crypto.randomBytes(16).toString('base64url')
 export function describeInvite({ name, memberCount, competitions }) {
   const people = `${memberCount} member${memberCount === 1 ? '' : 's'}`
   const c = competitions?.[0]
-  if (c) return `${people}. ${c.status === 'running' ? 'Running now' : 'Starting soon'}: ${c.title} (${c.label}). Join with your RuneScape name.`
-  return `${people}. Join ${name} with your RuneScape name, no account needed.`
+  if (c) return `${people}. ${c.status === 'running' ? 'Running now' : 'Starting soon'}: ${c.title} (${c.label}). Ask to join with your RuneScape name.`
+  return `${people}. Ask to join ${name} with your RuneScape name, no account needed.`
 }
 
 

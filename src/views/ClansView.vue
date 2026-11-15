@@ -49,7 +49,7 @@
       <section class="card clan-card" aria-labelledby="clans-how-h">
         <h2 id="clans-how-h">How clans work</h2>
         <ol class="clans-how">
-          <li><b>Start a clan</b><span>Sign in, name your clan and send the invite link. Anyone can join with their RuneScape name, no account needed.</span></li>
+          <li><b>Start a clan</b><span>Sign in, name your clan and send the invite link. Anyone can ask to join with their RuneScape name, no account needed, and you approve each request.</span></li>
           <li><b>Run a competition</b><span>Pick a skill or overall XP and a start and end date. Everyone's gain is measured from a fresh hiscores check at the start.</span></li>
           <li><b>See who wins</b><span>A live leaderboard while it runs, and a result when it ends. Every clan shows up on this page.</span></li>
         </ol>

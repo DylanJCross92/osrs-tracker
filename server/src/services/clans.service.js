@@ -2,7 +2,7 @@ import { pool } from '../db.js'
 import { HiscoresUnavailableError, PlayerNotFoundError } from './osrsHiscores.service.js'
 import { addPlayer, getPlayerByUsername } from './players.service.js'
 import { addEntrantToOpenCompetitions, listClanCompetitions, removeEntrantFromOpenCompetitions } from './competitions.service.js'
-import { MAX_CLANS_PER_USER, MAX_MEMBERS, cleanClanInput, cleanRsn, newInviteToken, newSlug, summarizeClans } from '../utils/clans.js'
+import { MAX_CLANS_PER_USER, MAX_MEMBERS, MAX_PENDING_REQUESTS, cleanClanInput, cleanRsn, newInviteToken, newSlug, summarizeClans } from '../utils/clans.js'
 import { metricLabel } from '../utils/competitions.js'
 
 /** An error that is safe to show as-is. */
@@ -13,7 +13,7 @@ export class ClanError extends Error {
   }
 }
 
-const shapeClan = (r, memberCount) => ({ slug: r.slug, name: r.name, description: r.description, visibility: r.visibility, createdAt: r.created_at, memberCount })
+const shapeClan = (r, memberCount) => ({ slug: r.slug, name: r.name, description: r.description, visibility: r.visibility, createdAt: r.created_at, memberCount, acceptingRequests: r.accepting_requests !== false })
 
 export async function clanBySlug(slug) {
   const { rows } = await pool.query('SELECT * FROM clans WHERE slug = $1', [String(slug || '').toLowerCase()])
@@ -106,6 +106,7 @@ export async function getClanView(slug, user) {
     clan: shapeClan(clan, members.length),
     members,
     competitions,
+    requests: canManage(role) ? await listJoinRequests(clan.id) : [],
     viewer: { role, canManage: canManage(role), canInvite: Boolean(role), inviteToken: role ? clan.invite_token : null },
   }
 }
@@ -135,10 +136,11 @@ export async function myClans(user) {
   const modOf = new Set(mods.map((r) => r.clan_id))
   const { clans } = await summarize(rows)
   const bySlug = new Map(clans.map((c) => [c.slug, c]))
+  const waiting = new Map((await pendingRequestCounts(user.id)).map((r) => [r.slug, r.n]))
   return rows.map((r) => {
     const c = bySlug.get(r.slug)
     const owner = r.owner_user_id === user.id
-    return { ...c, owner, role: owner ? 'owner' : modOf.has(r.id) ? 'mod' : 'member', openCompetitions: c.competitions.length }
+    return { ...c, owner, role: owner ? 'owner' : modOf.has(r.id) ? 'mod' : 'member', openCompetitions: c.competitions.length, pendingRequests: waiting.get(r.slug) || 0 }
   })
 }
 
@@ -169,10 +171,109 @@ export async function joinClan({ token, rsn, user }) {
   // An account that owns this RSN gets the verified tick.
   const mine = await ownedPlayerIds(user?.id)
   const verifiedBy = mine.includes(player.id) ? user.id : null
+  const who = { username: player.username, displayName: player.displayName }
+  const base = { slug: clan.slug, name: clan.name, player: who, verified: Boolean(verifiedBy) }
+
+  const { rowCount: isMember } = await pool.query('SELECT 1 FROM clan_members WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id])
+  if (isMember) {
+    if (verifiedBy) await pool.query('UPDATE clan_members SET user_id = $3 WHERE clan_id = $1 AND player_id = $2 AND user_id IS NULL', [clan.id, player.id, verifiedBy])
+    return { ...base, status: 'member', alreadyMember: true }
+  }
+
+  // The owner and moderators add people straight away; everyone else asks, and one of them answers.
+  if (user && canManage(await roleOf(clan, user.id))) {
+    await addMember(clan, player, verifiedBy)
+    return { ...base, status: 'member', alreadyMember: false }
+  }
+
+  if (clan.accepting_requests === false) throw new ClanError('This clan is not taking new join requests right now.', 403)
+  const { rows: waiting } = await pool.query('SELECT count(*)::int AS n FROM clan_join_requests WHERE clan_id = $1', [clan.id])
+  const { rowCount: existing } = await pool.query('SELECT 1 FROM clan_join_requests WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id])
+  if (!existing && waiting[0].n >= MAX_PENDING_REQUESTS) throw new ClanError('This clan has too many requests waiting. Try again once some have been answered.', 429)
+  await pool.query(
+    `INSERT INTO clan_join_requests (clan_id, player_id, user_id) VALUES ($1, $2, $3)
+     ON CONFLICT (clan_id, player_id) DO UPDATE SET user_id = COALESCE(clan_join_requests.user_id, EXCLUDED.user_id)`,
+    [clan.id, player.id, user?.id ?? null],
+  )
+  return { ...base, status: 'pending', alreadyMember: false, alreadyRequested: Boolean(existing) }
+}
+
+/** Puts a player in the clan (and in its competitions that have not finished). */
+async function addMember(clan, player, verifiedBy) {
   const { rowCount } = await pool.query('INSERT INTO clan_members (clan_id, player_id, user_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING', [clan.id, player.id, verifiedBy])
   if (rowCount) await addEntrantToOpenCompetitions(clan.id, player).catch((err) => console.error('[clans] could not add the new member to competitions:', err.message))
-  else if (verifiedBy) await pool.query('UPDATE clan_members SET user_id = $3 WHERE clan_id = $1 AND player_id = $2 AND user_id IS NULL', [clan.id, player.id, verifiedBy])
-  return { slug: clan.slug, name: clan.name, player: { username: player.username, displayName: player.displayName }, alreadyMember: !rowCount, verified: Boolean(verifiedBy) }
+  return rowCount > 0
+}
+
+// --- join requests ----------------------------------------------------------------------------------------------------------
+
+/** Turns new join requests on or off for a clan. Requests already waiting can still be answered. Owner only (checked by the route). */
+export async function setAcceptingRequests(clan, accepting) {
+  await pool.query('UPDATE clans SET accepting_requests = $2 WHERE id = $1', [clan.id, Boolean(accepting)])
+  return Boolean(accepting)
+}
+
+/** The requests waiting in a clan, oldest first, for its owner and moderators. */
+export async function listJoinRequests(clanId) {
+  const { rows } = await pool.query(
+    `SELECT p.username, p.display_name, r.created_at, r.user_id, ls.overall_level
+     FROM clan_join_requests r
+     JOIN players p ON p.id = r.player_id
+     LEFT JOIN LATERAL (SELECT overall_level FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) ls ON true
+     WHERE r.clan_id = $1 ORDER BY r.created_at`,
+    [clanId],
+  )
+  return rows.map((r) => ({ username: r.username, displayName: r.display_name, requestedAt: r.created_at, overallLevel: r.overall_level, signedIn: r.user_id != null }))
+}
+
+async function requestFor(clan, username) {
+  const player = await getPlayerByUsername(username)
+  const { rows } = player ? await pool.query('SELECT * FROM clan_join_requests WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id]) : { rows: [] }
+  if (!rows[0]) throw new ClanError('That request is not waiting any more.', 404)
+  return { player, request: rows[0] }
+}
+
+/** Lets a waiting player in. The verified tick goes to the account that asked, when it owns that RSN. */
+export async function approveRequest(clan, username) {
+  const { player, request } = await requestFor(clan, username)
+  if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
+  const owned = await ownedPlayerIds(request.user_id)
+  await addMember(clan, player, owned.includes(player.id) ? request.user_id : null)
+  await pool.query('DELETE FROM clan_join_requests WHERE id = $1', [request.id])
+}
+
+/** Turns a request down. It is simply removed. */
+export async function declineRequest(clan, username) {
+  const { request } = await requestFor(clan, username)
+  await pool.query('DELETE FROM clan_join_requests WHERE id = $1', [request.id])
+}
+
+/** Each request waiting in the clans this account answers for, newest first: [{ slug, clanName, username, displayName, requestedAt }]. */
+export async function pendingRequestsFor(userId, limit = 50) {
+  const owned = await ownedPlayerIds(userId)
+  const { rows } = await pool.query(
+    `SELECT c.slug, c.name AS clan_name, p.username, p.display_name, r.created_at
+     FROM clan_join_requests r
+     JOIN clans c ON c.id = r.clan_id
+     JOIN players p ON p.id = r.player_id
+     WHERE c.owner_user_id = $1 OR c.id IN (SELECT clan_id FROM clan_members WHERE role = 'mod' AND player_id = ANY($2::int[]))
+     ORDER BY r.created_at DESC LIMIT $3`,
+    [userId, owned, limit],
+  )
+  return rows.map((r) => ({ slug: r.slug, clanName: r.clan_name, username: r.username, displayName: r.display_name, requestedAt: r.created_at }))
+}
+
+/** The clans where this account answers requests (it owns them, or a profile it has verified is a moderator), with how many wait. */
+export async function pendingRequestCounts(userId) {
+  const owned = await ownedPlayerIds(userId)
+  const { rows } = await pool.query(
+    `SELECT c.slug, c.name, count(r.id)::int AS n
+     FROM clans c JOIN clan_join_requests r ON r.clan_id = c.id
+     WHERE c.owner_user_id = $1 OR c.id IN (SELECT clan_id FROM clan_members WHERE role = 'mod' AND player_id = ANY($2::int[]))
+     GROUP BY c.id, c.slug, c.name ORDER BY max(r.created_at) DESC`,
+    [userId, owned],
+  )
+  return rows
 }
 
 /** Takes a member out. Owners and moderators can remove anyone (only the owner a moderator); the account that owns an RSN can remove its own. */
@@ -235,6 +336,7 @@ export async function getInviteCardData(token) {
   )
   return {
     name: clan.name,
+    acceptingRequests: clan.accepting_requests !== false,
     description: clan.description,
     memberCount: members.length,
     members: shown.map((m) => ({ username: m.username, displayName: m.displayName, overallLevel: m.overallLevel, weekGain: m.weekGain, photo: photos.get(m.username.toLowerCase()) || null })),

@@ -2,6 +2,7 @@ import { pool } from '../db.js'
 import { hasRole } from '../utils/roles.js'
 import { countPending } from './claims.service.js'
 import { unreadCount } from './inbox.service.js'
+import { pendingRequestCounts, pendingRequestsFor } from './clans.service.js'
 
 /**
  * What needs this account's attention right now, worked out live from the data (nothing is stored, so there is nothing
@@ -25,6 +26,18 @@ export async function getNotifications(user) {
   )
   for (const r of rows) {
     items.push({ id: `claim-${r.id}`, type: 'claim_code', count: 1, text: `Send your code to finish claiming ${r.display_name}`, to: `/player/${encodeURIComponent(r.username)}` })
+  }
+
+  // Clan owners and moderators: each person waiting to be let in, with their picture. A long queue shows the newest few
+  // and one line for the rest.
+  const MAX_REQUEST_ITEMS = 6
+  const waiting = await pendingRequestsFor(user.id)
+  for (const r of waiting.slice(0, MAX_REQUEST_ITEMS)) {
+    items.push({ id: `clan-request-${r.slug}-${r.username}`, type: 'clan_request', count: 1, text: `${r.displayName} asked to join ${r.clanName}`, to: `/clans/${r.slug}`, subject: r.username, createdAt: r.requestedAt })
+  }
+  if (waiting.length > MAX_REQUEST_ITEMS) {
+    const rest = (await pendingRequestCounts(user.id)).reduce((sum, c) => sum + c.n, 0) - MAX_REQUEST_ITEMS
+    if (rest > 0) items.push({ id: 'clan-requests-more', type: 'clan_requests', count: rest, text: `${rest} more request${rest === 1 ? '' : 's'} to join your clans`, to: '/clans/mine' })
   }
 
   // Stored events (the inbox) count by how many are still unread.

@@ -17,7 +17,7 @@
         <button v-if="canCopyImage" class="btn btn-ghost" type="button" :disabled="copyingImage" @click="copyImage"><ShareIcon name="image" />{{ copyingImage ? 'Copying…' : 'Copy image' }}</button>
         <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare"><ShareIcon name="share" />More…</button>
       </div>
-      <p class="empty-hint share-modal-hint">Anyone with the link can join with their RuneScape name, no account needed. Pasted into Discord, X or Reddit, the link shows this card with who is in the clan and the competition that is on. If you make a new link, the old one stops working.</p>
+      <p class="empty-hint share-modal-hint">Anyone with the link can ask to join with their RuneScape name, no account needed. You approve each request. Pasted into Discord, X or Reddit, the link shows this card with who is in the clan and the competition that is on. If you make a new link, the old one stops working.</p>
     </div>
   </div>
 </template>

@@ -13,7 +13,7 @@
         </div>
         <p v-else class="acct-email" :title="user.email">{{ user.email }}</p>
         <RouterLink class="acct-item" role="menuitem" :to="{ name: 'account' }" @click="open = false">My account<span v-if="countOf('claim_code')" class="acct-count" :aria-label="`${countOf('claim_code')} to finish`">{{ countOf('claim_code') }}</span></RouterLink>
-        <RouterLink class="acct-item" role="menuitem" :to="{ name: 'myClans' }" @click="open = false">My clans</RouterLink>
+        <RouterLink class="acct-item" role="menuitem" :to="{ name: 'myClans' }" @click="open = false">My clans<span v-if="clanRequests" class="acct-count" :aria-label="`${clanRequests} requests to answer`">{{ clanRequests }}</span></RouterLink>
         <RouterLink v-if="isAdmin" class="acct-item" role="menuitem" :to="{ name: 'adminClaims' }" @click="open = false">Profile claims<span v-if="countOf('claims_waiting')" class="acct-count" :aria-label="`${countOf('claims_waiting')} waiting`">{{ countOf('claims_waiting') }}</span></RouterLink>
         <RouterLink v-if="isAdmin" class="acct-item" role="menuitem" :to="{ name: 'adminStats' }" @click="open = false">Statistics</RouterLink>
         <button class="acct-item" type="button" role="menuitem" @click="doLogout">Log out</button>
@@ -47,6 +47,7 @@ const initial = computed(() => (user.value?.email || '?').charAt(0).toUpperCase(
 const nextQuery = computed(() => (['login', 'signup', 'forgotPassword', 'resetPassword', 'verifyEmail'].includes(route.name) ? undefined : { next: route.fullPath }))
 
 // How many notifications of one kind there are, for the little red number on the matching menu item.
+const clanRequests = computed(() => countOf('clan_request') + countOf('clan_requests'))
 const countOf = (type) => notifications.value.items.filter((n) => n.type === type).reduce((sum, n) => sum + n.count, 0)
 
 // Opening the menu also checks for a newly approved claim, so the profile name shows up without a reload.

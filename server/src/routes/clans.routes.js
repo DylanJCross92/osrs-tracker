@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireUser } from './auth.routes.js'
 import { renderClanInviteCardPng } from '../services/cardImage.service.js'
-import { ClanError, canManage, createClan, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
+import { ClanError, approveRequest, setAcceptingRequests, canManage, createClan, declineRequest, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
 import { CompetitionError, cancelCompetition, createCompetition, getCompetition } from '../services/competitions.service.js'
 import { pool } from '../db.js'
 
@@ -88,9 +88,32 @@ clansRouter.post('/clans/:slug/invite/reset', attachUser, requireUser, manageLim
   res.json({ inviteToken: await resetInvite(clan) })
 }))
 
+clansRouter.post('/clans/:slug/requests/accepting', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
+  const clan = await clanAs(req, res, { owner: true })
+  if (!clan) return
+  if (typeof req.body?.accepting !== 'boolean') return res.status(400).json({ error: 'Choose on or off.' })
+  res.json({ acceptingRequests: await setAcceptingRequests(clan, req.body.accepting) })
+}))
+
+clansRouter.post('/clans/:slug/requests/:username/approve', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
+  const clan = await clanAs(req, res, { manage: true })
+  if (!clan) return
+  await approveRequest(clan, req.params.username)
+  res.json({ ok: true })
+}))
+
+clansRouter.post('/clans/:slug/requests/:username/decline', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
+  const clan = await clanAs(req, res, { manage: true })
+  if (!clan) return
+  await declineRequest(clan, req.params.username)
+  res.json({ ok: true })
+}))
+
 clansRouter.post('/clans/:slug/delete', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
   const clan = await clanAs(req, res, { owner: true })
   if (!clan) return
+  // The word has to come with the request, as it has to be typed on the page.
+  if (String(req.body?.confirm || '').trim().toLowerCase() !== 'delete') return res.status(400).json({ error: 'Type Delete to confirm deleting the clan.' })
   await deleteClan(clan)
   res.json({ ok: true })
 }))

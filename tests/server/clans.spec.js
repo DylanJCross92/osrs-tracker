@@ -150,11 +150,11 @@ describe('results', () => {
 
 describe('describeInvite', () => {
   it('says how many are in and what is on', () => {
-    expect(describeInvite({ name: 'Iron', memberCount: 12, competitions: [{ title: 'Mining sprint', label: 'Mining XP', status: 'running' }] })).toBe('12 members. Running now: Mining sprint (Mining XP). Join with your RuneScape name.')
+    expect(describeInvite({ name: 'Iron', memberCount: 12, competitions: [{ title: 'Mining sprint', label: 'Mining XP', status: 'running' }] })).toBe('12 members. Running now: Mining sprint (Mining XP). Ask to join with your RuneScape name.')
     expect(describeInvite({ name: 'Iron', memberCount: 3, competitions: [{ title: 'Big week', label: 'Overall XP', status: 'scheduled' }] })).toContain('Starting soon: Big week (Overall XP)')
   })
   it('falls back to a plain invitation with no competition, and handles one member', () => {
-    expect(describeInvite({ name: 'Iron', memberCount: 1, competitions: [] })).toBe('1 member. Join Iron with your RuneScape name, no account needed.')
+    expect(describeInvite({ name: 'Iron', memberCount: 1, competitions: [] })).toBe('1 member. Ask to join Iron with your RuneScape name, no account needed.')
   })
 })
 

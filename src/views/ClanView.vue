@@ -21,6 +21,27 @@
 
       <div class="clan-grid">
         <div class="clan-main">
+          <!-- People waiting to be let in -->
+          <section v-if="view.requests.length" class="card clan-card clan-requests" aria-labelledby="clan-req-h">
+            <header class="dash-card-head">
+              <h2 id="clan-req-h">Join requests <span class="clan-req-count">{{ view.requests.length }}</span></h2>
+              <span class="dash-hint">asked through the invite link</span>
+            </header>
+            <ul class="clan-reqs">
+              <li v-for="r in view.requests" :key="r.username" class="clan-req">
+                <RouterLink class="clan-avatar" :to="profileRoute(r)" :aria-label="`Open ${r.displayName}'s profile`"><PlayerAvatar :name="r.username" /></RouterLink>
+                <div class="clan-who">
+                  <span class="clan-name"><RouterLink :to="profileRoute(r)">{{ r.displayName }}</RouterLink></span>
+                  <small><OverallLevel :level="r.overallLevel" empty="Not synced yet" /> · asked {{ agoText(r.requestedAt) }}</small>
+                </div>
+                <span class="clan-req-actions">
+                  <button class="btn btn-primary clan-req-yes" type="button" :disabled="busy" @click="answer(r, true)">Approve</button>
+                  <button class="btn btn-ghost clan-req-no" type="button" :disabled="busy" @click="answer(r, false)">Decline</button>
+                </span>
+              </li>
+            </ul>
+          </section>
+
           <!-- Competitions -->
           <section class="card clan-card" aria-labelledby="clan-comp-h">
             <header class="dash-card-head">
@@ -75,7 +96,7 @@
                     <svg v-if="m.verified" class="clan-tick" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Verified owner"><title>Verified: this profile's owner joined</title><circle cx="12" cy="12" r="9.5" /><path d="M8 12.5l2.7 2.7L16 9.5" /></svg>
                     <span v-if="m.role === 'mod'" class="clan-chip">Mod</span>
                   </span>
-                  <small>{{ m.overallLevel ? `Level ${m.overallLevel.toLocaleString('en-US')}` : 'Not synced yet' }}</small>
+                  <small><OverallLevel :level="m.overallLevel" empty="Not synced yet" /></small>
                 </div>
                 <span class="clan-gain" :class="{ 'is-up': m.weekGain > 0 }">{{ m.weekGain > 0 ? `+${formatXp(m.weekGain)}` : '-' }}</span>
                 <span class="clan-actions">
@@ -92,7 +113,7 @@
         <aside class="clan-side">
           <section v-if="view.viewer.canInvite && view.viewer.inviteToken" class="card clan-card" aria-labelledby="clan-invite-h">
             <h2 id="clan-invite-h">Invite people</h2>
-            <p class="clan-note">Send the link, or share the card below. Anyone can join with their RuneScape name, no account needed.</p>
+            <p class="clan-note">Send the link, or share the card below. Anyone can ask to join with their RuneScape name, no account needed, and you approve each request here.</p>
             <button class="clan-invite-card" type="button" aria-label="Open the invite card to share" @click="inviteOpen = true">
               <img :src="clansApi.inviteImageUrl(view.viewer.inviteToken)" :alt="`Invite card for ${view.clan.name}`" loading="lazy" />
             </button>
@@ -106,13 +127,31 @@
 
           <section v-else-if="!view.viewer.role" class="card clan-card">
             <h2>Join this clan</h2>
-            <p class="clan-note">Ask a member or the owner for the invite link, then open it and enter your RuneScape name.</p>
+            <p class="clan-note">{{ view.clan.acceptingRequests ? 'Ask a member or the owner for the invite link, then open it and ask to join with your RuneScape name. The owner or a moderator approves you.' : 'This clan is not taking new join requests right now.' }}</p>
           </section>
 
           <section v-if="view.viewer.role === 'owner'" class="card clan-card clan-danger">
             <h2>Owner</h2>
+            <div class="clan-switch-block">
+              <div class="clan-switch-row">
+                <button type="button" class="clan-switch" :class="{ on: view.clan.acceptingRequests }" role="switch" :aria-checked="view.clan.acceptingRequests" aria-label="Accept new join requests" :disabled="busy" @click="toggleRequests"><i /></button>
+                <b class="clan-switch-label">Join requests</b>
+              </div>
+              <p class="clan-switch-help">{{ view.clan.acceptingRequests ? 'Anyone with the invite link can ask to join.' : 'The invite link is not taking new requests. Ones already waiting can still be answered.' }}</p>
+            </div>
             <p class="clan-note">Deleting the clan removes it for everyone, along with its competitions.</p>
-            <button class="btn btn-ghost" type="button" :disabled="busy" @click="deleteClan" @blur="confirming = ''">{{ confirming === '@delete' ? 'Press again to delete it' : 'Delete clan' }}</button>
+            <button v-if="!deleteOpen" class="btn btn-ghost" type="button" :disabled="busy" @click="openDelete">Delete clan</button>
+            <form v-else class="clan-delete" novalidate @submit.prevent="deleteClan">
+              <label class="clan-field">
+                <span>Type <b>Delete</b> to confirm</span>
+                <input ref="deleteInput" v-model="deleteText" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Delete" data-1p-ignore :disabled="busy" @keydown.esc.stop="closeDelete" />
+              </label>
+              <p class="clan-note">This removes {{ view.clan.name }}, its members and all of its competitions for everyone. It cannot be undone.</p>
+              <div class="clan-btns">
+                <button class="btn clan-delete-go" type="submit" :disabled="busy || !deleteReady">{{ busy ? 'Deleting…' : 'Delete this clan' }}</button>
+                <button class="btn btn-ghost" type="button" :disabled="busy" @click="closeDelete">Cancel</button>
+              </div>
+            </form>
           </section>
         </aside>
       </div>
@@ -124,11 +163,12 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClanCompetitionModal from '@/components/clans/ClanCompetitionModal.vue'
 import ClanInviteModal from '@/components/clans/ClanInviteModal.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import OverallLevel from '@/components/OverallLevel.vue'
 import { ApiError } from '@/api/client'
 import { clansApi } from '@/api/clans'
 import { useAuth } from '@/composables/useAuth'
@@ -230,6 +270,45 @@ async function remove(m) {
   const ok = await act(m.username, () => clansApi.remove(view.value.clan.slug, m.username), isMine(m) ? 'You left the clan.' : `${m.displayName} was removed.`)
   if (ok) await load()
 }
+async function toggleRequests() {
+  busy.value = true
+  const turnOn = !view.value.clan.acceptingRequests
+  try {
+    await clansApi.setAcceptingRequests(view.value.clan.slug, turnOn)
+    track('clan_requests_toggle', { on: turnOn })
+    await load()
+    showToast(turnOn ? 'The clan is taking join requests again.' : 'New join requests are off.')
+  } catch (err) {
+    showToast(message(err))
+  } finally {
+    busy.value = false
+  }
+}
+async function answer(r, yes) {
+  busy.value = true
+  try {
+    if (yes) await clansApi.approveRequest(view.value.clan.slug, r.username)
+    else await clansApi.declineRequest(view.value.clan.slug, r.username)
+    showToast(yes ? `${r.displayName} joined the clan.` : `${r.displayName}'s request was declined.`)
+    track('clan_request_answer', { approved: yes })
+    await load()
+  } catch (err) {
+    showToast(message(err))
+    await load()
+  } finally {
+    busy.value = false
+  }
+}
+// "just now", "5 minutes ago", "3 hours ago", "2 days ago".
+function agoText(d) {
+  const mins = Math.max(Math.floor((Date.now() - new Date(d).getTime()) / 60_000), 0)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`
+  const days = Math.floor(hours / 24)
+  return `${days} day${days === 1 ? '' : 's'} ago`
+}
 async function toggleMod(m) {
   busy.value = true
   try {
@@ -245,9 +324,33 @@ async function resetInvite() {
   const ok = await act('@reset', () => clansApi.resetInvite(view.value.clan.slug), 'New invite link made.')
   if (ok) await load()
 }
+// Deleting asks for the word "Delete" to be typed first, so it cannot happen by a stray click.
+const deleteOpen = ref(false)
+const deleteText = ref('')
+const deleteInput = ref(null)
+const deleteReady = computed(() => deleteText.value.trim().toLowerCase() === 'delete')
+async function openDelete() {
+  deleteOpen.value = true
+  deleteText.value = ''
+  await nextTick()
+  deleteInput.value?.focus()
+}
+function closeDelete() {
+  deleteOpen.value = false
+  deleteText.value = ''
+}
 async function deleteClan() {
-  const ok = await act('@delete', () => clansApi.delete(view.value.clan.slug), 'Clan deleted.')
-  if (ok) router.push({ name: 'clans' })
+  if (!deleteReady.value || busy.value) return
+  busy.value = true
+  try {
+    await clansApi.delete(view.value.clan.slug, deleteText.value.trim())
+    showToast('Clan deleted.')
+    router.push({ name: 'clans' })
+  } catch (err) {
+    showToast(message(err))
+  } finally {
+    busy.value = false
+  }
 }
 
 // --- competitions ---------------------------------------------------------------------------------------------------

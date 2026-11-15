@@ -3,6 +3,7 @@
     <header class="clan-mine-head">
       <RouterLink class="clan-mine-name" :to="{ name: 'clan', params: { slug: clan.slug } }">{{ clan.name }}</RouterLink>
       <span class="clan-mine-tags">
+        <RouterLink v-if="clan.pendingRequests" class="clan-status is-scheduled clan-reqchip" :to="{ name: 'clan', params: { slug: clan.slug } }">{{ clan.pendingRequests }} {{ clan.pendingRequests === 1 ? 'request' : 'requests' }}</RouterLink>
         <span class="clan-chip">{{ ROLE_LABELS[clan.role] }}</span>
       </span>
     </header>

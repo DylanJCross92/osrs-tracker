@@ -62,7 +62,7 @@
               <div v-for="s in [sideA, sideB]" :key="s.key" class="cmp-player" :class="{ 'is-lead': leader === s.key }">
                 <span class="cmp-avatar" aria-hidden="true"><PlayerAvatar :name="s.player.username" /></span>
                 <RouterLink class="cmp-name" :to="{ name: 'playerDetail', params: { username: s.player.username } }">{{ s.player.displayName }}</RouterLink>
-                <span class="cmp-meta">Overall {{ s.latest.overallLevel.toLocaleString('en-US') }} · {{ formatXp(s.latest.overallXp) }} XP</span>
+                <span class="cmp-meta"><OverallLevel :level="s.latest.overallLevel" /> · {{ formatXp(s.latest.overallXp) }} XP</span>
                 <span v-if="leader === s.key" class="cmp-crown">Ahead {{ periodPhrase }}</span>
               </div>
               <span class="cmp-vs cmp-vs-big" aria-hidden="true">vs</span>
@@ -116,6 +116,7 @@
 
 <script setup>
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'

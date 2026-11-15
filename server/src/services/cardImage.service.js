@@ -879,6 +879,7 @@ const monthDay = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'sh
 
 async function buildClanInviteTree(d) {
   const AV = 50
+  const overallIcon = await skillIconDataUri('Overall').catch(() => null)
   const nameSize = d.name.length <= 16 ? 78 : d.name.length <= 26 ? 62 : 48
 
   const memberRow = (m) =>
@@ -886,7 +887,9 @@ async function buildClanInviteTree(d) {
       node('div', { display: 'flex', width: AV, height: AV, borderRadius: 13, overflow: 'hidden', border: `2px solid ${COLORS.border}`, flexShrink: 0 }, [m.photo ? image(m.photo, AV - 4, AV - 4) : pixelAvatar(m.username, AV - 4)]),
       node('div', { display: 'flex', flexDirection: 'column', flex: 1 }, [
         node('div', { display: 'flex', fontSize: 26, fontWeight: 800, color: COLORS.cream }, clip(m.displayName, 14)),
-        node('div', { display: 'flex', fontSize: 20, color: COLORS.muted }, m.overallLevel ? `Level ${m.overallLevel.toLocaleString('en-US')}` : 'New to TickGains'),
+        m.overallLevel
+          ? node('div', { display: 'flex', alignItems: 'center', gap: 6, fontSize: 20, color: COLORS.muted }, [...(overallIcon ? [image(overallIcon, 20, 20)] : []), `Overall ${m.overallLevel.toLocaleString('en-US')}`])
+          : node('div', { display: 'flex', fontSize: 20, color: COLORS.muted }, 'New to TickGains'),
       ]),
       ...(m.weekGain > 0 ? [node('div', { display: 'flex', fontSize: 24, fontWeight: 800, color: COLORS.green }, `+${formatXp(m.weekGain)}`)] : []),
     ])
@@ -899,7 +902,7 @@ async function buildClanInviteTree(d) {
         node('div', { display: 'flex', fontSize: 21, color: COLORS.muted }, c.status === 'running' ? `Running now, ends ${monthDay(c.endsAt)}` : `Starts ${monthDay(c.startsAt)}, ends ${monthDay(c.endsAt)}`),
       ]),
     ])
-  const noComp = node('div', { display: 'flex', fontSize: 24, color: COLORS.muted }, 'XP competitions between the clan, no account needed to join')
+  const noComp = node('div', { display: 'flex', fontSize: 24, color: COLORS.muted }, 'XP competitions between the clan, no account needed')
 
   return node(
     'div',
@@ -938,7 +941,7 @@ async function buildClanInviteTree(d) {
       ]),
 
       node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
-        node('div', { fontSize: 28, fontWeight: 800, color: COLORS.gold }, 'Join with your RuneScape name'),
+        node('div', { fontSize: 28, fontWeight: 800, color: COLORS.gold }, d.acceptingRequests === false ? 'Not taking new requests right now' : 'Ask to join with your RuneScape name'),
         node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
       ]),
     ],

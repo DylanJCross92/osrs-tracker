@@ -13,7 +13,7 @@
               <template v-else>Your dashboard</template>
             </h1>
             <p v-if="player?.latest" class="dash-sub">
-              Level {{ player.latest.overallLevel.toLocaleString('en-US') }} · {{ formatXp(player.latest.overallXp) }} XP · updated {{ formatRelative(player.latest.capturedAt) }}
+              <OverallLevel :level="player.latest.overallLevel" /> · {{ formatXp(player.latest.overallXp) }} XP · updated {{ formatRelative(player.latest.capturedAt) }}
             </p>
             <p v-else-if="!current" class="dash-sub">Your week, goals and plans in one place.</p>
           </div>
@@ -130,6 +130,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
+import OverallLevel from '@/components/OverallLevel.vue'
 import DashInbox from '@/components/dashboard/DashInbox.vue'
 import DashMilestones from '@/components/dashboard/DashMilestones.vue'
 import DashNext from '@/components/dashboard/DashNext.vue'

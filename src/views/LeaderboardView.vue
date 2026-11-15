@@ -42,7 +42,7 @@
                 <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /></span>
                 <span class="disc-bar"><span :style="{ width: `${(r.value / max) * 100}%` }" /></span>
               </span>
-              <span class="lb-meta">{{ r.meta }}</span>
+              <span class="lb-meta"><img v-if="skill === 'Overall' && mode !== 'level' && r.meta" class="ovr-ic" :src="skillIconSrc('Overall')" alt="" width="16" height="16" />{{ r.meta }}</span>
               <span class="disc-board-xp" :class="{ dim: !r.value, 'lb-plain': mode !== 'gains' }">{{ valueText(r) }}</span>
             </RouterLink>
           </li>
@@ -63,7 +63,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import { playersApi } from '@/api/players'
 import { setPageMeta } from '@/utils/pageMeta'
-import { SKILL_NAMES, formatXp } from '@/utils/osrsSkills'
+import { SKILL_NAMES, formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { track } from '@/utils/analytics'
 
@@ -159,7 +159,7 @@ const valueOf = (p) => {
 }
 const metaOf = (p) => {
   if (mode.value === 'level') return `${Math.round(p.overallXp || 0).toLocaleString('en-US')} XP`
-  if (skill.value === 'Overall') return p.overallLevel ? `Total ${p.overallLevel.toLocaleString('en-US')}` : ''
+  if (skill.value === 'Overall') return p.overallLevel ? `Overall ${p.overallLevel.toLocaleString('en-US')}` : ''
   const lv = p.skillLevels?.[skill.value]?.level
   return lv ? `Level ${lv}` : ''
 }

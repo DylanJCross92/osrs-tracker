@@ -14,7 +14,8 @@
       <div class="bell-scroll">
         <RouterLink v-for="n in notifications.items" :key="n.id" class="bell-item is-live" :to="n.to" @click="open = false">
           <i class="bell-dot" aria-hidden="true" />
-          <span class="bell-text">{{ n.text }}</span>
+          <span v-if="n.subject" class="bell-av" aria-hidden="true"><PlayerAvatar :name="n.subject" /></span>
+          <span class="bell-text">{{ n.text }}<small v-if="n.createdAt">{{ ago(n.createdAt) }}</small></span>
         </RouterLink>
 
         <p v-if="loading && !inbox.length" class="bell-empty">Loading…</p>

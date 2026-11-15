@@ -16,7 +16,7 @@
             <span class="fol-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
             <small v-if="p.latest" class="fol-event">{{ p.latest.title }} · {{ ago(p.latest.at) }}</small>
             <small v-else-if="p.topSkill && p.weekGain" class="fol-event">Mostly {{ p.topSkill }} this week</small>
-            <small v-else class="fol-event">Level {{ p.overallLevel?.toLocaleString('en-US') ?? '?' }}</small>
+            <small v-else class="fol-event"><OverallLevel :level="p.overallLevel" empty="Overall ?" /></small>
           </span>
           <span class="fol-gain" :class="{ 'is-up': p.dayGain > 0 }">
             <b>{{ p.dayGain > 0 ? `+${formatXp(p.dayGain)}` : p.weekGain > 0 ? `+${formatXp(p.weekGain)}` : '-' }}</b>
@@ -32,6 +32,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import OverallLevel from '@/components/OverallLevel.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import { followsApi } from '@/api/follows'
 import { useFollowing } from '@/composables/useFollowing'

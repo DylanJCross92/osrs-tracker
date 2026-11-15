@@ -14,7 +14,7 @@
         <div class="pt-player-main">
           <RouterLink class="pt-name" :to="{ name: 'playerDetail', params: { username: player.username } }">{{ player.displayName }}</RouterLink>
           <span class="pt-stats">
-            <span>Total level <i>{{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
+            <span class="ovr"><img class="ovr-ic" :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <i>{{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
             <span><i>{{ formatNum(player.latest.overallXp) }}</i> XP</span>
             <span>Updated {{ formatRelative(player.latest.capturedAt) }}</span>
           </span>

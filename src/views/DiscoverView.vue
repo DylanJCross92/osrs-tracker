@@ -277,7 +277,7 @@
         <RouterLink v-for="p in data[rail.key]" :key="`a${p.id}`" :to="profileTo(p.username)" class="card discover-card">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
           <span class="discover-card-stats">
-            <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
+            <span><OverallLevel :level="p.overallLevel" /></span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
             <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString('en-US') }}</span>
           </span>
@@ -293,7 +293,7 @@
         <RouterLink v-for="p in data[rail.key]" :key="`b${p.id}`" :to="profileTo(p.username)" class="card discover-card" tabindex="-1">
           <span class="discover-card-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
           <span class="discover-card-stats">
-            <span>Overall {{ p.overallLevel?.toLocaleString('en-US') }}</span>
+            <span><OverallLevel :level="p.overallLevel" /></span>
             <span>{{ formatXp(p.overallXp) }} XP</span>
             <span v-if="p.overallRank > 0">Rank {{ p.overallRank.toLocaleString('en-US') }}</span>
           </span>
@@ -313,6 +313,7 @@
 
 <script setup>
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
