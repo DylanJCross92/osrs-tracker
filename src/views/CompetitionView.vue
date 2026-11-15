@@ -23,7 +23,7 @@
             <h1>{{ c.title }}</h1>
             <p>
               <span class="cmt-tag">{{ metricLabel }}</span>
-              <span class="cmt-tag">{{ data.entrants }} {{ data.entrants === 1 ? 'entrant' : 'entrants' }}</span>
+              <span class="cmt-tag">{{ data.entrants }} {{ data.entrants === 1 ? 'member' : 'members' }}</span>
               <span class="cmt-tag">{{ lengthLabel }}</span>
             </p>
           </div>

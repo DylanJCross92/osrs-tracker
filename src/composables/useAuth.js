@@ -7,6 +7,7 @@ import { linkAccountData, unlinkAccountData } from '@/utils/accountData'
 import { useRivals } from '@/composables/useRivals'
 import { useGainPeriod } from '@/composables/useGainPeriod'
 import { setAccountInternal } from '@/utils/analytics'
+import { meForProfiles } from '@/utils/identity'
 
 // Accounts keep a few preferences (your OSRS name, your rivals, the gain period) so they follow you between devices.
 // Everything still works with no account: the same values live in this browser's localStorage as before. When you are
@@ -22,7 +23,7 @@ const profilesReady = ref(false)
 // Things that need this account's attention (see the avatar's red badge): { items, total }.
 const notifications = ref({ items: [], unread: 0, total: 0 })
 
-const { me, rivals } = useRivals()
+const { me, rivals, setMe } = useRivals()
 const { period } = useGainPeriod()
 
 const snapshot = () => ({ me: me.value, rivals: [...rivals.value], gainPeriod: period.value })
@@ -80,6 +81,9 @@ export async function refreshProfiles() {
   try {
     const res = await claimsApi.mine()
     profiles.value = res.claims.filter((c) => c.status === 'verified').map((c) => c.player)
+    // An account that owns a profile is that profile: a name saved earlier (or by the "I am" button) cannot stay as "you".
+    const mine = meForProfiles(profiles.value, me.value)
+    if (mine && mine !== me.value) setMe(mine)
   } catch {
     // Keep whatever we had.
   } finally {

@@ -18,7 +18,7 @@
           <span class="clan-mine-comp-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path v-for="d in RECORD_ICONS.trophy" :key="d" :d="d" /></svg></span>
           <span class="clan-mine-comp-text">
             <b>{{ c.title }}</b>
-            <small>{{ c.label }} · {{ c.entrants }} {{ c.entrants === 1 ? 'entrant' : 'entrants' }}</small>
+            <small>{{ c.label }} · {{ c.entrants }} {{ c.entrants === 1 ? 'member' : 'members' }}</small>
             <small>{{ fullDateTime(c.startsAt) }} to {{ fullDateTime(c.endsAt) }}</small>
           </span>
           <span class="clan-status" :class="c.status === 'running' ? 'is-running' : 'is-scheduled'">{{ c.status === 'running' ? 'Running' : 'Upcoming' }}</span>

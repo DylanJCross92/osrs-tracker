@@ -60,7 +60,7 @@
                     </span>
                     <span class="clan-comp-tags">
                       <span class="cmt-tag">{{ metricLabel(c) }}</span>
-                      <span class="cmt-tag">{{ c.entrants }} {{ c.entrants === 1 ? 'entrant' : 'entrants' }}</span>
+                      <span class="cmt-tag">{{ c.entrants }} {{ c.entrants === 1 ? 'member' : 'members' }}</span>
                     </span>
                     <span class="clan-comp-when">
                       <span>{{ dayText(c.startsAt) }}</span>

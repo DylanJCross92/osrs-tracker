@@ -93,7 +93,7 @@
             <div class="cmp-actions">
               <button class="btn btn-ghost" @click="copyLink">Copy link</button>
               <RouterLink class="btn btn-ghost" :to="pairLink(sideB.player.username, sideA.player.username)">Swap</RouterLink>
-              <button v-if="!isMe(sideA.player.username)" class="btn btn-ghost" @click="iAm(sideA.player.displayName)">I am {{ sideA.player.displayName }}</button>
+              <button v-if="!isMe(sideA.player.username) && !profiles.length" class="btn btn-ghost" @click="iAm(sideA.player.displayName)">I am {{ sideA.player.displayName }}</button>
               <button v-if="!isMe(sideB.player.username)" class="btn btn-ghost" @click="toggleRival(sideB.player.displayName)">{{ isFollowing(sideB.player.displayName) ? `Unfollow ${sideB.player.displayName}` : `Follow ${sideB.player.displayName}` }}</button>
             </div>
           </section>
@@ -145,7 +145,7 @@ const router = useRouter()
 const store = usePlayersStore()
 const { showToast } = useToast()
 const { period } = useGainPeriod()
-const { loggedIn } = useAuth()
+const { loggedIn, profiles } = useAuth()
 const { me, rivals, isMe, setMe } = useRivals()
 const { isFollowing, follow, unfollow, toggle: toggleFollowing } = useFollowing()
 
@@ -172,6 +172,12 @@ const canSubmit = computed(() => {
   const a = inputA.value.trim()
   const b = inputB.value.trim()
   return !!a && !!b && a.toLowerCase() !== b.toLowerCase()
+})
+
+// Your own name is filled into the first box. It can change after the page opens (the account's verified profile is read a
+// moment later and replaces a name saved earlier), so follow it until something has been typed there.
+watch(me, (now, before) => {
+  if (!typed.a && !nameA.value && String(inputA.value).trim().toLowerCase() === String(before || '').trim().toLowerCase()) inputA.value = now || ''
 })
 
 // The challenge is about the week, so open on the 7-day view. If the link came without your name, start in your box.
