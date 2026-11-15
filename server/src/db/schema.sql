@@ -325,3 +325,63 @@ CREATE TABLE IF NOT EXISTS share_stats (
   n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, type, kind, detail)
 );
+
+-- Clans (a real clan, or a few friends) and the competitions they run. A clan is a set of tracked players; an account owns it. The
+-- slug is the public page (unlisted: only people given the link find it), the invite token is what lets someone join.
+CREATE TABLE IF NOT EXISTS clans (
+  id SERIAL PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  visibility TEXT NOT NULL DEFAULT 'unlisted' CHECK (visibility IN ('unlisted', 'public')),
+  invite_token TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS clans_owner_idx ON clans (owner_user_id);
+
+-- Members are players (RSNs). user_id is set when the account that owns that RSN (a verified claim) joined, which is what the
+-- verified tick on the clan page means.
+CREATE TABLE IF NOT EXISTS clan_members (
+  clan_id INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('mod', 'member')),
+  user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (clan_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS clan_members_player_idx ON clan_members (player_id);
+
+-- A competition: who gained the most XP (in one skill, or overall) between two moments. status moves scheduled, running, then
+-- finished (or cancelled). results is the frozen final standing, written once when it finishes.
+CREATE TABLE IF NOT EXISTS competitions (
+  id SERIAL PRIMARY KEY,
+  clan_id INTEGER NOT NULL REFERENCES clans(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  metric TEXT NOT NULL CHECK (metric IN ('skill_xp', 'overall_xp')),
+  skill TEXT NOT NULL DEFAULT '',
+  starts_at TIMESTAMPTZ NOT NULL,
+  ends_at TIMESTAMPTZ NOT NULL,
+  status TEXT NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'running', 'finished', 'cancelled')),
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
+  results JSONB
+);
+CREATE INDEX IF NOT EXISTS competitions_clan_idx ON competitions (clan_id, starts_at DESC);
+CREATE INDEX IF NOT EXISTS competitions_status_idx ON competitions (status, starts_at);
+
+-- Each entrant's XP in the competition's metric at the start (taken from a fresh hiscores check when it begins, or when they
+-- join late) and at the end. Gain is end minus start.
+CREATE TABLE IF NOT EXISTS competition_members (
+  competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  start_xp BIGINT,
+  start_at TIMESTAMPTZ,
+  end_xp BIGINT,
+  end_at TIMESTAMPTZ,
+  PRIMARY KEY (competition_id, player_id)
+);
+CREATE INDEX IF NOT EXISTS competition_members_player_idx ON competition_members (player_id);

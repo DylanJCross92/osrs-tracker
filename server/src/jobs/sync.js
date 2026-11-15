@@ -53,6 +53,9 @@ export async function selectDuePlayers() {
      WHERE last_checked_at IS NULL
         OR (COALESCE(last_xp_gain_at, created_at) >= now() - ($1::int * interval '1 day')
             AND last_checked_at <= now() - ($2::numeric * interval '1 minute'))
+        -- Anyone in a running competition is checked as often as an active player, however quiet they have been.
+        OR (id IN (SELECT cm.player_id FROM competition_members cm JOIN competitions c ON c.id = cm.competition_id WHERE c.status = 'running')
+            AND last_checked_at <= now() - ($2::numeric * interval '1 minute'))
         OR (COALESCE(last_xp_gain_at, created_at) < now() - ($1::int * interval '1 day')
             AND last_checked_at <= now() - ($3::numeric * interval '1 minute'))
      ORDER BY id ASC`,

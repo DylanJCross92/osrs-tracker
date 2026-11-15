@@ -10,6 +10,7 @@ export const KIND_LABELS = {
   plan: 'Plan',
   calculator: 'Calculator',
   compare: 'Compare',
+  clan: 'Clan invite',
 }
 export const KINDS = Object.keys(KIND_LABELS)
 

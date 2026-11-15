@@ -10,6 +10,8 @@ describe('shareFromEvent', () => {
     expect(shareFromEvent('plan_share', { method: 'native' })).toEqual({ kind: 'plan', method: 'social' })
     expect(shareFromEvent('share_card', { method: 'live' })).toEqual({ kind: 'weekly_card', method: 'link' })
     expect(shareFromEvent('share_card', { method: 'download' })).toEqual({ kind: 'weekly_card', method: 'image' })
+    expect(shareFromEvent('clan_share', { method: 'copy_link' })).toEqual({ kind: 'clan', method: 'link' })
+    expect(shareFromEvent('clan_share', { method: 'copy_image' })).toEqual({ kind: 'clan', method: 'image' })
   })
   it('counts copied calculator, compare and plan links', () => {
     expect(shareFromEvent('calc_share', { skill: 'Mining' })).toEqual({ kind: 'calculator', method: 'link' })
@@ -31,6 +33,7 @@ describe('sharedLinkKind', () => {
     expect(sharedLinkKind('/player/Zezima/goals/12')).toBe('goal')
     expect(sharedLinkKind('/player/Zezima/card/weekly/abc123')).toBe('weekly_card')
     expect(sharedLinkKind('/plan/my-plan')).toBe('plan')
+    expect(sharedLinkKind('/join/bEYPONY4aTuUMmZgGBx-TA')).toBe('clan')
   })
   it('counts marked planner, compare and calculator links only when they carry from=share', () => {
     expect(sharedLinkKind('/planner', { from: 'share' })).toBe('plan')

@@ -55,6 +55,14 @@ const routes = [
   { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
   { path: '/admin/claims', name: 'adminClaims', component: () => import('@/views/AdminClaimsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/stats', name: 'adminStats', component: () => import('@/views/AdminStatsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  // Clans: a clan or friends running XP competitions. The Clans page is open to everyone; making one needs an account, and viewing a clan and joining
+  // through an invite link does not.
+  { path: '/clans', name: 'clans', component: () => import('@/views/ClansView.vue') },
+  { path: '/clans/mine', name: 'myClans', component: () => import('@/views/MyClansView.vue'), meta: { requiresAuth: true } },
+  { path: '/clans/new', name: 'clanNew', component: () => import('@/views/ClanNewView.vue'), meta: { requiresAuth: true } },
+  { path: '/clans/:slug', name: 'clan', component: () => import('@/views/ClanView.vue') },
+  { path: '/competitions/:id', name: 'competition', component: () => import('@/views/CompetitionView.vue') },
+  { path: '/join/:token', name: 'clanJoin', component: () => import('@/views/ClanJoinView.vue') },
   { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
   {

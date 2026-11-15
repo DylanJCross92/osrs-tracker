@@ -22,6 +22,7 @@ const SHARE_EVENTS = {
   record_share: 'record',
   goal_share: 'goal',
   plan_share: 'plan',
+  clan_share: 'clan',
 }
 // Events that are always a copied link.
 const LINK_EVENTS = { calc_share: 'calculator', compare_share_copy: 'compare', shared_plan_link_copied: 'plan' }
@@ -46,6 +47,7 @@ export function sharedLinkKind(path, query = {}) {
   if (/^\/player\/[^/]+\/goals\/[^/]+/i.test(p)) return 'goal'
   if (/^\/player\/[^/]+\/card\/weekly/i.test(p)) return 'weekly_card'
   if (/^\/plan\/[^/]+/i.test(p)) return 'plan'
+  if (/^\/join\/[^/]+/i.test(p)) return 'clan'
   if (query?.from === 'share') {
     if (/^\/planner/i.test(p)) return 'plan'
     if (/^\/compare/i.test(p)) return 'compare'

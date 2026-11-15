@@ -16,9 +16,13 @@ import { followsRouter } from './routes/follows.routes.js'
 import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
 import { plansRouter } from './routes/plans.routes.js'
+import { clansRouter } from './routes/clans.routes.js'
+import { getInviteCardData } from './services/clans.service.js'
+import { describeInvite } from './utils/clans.js'
 import { statsRouter } from './routes/stats.routes.js'
 import { getPublicShare } from './services/sharedPlans.service.js'
 import { startScheduler } from './jobs/sync.js'
+import { startCompetitionJob } from './jobs/competitions.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
@@ -56,6 +60,7 @@ app.use('/api', followsRouter)
 app.use('/api', profilePagesRouter)
 app.use('/api', goalsRouter)
 app.use('/api', plansRouter)
+app.use('/api', clansRouter)
 app.use('/api', statsRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
@@ -625,6 +630,29 @@ if (distExists) {
     })
   }
 
+  // A clan invite link, with its picture baked into the HTML so it unfurls in Discord, X and Reddit. Never indexed: the link is
+  // the invitation.
+  app.get('/join/:token', async (req, res, next) => {
+    try {
+      const data = await getInviteCardData(req.params.token)
+      if (!data) return res.sendFile(path.join(distPath, 'index.html'))
+      const token = encodeURIComponent(req.params.token)
+      const open = data.competitions[0]
+      const version = `${data.memberCount}-${open ? open.id : 0}`
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `Join ${data.name} on TickGains`,
+          description: describeInvite(data),
+          imageUrl: `${SITE_URL}/api/clans/invite/${token}/image.png?v=${version}`,
+          pageUrl: `${SITE_URL}/join/${token}`,
+          noindex: true,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
   app.get('/discover', (req, res) => {
     res.send(
       injectCardMeta(indexHtmlTemplate, {
@@ -756,6 +784,7 @@ app.listen(port, () => {
 })
 
 startScheduler()
+startCompetitionJob()
 // Warm the cached homepage/Discover data so the first visitor doesn't pay for it.
 getHome().catch(() => {})
 // Reconstruct achievements/milestones for players tracked before they existed (idempotent).

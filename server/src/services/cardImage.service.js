@@ -871,3 +871,81 @@ async function buildPlanCardTree({ name, rsn, mode, summary, plan }) {
 export async function renderPlanCardPng(share) {
   return renderPng(await buildPlanCardTree(share))
 }
+
+
+// --- Clan invite card (what an invite link unfurls into, and what is shared as a picture) -----------------------------
+
+const monthDay = (iso) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })
+
+async function buildClanInviteTree(d) {
+  const AV = 50
+  const nameSize = d.name.length <= 16 ? 78 : d.name.length <= 26 ? 62 : 48
+
+  const memberRow = (m) =>
+    node('div', { display: 'flex', alignItems: 'center', gap: 14 }, [
+      node('div', { display: 'flex', width: AV, height: AV, borderRadius: 13, overflow: 'hidden', border: `2px solid ${COLORS.border}`, flexShrink: 0 }, [m.photo ? image(m.photo, AV - 4, AV - 4) : pixelAvatar(m.username, AV - 4)]),
+      node('div', { display: 'flex', flexDirection: 'column', flex: 1 }, [
+        node('div', { display: 'flex', fontSize: 26, fontWeight: 800, color: COLORS.cream }, clip(m.displayName, 14)),
+        node('div', { display: 'flex', fontSize: 20, color: COLORS.muted }, m.overallLevel ? `Level ${m.overallLevel.toLocaleString('en-US')}` : 'New to TickGains'),
+      ]),
+      ...(m.weekGain > 0 ? [node('div', { display: 'flex', fontSize: 24, fontWeight: 800, color: COLORS.green }, `+${formatXp(m.weekGain)}`)] : []),
+    ])
+
+  const compTile = (c) =>
+    node('div', { display: 'flex', alignItems: 'center', gap: 16, padding: '14px 20px', borderRadius: 18, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}` }, [
+      svgIcon(36, COLORS.gold, TROPHY, { stroke: true }),
+      node('div', { display: 'flex', flexDirection: 'column' }, [
+        node('div', { display: 'flex', fontSize: 30, fontWeight: 800, color: COLORS.cream }, c.label),
+        node('div', { display: 'flex', fontSize: 21, color: COLORS.muted }, c.status === 'running' ? `Running now, ends ${monthDay(c.endsAt)}` : `Starts ${monthDay(c.startsAt)}, ends ${monthDay(c.endsAt)}`),
+      ]),
+    ])
+  const noComp = node('div', { display: 'flex', fontSize: 24, color: COLORS.muted }, 'XP competitions between the clan, no account needed to join')
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '40px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 15% 35%, #3a2e14 0%, #1d1810 45%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'You are invited to join'),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', gap: 40, alignItems: 'stretch' }, [
+        node('div', { display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center', gap: 18 }, [
+          node('div', { display: 'flex', fontSize: nameSize, fontWeight: 800, color: COLORS.gold, lineHeight: 1.05 }, clip(d.name, 40)),
+          ...(d.description ? [node('div', { display: 'flex', fontSize: 26, color: '#d8ccae', lineHeight: 1.35 }, clip(d.description, 110))] : []),
+          node('div', { display: 'flex', gap: 10 }, [chip([node('div', { display: 'flex', fontWeight: 800 }, d.memberCount.toLocaleString('en-US')), node('div', { display: 'flex', color: COLORS.muted }, d.memberCount === 1 ? 'member' : 'members')])]),
+          node('div', { display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }, d.competitions.length ? d.competitions.map(compTile) : [noComp]),
+        ]),
+
+        node('div', { display: 'flex', flexDirection: 'column', width: 470, padding: '18px 24px', borderRadius: 26, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, gap: 9, flexShrink: 0 }, [
+          node('div', { display: 'flex', fontSize: 20, fontWeight: 800, color: COLORS.muted, letterSpacing: '0.12em', textTransform: 'uppercase' }, 'Already in the clan'),
+          ...d.members.map(memberRow),
+          ...(d.moreMembers > 0 ? [node('div', { display: 'flex', fontSize: 22, fontWeight: 700, color: COLORS.gold }, `and ${d.moreMembers.toLocaleString('en-US')} more`)] : []),
+        ]),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 28, fontWeight: 800, color: COLORS.gold }, 'Join with your RuneScape name'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** getInviteCardData(...) -> PNG Buffer. */
+export async function renderClanInviteCardPng(data) {
+  return renderPng(await buildClanInviteTree(data))
+}
