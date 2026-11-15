@@ -18,6 +18,51 @@ export const LENGTHS = [
 const NOW_WINDOW_MS = 60_000
 const GRACE_MS = 5 * 60_000
 
+// --- Skill of the Week ---------------------------------------------------------------------------------------------------
+// One skill is featured each week (Monday to Sunday, on the viewer's clock), the same for everyone. It walks through every
+// skill in a scrambled but fixed order, so it never repeats until all of them have had a turn.
+const gcd = (a, b) => (b ? gcd(b, a % b) : a)
+
+/** Midnight at the start of the Monday of the week this date falls in. */
+export function mondayOf(d) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7))
+  return x
+}
+
+/** Midnight at the start of the Monday after this date's week. */
+export function nextMonday(d) {
+  const m = mondayOf(d)
+  m.setDate(m.getDate() + 7)
+  return m
+}
+
+/** The featured skill for the week this date falls in. `skills` is the list to choose from. */
+export function skillOfTheWeek(skills, d = new Date()) {
+  const n = skills.length
+  const m = mondayOf(d)
+  const week = Math.floor(Date.UTC(m.getFullYear(), m.getMonth(), m.getDate()) / (7 * DAY))
+  const step = [7, 5, 11, 13, 3, 1].find((k) => gcd(k, n) === 1)
+  return skills[(week * step) % n]
+}
+
+export const sotwTitle = (skill) => `Skill of the Week: ${skill}`
+
+/** Sets the form up as a Skill of the Week: that skill, a week long, starting now or at the next Monday midnight. */
+export function applySotw(form, skill, startMode = 'now', now = new Date()) {
+  form.metric = 'skill_xp'
+  form.skill = skill
+  form.title = sotwTitle(skill)
+  if (startMode === 'monday') {
+    const start = nextMonday(now)
+    form.startDate = toDateInput(start)
+    form.startTime = toTimeInput(start)
+  } else {
+    setStartNow(form, now)
+  }
+  applyLength(form, 7 * DAY, now)
+}
+
 /** A sensible title to start from: "Mining XP race" or "Overall XP race". */
 export function defaultTitle(metric, skill) {
   return metric === 'overall_xp' ? 'Overall XP race' : `${skill || 'Skill'} XP race`

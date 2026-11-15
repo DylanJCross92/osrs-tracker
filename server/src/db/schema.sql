@@ -327,18 +327,21 @@ CREATE TABLE IF NOT EXISTS share_stats (
 );
 
 -- Clans (a real clan, or a few friends) and the competitions they run. A clan is a set of tracked players; an account owns it. The
--- slug is the public page (unlisted: only people given the link find it), the invite token is what lets someone join.
+-- slug is the public page, the invite token is what lets someone join.
 CREATE TABLE IF NOT EXISTS clans (
   id SERIAL PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
   description TEXT NOT NULL DEFAULT '',
   owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  visibility TEXT NOT NULL DEFAULT 'unlisted' CHECK (visibility IN ('unlisted', 'public')),
+  visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('unlisted', 'public')),
   invite_token TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS clans_owner_idx ON clans (owner_user_id);
+-- Every clan is listed on the Clans page now (the column is kept; nothing can set it to unlisted any more).
+ALTER TABLE clans ALTER COLUMN visibility SET DEFAULT 'public';
+UPDATE clans SET visibility = 'public' WHERE visibility <> 'public';
 
 -- Members are players (RSNs). user_id is set when the account that owns that RSN (a verified claim) joined, which is what the
 -- verified tick on the clan page means.
@@ -351,9 +354,6 @@ CREATE TABLE IF NOT EXISTS clan_members (
   PRIMARY KEY (clan_id, player_id)
 );
 CREATE INDEX IF NOT EXISTS clan_members_player_idx ON clan_members (player_id);
--- The member's overall XP the moment they joined, so the clan only counts XP gained after that. Null for older rows, which
--- fall back to the newest snapshot from before they joined.
-ALTER TABLE clan_members ADD COLUMN IF NOT EXISTS joined_xp BIGINT;
 
 -- A competition: who gained the most XP (in one skill, or overall) between two moments. status moves scheduled, running, then
 -- finished (or cancelled). results is the frozen final standing, written once when it finishes.

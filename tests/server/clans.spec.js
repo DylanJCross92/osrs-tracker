@@ -6,7 +6,7 @@ const SKILLS = ['Overall', 'Attack', 'Mining', 'Fishing']
 
 describe('clan input', () => {
   it('accepts a normal name and tidies whitespace', () => {
-    expect(cleanClanInput({ name: '  The   Iron\nClan  ', description: 'Weekly   XP races' })).toEqual({ ok: true, value: { name: 'The Iron Clan', description: 'Weekly XP races', visibility: 'unlisted' } })
+    expect(cleanClanInput({ name: '  The   Iron\nClan  ', description: 'Weekly   XP races' })).toEqual({ ok: true, value: { name: 'The Iron Clan', description: 'Weekly XP races' } })
   })
   it('rejects names that are too short, missing, or contain links', () => {
     expect(cleanClanInput({ name: 'ab' }).ok).toBe(false)
@@ -155,15 +155,6 @@ describe('describeInvite', () => {
   })
   it('falls back to a plain invitation with no competition, and handles one member', () => {
     expect(describeInvite({ name: 'Iron', memberCount: 1, competitions: [] })).toBe('1 member. Join Iron with your RuneScape name, no account needed.')
-  })
-})
-
-describe('clan visibility', () => {
-  it('is unlisted unless the owner asks for listed', () => {
-    expect(cleanClanInput({ name: 'The Iron Clan' }).value.visibility).toBe('unlisted')
-    expect(cleanClanInput({ name: 'The Iron Clan', visibility: 'public' }).value.visibility).toBe('public')
-    expect(cleanClanInput({ name: 'The Iron Clan', visibility: 'secret' }).value.visibility).toBe('unlisted')
-    expect(cleanClanInput({ name: 'The Iron Clan', visibility: true }).value.visibility).toBe('unlisted')
   })
 })
 

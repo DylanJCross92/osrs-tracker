@@ -3,21 +3,15 @@ import { BASE_URL, api } from './client'
 const enc = encodeURIComponent
 
 export const clansApi = {
-  // Signed in. { slug, name, description, visibility, createdAt, memberCount }
-  // `visibility` is 'unlisted' (only people with the link find it) or 'public' (listed on the Clans page).
-  create: (name, description, visibility = 'unlisted') => api.post('/clans', { name, description, visibility }),
+  // Signed in. { slug, name, description, createdAt, memberCount }. Every clan is listed on the Clans page.
+  create: (name, description) => api.post('/clans', { name, description }),
   // Public. The Clans page: { clans: [{ slug, name, description, createdAt, memberCount, weekGain, topMembers, competitions }],
-  // `weekGain` counts XP gained in the clan only: from when each member joined, last 7 days at most. A clan with a running
-  // competition also has `competitionGain` and `competitionTitle`: the XP gained in it since it started.
   // running: [{ ...competition, clan: { slug, name } }], totals: { clans, members, runningCompetitions, weekGain } }
   list: () => api.get('/clans'),
-  setVisibility: (slug, visibility) => api.post(`/clans/${enc(slug)}/visibility`, { visibility }),
   // Signed in. { clans: [{ ...clan, openCompetitions, owner }] }
   mine: () => api.get('/clans/mine'),
   // Anyone. The clan, its members with this week's gain, its competitions and what the viewer may do:
-  // `members` carry `gain` (XP since the running competition started, or the last 7 days when none is running; null when
-  // not in that competition) and `period` says which: { kind: 'week' } or { kind: 'competition', competition: { id, title, startsAt } }.
-  // { clan, members, period, competitions, viewer: { role, canManage, canInvite, inviteToken } }
+  // { clan, members, competitions, viewer: { role, canManage, canInvite, inviteToken } }
   get: (slug) => api.get(`/clans/${enc(slug)}`),
   // What an invite link shows before joining: { slug, name, description, memberCount }.
   preview: (token) => api.get(`/clans/invite/${enc(token)}`),

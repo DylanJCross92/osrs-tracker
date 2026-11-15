@@ -14,15 +14,13 @@ const RSN_RE = /^[A-Za-z0-9 _-]{1,12}$/
 export const plain = (v, max) => (typeof v === 'string' ? v.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max) : '')
 const hasLink = (v) => /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|net|org|gg|io|tv|co|me|ly)\b)/i.test(v)
 
-/** { ok: true, value: { name, description, visibility } } or { ok: false, error } from a request body. */
+/** { ok: true, value: { name, description } } or { ok: false, error } from a request body. */
 export function cleanClanInput(body) {
   const name = plain(body?.name, NAME_MAX)
   const description = plain(body?.description, DESCRIPTION_MAX)
   if (name.length < NAME_MIN) return { ok: false, error: `Give the clan a name of at least ${NAME_MIN} characters.` }
   if (hasLink(name) || hasLink(description)) return { ok: false, error: 'Links are not allowed in a clan name or description.' }
-  // Unlisted unless the owner chooses otherwise: only people given the link find it. Listed clans appear on the Clans page.
-  const visibility = body?.visibility === 'public' ? 'public' : 'unlisted'
-  return { ok: true, value: { name, description, visibility } }
+  return { ok: true, value: { name, description } }
 }
 
 /** An RSN the way the hiscores accept it, or null. */
@@ -61,7 +59,6 @@ export function describeInvite({ name, memberCount, competitions }) {
   return `${people}. Join ${name} with your RuneScape name, no account needed.`
 }
 
-export const VISIBILITIES = ['unlisted', 'public']
 
 /**
  * The Clans page, from raw rows: each listed clan with its size, XP gained by its members this week, its three top gainers and

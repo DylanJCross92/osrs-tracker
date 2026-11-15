@@ -9,21 +9,55 @@
     </section>
 
     <template v-else-if="data">
-      <header class="card clan-head">
-        <div class="clan-head-main">
-          <p class="clan-kicker">
-            <RouterLink class="cmt-clan" :to="{ name: 'clan', params: { slug: c.clan.slug } }">{{ c.clan.name }}</RouterLink>
-            <span class="clan-status" :class="`is-${c.status}`">{{ statusLabel }}</span>
-          </p>
-          <h1>{{ c.title }}</h1>
-          <p class="clan-meta">{{ metricLabel }} · {{ data.entrants }} {{ data.entrants === 1 ? 'entrant' : 'entrants' }} · runs for {{ lengthLabel }}</p>
-          <dl class="cmt-dates">
-            <div><dt>Starts</dt><dd>{{ startText }}</dd></div>
-            <div><dt>{{ c.status === 'finished' || pastEnd ? 'Ended' : 'Ends' }}</dt><dd>{{ endText }}</dd></div>
-          </dl>
-          <p class="cmt-clock" :class="{ 'is-live': c.status === 'running' && !pastEnd }">{{ clock }}</p>
+      <header class="card cmt-hero" :class="`is-${c.status}`">
+        <div class="cmt-hero-top">
+          <RouterLink class="cmt-clan" :to="{ name: 'clan', params: { slug: c.clan.slug } }">{{ c.clan.name }}</RouterLink>
+          <span class="cmt-pill-status" :class="`is-${c.status}`"><i aria-hidden="true" />{{ statusLabel }}</span>
         </div>
-        <button v-if="data.viewer.canManage && isOpen" class="btn btn-ghost" type="button" :disabled="busy" @click="cancel" @blur="confirming = false">{{ confirming ? 'Press again to cancel it' : 'Cancel competition' }}</button>
+
+        <div class="cmt-hero-main">
+          <span class="cmt-hero-icon" aria-hidden="true">
+            <img :src="skillIconSrc(c.metric === 'overall_xp' ? 'Overall' : c.skill)" alt="" width="40" height="40" />
+          </span>
+          <div class="cmt-hero-title">
+            <h1>{{ c.title }}</h1>
+            <p>
+              <span class="cmt-tag">{{ metricLabel }}</span>
+              <span class="cmt-tag">{{ data.entrants }} {{ data.entrants === 1 ? 'entrant' : 'entrants' }}</span>
+              <span class="cmt-tag">{{ lengthLabel }}</span>
+            </p>
+          </div>
+          <button v-if="data.viewer.canManage && isOpen" class="btn btn-ghost cmt-cancel" type="button" :disabled="busy" @click="cancel" @blur="confirming = false">{{ confirming ? 'Press again to cancel it' : 'Cancel competition' }}</button>
+        </div>
+
+        <div class="cmt-timeline" aria-label="When the competition runs">
+          <div class="cmt-tl-ends">
+            <div class="cmt-tl-end">
+              <span>Starts</span>
+              <b>{{ dayText(c.startsAt) }}</b>
+              <small>{{ timeText(c.startsAt) }}</small>
+            </div>
+            <div class="cmt-tl-end is-right">
+              <span>{{ c.status === 'finished' || pastEnd ? 'Ended' : 'Ends' }}</span>
+              <b>{{ dayText(c.endsAt) }}</b>
+              <small>{{ timeText(c.endsAt) }}</small>
+            </div>
+          </div>
+          <div class="cmt-track" role="progressbar" :aria-valuenow="Math.round(progress)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${Math.round(progress)}% of the competition has passed`">
+            <i :style="{ width: `${progress}%` }" />
+            <span v-if="c.status === 'running' && !pastEnd" class="cmt-track-now" :style="{ left: `${progress}%` }" />
+          </div>
+        </div>
+
+        <div class="cmt-count" :class="{ 'is-live': c.status === 'running' && !pastEnd }">
+          <template v-if="countdown">
+            <span class="cmt-count-label">{{ countdown.label }}</span>
+            <span class="cmt-count-blocks">
+              <span v-for="u in countdown.parts" :key="u.unit" class="cmt-count-block"><b>{{ u.value }}</b><small>{{ u.unit }}</small></span>
+            </span>
+          </template>
+          <span v-else class="cmt-count-text">{{ clock }}</span>
+        </div>
       </header>
 
       <!-- The result -->
@@ -82,7 +116,7 @@ import { ApiError } from '@/api/client'
 import { competitionsApi } from '@/api/clans'
 import { useToast } from '@/composables/useToast'
 import { clockText, fullDateTime, lengthText } from '@/utils/competitionForm'
-import { formatXp } from '@/utils/osrsSkills'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { setPageMeta } from '@/utils/pageMeta'
 import { RECORD_ICONS } from '@/utils/recordText'
 
@@ -133,6 +167,36 @@ const statusLabel = computed(() => ({ scheduled: 'Upcoming', running: pastEnd.va
 const metricLabel = computed(() => (c.value.metric === 'overall_xp' ? 'Overall XP' : `${c.value.skill} XP`))
 const startText = computed(() => fullDateTime(c.value.startsAt))
 const endText = computed(() => fullDateTime(c.value.endsAt))
+const dayText = (d) => new Date(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', ...(new Date(d).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })
+const timeText = (d) => new Date(d).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+// How far through it is, 0 to 100.
+const progress = computed(() => {
+  if (c.value.status === 'finished') return 100
+  const start = new Date(c.value.startsAt).getTime()
+  const end = new Date(c.value.endsAt).getTime()
+  if (c.value.status !== 'running' || now.value <= start) return 0
+  return Math.min(Math.max(((now.value - start) / (end - start)) * 100, 0), 100)
+})
+// The time left to the start (before it) or to the end (while it runs), as days, hours and minutes. Null otherwise.
+const countdown = computed(() => {
+  const start = new Date(c.value.startsAt).getTime()
+  const end = new Date(c.value.endsAt).getTime()
+  let label
+  let ms
+  if (c.value.status === 'scheduled' || (c.value.status === 'running' && now.value < start)) [label, ms] = ['Starts in', start - now.value]
+  else if (c.value.status === 'running' && now.value < end) [label, ms] = ['Ends in', end - now.value]
+  else return null
+  const mins = Math.max(Math.floor(ms / 60_000), 0)
+  const days = Math.floor(mins / 1440)
+  const hours = Math.floor((mins % 1440) / 60)
+  const minutes = mins % 60
+  const parts = [
+    ...(days ? [{ unit: days === 1 ? 'day' : 'days', value: days }] : []),
+    { unit: hours === 1 ? 'hour' : 'hours', value: hours },
+    ...(days ? [] : [{ unit: minutes === 1 ? 'min' : 'mins', value: minutes }]),
+  ]
+  return { label, parts }
+})
 const lengthLabel = computed(() => lengthText(new Date(c.value.endsAt) - new Date(c.value.startsAt)))
 const profileRoute = (m) => ({ name: 'playerDetail', params: { username: m.username } })
 

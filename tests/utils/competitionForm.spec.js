@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyLength, blankForm, buildCompetitionBody, clockText, defaultTitle, describeWindow, durationText, fullDateTime, joinLocal, lengthText, setStartNow, toDateInput, toTimeInput } from '@/utils/competitionForm'
+import { applyLength, applySotw, mondayOf, nextMonday, skillOfTheWeek, sotwTitle, blankForm, buildCompetitionBody, clockText, defaultTitle, describeWindow, durationText, fullDateTime, joinLocal, lengthText, setStartNow, toDateInput, toTimeInput } from '@/utils/competitionForm'
 
 const now = new Date(2026, 10, 14, 15, 20) // 14 Nov 2026, 3:20 PM local
 const at = (y, m, d, h = 0, min = 0) => new Date(y, m - 1, d, h, min)
@@ -118,5 +118,37 @@ describe('titles and clock', () => {
     expect(clockText(c('running', -30, -1), now.getTime())).toContain('Finishing up')
     expect(clockText(c('finished', -30, -1), now.getTime())).toMatch(/^Ended /)
     expect(clockText(c('cancelled', 1, 20), now.getTime())).toBe('Cancelled')
+  })
+})
+
+describe('Skill of the Week', () => {
+  const SKILLS = ['Attack', 'Defence', 'Strength', 'Hitpoints', 'Ranged', 'Prayer', 'Magic', 'Cooking', 'Woodcutting', 'Fletching', 'Fishing', 'Firemaking', 'Crafting', 'Smithing', 'Mining', 'Herblore', 'Agility', 'Thieving', 'Slayer', 'Farming', 'Runecraft', 'Hunter', 'Construction', 'Sailing']
+  it('finds the Monday of a week and the one after', () => {
+    // 14 Nov 2026 is a Saturday.
+    expect(mondayOf(at(2026, 11, 14, 15, 20)).getTime()).toBe(at(2026, 11, 9).getTime())
+    expect(mondayOf(at(2026, 11, 9, 0, 0)).getTime()).toBe(at(2026, 11, 9).getTime())
+    expect(mondayOf(at(2026, 11, 15, 23, 59)).getTime()).toBe(at(2026, 11, 9).getTime())
+    expect(nextMonday(at(2026, 11, 14, 15, 20)).getTime()).toBe(at(2026, 11, 16).getTime())
+    expect(nextMonday(at(2026, 11, 16, 0, 0)).getTime()).toBe(at(2026, 11, 23).getTime())
+  })
+  it('features the same skill all week and a new one each Monday', () => {
+    const week = ['2026-11-09', '2026-11-11', '2026-11-15'].map((d) => skillOfTheWeek(SKILLS, new Date(`${d}T12:00`)))
+    expect(new Set(week).size).toBe(1)
+    expect(skillOfTheWeek(SKILLS, new Date('2026-11-16T12:00'))).not.toBe(week[0])
+  })
+  it('goes through every skill before repeating', () => {
+    const seen = new Set()
+    for (let w = 0; w < SKILLS.length; w++) seen.add(skillOfTheWeek(SKILLS, new Date(2026, 0, 5 + 7 * w, 12)))
+    expect(seen.size).toBe(SKILLS.length)
+  })
+  it('sets the form up for a week of one skill, starting now or on Monday', () => {
+    const f = blankForm(now)
+    applySotw(f, 'Fishing', 'now', now)
+    expect(f).toMatchObject({ metric: 'skill_xp', skill: 'Fishing', title: sotwTitle('Fishing'), startDate: '2026-11-14', startTime: '15:20', endDate: '2026-11-21', endTime: '15:20' })
+    applySotw(f, 'Fishing', 'monday', now)
+    expect(f).toMatchObject({ startDate: '2026-11-16', startTime: '00:00', endDate: '2026-11-23', endTime: '00:00' })
+    const r = buildCompetitionBody(f, now)
+    expect(r.ok).toBe(true)
+    expect(r.body.title).toBe('Skill of the Week: Fishing')
   })
 })

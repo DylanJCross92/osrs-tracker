@@ -14,10 +14,6 @@
           <span>Description <small>optional, {{ description.length }}/200</small></span>
           <textarea v-model="description" maxlength="200" rows="3" placeholder="A line about who this clan is for" :disabled="busy"></textarea>
         </label>
-        <label class="clan-check">
-          <input v-model="listed" type="checkbox" :disabled="busy" />
-          <span><b>List it on the Clans page</b><small>Anyone can then find the clan and see its members and competitions. Left off, only people you send the link to can see it. You can change this any time.</small></span>
-        </label>
         <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
         <div class="clan-btns">
           <button class="btn btn-primary" type="submit" :disabled="busy || name.trim().length < 3">{{ busy ? 'Creating…' : 'Create clan' }}</button>
@@ -42,7 +38,6 @@ setPageMeta({ title: 'New clan', description: 'Start a clan on TickGains.', path
 const router = useRouter()
 const name = ref('')
 const description = ref('')
-const listed = ref(false)
 const error = ref('')
 const busy = ref(false)
 
@@ -51,8 +46,8 @@ async function create() {
   busy.value = true
   error.value = ''
   try {
-    const clan = await clansApi.create(name.value.trim(), description.value.trim(), listed.value ? 'public' : 'unlisted')
-    track('clan_create', { listed: listed.value })
+    const clan = await clansApi.create(name.value.trim(), description.value.trim())
+    track('clan_create')
     router.push({ name: 'clan', params: { slug: clan.slug } })
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Something went wrong, please try again.'

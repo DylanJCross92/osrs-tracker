@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireUser } from './auth.routes.js'
 import { renderClanInviteCardPng } from '../services/cardImage.service.js'
-import { ClanError, canManage, createClan, deleteClan, getClanView, getInviteCardData, listPublicClans, setVisibility, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
+import { ClanError, canManage, createClan, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
 import { CompetitionError, cancelCompetition, createCompetition, getCompetition } from '../services/competitions.service.js'
 import { pool } from '../db.js'
 
@@ -40,7 +40,7 @@ async function clanAs(req, res, { manage = false, owner = false } = {}) {
 
 clansRouter.post('/clans', attachUser, requireUser, createLimiter, handle(async (req, res) => res.status(201).json(await createClan(req.user, req.body))))
 
-// The Clans page: clans that chose to be listed, with the competitions running across them. Public.
+// The Clans page: every clan, with its competitions. Public.
 clansRouter.get('/clans', handle(async (req, res) => {
   res.set('Cache-Control', 'public, max-age=60')
   res.json(await listPublicClans())
@@ -86,12 +86,6 @@ clansRouter.post('/clans/:slug/invite/reset', attachUser, requireUser, manageLim
   const clan = await clanAs(req, res, { manage: true })
   if (!clan) return
   res.json({ inviteToken: await resetInvite(clan) })
-}))
-
-clansRouter.post('/clans/:slug/visibility', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
-  const clan = await clanAs(req, res, { owner: true })
-  if (!clan) return
-  res.json({ visibility: await setVisibility(clan, req.body?.visibility) })
 }))
 
 clansRouter.post('/clans/:slug/delete', attachUser, requireUser, manageLimiter, handle(async (req, res) => {

@@ -4,7 +4,6 @@
       <b>{{ clan.name }}</b>
       <span class="clans-card-tags">
         <span v-if="clan.role" class="clan-chip is-mine">{{ ROLE_LABELS[clan.role] }}</span>
-        <span v-if="clan.visibility && clan.visibility !== 'public'" class="clan-listed">Unlisted</span>
         <span v-if="isNew" class="clan-chip">New</span>
         <span v-if="running" class="clan-status is-running">Competition on</span>
       </span>
@@ -12,8 +11,7 @@
     <p class="clans-card-desc">{{ clan.description || 'No description yet.' }}</p>
     <div class="clans-card-stats">
       <span><b>{{ clan.memberCount }}</b> member{{ clan.memberCount === 1 ? '' : 's' }}</span>
-      <span v-if="clan.competitionTitle" :class="{ 'stat-gain': clan.competitionGain > 0 }"><b>{{ clan.competitionGain > 0 ? `+${formatXp(clan.competitionGain)}` : '0' }}</b> XP in {{ clan.competitionTitle }}</span>
-      <span v-else :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
+      <span :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
     </div>
     <div v-if="clan.competitions.length" class="clans-card-comp">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="d in RECORD_ICONS.trophy" :key="d" :d="d" /></svg>

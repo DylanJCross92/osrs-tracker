@@ -4,13 +4,11 @@
       <RouterLink class="clan-mine-name" :to="{ name: 'clan', params: { slug: clan.slug } }">{{ clan.name }}</RouterLink>
       <span class="clan-mine-tags">
         <span class="clan-chip">{{ ROLE_LABELS[clan.role] }}</span>
-        <span v-if="clan.visibility !== 'public'" class="clan-listed">Unlisted</span>
       </span>
     </header>
     <p class="clan-mine-stats">
       <span><b>{{ clan.memberCount }}</b> member{{ clan.memberCount === 1 ? '' : 's' }}</span>
-      <span v-if="clan.competitionTitle" :class="{ 'stat-gain': clan.competitionGain > 0 }"><b>{{ clan.competitionGain > 0 ? `+${formatXp(clan.competitionGain)}` : '0' }}</b> XP in {{ clan.competitionTitle }}</span>
-      <span v-else :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
+      <span :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
     </p>
 
     <ul v-if="clan.competitions.length" class="clan-mine-comps">

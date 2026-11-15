@@ -35,7 +35,7 @@
         </header>
 
         <div v-if="!everyClan.length" class="clans-empty">
-          <p><b>No clans are listed yet.</b> Start one and choose to list it on the Clans page, and it shows up here for everyone.</p>
+          <p><b>No clans yet.</b> Start the first one and it shows up here for everyone.</p>
           <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
         </div>
         <p v-else-if="!shown.length" class="dash-empty">No clan matches "{{ query }}".</p>
@@ -51,7 +51,7 @@
         <ol class="clans-how">
           <li><b>Start a clan</b><span>Sign in, name your clan and send the invite link. Anyone can join with their RuneScape name, no account needed.</span></li>
           <li><b>Run a competition</b><span>Pick a skill or overall XP and a start and end date. Everyone's gain is measured from a fresh hiscores check at the start.</span></li>
-          <li><b>See who wins</b><span>A live leaderboard while it runs, and a result when it ends. Clans that choose to be listed show up on this page.</span></li>
+          <li><b>See who wins</b><span>A live leaderboard while it runs, and a result when it ends. Every clan shows up on this page.</span></li>
         </ol>
       </section>
     </template>
@@ -89,7 +89,7 @@ onMounted(async () => {
   loading.value = false
 })
 
-// The listed clans with your own mixed in (a clan of yours that is unlisted shows up for you, marked as yours).
+// Every clan, with your own marked as yours.
 const everyClan = computed(() => {
   const mineBySlug = new Map(mine.value.map((c) => [c.slug, c]))
   const list = (data.value?.clans || []).map((c) => (mineBySlug.has(c.slug) ? mineBySlug.get(c.slug) : c))

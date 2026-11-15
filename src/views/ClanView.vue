@@ -11,7 +11,7 @@
     <template v-else-if="view">
       <header class="card clan-head">
         <div class="clan-head-main">
-          <p class="clan-kicker">Clan<span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span><span class="clan-listed" :class="{ 'is-on': view.clan.visibility === 'public' }">{{ view.clan.visibility === 'public' ? 'Listed' : 'Unlisted' }}</span></p>
+          <p class="clan-kicker">Clan<span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span></p>
           <h1>{{ view.clan.name }}</h1>
           <p v-if="view.clan.description" class="clan-desc">{{ view.clan.description }}</p>
           <p class="clan-meta">{{ view.members.length }} member{{ view.members.length === 1 ? '' : 's' }} · created {{ createdText }}</p>
@@ -21,14 +21,48 @@
 
       <div class="clan-grid">
         <div class="clan-main">
+          <!-- Competitions -->
+          <section class="card clan-card" aria-labelledby="clan-comp-h">
+            <header class="dash-card-head">
+              <h2 id="clan-comp-h">Competitions</h2>
+              <button v-if="view.viewer.canManage" class="btn btn-primary clan-start" type="button" @click="startOpen = true">Start a competition</button>
+            </header>
+            <p v-if="!view.competitions.length" class="dash-empty">{{ view.viewer.canManage ? 'No competitions yet. Start one and everyone in the clan takes part.' : 'No competitions yet.' }}</p>
+            <ul v-else class="clan-comps">
+              <li v-for="c in competitions" :key="c.id" class="clan-comp" :class="`is-${c.status}`">
+                <RouterLink class="clan-comp-link" :to="{ name: 'competition', params: { id: c.id } }" :aria-label="`Open ${c.title}`">
+                  <span class="clan-comp-icon" aria-hidden="true"><img :src="skillIconSrc(c.metric === 'overall_xp' ? 'Overall' : c.skill)" alt="" width="30" height="30" /></span>
+                  <span class="clan-comp-body">
+                    <span class="clan-comp-top">
+                      <b>{{ c.title }}</b>
+                      <span class="cmt-pill-status" :class="`is-${c.status}`"><i aria-hidden="true" />{{ statusLabel(c) }}</span>
+                    </span>
+                    <span class="clan-comp-tags">
+                      <span class="cmt-tag">{{ metricLabel(c) }}</span>
+                      <span class="cmt-tag">{{ c.entrants }} {{ c.entrants === 1 ? 'entrant' : 'entrants' }}</span>
+                    </span>
+                    <span class="clan-comp-when">
+                      <span>{{ dayText(c.startsAt) }}</span>
+                      <span class="clan-comp-arrow" aria-hidden="true">to</span>
+                      <span>{{ dayText(c.endsAt) }}</span>
+                    </span>
+                    <span v-if="c.status === 'running'" class="clan-comp-track" aria-hidden="true"><i :style="{ width: `${progressOf(c)}%` }" /></span>
+                    <span v-if="c.winners.length" class="clan-winner">
+                      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="d in RECORD_ICONS.trophy" :key="d" :d="d" /></svg>
+                      {{ c.winners.map((w) => w.displayName).join(' and ') }} won with +{{ formatXp(c.winners[0].gain) }}
+                    </span>
+                  </span>
+                  <span class="clan-comp-clock" :class="{ 'is-live': c.status === 'running' }">{{ clockText(c, now) }}</span>
+                </RouterLink>
+              </li>
+            </ul>
+          </section>
+
           <!-- Members -->
           <section class="card clan-card" aria-labelledby="clan-members-h">
             <header class="dash-card-head">
               <h2 id="clan-members-h">Members</h2>
-              <span v-if="view.period.kind === 'competition'" class="dash-hint">
-                XP gained in <RouterLink :to="{ name: 'competition', params: { id: view.period.competition.id } }">{{ view.period.competition.title }}</RouterLink>, since {{ periodStart }}
-              </span>
-              <span v-else class="dash-hint">XP gained in the last 7 days</span>
+              <span class="dash-hint">XP gained in the last 7 days</span>
             </header>
             <p v-if="!view.members.length" class="dash-empty">Nobody has joined yet. Share the invite link and the members show up here.</p>
             <ul v-else class="clan-members">
@@ -43,41 +77,13 @@
                   </span>
                   <small>{{ m.overallLevel ? `Level ${m.overallLevel.toLocaleString('en-US')}` : 'Not synced yet' }}</small>
                 </div>
-                <span class="clan-gain" :class="{ 'is-up': m.gain > 0 }" :title="m.gain === null ? 'Not in this competition yet' : ''">{{ m.gain > 0 ? `+${formatXp(m.gain)}` : m.gain === 0 ? '0' : '-' }}</span>
+                <span class="clan-gain" :class="{ 'is-up': m.weekGain > 0 }">{{ m.weekGain > 0 ? `+${formatXp(m.weekGain)}` : '-' }}</span>
                 <span class="clan-actions">
                   <button v-if="view.viewer.role === 'owner' && (m.verified || m.role === 'mod')" class="btn-text" type="button" :title="m.role === 'mod' ? '' : 'Moderators can add and remove members and run competitions'" @click="toggleMod(m)">{{ m.role === 'mod' ? 'Remove mod' : 'Make mod' }}</button>
                   <button v-if="canRemove(m)" class="btn-text clan-remove" type="button" :disabled="busy" @click="remove(m)" @blur="confirming = ''">
                     {{ confirming === m.username ? (isMine(m) ? 'Leave?' : 'Remove?') : isMine(m) ? 'Leave' : 'Remove' }}
                   </button>
                 </span>
-              </li>
-            </ul>
-          </section>
-
-          <!-- Competitions -->
-          <section class="card clan-card" aria-labelledby="clan-comp-h">
-            <header class="dash-card-head">
-              <h2 id="clan-comp-h">Competitions</h2>
-              <button v-if="view.viewer.canManage" class="btn btn-primary clan-start" type="button" @click="startOpen = true">Start a competition</button>
-            </header>
-            <p v-if="!view.competitions.length" class="dash-empty">{{ view.viewer.canManage ? 'No competitions yet. Start one and everyone in the clan takes part.' : 'No competitions yet.' }}</p>
-            <ul v-else class="clan-comps">
-              <li v-for="c in view.competitions" :key="c.id" class="clan-comp">
-                <RouterLink class="clan-comp-link" :to="{ name: 'competition', params: { id: c.id } }" :aria-label="`Open ${c.title}`">
-                <div class="clan-comp-top">
-                  <b>{{ c.title }}</b>
-                  <span class="clan-status" :class="`is-${c.status}`">{{ statusLabel(c) }}</span>
-                </div>
-                <p class="clan-comp-meta">
-                  <span>{{ metricLabel(c) }}</span>
-                  <span>{{ rangeText(c) }}</span>
-                  <span>{{ c.entrants }} {{ c.entrants === 1 ? 'entrant' : 'entrants' }}</span>
-                </p>
-                <p v-if="c.winners.length" class="clan-winner">
-                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path v-for="d in RECORD_ICONS.trophy" :key="d" :d="d" /></svg>
-                  {{ c.winners.map((w) => w.displayName).join(' and ') }} won with +{{ formatXp(c.winners[0].gain) }}
-                </p>
-                </RouterLink>
               </li>
             </ul>
           </section>
@@ -105,8 +111,6 @@
 
           <section v-if="view.viewer.role === 'owner'" class="card clan-card clan-danger">
             <h2>Owner</h2>
-            <p class="clan-note">{{ view.clan.visibility === 'public' ? 'This clan is listed on the Clans page, so anyone can find it.' : 'This clan is unlisted: only people with a link can see it.' }}</p>
-            <button class="btn btn-ghost" type="button" :disabled="busy" @click="toggleListed">{{ view.clan.visibility === 'public' ? 'Take off the Clans page' : 'List on the Clans page' }}</button>
             <p class="clan-note">Deleting the clan removes it for everyone, along with its competitions.</p>
             <button class="btn btn-ghost" type="button" :disabled="busy" @click="deleteClan" @blur="confirming = ''">{{ confirming === '@delete' ? 'Press again to delete it' : 'Delete clan' }}</button>
           </section>
@@ -120,7 +124,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClanCompetitionModal from '@/components/clans/ClanCompetitionModal.vue'
 import ClanInviteModal from '@/components/clans/ClanInviteModal.vue'
@@ -130,8 +134,8 @@ import { clansApi } from '@/api/clans'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
-import { fullDateTime } from '@/utils/competitionForm'
-import { formatXp } from '@/utils/osrsSkills'
+import { clockText } from '@/utils/competitionForm'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { setPageMeta } from '@/utils/pageMeta'
 import { RECORD_ICONS } from '@/utils/recordText'
 
@@ -169,7 +173,6 @@ watch(() => route.params.slug, () => {
 })
 
 const roleLabel = computed(() => ({ owner: 'Owner', mod: 'Moderator', member: 'Member' })[view.value?.viewer.role] || '')
-const periodStart = computed(() => (view.value.period?.kind === 'competition' ? fullDateTime(view.value.period.competition.startsAt) : ''))
 const createdText = computed(() => new Date(view.value.clan.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))
 const profileRoute = (m) => ({ name: 'playerDetail', params: { username: m.username } })
 
@@ -238,18 +241,6 @@ async function toggleMod(m) {
     busy.value = false
   }
 }
-async function toggleListed() {
-  busy.value = true
-  try {
-    await clansApi.setVisibility(view.value.clan.slug, view.value.clan.visibility === 'public' ? 'unlisted' : 'public')
-    await load()
-    showToast(view.value.clan.visibility === 'public' ? 'The clan is now listed on the Clans page.' : 'The clan is unlisted again.')
-  } catch (err) {
-    showToast(message(err))
-  } finally {
-    busy.value = false
-  }
-}
 async function resetInvite() {
   const ok = await act('@reset', () => clansApi.resetInvite(view.value.clan.slug), 'New invite link made.')
   if (ok) await load()
@@ -262,6 +253,21 @@ async function deleteClan() {
 // --- competitions ---------------------------------------------------------------------------------------------------
 const metricLabel = (c) => (c.metric === 'overall_xp' ? 'Overall XP' : `${c.skill} XP`)
 const dateText = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-const rangeText = (c) => `${dateText(c.startsAt)} to ${dateText(c.endsAt)}`
+// Running first, then the next to start, then the ones that are over (newest first).
+const ORDER = { running: 0, scheduled: 1, finished: 2, cancelled: 3 }
+const competitions = computed(() =>
+  [...(view.value?.competitions || [])].sort((a, b) => ORDER[a.status] - ORDER[b.status] || (a.status === 'scheduled' ? new Date(a.startsAt) - new Date(b.startsAt) : new Date(b.startsAt) - new Date(a.startsAt))),
+)
+const dayText = (d) => new Date(d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', ...(new Date(d).getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}) })
+// A ticking clock for the countdowns, and how far through a running competition is.
+const now = ref(Date.now())
+let ticker = null
+onMounted(() => (ticker = setInterval(() => (now.value = Date.now()), 30_000)))
+onBeforeUnmount(() => clearInterval(ticker))
+const progressOf = (c) => {
+  const start = new Date(c.startsAt).getTime()
+  const end = new Date(c.endsAt).getTime()
+  return Math.min(Math.max(((now.value - start) / (end - start)) * 100, 0), 100)
+}
 const statusLabel = (c) => ({ scheduled: 'Upcoming', running: 'Running', finished: 'Finished', cancelled: 'Cancelled' })[c.status] || c.status
 </script>
