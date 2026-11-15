@@ -4607,3 +4607,5 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .clan-mine-none a { color: var(--gold-bright); }
 .clan-empty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 @media (max-width: 560px) { .clan-mine-grid { grid-template-columns: minmax(0, 1fr); } }
+.clan-head-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.clan-chip.is-mine { border-color: var(--gold); color: var(--gold-bright); }

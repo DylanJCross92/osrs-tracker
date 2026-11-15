@@ -5,26 +5,15 @@
         <h1>Clans</h1>
         <p class="clan-desc">Team up with your clan or friends, run XP competitions, and see who is leading this week.</p>
       </div>
-      <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
+      <div class="clan-head-actions">
+        <RouterLink v-if="loggedIn" class="btn btn-ghost" :to="{ name: 'myClans' }">My clans</RouterLink>
+        <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
+      </div>
     </header>
 
     <p v-if="loading" class="dash-loading">Loading the clans…</p>
 
     <template v-else>
-      <!-- The clans you belong to, and their competitions -->
-      <section v-if="loggedIn" class="clan-mine-group" aria-labelledby="clans-mine-h">
-        <header class="clan-mine-group-bar">
-          <h2 id="clans-mine-h" class="clan-mine-group-h">Your clans <small v-if="mine.length">{{ mine.length }}</small></h2>
-          <RouterLink v-if="mine.length" class="clan-mine-all" :to="{ name: 'myClans' }">See all my clans</RouterLink>
-        </header>
-        <div v-if="mine.length" class="clan-mine-grid"><ClanMineCard v-for="c in mineShown" :key="c.slug" :clan="c" /></div>
-        <p v-if="mine.length > mineShown.length" class="clan-note"><RouterLink :to="{ name: 'myClans' }">{{ mine.length - mineShown.length }} more {{ mine.length - mineShown.length === 1 ? 'clan' : 'clans' }}</RouterLink></p>
-        <div v-else-if="!mine.length" class="card clans-empty">
-          <p><b>You are not in a clan yet.</b> Start one and send the invite link, or join one from the lists below.</p>
-          <RouterLink class="btn btn-primary" :to="{ name: 'clanNew' }">Start a clan</RouterLink>
-        </div>
-      </section>
-
       <!-- Clans that were started recently -->
       <section v-if="fresh.length" class="card clan-card" aria-labelledby="clans-new-h">
         <header class="dash-card-head"><h2 id="clans-new-h">New clans</h2><span class="dash-hint">recently started</span></header>
@@ -45,7 +34,7 @@
           </div>
         </header>
 
-        <div v-if="!data?.clans.length" class="clans-empty">
+        <div v-if="!everyClan.length" class="clans-empty">
           <p><b>No clans are listed yet.</b> Start one and choose to list it on the Clans page, and it shows up here for everyone.</p>
           <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
         </div>
@@ -72,14 +61,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import ClanListCard from '@/components/clans/ClanListCard.vue'
-import ClanMineCard from '@/components/clans/ClanMineCard.vue'
 import { clansApi } from '@/api/clans'
 import { useAuth } from '@/composables/useAuth'
 import { setPageMeta } from '@/utils/pageMeta'
 
 setPageMeta({ title: 'Clans', description: 'OSRS clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.', path: '/clans' })
 
-const MINE_SHOWN = 3
 const FRESH_SHOWN = 4
 
 const { loggedIn } = useAuth()
@@ -102,14 +89,20 @@ onMounted(async () => {
   loading.value = false
 })
 
-const mineShown = computed(() => mine.value.slice(0, MINE_SHOWN))
-const byNewest = computed(() => [...(data.value?.clans || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
+// The listed clans with your own mixed in (a clan of yours that is unlisted shows up for you, marked as yours).
+const everyClan = computed(() => {
+  const mineBySlug = new Map(mine.value.map((c) => [c.slug, c]))
+  const list = (data.value?.clans || []).map((c) => (mineBySlug.has(c.slug) ? mineBySlug.get(c.slug) : c))
+  const listed = new Set(list.map((c) => c.slug))
+  return [...list, ...mine.value.filter((c) => !listed.has(c.slug))]
+})
+const byNewest = computed(() => [...everyClan.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
 // New clans only get their own list when there are more clans than it would show, so the two lists are never the same.
 const fresh = computed(() => (byNewest.value.length > FRESH_SHOWN ? byNewest.value.slice(0, FRESH_SHOWN) : []))
 
 const shown = computed(() => {
   const q = query.value.toLowerCase()
-  const list = (data.value?.clans || []).filter((c) => !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
+  const list = everyClan.value.filter((c) => !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
   // The server sends them most active first; the other orders are applied here.
   if (sort.value === 'members') return [...list].sort((a, b) => b.memberCount - a.memberCount || b.weekGain - a.weekGain)
   if (sort.value === 'new') return [...list].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))

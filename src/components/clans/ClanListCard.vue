@@ -3,6 +3,8 @@
     <div class="clans-card-top">
       <b>{{ clan.name }}</b>
       <span class="clans-card-tags">
+        <span v-if="clan.role" class="clan-chip is-mine">{{ ROLE_LABELS[clan.role] }}</span>
+        <span v-if="clan.visibility && clan.visibility !== 'public'" class="clan-listed">Unlisted</span>
         <span v-if="isNew" class="clan-chip">New</span>
         <span v-if="running" class="clan-status is-running">Competition on</span>
       </span>
@@ -31,6 +33,7 @@ import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { formatXp } from '@/utils/osrsSkills'
 import { RECORD_ICONS } from '@/utils/recordText'
 
+const ROLE_LABELS = { owner: 'Owner', mod: 'Moderator', member: 'Member' }
 const props = defineProps({ clan: { type: Object, required: true } })
 
 const running = computed(() => props.clan.competitions.some((x) => x.status === 'running'))
