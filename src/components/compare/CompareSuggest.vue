@@ -14,8 +14,8 @@
     <!-- A name that is not tracked yet, offered for tracking right here like in the search box -->
     <div v-if="newName" class="cmp-suggest-new">
       <span class="sg-avatar sg-avatar-new" aria-hidden="true">+</span>
-      <span class="sg-main"><span class="sg-name">{{ newName }}</span><small class="sg-sub" :class="{ 'suggest-new-error': error }">{{ error || 'Not tracked yet' }}</small></span>
-      <button v-if="!error" class="disc-track-btn" type="button" :disabled="adding" @click="$emit('track')">{{ adding ? 'Adding…' : 'Track' }}</button>
+      <span class="sg-main"><span class="sg-name">{{ newName }}</span><small class="sg-sub" :class="{ 'suggest-new-error': error }">{{ error || newNote }}</small></span>
+      <button v-if="!error" class="disc-track-btn" type="button" :disabled="adding" @click="$emit('track')">{{ adding ? 'Adding…' : trackLabel }}</button>
     </div>
   </div>
 </template>
@@ -31,6 +31,10 @@ defineProps({
   newName: { type: String, default: '' },
   adding: { type: Boolean, default: false },
   error: { type: String, default: '' },
+  // The button on the not-tracked-yet row.
+  trackLabel: { type: String, default: 'Track' },
+  // The line under the name on that row (when there is no error).
+  newNote: { type: String, default: 'Not tracked yet' },
 })
 defineEmits(['pick', 'hover', 'remove', 'track'])
 </script>

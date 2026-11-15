@@ -26,6 +26,9 @@ export const clansApi = {
   approveRequest: (slug, username) => api.post(`/clans/${enc(slug)}/requests/${enc(username)}/approve`),
   declineRequest: (slug, username) => api.post(`/clans/${enc(slug)}/requests/${enc(username)}/decline`),
   resetInvite: (slug) => api.post(`/clans/${enc(slug)}/invite/reset`),
+  // Owner or moderator: add a player straight away, by name. A player the site does not track yet is added first.
+  // { player: { username, displayName }, alreadyMember }
+  addMember: (slug, rsn) => api.post(`/clans/${enc(slug)}/members`, { rsn }),
   remove: (slug, username) => api.post(`/clans/${enc(slug)}/members/${enc(username)}/remove`),
   setModerator: (slug, username, mod) => api.post(`/clans/${enc(slug)}/members/${enc(username)}/mod`, { mod }),
   // Owner only. `confirm` has to be the word "Delete" (the clan page asks for it to be typed).

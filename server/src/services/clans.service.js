@@ -1,6 +1,7 @@
 import { pool } from '../db.js'
 import { HiscoresUnavailableError, PlayerNotFoundError } from './osrsHiscores.service.js'
 import { addPlayer, getPlayerByUsername } from './players.service.js'
+import { addNotification, ownerOfPlayer } from './inbox.service.js'
 import { addEntrantToOpenCompetitions, listClanCompetitions, removeEntrantFromOpenCompetitions } from './competitions.service.js'
 import { MAX_CLANS_PER_USER, MAX_MEMBERS, MAX_PENDING_REQUESTS, cleanClanInput, cleanRsn, newInviteToken, newSlug, summarizeClans } from '../utils/clans.js'
 import { metricLabel } from '../utils/competitions.js'
@@ -147,14 +148,8 @@ export async function myClans(user) {
 // --- joining and leaving ---------------------------------------------------------------------------------------------
 
 /** Joins through an invite link with an RSN. A name not tracked yet is added; the hiscores must know it. */
-export async function joinClan({ token, rsn, user }) {
-  const name = cleanRsn(rsn)
-  if (!name) throw new ClanError('Enter a RuneScape name: up to 12 letters, numbers, spaces, hyphens or underscores.')
-  const { rows } = await pool.query('SELECT * FROM clans WHERE invite_token = $1', [String(token || '')])
-  const clan = rows[0]
-  if (!clan) throw new ClanError('That invite link is not valid any more. Ask for a new one.', 404)
-  if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
-
+/** The tracked player with this name; one not tracked yet is added from the OSRS hiscores first. */
+async function resolvePlayer(name) {
   let player = await getPlayerByUsername(name)
   if (!player) {
     try {
@@ -167,6 +162,38 @@ export async function joinClan({ token, rsn, user }) {
     player = await getPlayerByUsername(name)
     if (!player) throw new ClanError('Could not add that player, please try again.', 500)
   }
+  return player
+}
+
+/**
+ * The owner or a moderator adds a player to the clan straight away, with no request to answer. A player not tracked yet is
+ * added to the site first. Any request that player had waiting is cleared. Returns { player, alreadyMember }.
+ */
+export async function addMemberDirect(clan, user, rsn) {
+  const name = cleanRsn(rsn)
+  if (!name) throw new ClanError('Enter a RuneScape name: up to 12 letters, numbers, spaces, hyphens or underscores.')
+  const player = await resolvePlayer(name)
+  const who = { username: player.username, displayName: player.displayName }
+  const { rowCount: isMember } = await pool.query('SELECT 1 FROM clan_members WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id])
+  if (isMember) return { player: who, alreadyMember: true }
+  if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
+  // The verified tick says the profile's owner joined, so adding someone else never gives it; adding your own profile does.
+  const mine = await ownedPlayerIds(user.id)
+  await addMember(clan, player, mine.includes(player.id) ? user.id : null)
+  await pool.query('DELETE FROM clan_join_requests WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id])
+  await notifyAdded(clan, player, user.id)
+  return { player: who, alreadyMember: false }
+}
+
+export async function joinClan({ token, rsn, user }) {
+  const name = cleanRsn(rsn)
+  if (!name) throw new ClanError('Enter a RuneScape name: up to 12 letters, numbers, spaces, hyphens or underscores.')
+  const { rows } = await pool.query('SELECT * FROM clans WHERE invite_token = $1', [String(token || '')])
+  const clan = rows[0]
+  if (!clan) throw new ClanError('That invite link is not valid any more. Ask for a new one.', 404)
+  if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
+
+  const player = await resolvePlayer(name)
 
   // An account that owns this RSN gets the verified tick.
   const mine = await ownedPlayerIds(user?.id)
@@ -196,6 +223,27 @@ export async function joinClan({ token, rsn, user }) {
     [clan.id, player.id, user?.id ?? null],
   )
   return { ...base, status: 'pending', alreadyMember: false, alreadyRequested: Boolean(existing) }
+}
+
+/**
+ * Tells the account that owns this profile (a verified claim) it is in the clan now. Nothing for a profile nobody has verified,
+ * and nothing for the account that did it itself. `approved` words it as the answer to that account's own request.
+ */
+async function notifyAdded(clan, player, byUserId, approved = false) {
+  try {
+    const owner = await ownerOfPlayer(player.id)
+    if (!owner || owner === byUserId) return
+    await addNotification(owner, {
+      type: 'clan_added',
+      text: approved ? `Your request to join ${clan.name} was approved` : `You were added to ${clan.name}`,
+      link: `/clans/${clan.slug}`,
+      // Once per add; adding them again after they were removed is a new notice.
+      dedupeKey: `clan-added:${clan.id}:${player.id}:${Math.floor(Date.now() / 60_000)}`,
+      subject: player.username,
+    })
+  } catch (err) {
+    console.error('[clans] could not notify the added player:', err.message)
+  }
 }
 
 /** Puts a player in the clan (and in its competitions that have not finished). */
@@ -234,12 +282,14 @@ async function requestFor(clan, username) {
 }
 
 /** Lets a waiting player in. The verified tick goes to the account that asked, when it owns that RSN. */
-export async function approveRequest(clan, username) {
+export async function approveRequest(clan, username, byUserId = null) {
   const { player, request } = await requestFor(clan, username)
   if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
   const owned = await ownedPlayerIds(request.user_id)
   await addMember(clan, player, owned.includes(player.id) ? request.user_id : null)
   await pool.query('DELETE FROM clan_join_requests WHERE id = $1', [request.id])
+  // When the account that asked is the one that owns the profile, the notice answers its request.
+  await notifyAdded(clan, player, byUserId, owned.includes(player.id))
 }
 
 /** Turns a request down. It is simply removed. */

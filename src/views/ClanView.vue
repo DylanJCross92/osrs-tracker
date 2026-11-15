@@ -85,6 +85,7 @@
               <h2 id="clan-members-h">Members</h2>
               <span class="dash-hint">XP gained in the last 7 days</span>
             </header>
+            <ClanAddMember v-if="view.viewer.canManage" :slug="view.clan.slug" :members="view.members.map((m) => m.username)" @added="load" />
             <p v-if="!view.members.length" class="dash-empty">Nobody has joined yet. Share the invite link and the members show up here.</p>
             <ul v-else class="clan-members">
               <li v-for="(m, i) in view.members" :key="m.username" class="clan-member">
@@ -165,6 +166,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ClanAddMember from '@/components/clans/ClanAddMember.vue'
 import ClanCompetitionModal from '@/components/clans/ClanCompetitionModal.vue'
 import ClanInviteModal from '@/components/clans/ClanInviteModal.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'

@@ -4762,3 +4762,13 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .clan-mine-comp-top { gap: 2px 8px; }
 .clan-mine-comp-top .clan-status { padding: 0 8px; font-size: 0.66rem; }
 .clan-mine-when span { white-space: nowrap; }
+
+/* Adding a member by name (owner and moderators) */
+.clan-add { position: relative; margin: 2px 0 14px; }
+.clan-add-field { display: flex; align-items: center; gap: 10px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--bg); color: var(--muted); transition: border-color 0.15s, box-shadow 0.15s; }
+.clan-add-field:focus-within { border-color: var(--gold-bright); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.18); }
+.clan-add-field input { flex: 1; min-width: 0; padding: 11px 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 0.95rem; }
+.clan-add-field input::placeholder { color: var(--muted); }
+.clan-add-note { margin: 8px 2px 0; color: var(--muted); font-size: 0.82rem; max-width: none; }
+.clan-add .cmp-suggest { width: 100%; max-width: none; }
+.clan-add .cmp-suggest-new .sg-sub { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.35; }

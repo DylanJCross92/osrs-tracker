@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireUser } from './auth.routes.js'
 import { renderClanInviteCardPng } from '../services/cardImage.service.js'
-import { ClanError, approveRequest, setAcceptingRequests, canManage, createClan, declineRequest, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
+import { ClanError, addMemberDirect, approveRequest, setAcceptingRequests, canManage, createClan, declineRequest, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
 import { CompetitionError, cancelCompetition, createCompetition, getCompetition } from '../services/competitions.service.js'
 import { pool } from '../db.js'
 
@@ -98,7 +98,7 @@ clansRouter.post('/clans/:slug/requests/accepting', attachUser, requireUser, man
 clansRouter.post('/clans/:slug/requests/:username/approve', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
   const clan = await clanAs(req, res, { manage: true })
   if (!clan) return
-  await approveRequest(clan, req.params.username)
+  await approveRequest(clan, req.params.username, req.user.id)
   res.json({ ok: true })
 }))
 
@@ -116,6 +116,13 @@ clansRouter.post('/clans/:slug/delete', attachUser, requireUser, manageLimiter, 
   if (String(req.body?.confirm || '').trim().toLowerCase() !== 'delete') return res.status(400).json({ error: 'Type Delete to confirm deleting the clan.' })
   await deleteClan(clan)
   res.json({ ok: true })
+}))
+
+// The owner or a moderator adds a player straight away (the player is added to the site first when it is new).
+clansRouter.post('/clans/:slug/members', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
+  const clan = await clanAs(req, res, { manage: true })
+  if (!clan) return
+  res.json(await addMemberDirect(clan, req.user, req.body?.rsn))
 }))
 
 clansRouter.post('/clans/:slug/members/:username/remove', attachUser, requireUser, manageLimiter, handle(async (req, res) => {
