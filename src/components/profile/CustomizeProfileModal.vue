@@ -71,6 +71,7 @@ import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ApiError } from '@/api/client'
 import { profilePageApi } from '@/api/profilePage'
 import { usePlayersStore } from '@/stores/players'
+import { useAvatarsStore } from '@/stores/avatars'
 import { refreshProfiles } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { squareJpeg } from '@/utils/imageResize'
@@ -86,6 +87,7 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 const { showToast } = useToast()
 const store = usePlayersStore()
+const avatarsStore = useAvatarsStore()
 
 const KINDS = [
   { key: 'discord', label: 'Discord', example: 'https://discord.gg/yourinvite' },
@@ -115,7 +117,7 @@ async function pickPicture(e) {
   try {
     const blob = await squareJpeg(file)
     Object.assign(current, await profilePageApi.uploadAvatar(props.username, blob))
-    await store.loadPlayers().catch(() => {})
+    await Promise.all([store.loadPlayers().catch(() => {}), avatarsStore.refresh()])
     pictureKey.value++
     refreshProfiles()
     track('profile_picture', { action: 'upload' })
@@ -131,7 +133,7 @@ async function removePicture() {
   busyPic.value = true
   try {
     Object.assign(current, await profilePageApi.removeAvatar(props.username))
-    await store.loadPlayers().catch(() => {})
+    await Promise.all([store.loadPlayers().catch(() => {}), avatarsStore.refresh()])
     pictureKey.value++
     refreshProfiles()
     track('profile_picture', { action: 'remove' })

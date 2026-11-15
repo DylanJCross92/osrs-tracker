@@ -9,7 +9,8 @@
     </header>
     <p class="clan-mine-stats">
       <span><b>{{ clan.memberCount }}</b> member{{ clan.memberCount === 1 ? '' : 's' }}</span>
-      <span :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
+      <span v-if="clan.competitionTitle" :class="{ 'stat-gain': clan.competitionGain > 0 }"><b>{{ clan.competitionGain > 0 ? `+${formatXp(clan.competitionGain)}` : '0' }}</b> XP in {{ clan.competitionTitle }}</span>
+      <span v-else :class="{ 'stat-gain': clan.weekGain > 0 }"><b>{{ clan.weekGain > 0 ? `+${formatXp(clan.weekGain)}` : '-' }}</b> XP this week</span>
     </p>
 
     <ul v-if="clan.competitions.length" class="clan-mine-comps">

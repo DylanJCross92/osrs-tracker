@@ -9,15 +9,22 @@
 import { computed } from 'vue'
 import { avatarFor } from '@/utils/avatar'
 import { usePlayersStore } from '@/stores/players'
+import { useAvatarsStore } from '@/stores/avatars'
 import { profilePageApi } from '@/api/profilePage'
 
 // Fills whatever frame it is placed in (the frame supplies the size, border and rounding). A profile whose owner
-// uploaded a picture shows that instead of the generated one, wherever the player list has been loaded.
+// uploaded a picture shows that instead of the generated one, for every visitor on every page.
 const props = defineProps({ name: { type: String, default: '' } })
 const store = usePlayersStore()
+const avatars = useAvatarsStore()
+avatars.ensureLoaded()
 const art = computed(() => avatarFor(props.name))
 const custom = computed(() => {
-  const p = store.players.find((x) => x.username.toLowerCase() === String(props.name).toLowerCase())
-  return p?.avatarV ? profilePageApi.avatarUrl(p.username, p.avatarV) : ''
+  const name = String(props.name)
+  const key = name.toLowerCase()
+  // The picture list covers everyone; the player list (when a page has it) is fresher right after an upload.
+  const p = store.players.find((x) => x.username.toLowerCase() === key)
+  const version = (p && p.avatarV) || avatars.versions[key]
+  return version ? profilePageApi.avatarUrl(p?.username || name, version) : ''
 })
 </script>

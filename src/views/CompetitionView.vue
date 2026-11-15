@@ -42,7 +42,8 @@
       <section class="card clan-card" aria-labelledby="cmt-board-h">
         <header class="dash-card-head">
           <h2 id="cmt-board-h">{{ c.status === 'finished' ? 'Final standings' : 'Leaderboard' }}</h2>
-          <span v-if="c.status === 'running'" class="dash-hint">refreshes by itself</span>
+          <span v-if="c.status === 'running'" class="dash-hint">XP gained since {{ startText }}</span>
+          <span v-else-if="c.status === 'finished'" class="dash-hint">XP gained from {{ startText }} to {{ endText }}</span>
         </header>
 
         <p v-if="!rows.length" class="dash-empty">Nobody is taking part.</p>

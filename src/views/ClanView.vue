@@ -25,7 +25,10 @@
           <section class="card clan-card" aria-labelledby="clan-members-h">
             <header class="dash-card-head">
               <h2 id="clan-members-h">Members</h2>
-              <span class="dash-hint">XP gained in the last 7 days</span>
+              <span v-if="view.period.kind === 'competition'" class="dash-hint">
+                XP gained in <RouterLink :to="{ name: 'competition', params: { id: view.period.competition.id } }">{{ view.period.competition.title }}</RouterLink>, since {{ periodStart }}
+              </span>
+              <span v-else class="dash-hint">XP gained in the last 7 days</span>
             </header>
             <p v-if="!view.members.length" class="dash-empty">Nobody has joined yet. Share the invite link and the members show up here.</p>
             <ul v-else class="clan-members">
@@ -40,7 +43,7 @@
                   </span>
                   <small>{{ m.overallLevel ? `Level ${m.overallLevel.toLocaleString('en-US')}` : 'Not synced yet' }}</small>
                 </div>
-                <span class="clan-gain" :class="{ 'is-up': m.weekGain > 0 }">{{ m.weekGain > 0 ? `+${formatXp(m.weekGain)}` : '-' }}</span>
+                <span class="clan-gain" :class="{ 'is-up': m.gain > 0 }" :title="m.gain === null ? 'Not in this competition yet' : ''">{{ m.gain > 0 ? `+${formatXp(m.gain)}` : m.gain === 0 ? '0' : '-' }}</span>
                 <span class="clan-actions">
                   <button v-if="view.viewer.role === 'owner' && (m.verified || m.role === 'mod')" class="btn-text" type="button" :title="m.role === 'mod' ? '' : 'Moderators can add and remove members and run competitions'" @click="toggleMod(m)">{{ m.role === 'mod' ? 'Remove mod' : 'Make mod' }}</button>
                   <button v-if="canRemove(m)" class="btn-text clan-remove" type="button" :disabled="busy" @click="remove(m)" @blur="confirming = ''">
@@ -127,6 +130,7 @@ import { clansApi } from '@/api/clans'
 import { useAuth } from '@/composables/useAuth'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
+import { fullDateTime } from '@/utils/competitionForm'
 import { formatXp } from '@/utils/osrsSkills'
 import { setPageMeta } from '@/utils/pageMeta'
 import { RECORD_ICONS } from '@/utils/recordText'
@@ -165,6 +169,7 @@ watch(() => route.params.slug, () => {
 })
 
 const roleLabel = computed(() => ({ owner: 'Owner', mod: 'Moderator', member: 'Member' })[view.value?.viewer.role] || '')
+const periodStart = computed(() => (view.value.period?.kind === 'competition' ? fullDateTime(view.value.period.competition.startsAt) : ''))
 const createdText = computed(() => new Date(view.value.clan.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }))
 const profileRoute = (m) => ({ name: 'playerDetail', params: { username: m.username } })
 

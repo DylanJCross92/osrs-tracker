@@ -2,6 +2,7 @@ import express, { Router } from 'express'
 import { getPlayerByUsername } from '../services/players.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireRole, requireUser } from './auth.routes.js'
+import { pool } from '../db.js'
 import { MAX_AVATAR_BYTES } from '../utils/profilePage.js'
 import { PageError, getAvatar, getProfilePage, isOwner, removeAvatar, resetProfilePage, saveAvatar, saveProfilePage } from '../services/profilePages.service.js'
 
@@ -58,6 +59,19 @@ profilePagesRouter.put(
     const player = await ownerOnly(req, res)
     if (!player) return
     res.json(await saveProfilePage(player.id, req.body))
+  }),
+)
+
+// Which players have an uploaded picture, and its version, so any page can show them without loading every player.
+// Public and small: { avatars: { "<lowercase username>": <version> } }.
+profilePagesRouter.get(
+  '/avatars',
+  handle(async (req, res) => {
+    const { rows } = await pool.query(
+      `SELECT lower(p.username) AS username, extract(epoch from pp.avatar_updated_at)::bigint AS v FROM profile_pages pp JOIN players p ON p.id = pp.player_id WHERE pp.avatar IS NOT NULL`,
+    )
+    res.set('Cache-Control', 'public, max-age=60')
+    res.json({ avatars: Object.fromEntries(rows.map((r) => [r.username, Number(r.v)])) })
   }),
 )
 

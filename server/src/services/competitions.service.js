@@ -148,7 +148,7 @@ export async function addEntrantToOpenCompetitions(clanId, player) {
   const { rows: open } = await pool.query(`SELECT * FROM competitions WHERE clan_id = $1 AND status IN ('scheduled', 'running')`, [clanId])
   for (const c of open) {
     await pool.query('INSERT INTO competition_members (competition_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [c.id, player.id])
-    if (c.status === 'running') await setBaseline(c, player, true)
+    if (c.status === 'running') await setBaseline(c, player)
   }
 }
 
@@ -161,14 +161,18 @@ export async function removeEntrantFromOpenCompetitions(clanId, playerId) {
 
 // --- the job: starting and finishing ---------------------------------------------------------------------------------
 
-/** Records an entrant's starting XP from a fresh check (or from their newest snapshot when the hiscores are not answering). */
-async function setBaseline(c, player, refresh = true) {
-  const ok = refresh ? await refreshPlayer(player) : false
+/**
+ * Records an entrant's starting XP from a fresh hiscores check taken now. Without a fresh check nothing is recorded: the
+ * newest saved snapshot can be hours old, and using it would count XP gained before the competition started. The entrant
+ * stays "waiting for a start" and the job tries again on its next pass.
+ */
+async function setBaseline(c, player) {
+  if (!(await refreshPlayer(player))) return false
   const snap = await latestSnapshot(player.id)
   if (!snap) return false
   const xp = metricValue(c.metric, c.skill, snap)
-  await pool.query('UPDATE competition_members SET start_xp = $3, start_at = $4 WHERE competition_id = $1 AND player_id = $2 AND start_xp IS NULL', [c.id, player.id, xp, ok ? new Date() : snap.capturedAt])
-  return ok
+  await pool.query('UPDATE competition_members SET start_xp = $3, start_at = now() WHERE competition_id = $1 AND player_id = $2 AND start_xp IS NULL', [c.id, player.id, xp])
+  return true
 }
 
 async function setEnd(c, player, force) {

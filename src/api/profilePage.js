@@ -7,6 +7,9 @@ export const profilePageApi = {
   get: (username) => api.get(`/players/${enc(username)}/page`),
   save: (username, page) => api.put(`/players/${enc(username)}/page`, page),
   removeAvatar: (username) => api.post(`/players/${enc(username)}/avatar/remove`),
+  // Every uploaded picture: { avatars: { '<lowercase username>': version } }.
+  // `fresh` skips the short browser cache, for right after an upload or removal.
+  avatars: (fresh = false) => api.get(fresh ? `/avatars?t=${Date.now()}` : '/avatars'),
   // The picture, by version, so a new upload is picked up straight away and old ones stay cached.
   avatarUrl: (username, version) => `${BASE_URL}/players/${enc(username)}/avatar${version ? `?v=${version}` : ''}`,
   // Sends the image bytes as the body (the endpoint takes raw JPEG, PNG or WebP).

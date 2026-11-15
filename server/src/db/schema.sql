@@ -351,6 +351,9 @@ CREATE TABLE IF NOT EXISTS clan_members (
   PRIMARY KEY (clan_id, player_id)
 );
 CREATE INDEX IF NOT EXISTS clan_members_player_idx ON clan_members (player_id);
+-- The member's overall XP the moment they joined, so the clan only counts XP gained after that. Null for older rows, which
+-- fall back to the newest snapshot from before they joined.
+ALTER TABLE clan_members ADD COLUMN IF NOT EXISTS joined_xp BIGINT;
 
 -- A competition: who gained the most XP (in one skill, or overall) between two moments. status moves scheduled, running, then
 -- finished (or cancelled). results is the frozen final standing, written once when it finishes.
