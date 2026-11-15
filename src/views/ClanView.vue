@@ -199,7 +199,7 @@ async function load() {
   try {
     view.value = await clansApi.get(route.params.slug)
     notFound.value = false
-    setPageMeta({ title: view.value.clan.name, description: `${view.value.clan.name}, a clan on TickGains.`, path: `/clans/${view.value.clan.slug}`, noindex: true })
+    setPageMeta({ title: view.value.clan.name, description: `${view.value.clan.name}, a clan on TickGains.`, path: `/clans/${view.value.clan.slug}` })
   } catch (err) {
     view.value = null
     notFound.value = err instanceof ApiError && err.status === 404

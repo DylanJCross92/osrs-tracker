@@ -395,6 +395,30 @@ export async function getInviteCardData(token) {
   }
 }
 
+// --- search engines -----------------------------------------------------------------------------------------------------
+
+/** Every clan's page address and when it last changed (created, or a competition started or finished), for the sitemap. */
+export async function listClansForSitemap(limit = 5000) {
+  const { rows } = await pool.query(
+    `SELECT c.slug, GREATEST(c.created_at, COALESCE(max(k.started_at), c.created_at), COALESCE(max(k.finished_at), c.created_at)) AS touched
+     FROM clans c LEFT JOIN competitions k ON k.clan_id = c.id
+     GROUP BY c.id ORDER BY c.created_at DESC LIMIT $1`,
+    [limit],
+  )
+  return rows.map((r) => ({ slug: r.slug, lastmod: new Date(r.touched).toISOString().slice(0, 10) }))
+}
+
+/** What a clan's page says about itself in its title and description, or null when there is no such clan. */
+export async function getClanSeo(slug) {
+  const clan = await clanBySlug(slug)
+  if (!clan) return null
+  const { rows } = await pool.query(
+    `SELECT p.display_name FROM clan_members m JOIN players p ON p.id = m.player_id WHERE m.clan_id = $1 ORDER BY m.joined_at LIMIT 3`,
+    [clan.id],
+  )
+  return { slug: clan.slug, name: clan.name, description: clan.description, memberCount: await memberCount(clan.id), members: rows.map((r) => r.display_name) }
+}
+
 // --- the Clans page ---------------------------------------------------------------------------------------------------
 
 const LISTED_LIMIT = 100

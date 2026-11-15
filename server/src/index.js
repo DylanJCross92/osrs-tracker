@@ -17,7 +17,7 @@ import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
 import { plansRouter } from './routes/plans.routes.js'
 import { clansRouter } from './routes/clans.routes.js'
-import { getInviteCardData } from './services/clans.service.js'
+import { getClanSeo, getInviteCardData, listClansForSitemap } from './services/clans.service.js'
 import { describeInvite } from './utils/clans.js'
 import { statsRouter } from './routes/stats.routes.js'
 import { getPublicShare } from './services/sharedPlans.service.js'
@@ -120,10 +120,16 @@ const xpTable = readBuilt('xp-table.json', null)
 // tracked (or removed) players show up without a redeploy.
 app.get('/sitemap.xml', async (req, res) => {
   let players = []
+  let clans = []
   try {
     players = await listPlayers()
   } catch (err) {
     console.error('Failed to build sitemap.xml', err)
+  }
+  try {
+    clans = await listClansForSitemap()
+  } catch (err) {
+    console.error('Failed to list clans for sitemap.xml', err)
   }
 
   // Every public, indexable page with how often it changes and how important it is. Player pages carry the date
@@ -136,6 +142,7 @@ app.get('/sitemap.xml', async (req, res) => {
     { path: '/leaderboard', changefreq: 'hourly', priority: '0.9', lastmod: today },
     { path: '/compare', changefreq: 'weekly', priority: '0.6' },
     { path: '/planner', changefreq: 'weekly', priority: '0.9' },
+    { path: '/clans', changefreq: 'daily', priority: '0.7', lastmod: today },
     { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
     ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
     ...goalPages.map((g) => ({ path: g.path, changefreq: 'monthly', priority: g.from === 1 && g.to === 99 ? '0.8' : '0.7' })),
@@ -148,6 +155,7 @@ app.get('/sitemap.xml', async (req, res) => {
       priority: '0.6',
       lastmod: p.latest?.capturedAt ? new Date(p.latest.capturedAt).toISOString().slice(0, 10) : undefined,
     })),
+    ...clans.map((c) => ({ path: `/clans/${encodeURIComponent(c.slug)}`, changefreq: 'weekly', priority: '0.5', lastmod: c.lastmod })),
     { path: '/about', changefreq: 'monthly', priority: '0.3' },
     { path: '/contact', changefreq: 'monthly', priority: '0.3' },
     { path: '/privacy', changefreq: 'yearly', priority: '0.2' },
@@ -629,6 +637,45 @@ if (distExists) {
       )
     })
   }
+
+  // The Clans page and each clan's page get their title and description in the HTML itself (they are in the sitemap), not only
+  // after the app has loaded. Every clan is listed, so these are indexable.
+  app.get('/clans', (req, res) => {
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title: 'OSRS Clans: XP Competitions and Weekly Leaders | TickGains',
+        description: 'Old School RuneScape clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.',
+        imageUrl: `${SITE_URL}/og-default.png`,
+        pageUrl: `${SITE_URL}/clans`,
+      }),
+    )
+  })
+
+  app.get('/clans/:slug', async (req, res, next) => {
+    try {
+      // /clans/mine and /clans/new are app pages, not clans.
+      if (['mine', 'new'].includes(req.params.slug)) return res.sendFile(path.join(distPath, 'index.html'))
+      const clan = await getClanSeo(req.params.slug)
+      if (!clan) return res.sendFile(path.join(distPath, 'index.html'))
+      const pageUrl = `${SITE_URL}/clans/${encodeURIComponent(clan.slug)}`
+      const people = `${clan.memberCount} member${clan.memberCount === 1 ? '' : 's'}`
+      let description = `${clan.name} is an Old School RuneScape clan on TickGains with ${people}.`
+      if (clan.description) description += ` ${clan.description}${/[.!?]$/.test(clan.description) ? '' : '.'}`
+      if (clan.members.length) description += ` Members include ${clan.members.join(', ')}.`
+      description += ' See its XP competitions and weekly leaders.'
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${clan.name} | OSRS Clan | TickGains`,
+          description: description.slice(0, 300),
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl,
+          jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: clan.name, url: pageUrl, description: clan.description || undefined },
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
 
   // A clan invite link, with its picture baked into the HTML so it unfurls in Discord, X and Reddit. Never indexed: the link is
   // the invitation.
