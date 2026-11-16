@@ -1,7 +1,7 @@
 <template>
   <section class="card dash-card dclan" aria-labelledby="dash-clans-h">
     <header class="dash-card-head">
-      <h2 id="dash-clans-h">Your clans<span v-if="clans.length" class="dclan-count">{{ clans.length }}</span></h2>
+      <h2 id="dash-clans-h">Active Clan Competitions<span v-if="allComps.length" class="dclan-count">{{ allComps.length }}</span></h2>
       <RouterLink class="dash-more" :to="{ name: clans.length ? 'myClans' : 'clans' }">{{ clans.length ? 'All my clans →' : 'Browse clans →' }}</RouterLink>
     </header>
 
@@ -38,21 +38,7 @@
         </li>
       </ul>
       <p v-if="moreComps > 0" class="dclan-more"><RouterLink :to="{ name: 'myClans' }">{{ moreComps }} more {{ moreComps === 1 ? 'competition' : 'competitions' }} →</RouterLink></p>
-
-      <!-- The clans themselves -->
-      <ul class="dclan-list">
-        <li v-for="c in shownClans" :key="c.slug">
-          <RouterLink class="dclan-clan" :to="{ name: 'clan', params: { slug: c.slug } }">
-            <b>{{ c.name }}</b>
-            <span class="dclan-meta">
-              <span class="clan-chip">{{ ROLE_LABELS[c.role] }}</span>
-              <span>{{ c.memberCount }} {{ c.memberCount === 1 ? 'member' : 'members' }}</span>
-              <span :class="{ 'stat-gain': c.weekGain > 0 }">{{ c.weekGain > 0 ? `+${formatXp(c.weekGain)} XP this week` : 'no XP this week' }}</span>
-            </span>
-          </RouterLink>
-        </li>
-      </ul>
-      <p v-if="clans.length > shownClans.length" class="dclan-more"><RouterLink :to="{ name: 'myClans' }">{{ clans.length - shownClans.length }} more {{ clans.length - shownClans.length === 1 ? 'clan' : 'clans' }} →</RouterLink></p>
+      <p v-if="!rows.length" class="dash-empty">Nothing is running or coming up in your {{ clans.length === 1 ? 'clan' : 'clans' }} right now. Start a competition from a clan page.</p>
     </template>
   </section>
 </template>
@@ -63,11 +49,9 @@ import { clansApi } from '@/api/clans'
 import { clockText } from '@/utils/competitionForm'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 
-// Your clans at a glance: join requests waiting for you, the competitions that are on or coming up (with your rank in the
-// running ones), and the clans themselves. All of it comes from the same list as the My clans page.
+// The competitions that are on or coming up in your clans (with your rank in the running ones), plus join requests waiting
+// for you. All of it comes from the same list as the My clans page.
 const MAX_COMPS = 4
-const MAX_CLANS = 3
-const ROLE_LABELS = { owner: 'Owner', mod: 'Moderator', member: 'Member' }
 
 const clans = ref([])
 const loading = ref(true)
@@ -92,8 +76,6 @@ const allComps = computed(() =>
 )
 const rows = computed(() => allComps.value.slice(0, MAX_COMPS))
 const moreComps = computed(() => allComps.value.length - rows.value.length)
-// Clans with something on come first, then the biggest.
-const shownClans = computed(() => [...clans.value].sort((a, b) => b.competitions.length - a.competitions.length || b.memberCount - a.memberCount).slice(0, MAX_CLANS))
 // The skill behind a label such as "Agility XP" (or "Overall XP"), for its icon.
 const skillOf = (c) => String(c.label || '').replace(/ XP$/, '') || 'Overall'
 </script>
