@@ -9,7 +9,7 @@
         <p class="dash-sub sk sk-w300">Total 2277 · 1,234,567,890 XP · updated today</p>
       </div>
     </div>
-    <div class="dash-head-actions" aria-hidden="true"><span class="btn btn-ghost sk sk-w110">View profile</span></div>
+    <div class="dash-head-actions" aria-hidden="true"><span class="dash-refresh sk sk-w110">Refresh</span></div>
   </header>
 
   <section v-else-if="kind === 'week'" class="card ov-week dash-sk" aria-busy="true" aria-label="Loading your week">

@@ -8,6 +8,7 @@ import { playersRouter } from './routes/players.routes.js'
 import { cardsRouter } from './routes/cards.routes.js'
 import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
+import { topGainerRouter } from './routes/topGainer.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { claimsRouter } from './routes/claims.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
@@ -27,6 +28,8 @@ import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
 import { getPlayerRecords } from './services/records.service.js'
+import { getTopGainerStats } from './services/topGainers.service.js'
+import { topGainerHeadline } from './utils/topGainers.js'
 import { getGoal } from './services/goals.service.js'
 import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
@@ -51,6 +54,7 @@ app.use(express.json({ limit: '700kb' }))
 app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
 app.use('/api', recordsRouter)
+app.use('/api', topGainerRouter)
 app.use('/api/newsletter', subscribersRouter)
 app.use('/api/auth', authRouter)
 app.use('/api', claimsRouter)
@@ -267,6 +271,31 @@ if (distExists) {
         ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/records/${encodeURIComponent(record.key)}/image.png`
         : `${SITE_URL}/og-default.png`
       res.send(injectCardMeta(indexHtmlTemplate, { title, description, imageUrl, pageUrl, noindex: true }))
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // A shared "days as top gainer" count. The SPA sends the visitor on to the profile; this gives the link its preview card.
+  app.get('/player/:username/top-gainer', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      const stats = await getTopGainerStats(player)
+      const base = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      const title = stats.days ? `${player.displayName}: ${topGainerHeadline(stats)} | TickGains` : `${player.displayName} on TickGains`
+      const description = stats.days
+        ? `${player.displayName} has had the most XP gained of any tracked Old School RuneScape player on ${stats.days} ${stats.days === 1 ? 'day' : 'days'}. Think you can top it? Track your own XP on TickGains.`
+        : `${player.displayName}'s Old School RuneScape XP history, records and goals on TickGains.`
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title,
+          description,
+          imageUrl: stats.days ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/top-gainer/image.png` : `${SITE_URL}/og-default.png`,
+          pageUrl: `${base}/top-gainer`,
+          noindex: true,
+        }),
+      )
     } catch (err) {
       next(err)
     }

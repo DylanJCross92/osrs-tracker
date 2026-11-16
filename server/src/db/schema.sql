@@ -402,3 +402,14 @@ CREATE TABLE IF NOT EXISTS competition_members (
   PRIMARY KEY (competition_id, player_id)
 );
 CREATE INDEX IF NOT EXISTS competition_members_player_idx ON competition_members (player_id);
+
+-- Who was the top XP gainer of each game day (the "Top gainer today" spotlight on Discover). One row per day; the row for
+-- a day still in progress is rewritten as the lead changes, so it settles on the day's real winner (see topGainers.service.js).
+CREATE TABLE IF NOT EXISTS daily_top_gainers (
+  day DATE PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  xp BIGINT NOT NULL,
+  top_skill TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS daily_top_gainers_player_idx ON daily_top_gainers (player_id, day);

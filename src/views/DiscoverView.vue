@@ -59,6 +59,11 @@
         <span v-if="spotlight.topSkills.length" class="disc-spot-skills">
           <span v-for="s in spotlight.topSkills" :key="s.skill" class="disc-spot-chip"><img :src="skillIconSrc(s.skill)" alt="" width="18" height="18" />{{ s.skill }} <b>+{{ formatXp(s.xp) }}</b></span>
         </span>
+        <span v-if="tenure" class="disc-spot-tenure" aria-label="How long they have been top gainer">
+          <span><b>{{ tenure.days.toLocaleString('en-US') }}</b><small>{{ tenure.days === 1 ? 'day' : 'days' }} as top gainer</small></span>
+          <span v-if="tenure.streak > 1"><b>{{ tenure.streak }}</b><small>in a row</small></span>
+          <span v-if="tenure.bestXp > 0"><b>+{{ formatXp(tenure.bestXp) }}</b><small>best day</small></span>
+        </span>
         <span class="disc-spot-cta">View profile →</span>
       </RouterLink>
     </section>
@@ -451,6 +456,12 @@ const spotlight = computed(() => {
     if (top) return { p: top, period: key, xp: top.gains[key].xp, topSkill: top.gains[key].topSkill, topSkillXp: top.gains[key].topSkillXp, topSkills: top.gains[key].topSkills || [] }
   }
   return null
+})
+
+// How long the player in the hero has been top gainer (only when the hero is today's leader).
+const tenure = computed(() => {
+  const t = data.value.topGainer
+  return spotlight.value?.period === 'day' && t && t.username === spotlight.value.p.username ? t : null
 })
 
 // --- search ---

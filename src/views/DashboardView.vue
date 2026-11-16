@@ -39,7 +39,11 @@
           <div v-if="choices.length > 1" class="dash-switch" role="group" aria-label="Which profile">
             <button v-for="c in choices" :key="c.username" type="button" class="dash-switch-btn" :class="{ on: current?.username === c.username }" :aria-pressed="current?.username === c.username" @click="pick(c.username)">{{ c.displayName }}</button>
           </div>
-          <RouterLink v-if="current" class="btn btn-ghost" :to="profileRoute">View profile</RouterLink>
+          <button v-if="player" class="dash-refresh" :class="{ 'is-busy': refreshing, 'is-done': synced }" type="button" :disabled="refreshing" title="Pull your latest hiscores" @click="refresh">
+            <svg v-if="synced" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
+            <svg v-else class="dash-refresh-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
+            <span aria-live="polite">{{ refreshing ? 'Syncing' : synced ? 'Updated' : 'Refresh' }}</span>
+          </button>
         </div>
       </header>
 
@@ -169,6 +173,7 @@ import { playersApi } from '@/api/players'
 import { recordsApi } from '@/api/records'
 import { useAuth } from '@/composables/useAuth'
 import { useFollowing } from '@/composables/useFollowing'
+import { useToast } from '@/composables/useToast'
 import { useRequirements } from '@/composables/useRequirements'
 import { useRivals } from '@/composables/useRivals'
 import { usePlayersStore } from '@/stores/players'
@@ -261,6 +266,30 @@ const monthGain = computed(() => dailyXp(tracked.value, 30).reduce((sum, d) => s
 const shownGoals = computed(() => dashboardGoals(goals.value, 4))
 const nextItems = computed(() => whatsNext({ latest: player.value?.latest, achievements: profileData.value?.achievements || [], days: weekDays.value }))
 const milestones = computed(() => recentMilestones({ timeline: profileData.value?.timeline || [], celebrations: profileData.value?.celebrations || [], days: weekDays.value, records: records.value }))
+
+// Pulls this profile's latest hiscores, then reloads the week and goals built from them.
+const { showToast } = useToast()
+const refreshing = ref(false)
+const synced = ref(false)
+let syncedTimer = 0
+async function refresh() {
+  const p = player.value
+  if (!p || refreshing.value) return
+  refreshing.value = true
+  synced.value = false
+  try {
+    await store.refreshPlayer(p.id)
+    await loadMine()
+    synced.value = true
+    clearTimeout(syncedTimer)
+    syncedTimer = setTimeout(() => (synced.value = false), 2500)
+  } catch {
+    showToast('Could not refresh right now. Try again in a moment.')
+  } finally {
+    refreshing.value = false
+  }
+}
+onBeforeUnmount(() => clearTimeout(syncedTimer))
 
 const profileRoute = computed(() => ({ name: 'playerDetail', params: { username: current.value?.username || '' } }))
 // A day tapped in the week chart opens its recap; "See records" in the recap goes on to the profile's Records tab.

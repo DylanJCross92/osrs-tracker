@@ -4239,11 +4239,6 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .pf-pin-icon { opacity: 0.8; }
 .pf-pin.is-empty { border-style: dashed; border-color: var(--border-strong); background: transparent; color: var(--muted); }
 .pf-pin.is-empty:hover { border-color: var(--gold); color: var(--gold-bright); }
-.pf-capes { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: 16px; background: var(--panel-alt); font-size: 0.84rem; }
-.pf-capes b { color: var(--text); font-weight: 700; white-space: nowrap; }
-.pf-capes-icons { display: inline-flex; flex-wrap: wrap; gap: 3px; }
-.pf-cape { display: block; padding: 2px; border-radius: 50%; background: var(--bg); box-shadow: 0 0 0 1px var(--gold); }
-.pf-cape.is-max { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 0 1px var(--gold-bright), 0 0 8px rgba(217, 175, 82, 0.5); }
 .pf-chip { padding: 4px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.84rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .pf-all { padding: 4px 4px; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 0.82rem; text-decoration: underline; cursor: pointer; }
 .pf-all:hover { color: var(--gold-bright); }
@@ -5197,3 +5192,32 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .dash-sk .dash-who-text { min-width: 0; }
 .dash-sk .dash-more.sk { flex: none; }
 @media (min-width: 521px) { .dash-sk .ov-week-total > * { align-self: flex-end; } }
+
+/* Refresh my hiscores (dashboard header) */
+.dash-refresh { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); color: var(--gold-bright); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s; }
+.dash-refresh:hover:not(:disabled) { border-color: var(--gold); background: var(--panel-alt); transform: translateY(-1px); }
+.dash-refresh:disabled { cursor: default; color: var(--muted); }
+.dash-refresh.is-busy .dash-refresh-ico { animation: dash-spin 0.8s linear infinite; }
+.dash-refresh.is-done { border-color: rgba(124, 184, 105, 0.55); color: var(--xp-green); }
+@keyframes dash-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .dash-refresh.is-busy .dash-refresh-ico { animation: none; opacity: 0.6; } .dash-refresh { transition: none; } }
+
+/* Days as top gainer (profile overview) */
+.tg { display: flex; align-items: center; gap: 14px; padding: 14px 18px; border-color: var(--gold); background: linear-gradient(120deg, rgba(240, 201, 118, 0.12), var(--panel) 65%); }
+.tg-ico { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--gold); background: radial-gradient(circle at 30% 25%, rgba(240, 201, 118, 0.28), var(--panel) 75%); color: var(--gold-bright); }
+.tg-main { flex: 1; min-width: 0; }
+.tg-kicker { margin: 0; max-width: none; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.tg-count { margin: 2px 0 0; max-width: none; font-size: 1rem; color: var(--text); }
+.tg-count b { font-size: 1.8rem; line-height: 1.1; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+.tg-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 14px; margin: 4px 0 0; max-width: none; color: var(--muted); font-size: 0.82rem; }
+.tg-live { display: inline-flex; align-items: center; gap: 6px; color: var(--xp-green); font-weight: 600; }
+.tg-live i { width: 8px; height: 8px; border-radius: 50%; background: var(--xp-green); box-shadow: 0 0 0 3px rgba(124, 184, 105, 0.22); }
+.tg-share { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); color: var(--gold-bright); font: inherit; font-size: 0.86rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.tg-share:hover, .tg-share:focus-visible { border-color: var(--gold); background: var(--panel-alt); outline: none; }
+@media (max-width: 520px) { .tg { padding: 12px 14px; } .tg-share span { display: none; } .tg-share { padding: 8px 10px; } }
+
+/* How long the hero player has been top gainer (Discover) */
+.disc-spot-tenure { display: flex; flex-wrap: wrap; gap: 8px 26px; margin-top: 4px; padding-top: 14px; border-top: 1px solid rgba(240, 201, 118, 0.22); }
+.disc-spot-tenure > span { display: flex; flex-direction: column; gap: 2px; }
+.disc-spot-tenure b { font-size: 1.35rem; line-height: 1.1; color: var(--gold-bright); font-variant-numeric: tabular-nums; }
+.disc-spot-tenure small { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }

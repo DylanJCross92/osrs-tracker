@@ -14,13 +14,7 @@
       <button v-else-if="canPin" type="button" class="pf-pin is-empty" @click="$emit('customize')">+ Pin an achievement</button>
     </div>
 
-    <div v-if="badges.capes.length || badges.totalLevel || badges.totalXp" class="pf-badges" aria-label="Milestone badges">
-      <span v-if="badges.capes.length" class="pf-capes">
-        <b>{{ badges.capes.length }} × 99</b>
-        <span class="pf-capes-icons">
-          <img v-for="c in badges.capes" :key="c.skill" class="pf-cape" :class="{ 'is-max': c.max }" :src="skillIconSrc(c.skill)" :alt="`99 ${c.skill}${c.max ? ' and 200M XP' : ''}`" :title="`99 ${c.skill}${c.max ? ', 200M XP' : ''}`" width="22" height="22" />
-        </span>
-      </span>
+    <div v-if="badges.totalLevel || badges.totalXp" class="pf-badges" aria-label="Milestone badges">
       <span v-if="badges.totalLevel" class="pf-chip" :title="badges.totalLevel.title">{{ badges.totalLevel.value.toLocaleString('en-US') }} total level</span>
       <span v-if="badges.totalXp" class="pf-chip" :title="badges.totalXp.title">{{ formatXp(badges.totalXp.value) }} total XP</span>
       <button type="button" class="pf-all" @click="$emit('open-achievements')">{{ badges.earned }} of {{ badges.total }} achievements</button>
@@ -46,5 +40,5 @@ const badges = computed(() => flairBadges(props.achievements))
 const pinned = computed(() => pinnedAchievement(props.achievements, props.pinnedKey))
 // The owner is offered the pin once there is something to pin.
 const canPin = computed(() => props.isOwner && badges.value.earned > 0)
-const show = computed(() => Boolean(streak.value || pinned.value || canPin.value || badges.value.capes.length || badges.value.totalLevel || badges.value.totalXp))
+const show = computed(() => Boolean(streak.value || pinned.value || canPin.value || badges.value.totalLevel || badges.value.totalXp))
 </script>

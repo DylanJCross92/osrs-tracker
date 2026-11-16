@@ -1,6 +1,7 @@
 <template>
   <div class="profile-overview">
     <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" @day="(d) => $emit('day', d)" @challenge="$emit('challenge')" />
+    <TopGainerCard :username="player.username" :display-name="player.displayName" />
     <OverviewRecords :records="records" :today="recordsToday" :loading="recordsLoading" :name="player.displayName" @records="$emit('records')" />
     <OverviewSkillBoard :snapshot="latest" :days="weekDays" @skill="(s) => $emit('skill', s)" />
     <OverviewRoadToMax :snapshot="latest" />
@@ -50,6 +51,7 @@ import { computed, ref, watch } from 'vue'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import OverviewWeek from '@/components/profile/OverviewWeek.vue'
+import TopGainerCard from '@/components/profile/TopGainerCard.vue'
 import OverviewRecords from '@/components/profile/OverviewRecords.vue'
 import OverviewSkillBoard from '@/components/profile/OverviewSkillBoard.vue'
 import OverviewRoadToMax from '@/components/profile/OverviewRoadToMax.vue'

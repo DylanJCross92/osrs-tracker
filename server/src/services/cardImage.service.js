@@ -517,6 +517,87 @@ export async function renderRecordCardPng(data) {
   return renderPng(await buildRecordCardTree(data))
 }
 
+// --- Top gainer card ---------------------------------------------------------------------------------------------
+
+const dayName = (key) => new Date(`${key}T12:00:00Z`).toLocaleDateString('en-US', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' })
+
+/** { displayName, stats } (see utils/topGainers.js summarizeTopGainer) -> the tree for a "days as top gainer" card. */
+async function buildTopGainerCardTree({ displayName, stats }) {
+  const badge = node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 300,
+      height: 300,
+      borderRadius: 150,
+      backgroundColor: '#2a2314',
+      border: `4px solid ${COLORS.gold}`,
+      boxShadow: '0 0 80px rgba(240, 201, 118, 0.35)',
+    },
+    [svgIcon(170, COLORS.gold, TROPHY, { stroke: true })],
+  )
+  const chip = (label, value, color) =>
+    node(
+      'div',
+      { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 22, color: COLORS.cream },
+      [node('div', { display: 'flex' }, label), node('div', { display: 'flex', color, fontWeight: 700 }, value)],
+    )
+  const chips = [
+    stats.streak > 1 ? chip('Current run', `${stats.streak} days`, COLORS.gold) : null,
+    stats.bestXp > 0 ? chip('Best day', `+${formatXp(stats.bestXp)} XP`, COLORS.green) : null,
+  ].filter(Boolean)
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 82% 45%, #3a2e14 0%, #1d1810 42%, #0e0c09 100%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
+          svgIcon(34, COLORS.gold, TROPHY, { stroke: true }),
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'Top gainer'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
+          node('div', { fontSize: 44, fontWeight: 800, color: COLORS.gold }, displayName),
+          node('div', { display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 14 }, [
+            node('div', { fontSize: 170, fontWeight: 800, color: COLORS.gold, lineHeight: 1 }, stats.days.toLocaleString('en-US')),
+            node('div', { fontSize: 36, fontWeight: 700, color: COLORS.muted }, stats.days === 1 ? 'day as top gainer' : 'days as top gainer'),
+          ]),
+          node('div', { fontSize: 26, color: COLORS.muted, marginTop: 12 }, `Most XP of the day on TickGains${stats.firstDay ? ` since ${dayName(stats.firstDay)}` : ''}`),
+          ...(chips.length ? [node('div', { display: 'flex', gap: 12, marginTop: 16 }, chips)] : []),
+        ]),
+        badge,
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 32, fontWeight: 800, color: COLORS.gold }, 'Think you can top it?'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+export async function renderTopGainerCardPng(data) {
+  return renderPng(await buildTopGainerCardTree(data))
+}
+
 // --- Challenge card ----------------------------------------------------------------------------------------------
 
 const SWORDS = [

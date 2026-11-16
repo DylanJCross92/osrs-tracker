@@ -2,6 +2,8 @@ import { pool } from '../db.js'
 import { listPlayers } from './players.service.js'
 import { achievementDefinitions } from './milestones.service.js'
 import { buildInsights } from './discoverInsights.service.js'
+import { recordTopGainer, getTopGainerStats } from './topGainers.service.js'
+import { pickTopGainer } from '../utils/topGainers.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
 
 function card(p, featured = null) {
@@ -195,6 +197,20 @@ async function buildDiscover() {
     .slice(0, 8)
     .map((r) => card(byId.get(r.player_id), { kind: 'milestone', skill: r.skill, text: `99 ${r.skill}`, at: r.occurred_at }))
 
+  // Keep the tally of "Top gainer today" days up to date, and note how long today's leader has been at the top
+  // (a failure here must never break the page).
+  let topGainer = null
+  try {
+    await recordTopGainer(players)
+    const lead = pickTopGainer(players)
+    if (lead) {
+      const stats = await getTopGainerStats(lead.player)
+      if (stats.days) topGainer = { username: lead.player.username, ...stats }
+    }
+  } catch (err) {
+    console.error('[top-gainer] could not record:', err.message)
+  }
+
   const activity = await getActivity(byId)
   const insights = await cached(insightsCache, INSIGHTS_TTL, () => buildInsights({ players, activity, byId }))
 
@@ -208,6 +224,7 @@ async function buildDiscover() {
     topMonth: gainsBy('month'),
     approachingMax,
     insights,
+    topGainer,
   }
 }
 

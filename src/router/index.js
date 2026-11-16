@@ -77,6 +77,8 @@ const routes = [
     name: 'playerDetail',
     component: () => import('@/views/PlayerDetailView.vue'),
   },
+  // A shared "days as top gainer" link: the server gives it a link preview, then it lands on the profile.
+  { path: '/player/:username/top-gainer', redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username } }) },
   // A shared record link: the server gives it a link preview, then it lands on the profile's Records tab.
   {
     path: '/player/:username/records/:key?',
