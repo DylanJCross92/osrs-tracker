@@ -30,10 +30,14 @@
 
       <ul class="mpick-list">
         <li v-for="m in sorted" :key="m.id">
-          <button type="button" role="option" :aria-selected="modelValue === m.id" class="mpick-row" :class="{ active: modelValue === m.id }" @click="pick(m.id)">
+          <button type="button" role="option" :aria-selected="modelValue === m.id" :aria-disabled="!!off(m)" :disabled="!!off(m)" class="mpick-row" :class="{ active: modelValue === m.id, 'is-off': !!off(m) }" @click="pick(m.id)">
+            <span class="mpick-first">
+            <img v-if="iconOf(m)" class="mpick-ico" :src="iconOf(m)" alt="" width="32" height="32" />
             <span class="mpick-name">
               <b>{{ m.name }}</b>
               <span class="mpick-tags">
+                <i v-if="off(m)" class="mpick-tag tag-off">{{ off(m) }}</i>
+                <i v-else-if="note(m)" class="mpick-tag tag-soft">{{ note(m) }}</i>
                 <i v-if="m.id === fastestId" class="mpick-tag tag-xp">Fastest XP</i>
                 <i v-if="m.id === topProfitId" class="mpick-tag tag-profit">Most profitable</i>
                 <i v-else-if="m.gpPerHour > 0" class="mpick-tag tag-profit soft">Profitable</i>
@@ -44,6 +48,7 @@
                 Needs
                 <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="k < avail(m).items.length - 1">, </template></span>
               </small>
+            </span>
             </span>
             <span class="mpick-cell mpick-lvl"><small>Level</small>{{ m.minLevel }}{{ m.maxLevel != null ? `-${m.maxLevel}` : '+' }}</span>
             <span class="mpick-cell mpick-xp">
@@ -69,6 +74,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue
 import { formatNum, formatGp } from '@/utils/planner'
 import { methodAvailability, unmetText } from '@/utils/requirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
+import { methodIconSrc } from '@/data/methodIcons'
 
 // A readable replacement for the long method dropdown: every method in a table with XP/hr and GP/hr bars, sortable
 // columns, and tags for the fastest, cheapest and most profitable options.
@@ -80,6 +86,12 @@ const props = defineProps({
   allowCustom: { type: Boolean, default: true },
   // Shown open as part of the page (no dropdown button), so it can sit inside a box without being cut off.
   inline: { type: Boolean, default: false },
+  // Which column the list starts sorted by: 'level' (lowest first), 'xp' or 'gp' (highest first).
+  initialSort: { type: String, default: 'level' },
+  // Why a method cannot be picked here (a short text), or '' when it can. Methods with a reason are listed but greyed out, below the rest.
+  reasonFor: { type: Function, default: null },
+  // A short note for a method that can be picked but is not at its best here (for example, one meant for lower levels).
+  noteFor: { type: Function, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -88,8 +100,13 @@ const availCache = computed(() => new Map(props.methods.map((m) => [m.id, method
 const avail = (m) => availCache.value.get(m.id) || methodAvailability(m, {})
 const open = ref(false)
 const root = ref(null)
-const sortKey = ref('level')
-const sortDir = ref('asc')
+const sortKey = ref(props.initialSort)
+const sortDir = ref(props.initialSort === 'level' ? 'asc' : 'desc')
+const iconOf = (m) => methodIconSrc(m)
+const off = (m) => (props.reasonFor ? props.reasonFor(m) : '')
+// Tags and bars only compare the methods that can be picked.
+const note = (m) => (props.noteFor ? props.noteFor(m) : '')
+const usable = computed(() => props.methods.filter((m) => !off(m) && !note(m)))
 const columns = [
   { key: 'level', label: 'Level' },
   { key: 'xp', label: 'XP/hr' },
@@ -107,18 +124,18 @@ function setSort(key) {
 const valueOf = (m) => (sortKey.value === 'level' ? m.minLevel : sortKey.value === 'xp' ? m.xpPerHour : m.gpPerHour ?? -Infinity)
 const sorted = computed(() => {
   const dir = sortDir.value === 'asc' ? 1 : -1
-  return [...props.methods].sort((a, b) => (valueOf(a) - valueOf(b)) * dir || a.minLevel - b.minLevel)
+  return [...props.methods].sort((a, b) => Number(!!off(a)) - Number(!!off(b)) || (valueOf(a) - valueOf(b)) * dir || a.minLevel - b.minLevel)
 })
 
-const maxXp = computed(() => Math.max(...props.methods.map((m) => m.xpPerHour), 1))
-const maxGp = computed(() => Math.max(...props.methods.map((m) => Math.abs(m.gpPerHour ?? 0)), 1))
-const fastestId = computed(() => props.methods.reduce((a, b) => (b.xpPerHour > (a?.xpPerHour ?? 0) ? b : a), null)?.id)
+const maxXp = computed(() => Math.max(...usable.value.map((m) => m.xpPerHour), 1))
+const maxGp = computed(() => Math.max(...usable.value.map((m) => Math.abs(m.gpPerHour ?? 0)), 1))
+const fastestId = computed(() => usable.value.reduce((a, b) => (b.xpPerHour > (a?.xpPerHour ?? 0) ? b : a), null)?.id)
 const topProfitId = computed(() => {
-  const p = props.methods.filter((m) => m.gpPerHour != null && m.gpPerHour > 0)
+  const p = usable.value.filter((m) => m.gpPerHour != null && m.gpPerHour > 0)
   return p.length ? p.reduce((a, b) => (b.gpPerHour > a.gpPerHour ? b : a)).id : null
 })
 const cheapestId = computed(() => {
-  const priced = props.methods.filter((m) => m.gpPerHour != null)
+  const priced = usable.value.filter((m) => m.gpPerHour != null)
   return priced.length ? priced.reduce((a, b) => (b.gpPerHour / b.xpPerHour > a.gpPerHour / a.xpPerHour ? b : a)).id : null
 })
 

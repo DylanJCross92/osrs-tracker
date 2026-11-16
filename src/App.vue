@@ -58,6 +58,7 @@ import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
 import AccountMenu from '@/components/AccountMenu.vue'
 import { initAuth, useAuth } from '@/composables/useAuth'
+import { initModalScrollLock } from '@/utils/modalScrollLock'
 
 const route = useRoute()
 const { loggedIn } = useAuth()
@@ -81,8 +82,16 @@ function onDocClick(e) {
     }
   }
 }
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
+// While any modal is open the page behind it does not scroll (see utils/modalScrollLock.js).
+let stopScrollLock = () => {}
+onMounted(() => {
+  document.addEventListener('click', onDocClick)
+  stopScrollLock = initModalScrollLock()
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick)
+  stopScrollLock()
+})
 
 const footerCols = computed(() => [
   {

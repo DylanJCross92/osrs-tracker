@@ -1,11 +1,12 @@
 <template>
   <div class="planner">
     <!-- 1. Player selection -->
-    <section class="card planner-top">
+    <section class="card planner-top is-start" :class="{ 'has-plan': goals.length > 0 }">
       <div class="pt-head">
         <div class="pt-title">
-          <h1>Account Planner</h1>
-          <p>Set skill goals, compare routes, and watch your progress.</p>
+          <span class="pt-badge">Account Planner</span>
+          <h1>Your next OSRS goal starts here.</h1>
+          <p>Enter your RuneScape name to see how long your next goal will take, what it could cost, and the fastest way to get there.</p>
         </div>
       </div>
 
@@ -27,9 +28,8 @@
       <template v-else>
         <div class="suggest-wrap pt-find">
           <form class="add-player-form" autocomplete="off" @submit.prevent="loadPlayer({ typed: true })">
-            <input v-model="username" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Your OSRS name" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
-            <button class="btn btn-primary" type="submit" :disabled="lookingUp || !username.trim()">{{ lookingUp ? 'Finding…' : 'Find player' }}</button>
-            <button v-if="player" class="btn btn-ghost" type="button" @click="editingPlayer = false">Cancel</button>
+            <svg class="pt-find-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+            <input v-model="username" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="Enter your OSRS username" autocomplete="off" maxlength="12" :disabled="lookingUp" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="onSearchBlur" />
           </form>
           <RecentPlayers v-if="searchFocused && !username.trim()" @pick="pickSuggestion" />
           <ul v-if="suggestions.length" class="search-suggest">
@@ -40,7 +40,14 @@
           </ul>
         </div>
         <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan manually.</p>
-        <p v-else class="pt-hint">No name? Skip this and enter your level or XP when you add a goal. Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink>.</p>
+        <p v-else-if="!goals.length" class="pt-hint pt-hint-start">
+          <template v-if="lookingUp">Loading stats…</template>
+          <template v-else>No sign-up required · Or <a href="#ps-start" @click.prevent="scrollToStart">start without a username</a></template>
+        </p>
+        <p v-else class="pt-hint pt-hint-start">
+          <template v-if="lookingUp">Loading stats…</template>
+          <template v-else>Press Enter to load a player<template v-if="player"> · <button class="btn-text" type="button" @click="editingPlayer = false">Cancel</button></template> · Only need one skill? Try the <RouterLink to="/calculators">skill calculators</RouterLink></template>
+        </p>
       </template>
 
       <div v-if="template" class="ps-template" role="status">
@@ -58,158 +65,124 @@
     </section>
 
 
-    <!-- 3. Training goals -->
-    <section id="add-goal" class="card planner-goals-card">
-      <div class="planner-goals-head">
-        <div class="pg-title">
-          <h2>Training goals</h2>
-          <span v-if="goals.length" class="planner-calc">Calculated {{ formatRelative(calcAt.toISOString()) }}</span>
-        </div>
-        <PlannerSavedPlans
-          :plans="savedPlans"
-          :current-id="currentPlanId"
-          :current-name="currentPlanName"
-          :player-name="player?.username || ''"
-          :player-label="player?.displayName || ''"
-          :has-goals="goals.length > 0"
-          :dirty="dirty"
-          :can-save="canSavePlan"
-          :save-blocked-reason="saveBlockedReason"
-          @save="(n) => saveCurrent(n, false)"
-          @save-new="(n) => saveCurrent(n, true)"
-          @load="loadSaved"
-          @duplicate="duplicateSaved"
-          @delete="deleteSaved"
-          @rename="renameSaved"
-          @share="openShare"
-          @share-current="shareCurrent"
-          @blocked="showToast(saveBlockedReason)"
-          @revert="revertPlan"
-          @new="startNew"
-        />
-      </div>
-      <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
+    <!-- Nothing planned yet: a short way in. Everything below only appears once there is a plan. -->
+    <PlannerStart
+      v-if="!goals.length"
+      :skills="player?.latest?.skills || null"
+      :has-player="!!player?.latest"
+      :player-label="player?.displayName || ''"
+      :hours-per-day="hoursPerDay"
+      :global-strategy="globalStrategy"
+      :gp-value="gpValue"
+      @use="startFromPlan"
+      @custom="startCustom"
+    >
+      <template v-if="savedPlans.length" #saved>
+        <PlannerSavedPlans v-bind="savedPlansProps" v-on="savedPlansOn" />
+      </template>
+    </PlannerStart>
 
-      <p v-if="scratch && goals.length && !currentPlanId" class="ps-explore" role="status">
-        <b>Just exploring.</b> This plan is not saved or tracked. Share the link, or press Save plan to start tracking your progress.
-      </p>
+    <template v-else>
+      <!-- Compact and stuck under the site header on desktop: the plan, its strategy and daily playtime, and the three tabs -->
+      <PlannerPlanHeader v-model:tab="tab" :tabs="planTabs" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" @update:strategy="setGlobalStrategy" @update:hours="setHours">
+        <PlannerSavedPlans v-bind="savedPlansProps" v-on="savedPlansOn" />
+      </PlannerPlanHeader>
 
-      <PlannerProgress
-        v-if="progress"
-        :progress="progress"
-        :updated-at="player?.latest?.capturedAt || ''"
-        :baseline-at="statsAt || ''"
-        :today="gainedTodayNow"
-        :hours-per-day="hoursPerDay"
-        :projection="shownProjection"
-        :series="series"
-        :focus="focusIdx >= 0 ? focusSkill : ''"
-        @focus="(skill) => (focusSkill = skill)"
-        @rebase="refreshFromPlayer"
-      />
+      <!-- Overview: the numbers, what to do next, how it is going -->
+      <section v-if="tab === 'overview'" id="plan-panel-overview" class="card planner-goals-card plan-section" role="tabpanel" aria-labelledby="plan-tab-overview">
+        <p v-if="scratch && goals.length && !currentPlanId" class="ps-explore" role="status">
+          <b>Just exploring.</b> This plan is not saved or tracked. Share the link, or press Save plan to start tracking your progress.
+        </p>
 
-      <div v-if="goals.length" class="plan-glance">
-        <div class="pg-item" :title="`${formatNum(totals.totalXp)} XP to go`">
-          <span>XP left</span>
-          <b>{{ formatXp(totals.totalXp) }}</b>
-          <small>{{ goals.length }} skill{{ goals.length === 1 ? '' : 's' }}</small>
-        </div>
-        <div class="pg-item">
-          <span>Time</span>
-          <b>{{ formatHours(totals.totalHours) }}</b>
-          <small>{{ totals.days == null ? 'at the planned playtime' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'} at ${hoursPerDay} h/day` }}</small>
-        </div>
-        <div class="pg-item">
-          <span>Net GP</span>
-          <b :class="gpClass(totals.netGp)">{{ totals.netGp == null ? 'No data' : formatGp(totals.netGp) }}</b>
-          <small v-if="totals.netGp == null" />
-          <small v-else-if="totals.gpIncomplete" class="gp-incomplete" title="Some steps are unpriced">incomplete</small>
-          <small v-else>{{ totals.netGp >= 0 ? 'profit' : 'cost' }}</small>
-        </div>
-      </div>
-
-      <!-- How long you play each day: the one number that moves every date below -->
-      <div class="playtime" role="group" aria-label="Daily playtime">
-        <div class="playtime-main">
-          <span class="playtime-label">Hours played per day</span>
-          <div class="playtime-presets">
-            <button v-for="h in PLAYTIME_PRESETS" :key="h" type="button" :class="{ active: hoursPerDay === h }" :aria-pressed="hoursPerDay === h" @click="setHours(h)">{{ h }}h</button>
+        <div class="ov-stats" role="group" aria-label="Plan summary">
+          <div class="ov-stat">
+            <span>Training time</span>
+            <b>{{ formatHours(totals.totalHours) }}</b>
+            <small>{{ totals.days == null ? '' : `${totals.days.toLocaleString('en-US')} day${totals.days === 1 ? '' : 's'} at ${hoursPerDay} h/day` }}</small>
           </div>
-          <div class="playtime-stepper">
-            <button type="button" aria-label="Half an hour less" :disabled="hoursPerDay <= MIN_HOURS" @click="setHours(hoursPerDay - 0.5)">−</button>
-            <input type="number" inputmode="decimal" step="0.5" :min="MIN_HOURS" :max="MAX_HOURS" :value="hoursPerDay" aria-label="Hours played per day" @change="onHoursTyped" />
-            <span>h</span>
-            <button type="button" aria-label="Half an hour more" :disabled="hoursPerDay >= MAX_HOURS" @click="setHours(hoursPerDay + 0.5)">+</button>
+          <div class="ov-stat">
+            <span>{{ totals.netGp != null && totals.netGp >= 0 ? 'GP profit' : 'GP cost' }}</span>
+            <b :class="gpClass(totals.netGp)">{{ totals.netGp == null ? 'No data' : formatGp(totals.netGp) }}</b>
+            <small v-if="totals.gpIncomplete" class="gp-incomplete" title="Some steps are unpriced">incomplete estimate</small>
+          </div>
+          <div class="ov-stat">
+            <span>Done by</span>
+            <b>{{ timeline.finishDate ? timeline.finishDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : totals.totalHours === 0 ? 'Done' : '-' }}</b>
+            <small v-if="timeline.finishDate && totals.days != null">in {{ totals.days.toLocaleString('en-US') }} day{{ totals.days === 1 ? '' : 's' }}</small>
+          </div>
+          <div class="ov-stat" :title="`${formatNum(totals.totalXp)} XP to go`">
+            <span>Goals</span>
+            <b>{{ goals.length }}</b>
+            <small>{{ formatXp(totals.totalXp) }} XP left</small>
           </div>
         </div>
-        <input class="playtime-slider" type="range" min="0.5" max="12" step="0.5" :value="Math.min(hoursPerDay, 12)" aria-label="Daily playtime in hours" @input="setHours(Number($event.target.value))" />
-      </div>
 
-      <PlannerTimeline v-if="goals.length" :timeline="timeline" :hours-per-day="hoursPerDay">
-        <div class="strategy-pick" role="group" aria-label="Training strategy for all goals">
-          <span class="strategy-label">Strategy for all goals</span>
-          <div class="range-tabs strategy-tabs">
-            <button v-for="s in GLOBAL_STRATEGIES" :key="s" type="button" :class="{ active: globalStrategy === s }" :aria-pressed="globalStrategy === s" :title="STRATEGY_HINTS[s]" @click="setGlobalStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
-          </div>
-          <button v-if="overrideCount" class="btn-text strategy-reset" type="button" @click="resetAllOverrides">Reset {{ overrideCount }} override{{ overrideCount === 1 ? '' : 's' }}</button>
-        </div>
-        <div class="req-summary">
-          <label class="req-toggle" title="When on, the planner does not suggest methods you have said you cannot use. Methods you pick yourself are always used.">
-            <input v-model="respect" type="checkbox" />
-            <span>Skip methods I can't use yet</span>
-          </label>
-          <span v-if="routeIssues.blocked" class="req-flag is-unmet">⚠ {{ routeIssues.blocked }} goal{{ routeIssues.blocked === 1 ? '' : 's' }} use a method with a missing requirement</span>
-          <span v-else-if="routeIssues.unconfirmed" class="req-flag is-unknown">? {{ routeIssues.unconfirmed }} goal{{ routeIssues.unconfirmed === 1 ? '' : 's' }} have requirements to confirm</span>
-        </div>
-      </PlannerTimeline>
-
-      <div v-if="goals.length" ref="goalListEl" class="goal-list" :class="{ dragging: !!dragSkill }">
-        <div v-for="(g, i) in goals" :key="g.skill" class="goal-row" :data-skill="g.skill" :class="{ dragged: dragSkill === g.skill }">
-        <PlannerGoalRail :entry="timeline.entries[i]" :index="i" />
-        <PlannerGoalCard
-          :goal="g"
-          :plan="plans[i]"
-          :compare="compares[i]"
-          :global-strategy="globalStrategy"
-          :gp-value="gpValue"
+        <PlannerProgress
+          v-if="progress"
+          :progress="progress"
+          :updated-at="player?.latest?.capturedAt || ''"
+          :baseline-at="statsAt || ''"
+          :today="gainedTodayNow"
           :hours-per-day="hoursPerDay"
-          :expanded="expanded.has(g.skill)"
-          :index="i"
-          :count="goals.length"
-          :live-goal="liveGoals[i]"
-          :entry="timeline.entries[i]"
-          :total-hours="timeline.totalHours"
-          :progress="progress ? progress.per[i] : null"
-          @toggle="toggleExpanded(g.skill)"
-          @remove="removeGoal(i)"
-          @move="(dir) => moveGoal(i, dir)"
-          @drag-start="(e) => startDrag(g.skill, e)"
-          @patch="(patch) => patchGoal(i, patch)"
-          @pick="(id) => pickRoute(i, id)"
+          :projection="shownProjection"
+          :series="series"
+          :focus="focusIdx >= 0 ? focusSkill : ''"
+          @focus="(skill) => (focusSkill = skill)"
+          @rebase="refreshFromPlayer"
         />
-        </div>
-      </div>
-      <button v-if="goals.length" class="goal-add-bottom" type="button" @click="openAdd()">+ Add another skill</button>
-      <div v-if="!goals.length" class="rp-empty">
-        <h3>Start from a recommended plan</h3>
-        <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ player ? `${player.displayName}'s` : 'your' }} stats. Change anything afterwards.</p>
-        <RecommendedPlans :limit="8" :skills="player?.latest?.skills || null" :has-player="!!player?.latest" :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @use="useRecommended" />
-        <div class="rp-or"><span>or build your own</span></div>
-        <div class="byo">
-          <div class="byo-copy">
-            <h3>Build your own plan</h3>
-            <p>Pick a skill to aim at, then choose a target level and how you want to train it. Add as many goals as you like and the planner lines them up on a timeline.</p>
-            <button class="btn btn-primary byo-go" type="button" @click="openAdd()">+ Add a skill goal</button>
+
+        <PlannerNext :steps="todoSteps" @open-goal="focusGoal" @see-route="tab = 'route'" />
+
+        <!-- Add a skill without leaving the overview -->
+        <button class="goal-add-bottom ov-add" type="button" @click="openAdd()">+ Add a skill to this plan</button>
+
+        <PlannerFinishLine :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="tab = 'route'" />
+      </section>
+
+      <!-- Skill goals: compact rows, opened to edit the goal, its methods and its requirements -->
+      <section v-else-if="tab === 'goals'" id="plan-panel-goals" class="card planner-goals-card plan-section" role="tabpanel" aria-labelledby="plan-tab-goals">
+        <div class="planner-goals-head">
+          <div class="pg-title">
+            <h2>Skill goals</h2>
+            <span class="planner-calc">Open a skill to change its goal, methods or requirements.</span>
           </div>
-          <div class="byo-skills" role="group" aria-label="Start with a skill">
-            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="openAdd(s)">
-              <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
-              <span>{{ s }}</span>
-            </button>
+          <div class="range-tabs gf" role="group" aria-label="Show goals by status">
+            <button v-for="f in goalFilters" :key="f.key" type="button" :class="{ active: goalFilter === f.key }" :aria-pressed="goalFilter === f.key" @click="goalFilter = f.key">{{ f.label }}<i>{{ f.count }}</i></button>
           </div>
         </div>
-      </div>
-    </section>
+        <p v-if="goalFilter !== 'all' && !goalFilters.find((f) => f.key === goalFilter)?.count" class="planner-hint">No goals here.</p>
+        <div ref="goalListEl" class="goal-list" :class="{ dragging: !!dragSkill }">
+          <div v-for="(g, i) in goals" v-show="showGoal(i)" :key="g.skill" class="goal-row" :data-skill="g.skill" :class="{ dragged: dragSkill === g.skill }">
+          <PlannerGoalRail :entry="timeline.entries[i]" :index="i" />
+          <PlannerGoalCard
+            :goal="g"
+            :plan="plans[i]"
+            :compare="compares[i]"
+            :global-strategy="globalStrategy"
+            :gp-value="gpValue"
+            :hours-per-day="hoursPerDay"
+            :expanded="expanded.has(g.skill)"
+            :index="i"
+            :count="goals.length"
+            :live-goal="liveGoals[i]"
+            :entry="timeline.entries[i]"
+            :total-hours="timeline.totalHours"
+            :progress="progress ? progress.per[i] : null"
+            @toggle="toggleExpanded(g.skill)"
+            @remove="removeGoal(i)"
+            @move="(dir) => moveGoal(i, dir)"
+            @drag-start="(e) => startDrag(g.skill, e)"
+            @patch="(patch) => patchGoal(i, patch)"
+            @pick="(id) => pickRoute(i, id)"
+          />
+          </div>
+        </div>
+        <button class="goal-add-bottom" type="button" @click="openAdd()">+ Add another skill</button>
+      </section>
+
+      <!-- Training route: a checklist, the first few steps to begin with -->
+      <PlannerTrainingRoute v-else :steps="allSteps" @open-goal="focusGoal" />
+    </template>
 
     <!-- Ideas for players who already have a plan going -->
     <section v-if="goals.length && player?.latest" class="card rp-section" aria-label="Recommended plans">
@@ -218,34 +191,26 @@
       <RecommendedPlans compact :limit="4" :skills="player.latest.skills" has-player :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @use="useRecommended" />
     </section>
 
-    <template v-if="goals.length">
-      <!-- 5. Itemised steps and sharing -->
-      <section class="card">
-        <h2 class="planner-itemised-title">Itemised steps and costs</h2>
-        <div v-for="(g, i) in goals" :key="g.skill" class="receipt-items">
-          <h3><img :src="skillIconSrc(g.skill)" :alt="g.skill" width="18" height="18" /> {{ g.skill }}</h3>
-          <PlannerRoute :segments="plans[i].segments" />
-        </div>
-        <p class="planner-hint">GP and time figures are rough estimates from approximate community rates, not guarantees. GP is net per hour of training, so it already nets out supplies and any loot.</p>
-      </section>
-    </template>
-
-
-    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" @add="addGoal" @close="showAdd = false" />
+    <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" @add="addGoal" @close="showAdd = false" />
   </div>
 </template>
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import PlannerRoute from '@/components/planner/PlannerRoute.vue'
+import PlannerPlanHeader from '@/components/planner/PlannerPlanHeader.vue'
+import PlannerNext from '@/components/planner/PlannerNext.vue'
+import PlannerTrainingRoute from '@/components/planner/PlannerTrainingRoute.vue'
+import { buildSteps, goalStatus, withCompleted } from '@/utils/planSteps'
 import PlannerGoalCard from '@/components/planner/PlannerGoalCard.vue'
 import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
-import PlannerTimeline from '@/components/planner/PlannerTimeline.vue'
+import PlannerFinishLine from '@/components/planner/PlannerFinishLine.vue'
 import PlannerGoalRail from '@/components/planner/PlannerGoalRail.vue'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
+import PlannerStart from '@/components/planner/PlannerStart.vue'
 import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
@@ -354,11 +319,20 @@ watch(username, (q) => {
     }
   }, 250)
 })
+// Leaving the box with a name in it loads that player, so stats arrive without a button. Clicking a suggestion or a plan is handled
+// by its own click (a load already under way is waited for, never started twice).
+function onSearchBlur() {
+  searchFocused.value = false
+  if (!goals.value.length && !player.value && username.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && loadTyped(), 150)
+}
+function scrollToStart() {
+  document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 function pickSuggestion(sg) {
   track('search_suggestion_selected', { source: 'planner' })
   suggestions.value = []
   username.value = sg.displayName
-  loadPlayer({ typed: true })
+  loadTyped({ force: true })
 }
 
 let playersFreshened = false
@@ -601,6 +575,60 @@ const routeIssues = computed(() => {
   return { blocked, unconfirmed }
 })
 const timeline = computed(() => buildTimeline(goals.value, plans.value, hoursPerDay.value))
+// The same plan as a list of steps, for "what to train next" and the training route checklist.
+const liveSteps = computed(() => buildSteps(goals.value, plans.value, timeline.value, hoursPerDay.value))
+// For a tracked player the stretches already finished are put back in (marked done) so the route reads as a checklist.
+const allSteps = computed(() => withCompleted(liveSteps.value, goals.value, originalPlans.value, tracking.value ? playerXp : null))
+const todoSteps = computed(() => allSteps.value.filter((s) => !s.done))
+
+// --- Tabs ----------------------------------------------------------------------------------------
+// Which part of the plan is showing. It stays put while goals and methods are edited, and goes back to the overview when a
+// different plan is started or opened.
+const tab = ref('overview')
+const planTabs = computed(() => [
+  { key: 'overview', label: 'Overview' },
+  { key: 'goals', label: 'Skill goals', count: goals.value.length },
+  { key: 'route', label: 'Training route', count: todoSteps.value.length },
+])
+const STRATEGY_OPTIONS = GLOBAL_STRATEGIES.map((value) => ({ value, label: STRATEGY_LABELS[value], hint: STRATEGY_HINTS[value] }))
+// Switching tabs from far down the page brings the new tab's top into view under the sticky header.
+watch(tab, async (key) => {
+  await nextTick()
+  const el = document.getElementById(`plan-panel-${key}`)
+  if (el && el.getBoundingClientRect().top < 0) el.scrollIntoView({ block: 'start' })
+})
+
+// --- Skill goal filter ----------------------------------------------------------------------------
+const goalFilter = ref('all')
+const statuses = computed(() => goals.value.map((_, i) => goalStatus(plans.value[i], progress.value?.per?.[i])))
+const goalFilters = computed(() => {
+  const n = (f) => statuses.value.filter(f).length
+  return [
+    { key: 'all', label: 'All', count: goals.value.length },
+    { key: 'todo', label: 'To do', count: n((s) => s !== 'done') },
+    ...(statuses.value.includes('active') ? [{ key: 'active', label: 'In progress', count: n((s) => s === 'active') }] : []),
+    { key: 'done', label: 'Done', count: n((s) => s === 'done') },
+  ]
+})
+const showGoal = (i) => {
+  const f = goalFilter.value
+  const st = statuses.value[i]
+  return f === 'all' || (f === 'todo' ? st !== 'done' : st === f)
+}
+// A filter that no longer exists (nobody is "in progress" any more) falls back to all.
+watch(goalFilters, (list) => {
+  if (!list.some((f) => f.key === goalFilter.value)) goalFilter.value = 'all'
+})
+// Open one skill's goal (from the next-step card or a route step) and bring it into view.
+async function focusGoal(i) {
+  const skill = goals.value[i]?.skill
+  if (!skill) return
+  tab.value = 'goals'
+  goalFilter.value = 'all'
+  expanded.value = new Set([...expanded.value, skill])
+  await nextTick()
+  document.querySelector(`.goal-row[data-skill="${skill}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 // --- Goals ----------------------------------------------------------------------
 const addSkill = ref('')
@@ -611,6 +639,7 @@ function openAdd(skill) {
 }
 function addGoal(goal) {
   if (goals.value.some((g) => g.skill === goal.skill)) return
+  if (!goals.value.length) tab.value = 'overview'
   goals.value.push(goal)
   expanded.value = new Set([goal.skill])
   showAdd.value = false
@@ -639,6 +668,7 @@ const dragSkill = ref('')
 let drag = null
 function startDrag(skill, e) {
   if (drag || (e.pointerType === 'mouse' && e.button !== 0)) return
+  if (goalFilter.value !== 'all') return showToast('Show all goals to reorder them.')
   const row = goalListEl.value?.querySelector(`[data-skill="${skill}"]`)
   if (!row) return
   drag = { skill, grab: e.clientY - row.getBoundingClientRect().top, y: e.clientY, timer: 0, busy: false }
@@ -864,6 +894,8 @@ function keepCurrentPlanBefore(name) {
 function useRecommended(rec) {
   keepCurrentPlanBefore(rec.title)
   unsavedShareId.value = ''
+  tab.value = 'overview'
+  goalFilter.value = 'all'
   goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
@@ -884,6 +916,7 @@ async function loadTemplate(slug) {
     return false
   }
   keepCurrentPlanBefore(share.name)
+  tab.value = 'overview'
   scratch.value = false
   unsavedShareId.value = ''
   goals.value = share.plan.goals.map((g) => ({
@@ -940,6 +973,8 @@ function shareWithoutSaving(name) {
   openShare(plan)
 }
 function applyPlan(plan) {
+  tab.value = 'overview'
+  goalFilter.value = 'all'
   scratch.value = false
   unsavedShareId.value = ''
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests], ...(g.overrides ? { overrides: g.overrides.map((o) => ({ ...o })) } : {}) }))
@@ -993,6 +1028,57 @@ function deleteSaved(id) {
   deletePlan(id)
   if (id === currentPlanId.value) currentPlanId.value = ''
   refreshSaved()
+}
+
+// The saved-plans switcher is shown in the empty start screen (when there are saved plans) and above a plan; same props and events.
+const savedPlansProps = computed(() => ({
+  plans: savedPlans.value,
+  currentId: currentPlanId.value,
+  currentName: currentPlanName.value,
+  playerName: player.value?.username || '',
+  playerLabel: player.value?.displayName || '',
+  hasGoals: goals.value.length > 0,
+  dirty: dirty.value,
+  canSave: canSavePlan.value,
+  saveBlockedReason: saveBlockedReason.value,
+}))
+const savedPlansOn = {
+  save: (n) => saveCurrent(n, false),
+  'save-new': (n) => saveCurrent(n, true),
+  load: loadSaved,
+  duplicate: duplicateSaved,
+  delete: deleteSaved,
+  rename: renameSaved,
+  share: openShare,
+  'share-current': shareCurrent,
+  blocked: () => showToast(saveBlockedReason.value),
+  revert: revertPlan,
+  new: startNew,
+}
+
+// --- Start screen --------------------------------------------------------------------
+// A name typed in the search box but not loaded yet (they went straight for a plan) is loaded first, so the plan starts from
+// their own stats. With no name, or a name that cannot be found, the plan starts every skill from level 1.
+let typedLoad = null
+async function loadTyped({ force = false } = {}) {
+  if (typedLoad) return typedLoad
+  if ((player.value && !force) || !username.value.trim()) return
+  typedLoad = loadPlayer({ typed: true }).finally(() => (typedLoad = null))
+  return typedLoad
+}
+const loadTypedPlayer = loadTyped
+async function startFromPlan(rec) {
+  await loadTypedPlayer()
+  let plan = rec
+  if (player.value?.latest) {
+    plan = recommendedPlans(player.value.latest.skills).find((r) => r.id === rec.id)
+    if (!plan) return showToast('That plan is already done for this player. Pick another.')
+  }
+  useRecommended(plan)
+}
+async function startCustom(skill) {
+  await loadTypedPlayer()
+  openAdd(skill)
 }
 
 // --- Persistence ----------------------------------------------------------------------

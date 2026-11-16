@@ -1,13 +1,14 @@
 <template>
-  <div class="modal-overlay" @click.self="$emit('close')" @keydown.esc="$emit('close')">
-    <div class="modal-card add-goal-modal" role="dialog" aria-modal="true" aria-label="Add skill goal">
+  <div class="modal-overlay agm-overlay" @click.self="$emit('close')" @keydown.esc="$emit('close')">
+    <div class="modal-card add-goal-modal agm" role="dialog" aria-modal="true" aria-label="Add skill goal">
       <div class="share-modal-header">
         <h2>Add skill goal</h2>
         <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
       </div>
 
-      <div class="planner-form add-goal-form">
-        <label>
+      <!-- 1. What to train, and between which levels -->
+      <div class="agm-top">
+        <label class="agm-skill">
           <span>Skill</span>
           <div class="planner-skill-select">
             <span class="planner-skill-icon"><img :src="skillIconSrc(form.skill)" :alt="form.skill" width="24" height="24" /></span>
@@ -16,49 +17,62 @@
             </select>
           </div>
         </label>
-        <label>
-          <span>Current level</span>
-          <NumberInput v-model="currentLevelModel" :min="1" :max="126" />
-        </label>
-        <label>
-          <span>Current XP</span>
-          <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" />
-        </label>
-        <label>
-          <span>Goal</span>
-          <select v-model="form.targetMode" @change="syncTarget">
-            <option value="level">Target level</option>
-            <option value="xp">Target XP</option>
-            <option value="max">200M XP</option>
-          </select>
-        </label>
-        <label v-if="form.targetMode === 'level'">
-          <span>Target level</span>
-          <NumberInput v-model="form.targetLevel" :min="1" :max="126" />
-        </label>
-        <label v-else-if="form.targetMode === 'xp'">
-          <span>Target XP</span>
-          <NumberInput v-model="form.targetXp" :min="0" :max="MAX_XP" />
-        </label>
-        <label v-else><span>Target XP</span><input type="text" :value="formatNum(MAX_XP)" disabled /></label>
-        <label class="add-goal-strategy">
-          <span>Training strategy</span>
-          <select v-model="form.methodId">
-            <option :value="GLOBAL_STRATEGY">Follow global strategy ({{ STRATEGY_LABELS[globalStrategy] }})</option>
-            <option :value="AUTO_FAST">Fastest</option>
-            <option :value="AUTO_CHEAP">Cheapest</option>
-            <option :value="AUTO_BALANCED">Balanced</option>
-          </select>
-        </label>
+        <template v-if="!showXp">
+          <label>
+            <span>From level</span>
+            <NumberInput v-model="currentLevelModel" :min="1" :max="126" />
+          </label>
+          <label>
+            <span>To level</span>
+            <NumberInput v-model="form.targetLevel" :min="1" :max="126" @update:model-value="syncTarget" />
+          </label>
+        </template>
+        <template v-else>
+          <label>
+            <span>Current XP</span>
+            <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" />
+          </label>
+          <label>
+            <span>Target XP</span>
+            <NumberInput v-model="form.targetXp" :min="0" :max="MAX_XP" />
+          </label>
+        </template>
       </div>
-      <p v-if="player" class="planner-hint">Starting stats come from {{ player.displayName }}'s latest TickGains snapshot. You can edit them.</p>
+      <div class="agm-quick">
+        <template v-if="!showXp && chips.length">
+          <span>Aim for</span>
+          <button v-for="l in chips" :key="l" type="button" :class="{ active: form.targetLevel === l }" @click="setTarget(l)">{{ l }}</button>
+        </template>
+        <button class="btn-text agm-xp-toggle" type="button" @click="toggleXp">{{ showXp ? 'Use levels instead' : 'Use XP instead' }}</button>
+      </div>
+      <p v-if="player" class="planner-hint agm-hint">Starting stats come from {{ player.displayName }}'s latest snapshot. You can edit them.</p>
 
-      <div v-if="preview" class="planner-preview-head add-goal-preview">
-        <b>Preview</b>
-        <span>{{ formatNum(preview.remainingXp) }} xp</span>
-        <span>{{ formatHours(preview.hours) }}</span>
-        <span v-if="preview.netGp != null" :class="preview.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(preview.netGp) }}</span>
-      </div>
+      <!-- 2. How to get there: the best method for each set of levels, changeable one by one -->
+      <section class="agm-route" aria-label="Your route">
+        <div class="agm-route-head">
+          <h3>Your route</h3>
+          <div class="range-tabs agm-strategy" role="group" aria-label="Training strategy">
+            <button v-for="s in STRATEGIES" :key="s" type="button" :class="{ active: strategy === s }" :aria-pressed="strategy === s" :title="STRATEGY_HINTS[s]" @click="setStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
+          </div>
+        </div>
+
+        <template v-if="preview">
+          <p class="agm-route-help">The best method for each set of levels, {{ STRATEGY_LABELS[strategy].toLowerCase() }}. Press <b>Choose method</b> on any step to see the options and pick your own.</p>
+          <PlannerRoute :segments="preview.segments" :skill="form.skill" @set="setRange" />
+          <p v-if="preview.warning" class="planner-warning">⚠ {{ preview.warning }}</p>
+          <p v-if="form.overrides.length" class="agm-reset">
+            You chose the method for {{ form.overrides.length }} set{{ form.overrides.length === 1 ? '' : 's' }} of levels.
+            <button class="btn-text" type="button" @click="form.overrides = []">Back to recommended</button>
+          </p>
+          <div class="agm-total" role="status">
+            <span><b>{{ formatNum(preview.remainingXp) }}</b> xp</span>
+            <span><b>{{ formatHours(preview.hours) }}</b></span>
+            <span v-if="preview.netGp != null" :class="preview.netGp >= 0 ? 'planner-gain' : 'planner-cost'"><b>{{ formatGp(preview.netGp) }}</b></span>
+          </div>
+        </template>
+        <p v-else class="agm-route-help">Pick a target above your current level to see the route.</p>
+      </section>
+
       <p v-if="error" class="planner-error">{{ error }}</p>
       <div class="modal-actions">
         <button class="btn btn-ghost" type="button" @click="$emit('close')">Cancel</button>
@@ -71,8 +85,9 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
+import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
-import { MAX_XP, xpAtLevel, levelAtXp, planGoal, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
+import { MAX_XP, xpAtLevel, levelAtXp, planGoal, setOverrideRange, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, GLOBAL_STRATEGIES, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
 import { STRATEGY_LABELS, resolveGoal } from '@/utils/plannerTools'
 
 const props = defineProps({
@@ -82,15 +97,32 @@ const props = defineProps({
   gpValue: { type: Number, required: true },
   // A skill to start on (picked from the build-your-own panel).
   initialSkill: { type: String, default: '' },
+  // Methods the planner skips and quests already finished, so the route here matches the one the goal will get.
+  blockedMethodIds: { type: Array, default: () => [] },
+  doneQuestIds: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['add', 'close'])
+
+const STRATEGIES = GLOBAL_STRATEGIES
+const STRATEGY_HINTS = {
+  [AUTO_FAST]: 'Minimises training time, whatever it costs.',
+  [AUTO_CHEAP]: 'Minimises net gp spent, even if it is slower.',
+  [AUTO_BALANCED]: 'A middle ground between speed and cost.',
+}
 
 const taken = computed(() => new Set(props.existingSkills))
 const firstFree = SKILL_NAMES.find((s) => !props.existingSkills.includes(s)) || SKILL_NAMES[0]
 
 const startSkill = SKILL_NAMES.includes(props.initialSkill) && !props.existingSkills.includes(props.initialSkill) ? props.initialSkill : firstFree
-const form = reactive({ skill: startSkill, currentXp: 0, targetMode: 'level', targetLevel: 99, targetXp: xpAtLevel(99), methodId: GLOBAL_STRATEGY })
+// methodId stays "follow the global strategy" until a different strategy is picked here.
+const form = reactive({ skill: startSkill, currentXp: 0, targetMode: 'level', targetLevel: 99, targetXp: xpAtLevel(99), methodId: GLOBAL_STRATEGY, overrides: [] })
 const error = ref('')
+const showXp = ref(false)
+
+const strategy = computed(() => (form.methodId === GLOBAL_STRATEGY ? props.globalStrategy : form.methodId))
+function setStrategy(s) {
+  form.methodId = s === props.globalStrategy ? GLOBAL_STRATEGY : s
+}
 
 const playerXp = (skill) => props.player?.latest?.skills?.[skill]?.xp ?? null
 const currentLevel = computed(() => levelAtXp(form.currentXp || 0, true))
@@ -100,30 +132,52 @@ const currentLevelModel = computed({
     if (v != null) form.currentXp = xpAtLevel(Math.min(Math.max(v, 1), 126))
   },
 })
-const targetXp = computed(() => {
-  if (form.targetMode === 'max') return MAX_XP
-  if (form.targetMode === 'level') return xpAtLevel(form.targetLevel || 1)
-  return Math.min(Math.floor(form.targetXp || 0), MAX_XP)
-})
+const targetXp = computed(() => (form.targetMode === 'level' ? xpAtLevel(form.targetLevel || 1) : Math.min(Math.floor(form.targetXp || 0), MAX_XP)))
+// Quick targets above where the player is now.
+const chips = computed(() => [70, 80, 90, 99].filter((l) => l > currentLevel.value))
+
+function setTarget(level) {
+  form.targetMode = 'level'
+  form.targetLevel = level
+  syncTarget()
+}
+function toggleXp() {
+  showXp.value = !showXp.value
+  if (showXp.value) {
+    syncTarget()
+    form.targetMode = 'xp'
+  } else {
+    form.targetLevel = Math.min(Math.max(levelAtXp(form.targetXp || 0, true), 1), 126)
+    form.targetMode = 'level'
+    syncTarget()
+  }
+}
 
 // Fill the starting stats from the selected player (or a sane default) and aim at 99 or the next level.
 function onSkillChange() {
   form.currentXp = playerXp(form.skill) ?? (form.skill === 'Hitpoints' ? xpAtLevel(10) : 0)
   form.targetLevel = currentLevel.value < 99 ? 99 : Math.min(currentLevel.value + 1, 126)
+  // Methods differ from skill to skill, so choices made for the last skill do not carry over.
+  form.overrides = []
   syncTarget()
   error.value = ''
 }
 function syncTarget() {
   if (form.targetMode === 'level') form.targetXp = xpAtLevel(form.targetLevel || 1)
-  else if (form.targetMode === 'max') form.targetXp = MAX_XP
 }
 onSkillChange()
+
+function setRange({ fromLevel, toLevel, methodId }) {
+  form.overrides = setOverrideRange(form.overrides, fromLevel, toLevel, methodId)
+}
 
 const preview = computed(() => {
   const cur = Math.min(Math.max(Math.floor(form.currentXp || 0), 0), MAX_XP)
   if (targetXp.value <= cur) return null
-  const id = form.methodId === GLOBAL_STRATEGY ? props.globalStrategy : form.methodId
-  return planGoal(resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [] }, id, props.gpValue))
+  const id = strategy.value
+  return planGoal(
+    resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue),
+  )
 })
 
 function submit() {
@@ -147,6 +201,8 @@ function submit() {
     error.value = 'Your target has to be higher than your current XP.'
     return
   }
-  emit('add', { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [] })
+  const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [] }
+  if (form.overrides.length) goal.overrides = form.overrides.map((o) => ({ ...o }))
+  emit('add', goal)
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
-  <div class="rp" :class="{ compact }">
-    <p v-if="!hasPlayer && !compact" class="rp-hint">Enter your OSRS name above and these are worked out from your own stats. Without it they start every skill from level 1.</p>
+  <div class="rp" :class="{ compact, three: featured, tight: tight || featured }">
+    <p v-if="!hasPlayer && !compact && !featured && !quiet" class="rp-hint">Enter your OSRS name above and these are worked out from your own stats. Without it they start every skill from level 1.</p>
     <p v-if="!shown.length" class="rp-none">Nothing to recommend: every goal on offer is already done. Add a goal of your own to keep going.</p>
     <ul v-else class="rp-grid">
       <li v-for="r in shown" :key="r.id" class="rp-card" :class="`kind-${r.kind}`">
@@ -13,8 +13,8 @@
         </div>
         <dl class="rp-meta">
           <div><dt>Goals</dt><dd>{{ r.skillCount }} skill{{ r.skillCount === 1 ? '' : 's' }}</dd></div>
-          <div><dt>Time</dt><dd>{{ hasPlayer && summaries[r.id] ? formatHours(summaries[r.id].totalHours) : '-' }}</dd></div>
-          <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ hasPlayer && summaries[r.id]?.days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : '-' }}</dd></div>
+          <div><dt>Time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
+          <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : formatHours(summaries[r.id].totalHours) }}</dd></div>
         </dl>
         <button class="btn btn-primary rp-use" type="button" @click="$emit('use', r)">Use this plan</button>
       </li>
@@ -27,9 +27,15 @@ import { computed } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
-import { recommendedPlans, suggestedPlans } from '@/utils/recommendedPlans'
+import { featuredPlans, recommendedPlans, suggestedPlans } from '@/utils/recommendedPlans'
 
 const props = defineProps({
+  // Lead with the featured plans (All skills to 70, Combat to 99, Max account) instead of the whole catalogue.
+  featured: { type: Boolean, default: false },
+  // No hint line (the screen around the cards already says it).
+  quiet: { type: Boolean, default: false },
+  // Shorter cards (used for the leading plans and in the list of every plan).
+  tight: { type: Boolean, default: false },
   // The player's hiscores skills ({ Mining: { xp, level } }), or null before one is loaded.
   skills: { type: Object, default: null },
   hasPlayer: { type: Boolean, default: false },
@@ -46,10 +52,9 @@ const MAX_ICONS = 8
 const KIND_LABELS = { levels: 'All skills', combat: 'Combat', total: 'Total level' }
 
 const all = computed(() => recommendedPlans(props.skills))
-const shown = computed(() => (props.limit ? suggestedPlans(all.value, props.limit) : all.value))
-// Time and GP for each card, worked out with the plan's own settings. Only when there is a player to measure from.
+const shown = computed(() => (props.featured ? featuredPlans(all.value) : props.limit ? suggestedPlans(all.value, props.limit) : all.value))
+// Time for each card, worked out with the plan's own settings, from the player's stats (or from level 1 with no player).
 const summaries = computed(() => {
-  if (!props.hasPlayer) return {}
   const out = {}
   for (const r of shown.value) out[r.id] = summarizePlan({ goals: r.goals, globalStrategy: props.globalStrategy, gpValue: props.gpValue, hoursPerDay: props.hoursPerDay })
   return out

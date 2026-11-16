@@ -128,6 +128,19 @@ export function recommendedPlans(skills) {
   return out
 }
 
+// The plans a brand new planner leads with. Any that are already done for the player are replaced by the next nearest plans.
+export const FEATURED_IDS = ['all-70', 'combat-99', 'all-99']
+
+/** The few plans to lead with on an empty planner: All skills to 70, Combat to 99, Max account (when they still apply). */
+export function featuredPlans(plans, count = FEATURED_IDS.length) {
+  const picked = FEATURED_IDS.map((id) => plans.find((p) => p.id === id)).filter(Boolean)
+  for (const p of suggestedPlans(plans, plans.length)) {
+    if (picked.length >= count) break
+    if (!picked.includes(p)) picked.push(p)
+  }
+  return picked.slice(0, count)
+}
+
 /** A short list worth showing when someone already has plans: the nearest few of each kind. */
 export function suggestedPlans(plans, limit = 4) {
   const byXp = (a, b) => a.xpNeeded - b.xpNeeded
@@ -136,4 +149,22 @@ export function suggestedPlans(plans, limit = 4) {
   const combat = plans.filter((p) => p.kind === 'combat')
   const picked = [...levels.slice(0, 2), ...totals.slice(0, 1), ...combat.slice(0, 1), ...levels.slice(2), ...totals.slice(1)]
   return picked.slice(0, limit)
+}
+
+export const MODAL_CAP = 6
+
+// Keep a list to `cap` entries, spread across its whole range (first, last and evenly between) so the choice still runs from near to far.
+function spread(list, cap) {
+  if (list.length <= cap) return list
+  return Array.from({ length: cap }, (_, i) => list[Math.round((i * (list.length - 1)) / (cap - 1))])
+}
+
+/**
+ * The plans for the "all plans" window, in two short groups instead of one long list:
+ * skill goals (every skill to a level, combat, and the virtual-level goals) and total level goals (spread across the range).
+ */
+export function groupedPlans(plans, cap = MODAL_CAP) {
+  const skillGoals = plans.filter((p) => p.kind !== 'total')
+  const totals = plans.filter((p) => p.kind === 'total')
+  return { skills: spread(skillGoals, cap), totals: spread(totals, cap) }
 }

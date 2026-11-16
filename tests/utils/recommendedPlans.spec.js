@@ -111,3 +111,41 @@ describe('recommendedPlans', () => {
     expect(recommendedPlans(stats({ Mining: 60 })).map((p) => p.id)).not.toContain('virtual-126')
   })
 })
+
+describe('featuredPlans', () => {
+  it('leads with all skills to 70, combat to 99 and max account for a new player', async () => {
+    const { featuredPlans } = await import('@/utils/recommendedPlans')
+    const featured = featuredPlans(recommendedPlans(null))
+    expect(featured.map((p) => p.id)).toEqual(['all-70', 'combat-99', 'all-99'])
+  })
+
+  it('fills the gaps with the nearest other plans when a featured one is already done', async () => {
+    const { featuredPlans } = await import('@/utils/recommendedPlans')
+    const levels = Object.fromEntries(SKILL_NAMES.map((s) => [s, 75]))
+    const featured = featuredPlans(recommendedPlans(stats(levels)))
+    expect(featured).toHaveLength(3)
+    expect(featured.map((p) => p.id)).not.toContain('all-70')
+    expect(new Set(featured.map((p) => p.id)).size).toBe(3)
+  })
+})
+
+describe('groupedPlans', () => {
+  it('splits skill goals from total level goals and caps each group', async () => {
+    const { groupedPlans, MODAL_CAP } = await import('@/utils/recommendedPlans')
+    const all = recommendedPlans(null)
+    const g = groupedPlans(all)
+    expect(g.skills.every((p) => p.kind !== 'total')).toBe(true)
+    expect(g.totals.every((p) => p.kind === 'total')).toBe(true)
+    expect(g.totals.length).toBeLessThanOrEqual(MODAL_CAP)
+    expect(g.skills.length).toBeLessThanOrEqual(MODAL_CAP)
+  })
+
+  it('keeps the nearest and the furthest total level plan when it has to cut', async () => {
+    const { groupedPlans } = await import('@/utils/recommendedPlans')
+    const totals = recommendedPlans(null).filter((p) => p.kind === 'total')
+    const g = groupedPlans(recommendedPlans(null))
+    expect(g.totals[0].id).toBe(totals[0].id)
+    expect(g.totals.at(-1).id).toBe(totals.at(-1).id)
+    expect(new Set(g.totals.map((p) => p.id)).size).toBe(g.totals.length)
+  })
+})
