@@ -1,12 +1,12 @@
 <template>
-  <section v-if="shown" class="card fol" aria-label="Players you follow">
+  <DashSkeleton v-if="shown && loading && !players.length" kind="following" />
+  <section v-else-if="shown" class="card fol" aria-label="Players you follow">
     <header class="fol-head">
       <h2>Following</h2>
       <RouterLink class="fol-more" :to="{ name: 'compare' }">Compare players →</RouterLink>
     </header>
 
-    <p v-if="loading && !players.length" class="fol-empty">Loading…</p>
-    <p v-else-if="!players.length" class="fol-empty">None of the players you follow have data yet.</p>
+    <p v-if="!players.length" class="fol-empty">None of the players you follow have data yet.</p>
 
     <ul v-else class="fol-list">
       <li v-for="p in shownPlayers" :key="p.username">
@@ -31,6 +31,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
@@ -41,7 +42,8 @@ import { formatXp } from '@/utils/osrsSkills'
 // The players you follow, with today's gain and their latest milestone. Hidden until you follow someone.
 const { following } = useFollowing()
 const players = ref([])
-const loading = ref(false)
+// Starts loading when there is anyone to load, so the skeleton shows from the first paint.
+const loading = ref(following.value.length > 0)
 const shown = computed(() => following.value.length > 0)
 // Many follows would make a very long strip, so only the first few show until you ask for all.
 const LIMIT = 6

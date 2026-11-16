@@ -1,13 +1,12 @@
 <template>
-  <section class="card dash-card dclan" aria-labelledby="dash-clans-h">
+  <DashSkeleton v-if="loading" kind="clans" />
+  <section v-else class="card dash-card dclan" aria-labelledby="dash-clans-h">
     <header class="dash-card-head">
       <h2 id="dash-clans-h">Active Clan Competitions<span v-if="allComps.length" class="dclan-count">{{ allComps.length }}</span></h2>
       <RouterLink class="dash-more" :to="{ name: clans.length ? 'myClans' : 'clans' }">{{ clans.length ? 'All my clans →' : 'Browse clans →' }}</RouterLink>
     </header>
 
-    <p v-if="loading" class="dash-empty">Loading…</p>
-
-    <div v-else-if="!clans.length" class="dclan-empty">
+    <div v-if="!clans.length" class="dclan-empty">
       <p class="dash-empty">Start a clan, or open an invite link from a friend, to race on XP together. Your rank in each competition shows up here.</p>
       <RouterLink class="btn btn-ghost" :to="{ name: 'clanNew' }">Start a clan</RouterLink>
     </div>
@@ -45,6 +44,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
+import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import { clansApi } from '@/api/clans'
 import { clockText } from '@/utils/competitionForm'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'

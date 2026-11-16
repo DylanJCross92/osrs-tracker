@@ -5164,3 +5164,36 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .fl-bar:not(.labelled) i:last-child { border-radius: 0 10px 10px 0; }
 .fl-bar:not(.labelled) i:only-child { border-radius: 10px; }
 .fl-note .btn-text { padding: 0; margin: 0; min-height: 0; }
+
+/* Skeleton loaders: a module's own markup with placeholder text, so it keeps the loaded height. */
+:where(.sk) { border-radius: 6px; }
+.dash-sk .sk {
+  color: transparent !important;
+  background: linear-gradient(90deg, var(--panel-alt) 0%, var(--border) 50%, var(--panel-alt) 100%) 0 0 / 200% 100% repeat-x;
+  border-color: transparent;
+  box-shadow: none;
+  animation: sk-shimmer 1.6s linear infinite;
+  pointer-events: none;
+  user-select: none;
+}
+.dash-sk .sk::before, .dash-sk .sk::after { content: none; }
+@keyframes sk-shimmer { to { background-position: 200% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-sk .sk { animation: none; } }
+.dash-sk .ov-bar, .dash-sk .dclan-comp, .dash-sk .fol-card { cursor: default; pointer-events: none; }
+.dash-sk .dclan-comp::before { background: var(--border-strong); }
+.dash-sk .dclan-comp { border-color: var(--border); }
+.dash-sk .dtl-dot, .dash-sk .dtl-stop:first-child .dtl-dot { border-color: var(--border-strong); background: var(--panel); box-shadow: none; }
+.dash-sk .dtl::before { background: var(--border); }
+.dash-sk .ov-bar-track i { width: 46%; }
+.dash-sk .dash-goal > .sk { margin-top: 2px; }
+.sk-icon24, .sk-icon26 { flex: none; display: block; }
+.sk-icon24 { width: 24px; height: 24px; }
+.sk-icon26 { width: 26px; height: 26px; }
+.sk-w40 { width: 40px; } .sk-w60 { width: 60px; } .sk-w80 { width: 80px; } .sk-w100 { width: 100px; } .sk-w110 { width: 110px; }
+.sk-w120 { width: 120px; } .sk-w140 { width: 140px; } .sk-w160 { width: 160px; } .sk-w180 { width: 180px; }
+.sk-w200 { width: 200px; } .sk-w220 { width: 220px; } .sk-w300 { width: 300px; }
+.sk-w40p { width: 40%; } .sk-w60p { width: 60%; } .sk-w80p { width: 80%; }
+.sk-w120, .sk-w140, .sk-w160, .sk-w180, .sk-w200, .sk-w220, .sk-w300 { max-width: 100%; }
+.dash-sk .dash-who-text { min-width: 0; }
+.dash-sk .dash-more.sk { flex: none; }
+@media (min-width: 521px) { .dash-sk .ov-week-total > * { align-self: flex-end; } }

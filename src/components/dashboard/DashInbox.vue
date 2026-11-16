@@ -1,11 +1,11 @@
 <template>
-  <section class="card dash-card" aria-labelledby="dash-inbox-h">
+  <DashSkeleton v-if="loading" kind="inbox" />
+  <section v-else class="card dash-card" aria-labelledby="dash-inbox-h">
     <header class="dash-card-head">
       <h2 id="dash-inbox-h">Inbox<span v-if="unread" class="di-count" :aria-label="`${unread} unread`">{{ unread }}</span></h2>
       <RouterLink class="dash-more" :to="{ name: 'account', query: { tab: 'notifications' } }">See all →</RouterLink>
     </header>
-    <p v-if="loading" class="dash-empty">Loading…</p>
-    <p v-else-if="!items.length" class="dash-empty">You're all caught up. New followers, records and milestones from players you follow show up here.</p>
+    <p v-if="!items.length" class="dash-empty">You're all caught up. New followers, records and milestones from players you follow show up here.</p>
     <ul v-else class="di-list">
       <li v-for="n in items" :key="n.id">
         <a class="di-item" :class="{ 'is-unread': !n.read }" :href="n.link || undefined" @click.prevent="go(n)">
@@ -23,6 +23,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { notificationsApi } from '@/api/notifications'
 import { refreshNotifications } from '@/composables/useAuth'

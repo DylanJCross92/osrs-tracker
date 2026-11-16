@@ -1,6 +1,23 @@
 <template>
   <div class="dash">
-    <p v-if="booting" class="dash-loading">Loading your dashboard…</p>
+    <!-- Until the page knows whose it is: the same layout as skeletons, so nothing jumps when it fills in -->
+    <template v-if="booting">
+      <DashSkeleton kind="head" />
+      <div class="dash-grid">
+        <div class="dash-main">
+          <DashSkeleton kind="week" />
+          <DashSkeleton kind="clans" />
+          <DashSkeleton kind="plans" />
+          <DashSkeleton kind="next" />
+        </div>
+        <aside class="dash-side">
+          <DashSkeleton kind="inbox" />
+          <DashSkeleton kind="following" />
+          <DashSkeleton kind="milestones" />
+          <DashSkeleton kind="goals" />
+        </aside>
+      </div>
+    </template>
 
     <template v-else>
       <header class="card dash-head">
@@ -32,7 +49,7 @@
           <template v-if="current">
             <p v-if="!player" class="card dash-note">{{ current.displayName }} is not being tracked yet. Open the profile to start tracking.</p>
             <OverviewWeek v-else-if="weekDays.length" :days="weekDays" :streak-info="streak" :month-gain="monthGain" hide-challenge @day="(d) => (recapDay = d)" />
-            <p v-else-if="loadingMine" class="card dash-note">Loading your week…</p>
+            <DashSkeleton v-else-if="firstLoad" kind="week" />
             <p v-else class="card dash-note">No XP tracked this week yet. Play a session and come back, your week fills in here.</p>
 
           </template>
@@ -85,7 +102,10 @@
             </ul>
           </section>
 
-          <DashNext v-if="current" :items="nextItems" />
+          <template v-if="current">
+            <DashSkeleton v-if="firstLoad" kind="next" />
+            <DashNext v-else :items="nextItems" />
+          </template>
         </div>
 
         <aside class="dash-side">
@@ -96,14 +116,16 @@
             <p class="dash-empty">Follow players to see their gains and milestones here. Open any profile and press Follow.</p>
             <RouterLink class="btn btn-ghost" :to="{ name: 'discover' }">Find players</RouterLink>
           </section>
-          <DashMilestones v-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
+          <DashSkeleton v-if="current && firstLoad" kind="milestones" />
+          <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
-          <section v-if="current" class="card dash-card" aria-labelledby="dash-goals-h">
+          <DashSkeleton v-if="current && firstLoad" kind="goals" />
+          <section v-else-if="current" class="card dash-card" aria-labelledby="dash-goals-h">
             <header class="dash-card-head">
               <h2 id="dash-goals-h">Goals</h2>
               <RouterLink class="dash-more" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'goals' } }">{{ shownGoals.length ? 'All goals →' : 'Set a goal →' }}</RouterLink>
             </header>
-            <p v-if="!shownGoals.length" class="dash-empty">{{ loadingMine ? 'Loading…' : 'No goals yet. Pick a skill and a target on your profile and the progress shows up here.' }}</p>
+            <p v-if="!shownGoals.length" class="dash-empty">{{ 'No goals yet. Pick a skill and a target on your profile and the progress shows up here.' }}</p>
             <ul v-else class="dash-goals">
               <li v-for="g in shownGoals" :key="g.id" class="dash-goal" :class="{ 'is-done': g.reached }">
                 <img :src="skillIconSrc(g.skill)" alt="" width="26" height="26" />
@@ -137,6 +159,7 @@ import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashInbox from '@/components/dashboard/DashInbox.vue'
 import DashMilestones from '@/components/dashboard/DashMilestones.vue'
+import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import DashNext from '@/components/dashboard/DashNext.vue'
 import DayRecapModal from '@/components/profile/DayRecapModal.vue'
 import OverviewWeek from '@/components/profile/OverviewWeek.vue'
@@ -206,6 +229,8 @@ const goals = ref([])
 const profileData = ref(null)
 const records = ref([])
 const loadingMine = ref(false)
+// True only until the first load for this profile finishes; later refreshes keep showing what is already there.
+const firstLoad = computed(() => loadingMine.value && !snaps.value.length && !profileData.value)
 let stamp = 0
 async function loadMine() {
   const p = player.value
