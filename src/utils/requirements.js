@@ -59,6 +59,30 @@ export function blockedMethodIds(methods, ctx = {}) {
   return ids.sort()
 }
 
+/**
+ * Why a requirement is there, in one sentence, for the hover on its icon. The catalog only stores what each method needs,
+ * so the reason is worded from the kind of requirement and the method's name.
+ */
+export function requirementReason(req, methodName = 'This method') {
+  const m = methodName || 'This method'
+  switch (req.kind) {
+    case 'skill':
+      return `${m} needs ${req.level} ${req.skill}. Below that level the game will not let you do it, so it has to be reached before this method can be used.`
+    case 'quest':
+      return req.partial
+        ? `${m} relies on something that ${req.label.replace(/ \(partial\)$/, '')} unlocks part way through. You only need to have progressed that far, not finished it.`
+        : `${m} relies on something that ${req.label} unlocks, such as an area, item or ability, so the quest has to be finished first.`
+    case 'diary':
+      return `${m} uses a reward from the ${req.label}, so that diary tier has to be done first.`
+    case 'equipment':
+      return `${m} will not work without ${req.label}. Have it in your inventory or equipped before you start.`
+    case 'unlock':
+      return `${m} needs access to ${req.label.replace(/ access$/i, '')}. It is an area, spell, guild or other unlock you have to have before this method is possible.`
+    default:
+      return `Not a hard requirement. A tip that makes ${m} smoother or faster.`
+  }
+}
+
 /** Short human text for a requirement problem, e.g. "75 Attack" or "Monkey Madness II". */
 export const unmetText = (availability) => availability.unmet.map((i) => i.req.label).join(', ')
 

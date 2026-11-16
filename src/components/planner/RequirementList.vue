@@ -1,7 +1,10 @@
 <template>
   <ul class="req-list">
     <li v-for="item in items" :key="item.req.id" class="req" :class="`is-${item.status}`">
-      <span class="req-icon" aria-hidden="true">{{ ICONS[item.status] }}</span>
+      <span class="req-icon" tabindex="0" role="img" :aria-label="`Why: ${reason(item.req)}`">
+        {{ ICONS[item.status] }}
+        <span class="req-tip" role="tooltip"><b>Why is this a requirement?</b>{{ reason(item.req) }}</span>
+      </span>
       <span class="req-main">
         <span class="req-label">{{ item.req.label }} <small class="req-kind">{{ KINDS[item.req.kind] }}</small></span>
         <span class="req-state">{{ stateText(item) }}</span>
@@ -16,11 +19,12 @@
 
 <script setup>
 import { inject } from 'vue'
-import { MET, UNMET, UNKNOWN, PLANNED, confirmationFor } from '@/utils/requirements'
+import { MET, UNMET, UNKNOWN, PLANNED, confirmationFor, requirementReason } from '@/utils/requirements'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 
-defineProps({ items: { type: Array, required: true } })
+const props = defineProps({ items: { type: Array, required: true }, methodName: { type: String, default: '' } })
+const reason = (req) => requirementReason(req, props.methodName)
 
 const ICONS = { [MET]: '✓', [UNMET]: '✗', [UNKNOWN]: '?', [PLANNED]: '↗', info: 'i' }
 const KINDS = { skill: 'level', quest: 'quest', diary: 'diary', equipment: 'item', unlock: 'unlock', note: 'note' }

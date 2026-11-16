@@ -108,3 +108,25 @@ describe('cleanConfirmations', () => {
     expect(cleanConfirmations([])).toEqual({})
   })
 })
+
+describe('requirementReason', () => {
+  it('words a reason for every kind and names the method', async () => {
+    const { requirementReason } = await import('@/utils/requirements')
+    const reqs = [
+      { kind: 'skill', skill: 'Fishing', level: 75, label: '75 Fishing' },
+      { kind: 'quest', label: 'Lost City', partial: false },
+      { kind: 'quest', label: 'Regicide (partial)', partial: true },
+      { kind: 'diary', label: 'Karamja diary' },
+      { kind: 'equipment', label: 'Swamp tar' },
+      { kind: 'unlock', label: 'Fishing Guild' },
+      { kind: 'note', label: 'Recommended' },
+    ]
+    for (const r of reqs) {
+      const t = requirementReason(r, '3-tick granite')
+      expect(t).toContain('3-tick granite')
+      expect(t).not.toContain('—')
+    }
+    expect(requirementReason(reqs[2], 'X')).toContain('Regicide unlocks')
+    expect(requirementReason(reqs[0])).toContain('This method')
+  })
+})

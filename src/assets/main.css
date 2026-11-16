@@ -3417,16 +3417,20 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 
 /* planner: requirements and prerequisites */
 .req-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.req { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); border-left-width: 3px; }
+.req { position: relative; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--border); border-left-width: 3px; }
 .req.is-met { border-left-color: var(--xp-green); }
 .req.is-unmet { border-left-color: #d9695a; background: rgba(217, 105, 90, 0.07); }
 .req.is-unknown { border-left-color: var(--border-strong); }
 .req.is-planned { border-left-color: var(--gold); }
 .req.is-info { border-left-color: var(--border); opacity: 0.85; }
-.req-icon { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; background: var(--panel-alt); color: var(--muted); }
+.req-icon { cursor: help; flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.78rem; font-weight: 800; background: var(--panel-alt); color: var(--muted); }
 .req.is-met .req-icon { background: rgba(124, 184, 105, 0.2); color: var(--xp-green); }
 .req.is-unmet .req-icon { background: rgba(217, 105, 90, 0.2); color: #e58a7c; }
 .req.is-planned .req-icon { background: rgba(217, 175, 82, 0.2); color: var(--gold-bright); }
+.req-tip { display: none; position: absolute; left: 10px; right: 10px; top: calc(100% - 4px); z-index: 20; max-width: 340px; padding: 9px 11px; border-radius: 8px; background: var(--panel-alt); border: 1px solid var(--border-strong); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45); color: var(--text); font-size: 0.78rem; font-weight: 400; line-height: 1.4; text-align: left; white-space: normal; pointer-events: none; }
+.req-tip b { display: block; margin-bottom: 3px; color: var(--gold-bright); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.req-icon:hover .req-tip, .req-icon:focus .req-tip { display: block; }
+.req-icon:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .req-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .req-label { font-size: 0.9rem; font-weight: 600; }
 .req-kind { margin-left: 4px; color: var(--muted); font-weight: 400; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }

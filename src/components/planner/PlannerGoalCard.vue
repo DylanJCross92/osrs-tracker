@@ -98,7 +98,7 @@
             <b>{{ a.method.name }}</b>
             <span class="goal-req-state">{{ STATE_TEXT[a.state] }}</span>
           </div>
-          <RequirementList :items="a.items" />
+          <RequirementList :items="a.items" :method-name="a.method.name" />
         </div>
         <p class="planner-hint goal-reqs-save">
           <template v-if="loggedIn">Your answers are saved to your account and used in every plan. <RouterLink :to="{ name: 'account', hash: '#quests' }">Open your quest tracker</RouterLink></template>
