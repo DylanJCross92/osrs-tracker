@@ -4,6 +4,7 @@ import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
+import { siteOverview } from '../services/siteOverview.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -67,6 +68,15 @@ statsRouter.post('/stats/events', eventsLimiter, attachUser, async (req, res, ne
 // For the site owner: which events happen and how often, and the detail of one.
 const adminOnly = [attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 60 })]
 const askedDays = (req) => (DAY_CHOICES.includes(Number(req.query.days)) ? Number(req.query.days) : 30)
+// For the site owner: how much of everything exists and how fast it grows, and the latest things people did.
+statsRouter.get('/admin/stats/overview', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await siteOverview(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
 statsRouter.get('/admin/stats/events', ...adminOnly, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store')

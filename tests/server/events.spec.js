@@ -59,12 +59,12 @@ describe('summarizeEvents', () => {
   it('lays each event out day by day, busiest first', () => {
     const out = summarizeEvents(
       [{ name: 'a', day: '2026-01-09', n: 2 }, { name: 'a', day: '2026-01-10', n: 5 }, { name: 'b', day: '2026-01-10', n: 9 }],
-      [{ name: 'a', total: 7, accounts: 2 }, { name: 'b', total: 9, accounts: 0 }],
+      [{ name: 'a', total: 7, accounts: 2, accounts_today: 1 }, { name: 'b', total: 9, accounts: 0 }],
       3,
       '2026-01-10',
     )
     expect(out.map((e) => e.name)).toEqual(['b', 'a'])
-    expect(out[1]).toMatchObject({ total: 7, accounts: 2, today: 5, daily: [0, 2, 5] })
+    expect(out[1]).toMatchObject({ total: 7, accounts: 2, accountsToday: 1, today: 5, daily: [0, 2, 5] })
   })
   it('ignores days outside the window', () => {
     const out = summarizeEvents([{ name: 'a', day: '2025-12-01', n: 4 }], [{ name: 'a', total: 4, accounts: 0 }], 3, '2026-01-10')

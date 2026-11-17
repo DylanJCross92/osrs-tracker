@@ -22,11 +22,13 @@ export async function purgeOldEvents() {
   return rowCount
 }
 
-/** Every event seen in the last `days` days: total, accounts, today and a count per day. */
+/** Every event seen in the last `days` days: total, different accounts (overall and today), today and a count per day. */
 export async function eventsOverview(days) {
   const [byDay, totals] = await Promise.all([
     pool.query(`SELECT name, day::text AS day, count(*)::int AS n FROM events WHERE ${WINDOW} GROUP BY name, day`, [days]),
-    pool.query(`SELECT name, count(*)::int AS total, count(DISTINCT account_id)::int AS accounts FROM events WHERE ${WINDOW} GROUP BY name`, [days]),
+    pool.query(`SELECT name, count(*)::int AS total, count(DISTINCT account_id)::int AS accounts,
+              count(DISTINCT account_id) FILTER (WHERE day = (now() AT TIME ZONE 'utc')::date)::int AS accounts_today
+       FROM events WHERE ${WINDOW} GROUP BY name`, [days]),
   ])
   return { days, events: summarizeEvents(byDay.rows, totals.rows, days, today()) }
 }

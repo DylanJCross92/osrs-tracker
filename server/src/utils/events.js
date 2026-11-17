@@ -61,14 +61,14 @@ function lastDays(days, today) {
 }
 
 /**
- * The admin overview. dayRows: [{ name, day, n }] (one per event and day), totalRows: [{ name, total, accounts }].
- * Returns [{ name, total, accounts, today, daily: [n per day, oldest first] }], busiest first.
+ * The admin overview. dayRows: [{ name, day, n }] (one per event and day), totalRows: [{ name, total, accounts, accounts_today }].
+ * Returns [{ name, total, accounts, accountsToday, today, daily: [n per day, oldest first] }], busiest first.
  */
 export function summarizeEvents(dayRows, totalRows, days, today) {
   const dates = lastDays(days, today)
   const index = new Map(dates.map((d, i) => [d, i]))
   const byName = new Map()
-  for (const r of totalRows) byName.set(r.name, { name: r.name, total: Number(r.total) || 0, accounts: Number(r.accounts) || 0, today: 0, daily: dates.map(() => 0) })
+  for (const r of totalRows) byName.set(r.name, { name: r.name, total: Number(r.total) || 0, accounts: Number(r.accounts) || 0, accountsToday: Number(r.accounts_today) || 0, today: 0, daily: dates.map(() => 0) })
   for (const r of dayRows) {
     const e = byName.get(r.name)
     const i = index.get(r.day)

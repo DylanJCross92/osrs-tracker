@@ -6,6 +6,8 @@ export const statsApi = {
   visit: (kind, source) => api.post('/stats/visit', { kind, source }),
   // Site owner only: { days, totals, byKind, sources, daily }.
   shares: (days = 30) => api.get(`/admin/stats/shares?days=${days}`),
+  // Site owner only: { days, labels, growth: [{ key, label, total, added, daily }], unverified, pendingClaims, activeWeek, feed: [{ at, kind, text, detail? }] }.
+  overview: (days = 30) => api.get(`/admin/stats/overview?days=${days}`),
   // Site owner only: every product event with its counts, and one event in detail.
   events: (days = 30) => api.get(`/admin/stats/events?days=${days}`),
   // Site owner only: { total, players: [{ username, displayName, badge, claimed, trackedAt, level, xp }] }, newest first.

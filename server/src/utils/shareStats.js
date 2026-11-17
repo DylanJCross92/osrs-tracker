@@ -45,7 +45,7 @@ export function summarize(rows, days, today) {
   const sources = new Map()
   const daily = new Map()
   const end = new Date(`${today}T00:00:00Z`)
-  for (let i = days - 1; i >= 0; i--) daily.set(new Date(end.getTime() - i * 86_400_000).toISOString().slice(0, 10), { day: '', shares: 0, visits: 0 })
+  for (let i = days - 1; i >= 0; i--) daily.set(new Date(end.getTime() - i * 86_400_000).toISOString().slice(0, 10), { day: '', shares: 0, visits: 0, site: 0 })
   for (const [d, v] of daily) v.day = d
 
   for (const r of rows) {
@@ -61,6 +61,7 @@ export function summarize(rows, days, today) {
       if (day) day.shares += n
     } else if (r.kind === 'site') {
       totals.siteVisits += n
+      if (day) day.site += n
     } else {
       const k = byKind.get(r.kind)
       if (!k) continue
