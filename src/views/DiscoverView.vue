@@ -68,7 +68,7 @@
       </RouterLink>
     </section>
 
-    <p v-if="loading" class="card empty-hint">Loading the latest activity…</p>
+    <PageSkeleton v-if="loading" kind="discover" />
     <p v-else-if="error" class="card empty-hint">{{ error }}</p>
 
     <template v-else>
@@ -317,6 +317,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'

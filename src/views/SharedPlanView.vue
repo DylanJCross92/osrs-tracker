@@ -1,6 +1,6 @@
 <template>
   <div class="shared-plan">
-    <section v-if="loading" class="card"><p class="empty-hint">Loading the plan…</p></section>
+    <PageSkeleton v-if="loading" kind="plan" />
 
     <section v-else-if="error" class="card">
       <h1>Plan not found</h1>
@@ -80,6 +80,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'

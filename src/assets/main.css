@@ -5271,3 +5271,17 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .fb-pop-enter-from, .fb-pop-leave-to { opacity: 0; transform: translateY(8px) scale(0.97); }
 @media (prefers-reduced-motion: reduce) { .fb-pop-enter-active, .fb-pop-leave-active, .fb-fab { transition: none; } }
 @media (max-width: 520px) { .fb { right: 14px; bottom: 14px; } .fb-fab { width: 48px; height: 48px; } }
+
+/* Page skeletons (PageSkeleton.vue) share the dashboard skeleton's look */
+.dash-sk a { pointer-events: none; cursor: default; }
+.dash-sk .disc-event a, .dash-sk .disc-board-list a { color: inherit; }
+.sk-icon20 { flex: none; display: block; width: 20px; height: 20px; }
+.sk-avatar { display: block; flex: none; width: 56px; height: 56px; border-radius: 16px; }
+.sk-chart { width: 100%; height: 190px; border-radius: 12px; }
+.sk-pill { display: inline-block; padding: 7px 14px; min-width: 56px; border-radius: 999px; font-size: 0.85rem; line-height: 1.2; }
+.range-tabs .sk-pill { margin-right: 6px; }
+.sk-tall { padding-block: 8px; border-radius: 999px; }
+.profile-tabs .sk-pill { padding: 10px 18px; border-radius: 12px; }
+.sk-vs { display: flex; align-items: center; justify-content: space-around; gap: 16px; }
+.sk-vs-side { display: grid; justify-items: center; gap: 6px; }
+.dash-sk .home-preview-avatar { width: 56px; height: 56px; border-radius: 16px; }

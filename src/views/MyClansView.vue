@@ -8,7 +8,7 @@
       <RouterLink class="btn btn-primary" :to="{ name: 'clanNew' }">Start a clan</RouterLink>
     </header>
 
-    <p v-if="loading" class="dash-loading">Loading your clans…</p>
+    <PageSkeleton v-if="loading" kind="my-clans" />
 
     <section v-else-if="failed" class="card clan-empty">
       <h2>Could not load your clans</h2>
@@ -40,6 +40,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import ClanMineCard from '@/components/clans/ClanMineCard.vue'
 import { clansApi } from '@/api/clans'

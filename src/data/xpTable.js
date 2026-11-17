@@ -4,8 +4,8 @@
 import { MAX_VIRTUAL_LEVEL, MAX_XP, formatNum, xpAtLevel } from '@/utils/planner'
 
 export const XP_TABLE_PATH = '/osrs-xp-table'
-export const XP_TABLE_TITLE = 'OSRS XP Table: XP Needed for Every Level, 1 to 126 | TickGains'
-export const XP_TABLE_DESCRIPTION = `The full Old School RuneScape XP table: the experience needed for every level from 1 to 99 and on to virtual level ${MAX_VIRTUAL_LEVEL}, with the XP between levels. Level 99 needs ${formatNum(xpAtLevel(99))} XP.`
+export const XP_TABLE_TITLE = 'OSRS XP Table: XP for Every Level, 1 to 126 | TickGains'
+export const XP_TABLE_DESCRIPTION = `The full OSRS XP table: XP needed for every level from 1 to 99 and on to virtual level ${MAX_VIRTUAL_LEVEL}, plus the XP between levels. Level 99 needs ${formatNum(xpAtLevel(99))} XP.`
 
 /** One row per level: { level, xp, toNext, pctOf99 }. */
 export function xpTableRows() {

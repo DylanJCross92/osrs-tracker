@@ -25,7 +25,7 @@
 <script setup>
 import { setPageMeta } from '@/utils/pageMeta'
 setPageMeta({
-  title: 'About',
+  title: 'About TickGains: Free OSRS XP Tracker',
   description: 'TickGains is a free OSRS XP tracker: automatic hiscores snapshots, historical imports, an account planner and player discovery, no sign-up.',
   path: '/about',
 })

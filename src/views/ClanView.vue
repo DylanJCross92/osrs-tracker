@@ -1,6 +1,6 @@
 <template>
   <div class="clan">
-    <p v-if="loading" class="dash-loading">Loading the clan…</p>
+    <PageSkeleton v-if="loading" kind="clan" />
 
     <section v-else-if="notFound" class="card clan-empty">
       <h1>Clan not found</h1>
@@ -164,6 +164,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClanAddMember from '@/components/clans/ClanAddMember.vue'

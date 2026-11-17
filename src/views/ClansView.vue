@@ -11,7 +11,7 @@
       </div>
     </header>
 
-    <p v-if="loading" class="dash-loading">Loading the clans…</p>
+    <PageSkeleton v-if="loading" kind="clans" />
 
     <template v-else>
       <!-- Clans that were started recently -->
@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onMounted, ref } from 'vue'
 import ClanListCard from '@/components/clans/ClanListCard.vue'
 import { clansApi } from '@/api/clans'

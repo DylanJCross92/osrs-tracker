@@ -11,7 +11,7 @@
       </div>
     </div>
 
-    <p v-if="!profile" class="empty-hint">Loading achievements…</p>
+    <PageSkeleton v-if="!profile" kind="list" label="achievements" :row-count="6" />
     <template v-else>
       <!-- Overall level / total XP milestone tracks -->
       <section v-for="row in totalRows" :key="row.title" class="ach-section">
@@ -80,6 +80,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, ref } from 'vue'
 import { skillIconSrc, SKILL_NAMES } from '@/utils/osrsSkills'
 

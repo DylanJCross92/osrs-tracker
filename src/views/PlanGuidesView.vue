@@ -37,8 +37,8 @@ import { GUIDE_DEFS, buildPlanGuide } from '@/data/planGuides'
 import { formatNum } from '@/utils/planner'
 
 setPageMeta({
-  title: 'OSRS Plan Guides: Max Cape, All 90s and Total Level Plans',
-  description: 'Plan guides for Old School RuneScape: how long and how much XP a max cape, all 90s, all 70s or a total level goal takes, with the plan ready to open in the Account Planner.',
+  title: 'OSRS Plan Guides: Max Cape, All 90s, Total Level',
+  description: 'OSRS plan guides: how long and how much XP a max cape, all 90s, all 70s or a total level goal takes, ready to open in the Account Planner.',
   path: '/plans',
 })
 

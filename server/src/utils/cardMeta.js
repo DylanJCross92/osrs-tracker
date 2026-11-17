@@ -5,6 +5,8 @@
 // setPageMeta() client-side too, for in-app navigation and a consistent tab
 // title once it hydrates, this is only about what a bot sees on first byte.
 
+import { fitDescription, fitTitle } from './seoText.js'
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 }
@@ -26,6 +28,9 @@ function setLinkHref(html, rel, newHref) {
  * pageUrl }: all plain text/URLs, escaped here, callers don't need to.
  */
 export function injectCardMeta(template, { title, description, imageUrl, pageUrl, jsonLd, bodyHtml, noindex }) {
+  // Titles and descriptions are kept inside what a search result shows (see seoText.js).
+  title = fitTitle(title)
+  description = fitDescription(description)
   let html = template
   html = html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`)
   html = setMetaContent(html, 'description', description)

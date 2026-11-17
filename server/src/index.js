@@ -395,6 +395,79 @@ if (distExists) {
     })
   }
 
+  // Crawler-readable text for pages whose real content is drawn by the app: a heading, a line of intro and a few links.
+  // The app replaces all of it when it loads, so visitors never see this copy.
+  const OTHER_PAGES = [
+    ['/discover', 'Discover players'],
+    ['/leaderboard', 'Leaderboard'],
+    ['/planner', 'Account Planner'],
+    ['/calculators', 'Skill calculators'],
+    ['/clans', 'Clans'],
+    ['/compare', 'Compare players'],
+    ['/osrs-xp-table', 'OSRS XP table'],
+    ['/plans', 'Plan guides'],
+  ]
+  const pageBody = (h1, paragraphs, skip = '') =>
+    `<main><h1>${escapeHtml(h1)}</h1>${paragraphs.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}<nav>${OTHER_PAGES.filter(([href]) => href !== skip)
+      .map(([href, label]) => `<a href="${href}">${label}</a>`)
+      .join(' ')}</nav></main>`
+  const plainPage = (res, { title, description, path: pagePath, h1, paragraphs, image = '/og-default.png' }) =>
+    res.send(
+      injectCardMeta(indexHtmlTemplate, {
+        title,
+        description,
+        imageUrl: `${SITE_URL}${image}`,
+        pageUrl: pagePath === '/' ? `${SITE_URL}/` : `${SITE_URL}${pagePath}`,
+        bodyHtml: pageBody(h1, paragraphs, pagePath),
+      }),
+    )
+
+  // The home page, and the three info pages. Without their own tags the info pages showed the home page's title and
+  // canonical to anything that does not run scripts.
+  const HOME_DESCRIPTION = 'Free OSRS XP tracker: hourly updates, XP gains and hiscores history for any player, no sign-up. Plan your next 99 with the Account Planner.'
+  app.get('/', (req, res) =>
+    plainPage(res, {
+      title: 'OSRS XP Tracker & Hiscores History | TickGains',
+      description: HOME_DESCRIPTION,
+      path: '/',
+      h1: 'OSRS XP Tracker and Hiscores History',
+      paragraphs: [
+        'TickGains is a free Old School RuneScape XP tracker. Enter any username to see XP gains, level-ups, records and hiscores history, saved hourly while a player is active. No sign-up needed.',
+        'Plan your next 99 with the Account Planner, work out hours and GP with the skill calculators, compare players and race your clan in XP competitions.',
+      ],
+    }),
+  )
+  app.get('/about', (req, res) =>
+    plainPage(res, {
+      title: 'About TickGains: Free OSRS XP Tracker | TickGains',
+      description: 'TickGains is a free OSRS XP tracker: automatic hiscores snapshots, historical imports, an account planner and player discovery, no sign-up.',
+      path: '/about',
+      h1: 'About TickGains',
+      paragraphs: [
+        "TickGains is a free tracker for Old School RuneScape. Enter any OSRS username and it saves a snapshot of that player's public hiscores every hour while they are active, so you can see XP gains, level-ups and milestones over time.",
+        'It is a fan project and is not affiliated with Jagex Ltd.',
+      ],
+    }),
+  )
+  app.get('/contact', (req, res) =>
+    plainPage(res, {
+      title: 'Contact TickGains: Feedback and Bug Reports | TickGains',
+      description: 'Contact TickGains with feedback, bug reports or a request to remove a tracked username. The Discord is the quickest way to reach us.',
+      path: '/contact',
+      h1: 'Contact TickGains',
+      paragraphs: ['Found a bug, have an idea, or want a tracked username removed? Join the TickGains Discord or use the feedback button on any page.'],
+    }),
+  )
+  app.get('/privacy', (req, res) =>
+    plainPage(res, {
+      title: 'Privacy Policy | TickGains',
+      description: 'How TickGains handles data: public OSRS hiscores snapshots, optional accounts, an optional email list and usage analytics.',
+      path: '/privacy',
+      h1: 'TickGains Privacy Policy',
+      paragraphs: ['How TickGains handles data: public OSRS hiscores snapshots, optional accounts, an optional email list, a simple record of what is used, and analytics.'],
+    }),
+  )
+
   // Player comparison. The landing page is indexable; a specific pairing is an endless set of user-chosen URLs, so
   // those carry noindex (they still unfurl nicely in Discord and X, which is what they are shared for).
   const compareDescription = 'Compare two Old School RuneScape players side by side: XP gained, levels, rank movement and how consistently each one trains.'
@@ -405,6 +478,7 @@ if (distExists) {
         description: compareDescription,
         imageUrl: `${SITE_URL}/og-default.png`,
         pageUrl: `${SITE_URL}/compare`,
+        bodyHtml: pageBody('Compare OSRS Players', [compareDescription], '/compare'),
       }),
     )
   })
@@ -453,6 +527,7 @@ if (distExists) {
         description: 'OSRS XP leaderboard: top XP gains today, this week and this month, plus all-time total XP and total level for every tracked player.',
         imageUrl: `${SITE_URL}/og-default.png`,
         pageUrl: `${SITE_URL}/leaderboard`,
+        bodyHtml: pageBody('OSRS Leaderboard', ['OSRS XP leaderboard: top XP gains today, this week and this month, plus all-time total XP and total level for every tracked player.'], '/leaderboard'),
       }),
     )
   })
@@ -621,10 +696,10 @@ if (distExists) {
   // Plan guides: an index, and one page per whole-account goal.
   if (planGuides.length) {
     app.get('/plans', (req, res) => {
-      const description = 'Plan guides for Old School RuneScape: how long and how much XP a max cape, all 90s, all 70s or a total level goal takes, with the plan ready to open in the Account Planner.'
+      const description = 'OSRS plan guides: how long and how much XP a max cape, all 90s, all 70s or a total level goal takes, ready to open in the Account Planner.'
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: 'OSRS Plan Guides: Max Cape, All 90s and Total Level Plans | TickGains',
+          title: 'OSRS Plan Guides: Max Cape, All 90s, Total Level | TickGains',
           description,
           imageUrl: `${SITE_URL}/og-default.png`,
           pageUrl: `${SITE_URL}/plans`,
@@ -679,6 +754,7 @@ if (distExists) {
         description: 'Old School RuneScape clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.',
         imageUrl: `${SITE_URL}/og-default.png`,
         pageUrl: `${SITE_URL}/clans`,
+        bodyHtml: pageBody('OSRS Clans and XP Competitions', ['Old School RuneScape clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.'], '/clans'),
       }),
     )
   })
@@ -698,10 +774,11 @@ if (distExists) {
       res.send(
         injectCardMeta(indexHtmlTemplate, {
           title: `${clan.name} | OSRS Clan | TickGains`,
-          description: description.slice(0, 300),
+          description,
           imageUrl: `${SITE_URL}/og-default.png`,
           pageUrl,
           jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: clan.name, url: pageUrl, description: clan.description || undefined },
+          bodyHtml: pageBody(`${clan.name}, an OSRS clan`, [description], '/clans'),
         }),
       )
     } catch (err) {
@@ -739,6 +816,7 @@ if (distExists) {
         description: 'Discover tracked Old School RuneScape players: recent 99s, top XP gains this week and month, and players closing in on max.',
         imageUrl: `${SITE_URL}/og-default.png`,
         pageUrl: `${SITE_URL}/discover`,
+        bodyHtml: pageBody('Discover OSRS Players', ['Discover tracked Old School RuneScape players: recent 99s, top XP gains this week and month, and players closing in on max.'], '/discover'),
       }),
     )
   })
@@ -768,6 +846,7 @@ if (distExists) {
         description,
         imageUrl: `${SITE_URL}/og-planner.png`,
         pageUrl: `${SITE_URL}/planner`,
+        bodyHtml: skills.length ? undefined : pageBody('OSRS Account Planner and XP Calculator', [description], '/planner'),
       }),
     )
   })

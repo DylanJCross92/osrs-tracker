@@ -1,6 +1,6 @@
 <template>
   <div class="clan cmt">
-    <p v-if="loading" class="dash-loading">Loading the competition…</p>
+    <PageSkeleton v-if="loading" kind="competition" />
 
     <section v-else-if="notFound" class="card clan-empty">
       <h1>Competition not found</h1>
@@ -109,6 +109,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'

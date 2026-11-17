@@ -66,7 +66,7 @@ export function buildPlanGuide(def) {
   const hoursText = formatHours(totals.totalHours)
   const label = def.name
   const title = `${def.h1} | TickGains`
-  const description = `${label} in OSRS: ${formatNum(totals.totalXp)} XP and about ${hoursText} of training on the fastest routes, roughly ${days(totals.totalHours, HOURS[0])} days at ${HOURS[0]} hours a day. Skill by skill, with the plan ready to open in the planner.`
+  const description = `${label} in OSRS: ${formatNum(totals.totalXp)} XP and about ${hoursText} of training, roughly ${days(totals.totalHours, HOURS[0])} days at ${HOURS[0]} hours a day. Skill-by-skill plan, ready for the planner.`
 
   const faq = [
     { q: `How long does it take to ${def.q} in OSRS?`, a: `Starting from a new account, the fastest routes add up to about ${hoursText} of play. That is roughly ${days(totals.totalHours, HOURS[0])} days at ${HOURS[0]} hours a day, or ${days(totals.totalHours, HOURS[1])} days at ${HOURS[1]} hours a day. Gear, quests you already have and how closely you follow each method all change this.` },

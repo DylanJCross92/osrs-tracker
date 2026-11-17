@@ -1,3 +1,5 @@
+import { fitDescription, withBrand } from '@/utils/seoText'
+
 const SITE_NAME = 'TickGains'
 const SITE_URL = 'https://tickgains.com'
 
@@ -18,8 +20,9 @@ function setMetaTag(selectorAttr, selectorValue, content) {
  * once a view knows what it's showing (e.g. the player's display name).
  */
 export function setPageMeta({ title, description, path = '/', noindex = false }) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} | OSRS XP & Hiscores Tracker`
+  const fullTitle = title ? withBrand(title) : `${SITE_NAME} | OSRS XP & Hiscores Tracker`
   document.title = fullTitle
+  description = fitDescription(description)
 
   setMetaTag('name', 'description', description)
   setMetaTag('property', 'og:title', fullTitle)

@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <p v-if="loading" class="empty-hint">Loading leaderboard...</p>
+      <PageSkeleton v-if="loading" kind="leaderboard" />
       <p v-else-if="error" class="empty-hint">{{ error }}</p>
       <template v-else>
         <ol class="disc-board-list lb-list">
@@ -58,6 +58,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'

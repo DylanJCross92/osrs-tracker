@@ -73,5 +73,5 @@
 
 <script setup>
 import { setPageMeta } from '@/utils/pageMeta'
-setPageMeta({ title: 'Privacy', description: 'How TickGains handles data: public OSRS hiscores snapshots, optional accounts, an optional email list, and usage analytics.', path: '/privacy' })
+setPageMeta({ title: 'Privacy Policy', description: 'How TickGains handles data: public OSRS hiscores snapshots, optional accounts, an optional email list and usage analytics.', path: '/privacy' })
 </script>

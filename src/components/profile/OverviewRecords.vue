@@ -8,7 +8,7 @@
       <button type="button" class="btn btn-ghost ov-all" @click="$emit('records')">All records →</button>
     </header>
 
-    <p v-if="loading" class="empty-hint">Loading records…</p>
+    <PageSkeleton v-if="loading" kind="records-grid" />
     <p v-else-if="!picked.length" class="empty-hint">The record book is empty for now. Records are built from the XP {{ name }} gains while tracked, so play a session and check back.</p>
 
     <div v-else class="ov-rec-grid">
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed } from 'vue'
 import { RECORD_ICONS, iconForRecord, recordValueText, recordUnitText, recordWhenText, recordChaseText, recordNowNoun, recordNowTag } from '@/utils/recordText'
 

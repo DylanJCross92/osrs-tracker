@@ -169,8 +169,9 @@ export function buildGoalContent(info, from, to) {
     fromXp,
     toXp,
     xp,
-    title: to === 99 && from === (START_LEVEL[skill] || 1) ? `Fastest Way to 99 ${skill} in OSRS: Methods, XP and Hours | TickGains` : `OSRS ${q}: XP, Hours and Best Methods | TickGains`,
-    description: `${q} in OSRS needs ${formatNum(xp)} XP, about ${formatHours(fast.hours)} on the fastest route. Compare fastest${gpClause} methods with a free calculator.`,
+    // No brand here: the page adds ' | TickGains' only when the whole title still fits in a search result (see utils/seoText.js).
+    title: to === 99 && from === (START_LEVEL[skill] || 1) ? `Fastest Way to 99 ${skill} in OSRS: XP and Hours` : `OSRS ${q}: XP, Hours and Best Methods`,
+    description: `${q} in OSRS needs ${formatNum(xp)} XP, about ${formatHours(fast.hours)} on the fastest route. Compare fastest${gpClause} methods.`,
     h1: `OSRS ${skill} ${label} Calculator`,
     lead: `${formatNum(xp)} XP separates level ${from} from level ${to} in ${skill}. Check the fastest, cheapest and balanced routes below, then enter your own stats to see your own numbers.`,
     summary: `${q} takes ${formatNum(xp)} XP. The fastest route needs about ${formatHours(fast.hours)} and the cheapest about ${formatHours(cheap.hours)}.`,

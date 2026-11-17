@@ -11,5 +11,5 @@
 <script setup>
 import { setPageMeta } from '@/utils/pageMeta'
 import { CONTACT_EMAIL, DISCORD_URL } from '@/config'
-setPageMeta({ title: 'Contact', description: 'Contact TickGains with feedback, bug reports or removal requests.', path: '/contact' })
+setPageMeta({ title: 'Contact TickGains: Feedback and Bug Reports', description: 'Contact TickGains with feedback, bug reports or a request to remove a tracked username. The Discord is the quickest way to reach us.', path: '/contact' })
 </script>

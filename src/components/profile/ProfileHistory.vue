@@ -13,7 +13,7 @@
       <select v-model="category"><option value="">All categories</option><option v-for="c in categories" :key="c">{{ c }}</option></select>
     </div>
 
-    <p v-if="!profile" class="empty-hint">Loading timeline…</p>
+    <PageSkeleton v-if="!profile" kind="list" label="timeline" :row-count="5" />
     <p v-else-if="!dayGroups.length && !preTracking.length" class="empty-hint">No milestones match yet.</p>
 
     <!-- By day: one block per day, skills collapsed into level ranges -->
@@ -72,6 +72,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, ref, watch } from 'vue'
 import { skillIconSrc, SKILL_NAMES } from '@/utils/osrsSkills'
 import { gameDay, formatGameDay } from '@/utils/gameDay'

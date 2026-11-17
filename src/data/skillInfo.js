@@ -154,6 +154,7 @@ export const SKILL_INFO = [
 
 export const SKILL_BY_SLUG = Object.fromEntries(SKILL_INFO.map((x) => [x.slug, x]))
 
-export const calculatorTitle = (info) => `OSRS ${info.name} Calculator: XP, ${info.focus} | TickGains`
+// No brand here: it is added only when the whole title fits in a search result (see utils/seoText.js).
+export const calculatorTitle = (info) => `OSRS ${info.name} Calculator: XP, ${info.focus}`
 export const calculatorDescription = (info) =>
   `Calculate OSRS ${info.name} XP, training hours and gp to level 99. ${info.short} Free Old School RuneScape calculator.`

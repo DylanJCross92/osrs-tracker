@@ -45,7 +45,7 @@
     </section>
 
     <template v-if="hasNames">
-      <div v-if="sideA.status === 'loading' || sideB.status === 'loading'" class="card"><p class="empty-hint">Loading both players…</p></div>
+      <PageSkeleton v-if="sideA.status === 'loading' || sideB.status === 'loading'" kind="compare" />
 
       <template v-else>
         <section v-for="s in missingSides" :key="s.key" class="card cmp-missing">
@@ -115,6 +115,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'

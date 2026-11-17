@@ -1,6 +1,6 @@
 <template>
   <section class="rec">
-    <div v-if="loading" class="card"><p class="empty-hint">Loading records…</p></div>
+    <PageSkeleton v-if="loading" kind="rows" label="Records" :row-count="6" />
     <div v-else-if="error" class="card"><p class="empty-hint">Could not load records right now.</p></div>
 
     <div v-else-if="!hero" class="card rec-empty">
@@ -116,6 +116,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { recordsApi } from '@/api/records'

@@ -2,7 +2,7 @@
   <div class="home">
     <!-- 1. Hero -->
     <section class="home-hero" id="start">
-      <h1>Your OSRS Journey. <span class="home-accent">Tracked.</span></h1>
+      <h1>The Free OSRS <span class="home-accent">XP Tracker</span></h1>
       <p class="home-sub">Track every XP gain, explore your history, and plan your next 99.</p>
 
       <div class="suggest-wrap home-suggest-wrap">
@@ -127,7 +127,7 @@
     <!-- 3. Profile preview -->
     <section class="home-section">
       <h2 class="home-h2">See what you get</h2>
-      <div v-if="loading" class="card"><p class="empty-hint">Loading an example profile…</p></div>
+      <PageSkeleton v-if="loading" kind="home-example" />
       <div v-else-if="example" class="card home-preview">
         <div class="home-preview-main">
           <div class="home-preview-head">
@@ -184,7 +184,7 @@
         <h2 class="home-h2">Community activity</h2>
         <RouterLink to="/discover" class="btn btn-ghost" @click="track('home_view_discover')">View Discover →</RouterLink>
       </div>
-      <div v-if="loading" class="card"><p class="empty-hint">Loading community activity…</p></div>
+      <PageSkeleton v-if="loading" kind="home-community" />
       <p v-else-if="error" class="card empty-hint">Community activity isn't available right now.</p>
       <template v-else-if="community && community.totalPlayers">
         <div class="home-tiles">
@@ -253,6 +253,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -286,7 +287,7 @@ const { showToast } = useToast()
 setPageMeta({
   title: 'OSRS XP Tracker & Hiscores History',
   description:
-    'Free OSRS XP tracker. Track XP gains, hiscores history and level progress for any Old School RuneScape player, no sign-up. Import Wise Old Man history and plan your next 99.',
+    'Free OSRS XP tracker: hourly updates, XP gains and hiscores history for any player, no sign-up. Plan your next 99 with the Account Planner.',
   path: '/',
 })
 

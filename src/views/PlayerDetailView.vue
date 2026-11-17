@@ -96,7 +96,7 @@
     <p>Still importing historical data from Wise Old Man, the chart and table below will fill in as it finds more.</p>
   </div>
 
-  <div v-if="loading" class="card"><p class="empty-hint">Loading hiscores history…</p></div>
+  <PageSkeleton v-if="loading" kind="profile" />
 
   <template v-else-if="snapshots.length">
     <nav class="profile-tabs" aria-label="Profile sections">
@@ -293,6 +293,7 @@
 </template>
 
 <script setup>
+import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
