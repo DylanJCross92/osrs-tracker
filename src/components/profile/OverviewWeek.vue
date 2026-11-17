@@ -13,7 +13,7 @@
 
     <div class="ov-week-body">
       <div class="ov-bars" role="list">
-        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}${d.top.length ? ', mostly ' + d.top.map((s) => s.skill).join(', ') : ''}${d.today && usualLine ? '. ' + usualLine.text : ''}. Open day recap`" @click="$emit('day', d.raw)">
+        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}${d.top.length ? ', mostly ' + d.top.map((s) => s.skill).join(', ') : ''}${d.today && usualLine ? '. ' + usualLine.text : ''}. Open day recap`" @click="$emit('day', openDay(d))">
           <span class="ov-bar-xp">{{ d.xp > 0 ? formatXp(d.xp) : '-' }}</span>
           <span class="ov-bar-track"><i v-if="d.usualPct != null" class="ov-bar-usual" :style="{ height: `${d.usualPct}%` }" aria-hidden="true" /><i :style="{ height: `${d.pct}%` }" /></span>
           <span class="ov-bar-day">{{ d.today ? 'Today' : d.label }}</span>
@@ -98,8 +98,15 @@ const usualLine = computed(() => {
   const c = today ? compareToUsual(today.xp, props.usual) : null
   if (!c) return null
   const headline = c.status === 'on' ? 'On your usual pace' : `${formatXp(c.diff)} XP ${c.status === 'ahead' ? 'ahead of' : 'behind'} usual`
-  return { status: c.status, headline, text: `${headline}. A usual ${props.usual.dayType} has ${formatXp(props.usual.expected)} XP by this time, shown as the dashed line` }
+  const short = c.status === 'on' ? 'On pace' : `${formatXp(c.diff)} XP ${c.status}`
+  return { status: c.status, headline, short, text: `${headline}. A usual ${props.usual.dayType} has ${formatXp(props.usual.expected)} XP by this time, shown as the dashed line` }
 })
+
+// Today's recap carries the same usual-pace comparison as the dashed line, so the modal can explain it too.
+const openDay = (d) =>
+  d.today && usualLine.value
+    ? { ...d.raw, usual: { status: usualLine.value.status, short: usualLine.value.short, expected: props.usual.expected, dayType: props.usual.dayType, samples: props.usual.samples } }
+    : d.raw
 
 // Days in a row with XP, counting back from today (a day still in progress does not break it).
 const weekStreak = computed(() => {

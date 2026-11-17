@@ -20,7 +20,13 @@
             <small>This week</small>
             <b>{{ rankText }}</b>
           </div>
-          <div class="dr-fact">
+          <!-- Today is only part of a day, so it is compared with the usual for this time of day (when there is enough history), not with whole days. -->
+          <div v-if="day.usual" class="dr-fact dr-usual" :class="`is-${day.usual.status}`">
+            <small>Versus usual by now</small>
+            <b>{{ day.usual.short }}</b>
+            <small class="dr-usual-note"><i class="ov-usual-sw" aria-hidden="true" />Usual {{ day.usual.dayType }}: {{ formatXp(day.usual.expected) }} XP</small>
+          </div>
+          <div v-else class="dr-fact">
             <small>Versus your 7-day average</small>
             <b :class="vsAverage >= 0 ? 'stat-gain' : ''">{{ vsAverage >= 0 ? '+' : '' }}{{ vsAverage }}%</b>
           </div>

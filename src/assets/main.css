@@ -5421,3 +5421,9 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .ov-tip.is-ahead .ov-tip-how { color: var(--xp-green); }
 .ov-tip.is-behind .ov-tip-how { color: #e0a96a; }
 .ov-tip.is-on .ov-tip-how { color: var(--text); }
+
+/* Day recap: today's comparison with the usual pace */
+.dr-usual.is-ahead b { color: var(--xp-green); }
+.dr-usual.is-behind b { color: #e0a96a; }
+.dr-usual-note { display: flex; align-items: center; gap: 7px; }
+.dr-usual-note .ov-usual-sw { flex: none; }
