@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cleanEvents, cleanProps, summarizeBreakdown, summarizeEvents, MAX_BATCH, MAX_STRING } from '../../server/src/utils/events.js'
+import { askedNotToTrack, cleanEvents, cleanProps, summarizeBreakdown, summarizeEvents, MAX_BATCH, MAX_STRING } from '../../server/src/utils/events.js'
 
 describe('cleanProps', () => {
   it('keeps short strings, numbers and booleans', () => {
@@ -76,5 +76,20 @@ describe('summarizeBreakdown', () => {
   it('lists the most common values of each detail', () => {
     const out = summarizeBreakdown([{ k: 'skill', v: 'Mining', n: 3 }, { k: 'skill', v: 'Fishing', n: 9 }, { k: 'tab', v: 'a', n: 1 }], 1)
     expect(out).toEqual({ skill: [{ value: 'Fishing', n: 9 }], tab: [{ value: 'a', n: 1 }] })
+  })
+})
+
+describe('sign-in events', () => {
+  it('ignores login and session_resumed sent by a browser (the server counts those)', () => {
+    const { events } = cleanEvents({ events: [{ name: 'login' }, { name: 'session_resumed' }, { name: 'dashboard_refresh' }] })
+    expect(events.map((e) => e.name)).toEqual(['dashboard_refresh'])
+  })
+
+  it('reads Do Not Track and Global Privacy Control from request headers', () => {
+    expect(askedNotToTrack({ dnt: '1' })).toBe(true)
+    expect(askedNotToTrack({ 'sec-gpc': '1' })).toBe(true)
+    expect(askedNotToTrack({ dnt: '0' })).toBe(false)
+    expect(askedNotToTrack({})).toBe(false)
+    expect(askedNotToTrack()).toBe(false)
   })
 })

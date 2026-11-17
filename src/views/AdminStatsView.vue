@@ -53,6 +53,30 @@
         <p v-else class="st-empty">Nothing shared or visited through a shared link in this time yet.</p>
       </section>
 
+      <section class="st-card" aria-labelledby="st-active">
+        <div class="st-card-head">
+          <h2 id="st-active">Active accounts</h2>
+          <ul class="st-legend" aria-hidden="true">
+            <li><i class="st-sw is-visits" />Different accounts per day</li>
+          </ul>
+        </div>
+        <p v-if="activeError" class="st-empty">{{ activeError }}</p>
+        <p v-else-if="!active" class="st-empty">Loading…</p>
+        <template v-else>
+          <div v-if="activeMax" class="st-chart" role="img" :aria-label="`Active accounts per day for the last ${days} days`">
+            <span class="st-ymax">{{ fmt(activeMax) }}</span>
+            <div class="st-cols">
+              <div v-for="d in active" :key="d.day" class="st-col" :title="`${dayLabel(d.day)}: ${count(d.active, 'account')} active, ${count(d.logins, 'sign-in')}, ${fmt(d.resumed)} came back`">
+                <i class="st-bar is-visits" :style="{ height: d.active ? `${Math.max(4, (d.active / activeMax) * 100)}%` : '0' }" />
+              </div>
+            </div>
+            <div class="st-xaxis"><span>{{ dayLabel(active[0].day) }}</span><span>{{ dayLabel(active[active.length - 1].day) }}</span></div>
+          </div>
+          <p v-else class="st-empty">No signed-in activity recorded in this time yet.</p>
+          <p class="st-note">Accounts that signed in or came back that day, counted once each. Counting began when this shipped, so earlier days are empty. Your own visits and anyone with Do Not Track on are not counted.</p>
+        </template>
+      </section>
+
       <section class="st-card" aria-labelledby="st-kinds">
         <h2 id="st-kinds">What is being shared</h2>
         <div class="st-table-wrap">
@@ -148,12 +172,27 @@ async function load() {
   loading.value = true
   error.value = ''
   loadEvents()
+  loadActive()
   try {
     data.value = await statsApi.shares(days.value)
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Could not load the statistics.'
   } finally {
     loading.value = false
+  }
+}
+
+// Accounts active per day.
+const active = ref(null)
+const activeError = ref('')
+const activeMax = computed(() => Math.max(0, ...(active.value || []).map((d) => d.active)))
+async function loadActive() {
+  activeError.value = ''
+  try {
+    active.value = (await statsApi.dailyActive(days.value)).days
+  } catch (err) {
+    active.value = null
+    activeError.value = err instanceof ApiError ? err.message : 'Could not load the active accounts.'
   }
 }
 

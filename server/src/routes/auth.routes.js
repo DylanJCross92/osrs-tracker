@@ -3,6 +3,7 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { sendMail, mailConfigured } from '../utils/mailer.js'
 import { renderEmail } from '../utils/emailTemplate.js'
 import { hasRole } from '../utils/roles.js'
+import { noteActivity, recordLogin } from '../services/events.service.js'
 import { subscribe } from '../services/subscribers.service.js'
 import { notifyNewAccount } from '../services/notify.service.js'
 import {
@@ -50,6 +51,8 @@ export async function attachUser(req, res, next) {
   try {
     req.sessionToken = readCookie(req, COOKIE)
     req.user = req.sessionToken ? await getUserBySession(req.sessionToken) : null
+    // A returning visit counts once a day (never slows the request down).
+    if (req.user) noteActivity(req.user, req.headers)
     next()
   } catch (err) {
     next(err)
@@ -133,6 +136,7 @@ authRouter.post(
   handle(async (req, res) => {
     const { user, newsletter } = await verifyEmail(req.body?.token)
     setSession(res, await createSession(user.id))
+    recordLogin(user, 'email_link', req.headers)
     if (newsletter) subscribe(user.email, 'signup').catch(() => {})
     countUsers()
       .then((total) => notifyNewAccount({ email: user.email, total, confirmed: true }))
@@ -158,6 +162,7 @@ authRouter.post(
   handle(async (req, res) => {
     const user = await logIn(req.body?.email, req.body?.password)
     setSession(res, await createSession(user.id))
+    recordLogin(user, 'password', req.headers)
     res.json({ user })
   }),
 )
@@ -235,6 +240,7 @@ authRouter.post(
   handle(async (req, res) => {
     const user = await finishPasswordReset(req.body?.token, req.body?.password)
     setSession(res, await createSession(user.id))
+    recordLogin(user, 'password_reset', req.headers)
     res.json({ user })
   }),
 )

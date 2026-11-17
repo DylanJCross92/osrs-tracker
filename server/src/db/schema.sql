@@ -184,6 +184,8 @@ CREATE INDEX IF NOT EXISTS email_verifications_user_idx ON email_verifications (
 -- Account roles. Everyone starts as a plain "user"; "admin" and "owner" are only ever granted on the server (the owner's
 -- email is set in the OWNER_EMAIL environment variable), never from anything a visitor sends.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS roles TEXT[] NOT NULL DEFAULT '{user}';
+-- The last UTC day this account was seen using the site (a sign-in or a returning visit), so a returning visit is counted once a day.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_day DATE;
 
 -- Profile claims. A signed-in account asks to claim a tracked OSRS name, gets a short code, and sends it in game to the
 -- site owner, who types it in to approve. The one 'verified' row for a player IS the ownership record (the unique index

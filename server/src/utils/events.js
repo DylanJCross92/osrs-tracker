@@ -13,6 +13,12 @@ const KEY = /^[a-z][a-z0-9_]{0,39}$/
 // Detail keys that may carry personal text. (username_length is fine, it is a number.)
 const PERSONAL_KEY = /^(name|username|rsn|email|password|token|query|q|text|message|url|phone|address)$|_(name|email|rsn|password|token|url)$/
 
+// Counted by the server itself (see services/events.service.js), so a browser cannot send them and sign-ins are not counted twice.
+export const SERVER_ONLY_EVENTS = new Set(['login', 'session_resumed'])
+
+/** True when the request carries Do Not Track or Global Privacy Control. */
+export const askedNotToTrack = (headers = {}) => headers.dnt === '1' || headers['sec-gpc'] === '1'
+
 const snake = (key) => String(key).replace(/([A-Z])/g, '_$1').toLowerCase()
 
 /** The details of one event: a flat object of short strings, numbers and booleans, or {} when there is nothing usable. */
@@ -41,7 +47,7 @@ export function cleanEvents(body) {
   const events = []
   for (const e of list) {
     const name = typeof e?.name === 'string' ? e.name.trim().toLowerCase() : ''
-    if (!NAME.test(name)) continue
+    if (!NAME.test(name) || SERVER_ONLY_EVENTS.has(name)) continue
     events.push({ name, props: cleanProps(e.props) })
   }
   // The browser asked not to be tracked (Do Not Track / Global Privacy Control): count the event, but not against an account.

@@ -3,7 +3,7 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
-import { eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
+import { dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -111,6 +111,16 @@ statsRouter.get('/admin/stats/daily-players', ...adminOnly, async (req, res, nex
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await dailyPlayers(req.query.days))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: how many different accounts were active on each recent day (signed in or came back), for the admin stats page.
+statsRouter.get('/admin/stats/daily-active', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await dailyActive(req.query.days))
   } catch (err) {
     next(err)
   }
