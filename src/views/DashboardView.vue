@@ -19,6 +19,9 @@
       </div>
     </template>
 
+    <!-- Signed up but no profile yet: a page that points at the one thing to do -->
+    <DashWelcome v-else-if="!current" />
+
     <template v-else>
       <header class="card dash-head">
         <div class="dash-who">
@@ -58,11 +61,6 @@
 
           </template>
 
-          <section v-else class="card dash-card dash-claim">
-            <h2>Make this page yours</h2>
-            <p>Find your player with the search box at the top and press <b>Claim</b> on its profile. Once it is yours, your week, streak and goals show up here. Plans you save and the players you follow already do.</p>
-            <RouterLink class="btn btn-primary" :to="{ name: 'discover' }">Browse players</RouterLink>
-          </section>
 
           <!-- Your clans -->
           <DashClans />
@@ -161,6 +159,7 @@ import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
+import DashWelcome from '@/components/dashboard/DashWelcome.vue'
 import DashInbox from '@/components/dashboard/DashInbox.vue'
 import DashMilestones from '@/components/dashboard/DashMilestones.vue'
 import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'

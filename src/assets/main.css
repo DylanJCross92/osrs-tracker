@@ -5427,3 +5427,40 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .dr-usual.is-behind b { color: #e0a96a; }
 .dr-usual-note { display: flex; align-items: center; gap: 7px; }
 .dr-usual-note .ov-usual-sw { flex: none; }
+
+/* Welcome page: an account with no claimed profile yet */
+.dw { display: flex; flex-direction: column; gap: 16px; }
+.dw-hero h1 { margin: 2px 0 0; font-size: 1.9rem; line-height: 1.15; }
+.dw-lead { margin: 8px 0 0; color: var(--muted); line-height: 1.55; max-width: 60ch; }
+.dw-pending { border-color: var(--gold); }
+.dw-pending h2, .dw-steps h2, .dw-more h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.dw-pending p { margin: 0 0 14px; color: var(--muted); line-height: 1.55; max-width: none; }
+.dw-list { margin: 12px 0 0; padding: 0; list-style: none; display: grid; gap: 18px; }
+.dw-step { display: flex; gap: 14px; align-items: flex-start; }
+.dw-num { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--gold); color: var(--gold-bright); font-weight: 700; font-size: 0.9rem; }
+.dw-step-main { flex: 1; min-width: 0; }
+.dw-step-main b { font-size: 1rem; }
+.dw-step-main p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; line-height: 1.5; max-width: none; }
+.dw-step-main .nav-search { margin-top: 12px; }
+.dw-more h2 { margin-bottom: 10px; }
+.dw-tiles { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.dw-tile { display: flex; align-items: center; gap: 12px; height: 100%; box-sizing: border-box; padding: 14px 16px; text-decoration: none; color: inherit; }
+.dw-tile:hover { border-color: var(--gold); }
+.dw-tile-ico { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 10px; background: var(--bg); color: var(--gold-bright); }
+.dw-tile-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dw-tile-text small { color: var(--muted); font-size: 0.82rem; line-height: 1.35; }
+@media (max-width: 560px) {
+  .dw-hero h1 { font-size: 1.55rem; }
+  .dw-tiles { grid-template-columns: 1fr; }
+}
+/* The search box inside a page (NavSearch with hero): full width, taller, dropdown under the field */
+.nav-search.is-hero, .nav-search.is-hero:focus-within { order: 0; flex: none; width: 100%; max-width: none; margin: 12px 0 0; position: relative; }
+.nav-search.is-hero .nav-search-field input { height: 46px; font-size: 1rem; }
+.nav-search.is-hero .search-suggest { left: 0; right: 0; width: auto; max-width: none; top: calc(100% + 6px); }
+
+/* The hero search's rows: the normal suggestion row with a Claim button on the right */
+.search-suggest .suggest-claim { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 12px; }
+.suggest-claim-btn { flex: none; padding: 7px 16px; white-space: nowrap; }
+.suggest-taken { flex: none; color: var(--muted); font-size: 0.82rem; font-weight: 600; white-space: nowrap; }
+.suggest-claim:has(.suggest-taken) { opacity: 0.75; }
+.search-suggest .suggest-new .disc-track-btn { white-space: nowrap; }

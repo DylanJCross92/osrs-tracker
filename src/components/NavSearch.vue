@@ -1,13 +1,13 @@
 <template>
-  <div ref="rootEl" class="nav-search suggest-wrap" role="search">
+  <div ref="rootEl" class="nav-search suggest-wrap" :class="{ 'is-hero': hero }" role="search">
     <label class="nav-search-field">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
       <input
         ref="inputEl"
         v-model="query"
         type="search"
-        placeholder="Search players"
-        aria-label="Search players"
+        :placeholder="hero ? 'Type your RuneScape name' : 'Search players'"
+        :aria-label="hero ? 'Find your player' : 'Search players'"
         autocomplete="off"
         name="player-search"
         autocorrect="off"
@@ -22,19 +22,25 @@
         @focus="focused = true"
         @blur="focused = false"
       />
-      <kbd v-if="!focused && !query" class="nav-search-key" aria-hidden="true">/</kbd>
+      <kbd v-if="!hero && !focused && !query" class="nav-search-key" aria-hidden="true">/</kbd>
     </label>
 
-    <RecentPlayers v-if="focused && !query.trim()" @pick="(o) => go(o)" />
+    <RecentPlayers v-if="!hero && focused && !query.trim()" @pick="(o) => go(o)" />
     <ul v-if="focused && (suggestions.length || showNewRow)" class="search-suggest" @mousedown.prevent>
       <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
       <li v-for="sg in suggestions" :key="sg.username">
-        <a href="#" class="suggest-row" @click.prevent="go(sg)"><PlayerSuggestRow :player="sg" /></a>
+        <!-- hero: the same rows with a Claim button (or a label when the profile already has an owner) instead of opening the profile -->
+        <div v-if="hero" class="suggest-row suggest-claim">
+          <PlayerSuggestRow :player="sg" />
+          <span v-if="sg.claimed" class="suggest-taken">Already claimed</span>
+          <button v-else class="btn btn-primary suggest-claim-btn" type="button" :disabled="busy" @click="$emit('claim', sg); close()">Claim</button>
+        </div>
+        <a v-else href="#" class="suggest-row" @click.prevent="go(sg)"><PlayerSuggestRow :player="sg" /></a>
       </li>
       <li v-if="showNewRow" class="suggest-new">
         <span class="sg-avatar sg-avatar-new" aria-hidden="true">+</span>
-        <span class="sg-main"><span class="sg-name">{{ query.trim() }}</span><small class="sg-sub" :class="{ 'suggest-new-error': addError }">{{ addError || 'Not tracked yet. Track them to see gains and history.' }}</small></span>
-        <button class="disc-track-btn" type="button" :disabled="adding" @click="trackNew">{{ adding ? 'Adding…' : 'Track' }}</button>
+        <span class="sg-main"><span class="sg-name">{{ query.trim() }}</span><small class="sg-sub" :class="{ 'suggest-new-error': addError }">{{ addError || (hero ? 'Not tracked yet. We start tracking it, then you claim it.' : 'Not tracked yet. Track them to see gains and history.') }}</small></span>
+        <button class="disc-track-btn" type="button" :disabled="adding" @click="trackNew">{{ adding ? 'Adding…' : hero ? 'Track and claim' : 'Track' }}</button>
       </li>
     </ul>
   </div>
@@ -51,6 +57,11 @@ import { ApiError } from '@/api/client'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
+
+// hero: the big version inside a page, for claiming a player: no "/" shortcut (that belongs to the top bar) and it emits `claim`.
+const props = defineProps({ hero: { type: Boolean, default: false }, busy: { type: Boolean, default: false } })
+const emit = defineEmits(['claim'])
+const source = props.hero ? 'welcome' : 'nav'
 
 const router = useRouter()
 const store = usePlayersStore()
@@ -74,7 +85,7 @@ watch(query, (q) => {
   const term = q.trim()
   if (term && !started) {
     started = true
-    track('search_started', { source: 'nav' })
+    track('search_started', { source })
   }
   if (term.length < 2) {
     suggestions.value = []
@@ -85,7 +96,7 @@ watch(query, (q) => {
       const rows = await playersApi.search(term)
       if (query.value.trim() === term) {
         suggestions.value = rows
-        track('player_search', { source: 'nav', username_length: term.length, matches: rows.length })
+        track('player_search', { source, username_length: term.length, matches: rows.length })
       }
     } catch {
       suggestions.value = []
@@ -112,12 +123,20 @@ function close() {
 // Open a player's profile. Only names picked or typed here are remembered, same as the other search boxes.
 function go(player) {
   recordRecent(player)
-  track('search_suggestion_selected', { source: 'nav' })
+  track('search_suggestion_selected', { source })
   router.push({ name: 'playerDetail', params: { username: player.username } })
   close()
 }
 
+// A player chosen from the "Track" row: opened in the normal search, handed on to be claimed in the hero one.
+function pick(player) {
+  if (!props.hero) return go(player)
+  emit('claim', player)
+  close()
+}
+
 function onEnter() {
+  if (props.hero) return showNewRow.value && !adding.value ? trackNew() : undefined
   if (exactMatch.value) return go(exactMatch.value)
   if (showNewRow.value && !adding.value) return trackNew()
   if (suggestions.value[0]) go(suggestions.value[0])
@@ -129,21 +148,21 @@ async function trackNew() {
   if (!validName.value || adding.value) return
   adding.value = true
   addError.value = ''
-  track('player_search', { source: 'nav', username_length: name.length })
+  track('player_search', { source, username_length: name.length })
   try {
     if (!store.loaded) await store.loadPlayers()
     await store.addPlayer(name)
     const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
-    track('player_added', { source: 'nav', is_new_player: true, player_name: name })
+    track('player_added', { source, is_new_player: true, player_name: name })
     showToast(`Now tracking ${found?.displayName || name}, checking Wise Old Man for history in the background.`)
-    go({ username: found?.username || name, displayName: found?.displayName || name })
+    pick({ username: found?.username || name, displayName: found?.displayName || name })
   } catch (err) {
     if (err instanceof ApiError && err.status === 409) {
       const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
-      go({ username: found?.username || name, displayName: found?.displayName || name })
+      pick({ username: found?.username || name, displayName: found?.displayName || name })
     } else {
       addError.value = err instanceof ApiError ? err.message : 'Could not add that player.'
-      track('player_search_result', { source: 'nav', result: 'error', status: err instanceof ApiError ? err.status : 0 })
+      track('player_search_result', { source, result: 'error', status: err instanceof ApiError ? err.status : 0 })
     }
   } finally {
     adding.value = false
@@ -158,7 +177,9 @@ function onSlash(e) {
   e.preventDefault()
   inputEl.value?.focus()
 }
-onMounted(() => document.addEventListener('keydown', onSlash))
+onMounted(() => {
+  if (!props.hero) document.addEventListener('keydown', onSlash)
+})
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onSlash)
   clearTimeout(timer)
