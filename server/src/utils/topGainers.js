@@ -14,13 +14,23 @@ export function pickTopGainer(players) {
   return top
 }
 
+/** How long as a figure and a word: { unit, value, display, label, text }. Under an hour reads "<1 hour". */
+export function tenureOf(unit, value) {
+  const n = Math.max(0, Math.floor(value))
+  const display = unit === 'hours' && n === 0 ? '<1' : n.toLocaleString('en-US')
+  const label = unit === 'hours' ? (n <= 1 ? 'hour' : 'hours') : n === 1 ? 'day' : 'days'
+  return { unit, value: n, display, label, text: `${display} ${label}` }
+}
+
 /**
  * The days one player was the top gainer, summed up.
- * rows: [{ day: 'YYYY-MM-DD', xp }] in any order; today: 'YYYY-MM-DD'.
- * Returns { days: 0 } for none, otherwise { days, streak, longest, bestXp, bestDay, firstDay, lastDay, leadingNow }.
+ * rows: [{ day: 'YYYY-MM-DD', xp, since? }] in any order (since: when that day's lead began); today: 'YYYY-MM-DD'.
+ * Returns { days: 0 } for none, otherwise { days, streak, longest, bestXp, bestDay, firstDay, lastDay, leadingNow, tenure, headline }.
  * streak is the run of days in a row up to today or yesterday (a day still in progress does not break it).
+ * tenure is how long the lead has lasted right now (null when they are not leading): in hours while it is under a day, in
+ * days once it has run across days. headline is the figure to lead with: the hours for someone on their first day, else the total days.
  */
-export function summarizeTopGainer(rows, today) {
+export function summarizeTopGainer(rows, today, now = Date.now()) {
   const list = [...rows].sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0))
   if (!list.length) return { days: 0 }
 
@@ -33,6 +43,17 @@ export function summarizeTopGainer(rows, today) {
   const last = list[list.length - 1]
   const best = list.reduce((top, r) => (r.xp > top.xp ? r : top), list[0])
   const active = diffDays(last.day, today) <= 1
+  const leadingNow = last.day === today
+
+  let tenure = null
+  if (leadingNow) {
+    const since = last.since ? new Date(last.since).getTime() : NaN
+    if (run >= 2) tenure = tenureOf('days', run)
+    else if (Number.isFinite(since)) tenure = tenureOf('hours', (now - since) / 3_600_000)
+    else tenure = tenureOf('days', 1)
+  }
+  const headline = tenure && tenure.unit === 'hours' && list.length === 1 ? tenure : tenureOf('days', list.length)
+
   return {
     days: list.length,
     streak: active ? run : 0,
@@ -41,11 +62,13 @@ export function summarizeTopGainer(rows, today) {
     bestDay: best.day,
     firstDay: list[0].day,
     lastDay: last.day,
-    leadingNow: last.day === today,
+    leadingNow,
+    tenure,
+    headline,
   }
 }
 
-/** The stats in one phrase, for share text and link previews: "12 days as top gainer". */
+/** The stats in one phrase, for share text and link previews: "12 days as top gainer" or "3 hours as top gainer". */
 export function topGainerHeadline(stats) {
-  return `${stats.days.toLocaleString('en-US')} ${stats.days === 1 ? 'day' : 'days'} as top gainer`
+  return `${stats.headline ? stats.headline.text : tenureOf('days', stats.days).text} as top gainer`
 }

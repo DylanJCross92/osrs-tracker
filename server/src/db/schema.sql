@@ -443,3 +443,7 @@ CREATE TABLE IF NOT EXISTS feedback (
   emailed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS feedback_created_idx ON feedback (created_at DESC);
+
+-- When the current leader of that day took the lead (kept while the same player stays on top), so "top gainer for 3 hours" can be shown.
+ALTER TABLE daily_top_gainers ADD COLUMN IF NOT EXISTS lead_since TIMESTAMPTZ;
+UPDATE daily_top_gainers SET lead_since = updated_at WHERE lead_since IS NULL AND day = (now() AT TIME ZONE 'utc')::date;

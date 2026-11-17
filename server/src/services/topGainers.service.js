@@ -49,21 +49,24 @@ export async function recordTopGainer(players) {
   const top = pickTopGainer(players)
   if (!top) return
   await pool.query(
-    `INSERT INTO daily_top_gainers (day, player_id, xp, top_skill) VALUES ($1, $2, $3, $4)
-     ON CONFLICT (day) DO UPDATE SET player_id = EXCLUDED.player_id, xp = EXCLUDED.xp, top_skill = EXCLUDED.top_skill, updated_at = now()
+    `INSERT INTO daily_top_gainers (day, player_id, xp, top_skill, lead_since) VALUES ($1, $2, $3, $4, now())
+     ON CONFLICT (day) DO UPDATE SET
+       player_id = EXCLUDED.player_id, xp = EXCLUDED.xp, top_skill = EXCLUDED.top_skill, updated_at = now(),
+       -- The clock restarts only when a different player takes the lead.
+       lead_since = CASE WHEN daily_top_gainers.player_id = EXCLUDED.player_id THEN COALESCE(daily_top_gainers.lead_since, daily_top_gainers.updated_at) ELSE now() END
      WHERE daily_top_gainers.xp <= EXCLUDED.xp`,
     [localDay(Date.now()), top.player.id, top.xp, top.topSkill],
   )
 }
 
-/** { days, streak, longest, bestXp, bestDay, firstDay, lastDay, leadingNow } for a player (days is 0 if never). */
+/** { days, streak, longest, bestXp, bestDay, firstDay, lastDay, leadingNow, tenure, headline } for a player (days is 0 if never). */
 export async function getTopGainerStats(player) {
   const { rows } = await pool.query(
-    `SELECT to_char(day, 'YYYY-MM-DD') AS day, xp FROM daily_top_gainers WHERE player_id = $1 ORDER BY day ASC`,
+    `SELECT to_char(day, 'YYYY-MM-DD') AS day, xp, lead_since FROM daily_top_gainers WHERE player_id = $1 ORDER BY day ASC`,
     [player.id],
   )
   return summarizeTopGainer(
-    rows.map((r) => ({ day: r.day, xp: Number(r.xp) })),
+    rows.map((r) => ({ day: r.day, xp: Number(r.xp), since: r.lead_since })),
     localDay(Date.now()),
   )
 }

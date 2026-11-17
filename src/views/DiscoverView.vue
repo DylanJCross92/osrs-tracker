@@ -60,8 +60,8 @@
           <span v-for="s in spotlight.topSkills" :key="s.skill" class="disc-spot-chip"><img :src="skillIconSrc(s.skill)" alt="" width="18" height="18" />{{ s.skill }} <b>+{{ formatXp(s.xp) }}</b></span>
         </span>
         <span v-if="tenure" class="disc-spot-tenure" aria-label="How long they have been top gainer">
-          <span><b>{{ tenure.days.toLocaleString('en-US') }}</b><small>{{ tenure.days === 1 ? 'day' : 'days' }} as top gainer</small></span>
-          <span v-if="tenure.streak > 1"><b>{{ tenure.streak }}</b><small>in a row</small></span>
+          <span v-if="tenure.tenure"><b>{{ tenure.tenure.display }}</b><small>{{ tenure.tenure.label }} at the top</small></span>
+          <span v-if="!tenure.tenure || tenure.days > (tenure.tenure.unit === 'days' ? tenure.tenure.value : 1)"><b>{{ tenure.days.toLocaleString('en-US') }}</b><small>{{ tenure.days === 1 ? 'day' : 'days' }} as top gainer</small></span>
           <span v-if="tenure.bestXp > 0"><b>+{{ formatXp(tenure.bestXp) }}</b><small>best day</small></span>
         </span>
         <span class="disc-spot-cta">View profile →</span>

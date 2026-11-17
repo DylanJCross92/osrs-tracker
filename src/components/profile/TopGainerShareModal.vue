@@ -39,9 +39,9 @@ const { showToast } = useToast()
 
 const copyingImage = ref(false)
 // The number in the picture comes from the live count, so the link and the picture always agree.
-const imageUrl = computed(() => `${topGainerApi.imageUrl(props.username)}?d=${props.stats.days}`)
+const imageUrl = computed(() => `${topGainerApi.imageUrl(props.username)}?d=${encodeURIComponent(props.stats.headline?.text || props.stats.days)}`)
 const link = computed(() => topGainerApi.shareUrl(props.username))
-const text = computed(() => `${props.displayName} has been the top gainer on TickGains for ${props.stats.days} ${props.stats.days === 1 ? 'day' : 'days'}. Think you can top it?`)
+const text = computed(() => `${props.displayName} has been the top gainer on TickGains for ${(props.stats.headline || { text: `${props.stats.days} ${props.stats.days === 1 ? 'day' : 'days'}` }).text}. Think you can top it?`)
 const xUrl = computed(() => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text.value)}&url=${encodeURIComponent(link.value)}&hashtags=OSRS,OldSchoolRuneScape`)
 const redditUrl = computed(() => `https://www.reddit.com/submit?url=${encodeURIComponent(link.value)}&title=${encodeURIComponent(text.value)}`)
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'

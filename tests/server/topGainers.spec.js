@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pickTopGainer, summarizeTopGainer, topGainerHeadline } from '../../server/src/utils/topGainers.js'
+import { pickTopGainer, summarizeTopGainer, tenureOf, topGainerHeadline } from '../../server/src/utils/topGainers.js'
 
 const player = (id, xp, topSkill = 'Mining') => ({ id, gains: { day: xp == null ? null : { xp, topSkill } } })
 
@@ -44,10 +44,53 @@ describe('summarizeTopGainer', () => {
   })
 })
 
+describe('tenureOf', () => {
+  it('words hours and days, singular and plural', () => {
+    expect(tenureOf('hours', 5).text).toBe('5 hours')
+    expect(tenureOf('hours', 1).text).toBe('1 hour')
+    expect(tenureOf('days', 1).text).toBe('1 day')
+    expect(tenureOf('days', 1200).text).toBe('1,200 days')
+  })
+  it('rounds down and calls under an hour "<1 hour"', () => {
+    expect(tenureOf('hours', 2.9).value).toBe(2)
+    expect(tenureOf('hours', 0.4)).toMatchObject({ value: 0, display: '<1' })
+    expect(tenureOf('hours', 0.4).display).toBe('<1')
+  })
+})
+
+describe('how long the current lead has lasted', () => {
+  const NOW = Date.parse('2026-01-10T15:00:00Z')
+  const ago = (hours) => new Date(NOW - hours * 3_600_000).toISOString()
+  const row = (day, xp, since) => ({ day, xp, since })
+
+  it('is in hours while the lead is under a day old', () => {
+    const s = summarizeTopGainer([row('2026-01-10', 500, ago(5.5))], '2026-01-10', NOW)
+    expect(s.tenure).toMatchObject({ unit: 'hours', value: 5, text: '5 hours' })
+    expect(s.headline.text).toBe('5 hours')
+  })
+  it('keeps the total days as the headline for a player with history, and the hours as the current lead', () => {
+    const s = summarizeTopGainer([row('2026-01-03', 9), row('2026-01-10', 500, ago(3))], '2026-01-10', NOW)
+    expect(s.tenure.text).toBe('3 hours')
+    expect(s.headline.text).toBe('2 days')
+  })
+  it('switches to days once the lead has run across days', () => {
+    const s = summarizeTopGainer([row('2026-01-09', 9), row('2026-01-10', 500, ago(2))], '2026-01-10', NOW)
+    expect(s.tenure).toMatchObject({ unit: 'days', value: 2 })
+    expect(s.headline.text).toBe('2 days')
+  })
+  it('falls back to days when the start of the lead is not known', () => {
+    expect(summarizeTopGainer([row('2026-01-10', 500)], '2026-01-10', NOW).tenure.text).toBe('1 day')
+  })
+  it('has no tenure when they are not leading now', () => {
+    expect(summarizeTopGainer([row('2026-01-09', 500, ago(30))], '2026-01-10', NOW).tenure).toBeNull()
+  })
+})
+
 describe('topGainerHeadline', () => {
-  it('says day or days', () => {
+  it('says day or days, or hours', () => {
     expect(topGainerHeadline({ days: 1 })).toBe('1 day as top gainer')
     expect(topGainerHeadline({ days: 12 })).toBe('12 days as top gainer')
     expect(topGainerHeadline({ days: 1200 })).toBe('1,200 days as top gainer')
+    expect(topGainerHeadline({ days: 1, headline: tenureOf('hours', 3) })).toBe('3 hours as top gainer')
   })
 })

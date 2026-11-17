@@ -5,10 +5,10 @@
     </span>
     <div class="tg-main">
       <p class="tg-kicker">Top gainer</p>
-      <p class="tg-count"><b>{{ stats.days.toLocaleString('en-US') }}</b> {{ stats.days === 1 ? 'day' : 'days' }}</p>
+      <p class="tg-count"><b>{{ headline.display }}</b> {{ headline.label }}</p>
       <p class="tg-meta">
-        <span v-if="stats.leadingNow" class="tg-live"><i aria-hidden="true" />Leading today</span>
-        <span v-if="stats.streak > 1 && stats.streak < stats.days">{{ stats.streak }} in a row</span>
+        <span v-if="stats.tenure" class="tg-live"><i aria-hidden="true" />{{ tenureLine }}</span>
+        <span v-if="stats.streak > 1 && !stats.tenure">{{ stats.streak }} in a row</span>
         <span v-if="stats.bestXp > 0">Best +{{ formatXp(stats.bestXp) }} XP</span>
       </p>
     </div>
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import TopGainerShareModal from '@/components/profile/TopGainerShareModal.vue'
 import { topGainerApi } from '@/api/topGainer'
 import { formatXp } from '@/utils/osrsSkills'
@@ -35,6 +35,15 @@ const props = defineProps({
 })
 
 const stats = ref(null)
+// The headline is the hours on someone's first day at the top, otherwise the total days; the line under it says how long
+// the current lead has lasted (in hours while it is under a day, in days after).
+const headline = computed(() => stats.value?.headline || { display: String(stats.value?.days ?? 0), label: stats.value?.days === 1 ? 'day' : 'days', text: '' })
+const tenureLine = computed(() => {
+  const t = stats.value?.tenure
+  if (!t) return ''
+  // The same figure as the headline would only repeat it.
+  return t.text === headline.value.text ? 'Leading now' : `Top gainer for ${t.text}`
+})
 const open = ref(false)
 let stamp = 0
 watch(

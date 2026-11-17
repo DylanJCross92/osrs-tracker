@@ -544,8 +544,11 @@ async function buildTopGainerCardTree({ displayName, stats }) {
       { display: 'flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 999, backgroundColor: COLORS.panel, border: `1px solid ${COLORS.border}`, fontSize: 22, color: COLORS.cream },
       [node('div', { display: 'flex' }, label), node('div', { display: 'flex', color, fontWeight: 700 }, value)],
     )
+  const headline = stats.headline || { display: String(stats.days), label: stats.days === 1 ? 'day' : 'days' }
   const chips = [
-    stats.streak > 1 ? chip('Current run', `${stats.streak} days`, COLORS.gold) : null,
+    // How long the lead has lasted right now (hours while it is under a day), or the run that is still on from yesterday.
+    stats.tenure && stats.tenure.text !== headline.text ? chip('Top gainer for', stats.tenure.text, COLORS.green) : null,
+    !stats.tenure && stats.streak > 1 ? chip('Current run', `${stats.streak} days`, COLORS.gold) : null,
     stats.bestXp > 0 ? chip('Best day', `+${formatXp(stats.bestXp)} XP`, COLORS.green) : null,
   ].filter(Boolean)
 
@@ -577,8 +580,8 @@ async function buildTopGainerCardTree({ displayName, stats }) {
         node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }, [
           node('div', { fontSize: 44, fontWeight: 800, color: COLORS.gold }, displayName),
           node('div', { display: 'flex', alignItems: 'baseline', gap: 16, marginTop: 14 }, [
-            node('div', { fontSize: 170, fontWeight: 800, color: COLORS.gold, lineHeight: 1 }, stats.days.toLocaleString('en-US')),
-            node('div', { fontSize: 36, fontWeight: 700, color: COLORS.muted }, stats.days === 1 ? 'day as top gainer' : 'days as top gainer'),
+            node('div', { fontSize: 170, fontWeight: 800, color: COLORS.gold, lineHeight: 1 }, headline.display),
+            node('div', { fontSize: 36, fontWeight: 700, color: COLORS.muted }, `${headline.label} as top gainer`),
           ]),
           node('div', { fontSize: 26, color: COLORS.muted, marginTop: 12 }, `Most XP of the day on TickGains${stats.firstDay ? ` since ${dayName(stats.firstDay)}` : ''}`),
           ...(chips.length ? [node('div', { display: 'flex', gap: 12, marginTop: 16 }, chips)] : []),
