@@ -52,7 +52,7 @@
           <!-- Your week -->
           <template v-if="current">
             <p v-if="!player" class="card dash-note">{{ current.displayName }} is not being tracked yet. Open the profile to start tracking.</p>
-            <OverviewWeek v-else-if="weekDays.length" :days="weekDays" :streak-info="streak" :month-gain="monthGain" hide-challenge @day="(d) => (recapDay = d)" />
+            <OverviewWeek v-else-if="weekDays.length" :days="weekDays" :streak-info="streak" :month-gain="monthGain" :usual="usual" hide-challenge @day="(d) => (recapDay = d)" />
             <DashSkeleton v-else-if="firstLoad" kind="week" />
             <p v-else class="card dash-note">No XP tracked this week yet. Play a session and come back, your week fills in here.</p>
 
@@ -186,6 +186,7 @@ import { formatHours } from '@/utils/planner'
 import { listSavedPlans } from '@/utils/plannerTools'
 import { formatRelative } from '@/utils/time'
 import { paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
+import { usualByNow } from '@/utils/usualPace'
 
 setPageMeta({ title: 'Your dashboard', description: 'Your week, goals and plans on TickGains.', path: '/' })
 
@@ -262,6 +263,7 @@ watch(() => [player.value?.id, player.value?.latest?.capturedAt], loadMine, { im
 
 const tracked = computed(() => trackedSnapshots(player.value, snaps.value))
 const weekDays = computed(() => weekDaysFrom(tracked.value))
+const usual = computed(() => usualByNow(tracked.value))
 const monthGain = computed(() => dailyXp(tracked.value, 30).reduce((sum, d) => sum + d.xp, 0))
 const shownGoals = computed(() => dashboardGoals(goals.value, 4))
 const nextItems = computed(() => whatsNext({ latest: player.value?.latest, achievements: profileData.value?.achievements || [], days: weekDays.value, spanDays: paceSpanDays(tracked.value) ?? undefined }))

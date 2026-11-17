@@ -1,6 +1,6 @@
 <template>
   <div class="profile-overview">
-    <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" @day="(d) => $emit('day', d)" @challenge="$emit('challenge')" />
+    <OverviewWeek v-if="weekDays.length" :days="weekDays" :streak-info="streakInfo" :month-gain="monthGain" :usual="usual" @day="(d) => $emit('day', d)" @challenge="$emit('challenge')" />
     <TopGainerCard :username="player.username" :display-name="player.displayName" />
     <OverviewRecords :records="records" :today="recordsToday" :loading="recordsLoading" :name="player.displayName" @records="$emit('records')" />
     <OverviewSkillBoard :snapshot="latest" :days="weekDays" @skill="(s) => $emit('skill', s)" />
@@ -58,6 +58,8 @@ import OverviewRoadToMax from '@/components/profile/OverviewRoadToMax.vue'
 import { recordsApi } from '@/api/records'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { highestSkill, mostXpSkill, featuredAchievements } from '@/utils/profile'
+import { trackedSnapshots } from '@/utils/compare'
+import { usualByNow } from '@/utils/usualPace'
 
 defineEmits(['view-history', 'day', 'skill', 'records', 'challenge'])
 const props = defineProps({
@@ -70,6 +72,8 @@ const props = defineProps({
 
 const latest = computed(() => props.snapshots[props.snapshots.length - 1])
 const monthGain = computed(() => props.player.gains?.month?.xp || 0)
+// What is usual for today by this time of day (the faint bar in the week chart), from the snapshots saved since tracking began.
+const usual = computed(() => usualByNow(trackedSnapshots(props.player, props.snapshots)))
 
 // Personal records, loaded once here and shared with the records section and the streak.
 const records = ref([])

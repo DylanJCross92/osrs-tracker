@@ -13,11 +13,16 @@
 
     <div class="ov-week-body">
       <div class="ov-bars" role="list">
-        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}${d.top.length ? ', mostly ' + d.top.map((s) => s.skill).join(', ') : ''}. Open day recap`" @click="$emit('day', d.raw)">
+        <button v-for="d in bars" :key="d.key" type="button" role="listitem" class="ov-bar" :class="{ 'is-best': d.best, 'is-empty': d.xp === 0, 'is-today': d.today }" :aria-label="`${d.label}: ${d.xp > 0 ? '+' + d.xp.toLocaleString('en-US') + ' XP' : 'no XP'}${d.top.length ? ', mostly ' + d.top.map((s) => s.skill).join(', ') : ''}${d.today && usualLine ? '. ' + usualLine.text : ''}. Open day recap`" @click="$emit('day', d.raw)">
           <span class="ov-bar-xp">{{ d.xp > 0 ? formatXp(d.xp) : '-' }}</span>
-          <span class="ov-bar-track"><i :style="{ height: `${d.pct}%` }" /></span>
+          <span class="ov-bar-track"><i v-if="d.usualPct != null" class="ov-bar-usual" :style="{ height: `${d.usualPct}%` }" aria-hidden="true" /><i :style="{ height: `${d.pct}%` }" /></span>
           <span class="ov-bar-day">{{ d.today ? 'Today' : d.label }}</span>
           <span class="ov-bar-skills" aria-hidden="true"><img v-for="s in d.top" :key="s.skill" :src="skillIconSrc(s.skill)" :title="`${s.skill} +${s.xp.toLocaleString('en-US')} XP`" alt="" width="20" height="20" /></span>
+          <span v-if="d.today && usualLine" class="ov-tip" :class="`is-${usualLine.status}`" role="tooltip" aria-hidden="true">
+            <span class="ov-tip-how">{{ usualLine.headline }}</span>
+            <span class="ov-tip-key"><i class="ov-usual-sw" />Usual for a {{ usual.dayType }} by now: <b>{{ formatXp(usual.expected) }} XP</b></span>
+            <span class="ov-tip-note">Dashed line, based on {{ usual.samples }} {{ usual.dayType }}s</span>
+          </span>
           <svg v-if="d.best" class="ov-bar-star" viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg>
         </button>
       </div>
@@ -49,6 +54,7 @@
 import { computed } from 'vue'
 import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { RECORD_ICONS } from '@/utils/recordText'
+import { compareToUsual } from '@/utils/usualPace'
 
 defineEmits(['day', 'challenge'])
 const props = defineProps({
@@ -59,11 +65,14 @@ const props = defineProps({
   monthGain: { type: Number, default: 0 },
   // The dashboard shows the week without the challenge button.
   hideChallenge: { type: Boolean, default: false },
+  // What is usual for today by this time of day, from usualByNow(): { dayType, expected, fullDay, samples }. Drawn as a faint bar
+  // behind today's, so it shows at a glance whether today is ahead of or behind the usual pace.
+  usual: { type: Object, default: null },
 })
 
 const total = computed(() => props.days.reduce((s, d) => s + d.xp, 0))
 const activeDays = computed(() => props.days.filter((d) => d.xp > 0).length)
-const max = computed(() => Math.max(...props.days.map((d) => d.xp), 1))
+const max = computed(() => Math.max(...props.days.map((d) => d.xp), props.usual?.expected || 0, 1))
 const bestXp = computed(() => Math.max(...props.days.map((d) => d.xp), 0))
 
 const bars = computed(() =>
@@ -77,8 +86,20 @@ const bars = computed(() =>
     today: i === props.days.length - 1,
     best: d.xp > 0 && d.xp === bestXp.value && activeDays.value > 1,
     pct: d.xp > 0 ? Math.max((d.xp / max.value) * 100, 6) : 0,
+    // Only today's bar carries the faint "usual by now" bar.
+    usualPct: i === props.days.length - 1 && props.usual?.expected > 0 ? Math.min((props.usual.expected / max.value) * 100, 100) : null,
   })),
 )
+
+// What today's bar says about the usual pace, or nothing while it is too early in the day to compare. `headline` is the first line of
+// the hover box on today's bar; `text` is the whole thing as a sentence for screen readers.
+const usualLine = computed(() => {
+  const today = props.days[props.days.length - 1]
+  const c = today ? compareToUsual(today.xp, props.usual) : null
+  if (!c) return null
+  const headline = c.status === 'on' ? 'On your usual pace' : `${formatXp(c.diff)} XP ${c.status === 'ahead' ? 'ahead of' : 'behind'} usual`
+  return { status: c.status, headline, text: `${headline}. A usual ${props.usual.dayType} has ${formatXp(props.usual.expected)} XP by this time, shown as the dashed line` }
+})
 
 // Days in a row with XP, counting back from today (a day still in progress does not break it).
 const weekStreak = computed(() => {

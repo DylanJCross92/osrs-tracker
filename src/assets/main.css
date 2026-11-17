@@ -2747,9 +2747,9 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .ov-bar:hover, .ov-bar:focus-visible { border-color: var(--xp-green); transform: translateY(-2px); outline: none; }
 .ov-bar-xp { font-size: 0.72rem; color: var(--xp-green); font-variant-numeric: tabular-nums; min-height: 1em; }
 .ov-bar.is-empty .ov-bar-xp { color: var(--muted); }
-.ov-bar-track { width: 100%; height: 86px; display: flex; align-items: flex-end; justify-content: center; }
+.ov-bar-track { position: relative; width: 100%; height: 86px; display: flex; align-items: flex-end; justify-content: center; }
 .ov-bar-track i { width: 46%; min-height: 3px; background: linear-gradient(180deg, var(--xp-green), rgba(124, 184, 105, 0.45)); border-radius: 6px 6px 3px 3px; }
-.ov-bar.is-empty .ov-bar-track i { height: 3px !important; background: var(--panel-alt); }
+.ov-bar.is-empty .ov-bar-track i:not(.ov-bar-usual) { height: 3px !important; background: var(--panel-alt); }
 .ov-bar-day { font-size: 0.72rem; color: var(--muted); }
 .ov-bar.is-today .ov-bar-day { color: var(--text); font-weight: 600; }
 .ov-bar.is-best { border-color: var(--gold); background: linear-gradient(180deg, rgba(240, 201, 118, 0.14), var(--bg)); }
@@ -5404,3 +5404,20 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
   .fb-x { width: 48px; height: 48px; }
   .fb-x svg { width: 24px; height: 24px; }
 }
+
+/* Week chart: a dashed line across today's column at the XP you usually have by now, with a faint tint up to it, and the line of text that explains it */
+.ov-bar-track i:not(.ov-bar-usual) { position: relative; z-index: 1; }
+.ov-bar-track i.ov-bar-usual { position: absolute; left: 0; right: 0; bottom: 0; width: auto; min-height: 0; transform: none; border: 0; border-radius: 0; background: rgba(240, 201, 118, 0.1); }
+.ov-bar-track i.ov-bar-usual::after { content: ''; position: absolute; left: -2px; right: -2px; top: -1px; z-index: 2; border-top: 2px dashed rgba(240, 201, 118, 0.95); }
+.ov-usual-sw { flex: none; width: 14px; height: 9px; border-top: 2px dashed rgba(240, 201, 118, 0.95); background: rgba(240, 201, 118, 0.14); }
+/* The explanation, shown on hover or focus of today's bar (it floats above the bar, so nothing moves) */
+.ov-tip { position: absolute; right: -2px; bottom: calc(100% + 10px); z-index: 8; display: none; flex-direction: column; gap: 3px; width: max-content; max-width: min(270px, 80vw); padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-alt); box-shadow: var(--shadow-md); text-align: left; font-size: 0.8rem; line-height: 1.35; pointer-events: none; }
+.ov-bar:hover .ov-tip, .ov-bar:focus-visible .ov-tip { display: flex; }
+.ov-tip-key { display: block; color: var(--text); }
+.ov-tip-key .ov-usual-sw { display: inline-block; vertical-align: middle; margin: -2px 7px 0 0; }
+.ov-tip-key b { color: var(--gold-bright); font-weight: 700; }
+.ov-tip-how { font-weight: 700; font-size: 0.86rem; }
+.ov-tip-note { color: var(--muted); font-size: 0.74rem; }
+.ov-tip.is-ahead .ov-tip-how { color: var(--xp-green); }
+.ov-tip.is-behind .ov-tip-how { color: #e0a96a; }
+.ov-tip.is-on .ov-tip-how { color: var(--text); }
