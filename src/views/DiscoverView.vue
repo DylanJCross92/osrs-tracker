@@ -18,7 +18,7 @@
           </component>
           <div class="disc-stat-tile">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
-            <span><b>{{ levelUps }}</b><small>level-ups · 7 days</small></span>
+            <span><b>{{ levelUps }}</b><small>Levels gained</small></span>
           </div>
         </div>
 
