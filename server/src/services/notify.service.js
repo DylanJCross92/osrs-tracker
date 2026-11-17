@@ -123,7 +123,62 @@ export async function notifyClaimStarted({ email, playerName }) {
   }
 }
 
+// Feedback has its own hourly cap so a quiet day of signups never hides a message (and a flood still cannot fill the inbox).
+const MAX_FEEDBACK_PER_HOUR = 30
+const feedbackSent = []
+
+/**
+ * Email the owner a piece of feedback. Replying to the email goes straight to the sender when they left an address.
+ * Resolves true if Resend took it, false otherwise; never throws. The message is already saved before this is called.
+ */
+export async function notifyFeedback({ id, kind, kindLabel, message, email = null, page = '', viewport = '', signedIn = false }) {
+  if (!notifyConfigured()) return false
+  const now = Date.now()
+  while (feedbackSent.length && feedbackSent[0] < now - 3_600_000) feedbackSent.shift()
+  if (feedbackSent.length >= MAX_FEEDBACK_PER_HOUR) return false
+  feedbackSent.push(now)
+
+  const preview = message.replace(/\s+/g, ' ').slice(0, 90)
+  const rows = [
+    { label: 'Type', value: kindLabel },
+    { label: 'From', value: email || 'No reply address given' },
+    ...(page ? [{ label: 'Page', value: page }] : []),
+    ...(viewport ? [{ label: 'Screen', value: viewport }] : []),
+    { label: 'Signed in', value: signedIn ? 'Yes' : 'No' },
+  ]
+  const mail = renderEmail({
+    preheader: preview,
+    title: `New ${kindLabel.toLowerCase()} feedback`,
+    // One paragraph per line, so the message keeps its shape in the email.
+    paragraphs: message.split(/\n+/).filter(Boolean),
+    rows,
+    note: email ? 'Reply to this email to answer them.' : 'They did not leave an address, so there is no one to reply to.',
+  })
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.NOTIFY_FROM || DEFAULT_FROM,
+        to: [process.env.NOTIFY_EMAIL],
+        ...(email ? { reply_to: [email] } : {}),
+        subject: `TickGains feedback (${kindLabel}): ${preview.slice(0, 60)}`,
+        ...mail,
+      }),
+    })
+    if (!res.ok) {
+      console.error(`Feedback #${id} notification failed: Resend answered ${res.status}`)
+      return false
+    }
+    return true
+  } catch (err) {
+    console.error(`Feedback #${id} notification failed:`, err.message)
+    return false
+  }
+}
+
 // For tests.
 export function _resetNotifyCap() {
   sent.length = 0
+  feedbackSent.length = 0
 }

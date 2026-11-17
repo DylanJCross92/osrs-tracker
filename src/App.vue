@@ -44,6 +44,7 @@
       </div>
       <p class="app-footer-note">TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd. Old School RuneScape is a trademark of Jagex Ltd.</p>
     </footer>
+    <FeedbackWidget />
     <ToastHost />
   </div>
 </template>
@@ -54,6 +55,7 @@ import { DISCORD_URL } from '@/config'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
+import FeedbackWidget from '@/components/FeedbackWidget.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
 import AccountMenu from '@/components/AccountMenu.vue'

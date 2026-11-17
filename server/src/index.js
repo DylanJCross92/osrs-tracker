@@ -9,6 +9,7 @@ import { cardsRouter } from './routes/cards.routes.js'
 import { subscribersRouter } from './routes/subscribers.routes.js'
 import { recordsRouter } from './routes/records.routes.js'
 import { topGainerRouter } from './routes/topGainer.routes.js'
+import { feedbackRouter } from './routes/feedback.routes.js'
 import { authRouter } from './routes/auth.routes.js'
 import { claimsRouter } from './routes/claims.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
@@ -24,6 +25,7 @@ import { statsRouter } from './routes/stats.routes.js'
 import { getPublicShare } from './services/sharedPlans.service.js'
 import { startScheduler } from './jobs/sync.js'
 import { startCompetitionJob } from './jobs/competitions.js'
+import { startEventsPurgeJob } from './jobs/purgeEvents.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
@@ -55,6 +57,7 @@ app.use('/api/players', playersRouter)
 app.use('/api', cardsRouter)
 app.use('/api', recordsRouter)
 app.use('/api', topGainerRouter)
+app.use('/api', feedbackRouter)
 app.use('/api/newsletter', subscribersRouter)
 app.use('/api/auth', authRouter)
 app.use('/api', claimsRouter)
@@ -861,6 +864,7 @@ app.listen(port, () => {
 
 startScheduler()
 startCompetitionJob()
+startEventsPurgeJob()
 // Warm the cached homepage/Discover data so the first visitor doesn't pay for it.
 getHome().catch(() => {})
 // Reconstruct achievements/milestones for players tracked before they existed (idempotent).

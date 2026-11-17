@@ -84,7 +84,48 @@
         <p class="st-note">Discord and most phone apps do not tell the site where a click came from, so those show as "Direct or app".</p>
       </section>
 
-      <p class="st-foot">Counting began when this page shipped, so earlier shares are not included. Visits by you and other admins, and link previews fetched by Discord or X, are not counted. Nothing identifies a person: only a daily tally is kept.</p>
+      <section class="st-card" aria-labelledby="st-events">
+        <div class="st-card-head">
+          <h2 id="st-events">What people do</h2>
+          <input v-model.trim="eventFilter" class="st-search" type="search" placeholder="Filter events" aria-label="Filter events" />
+        </div>
+        <p v-if="eventsError" class="st-empty">{{ eventsError }}</p>
+        <p v-else-if="!events" class="st-empty">Loading…</p>
+        <p v-else-if="!events.length" class="st-empty">No events recorded in this time yet.</p>
+        <div v-else class="st-table-wrap">
+          <table class="st-table st-events">
+            <thead><tr><th>Event</th><th>Total</th><th>Today</th><th>Signed in</th><th><span class="sr-only">Per day</span></th></tr></thead>
+            <tbody>
+              <template v-for="e in shownEvents" :key="e.name">
+                <tr class="st-ev-row" :class="{ 'is-open': open === e.name }" tabindex="0" role="button" :aria-expanded="open === e.name" @click="toggle(e.name)" @keydown.enter.prevent="toggle(e.name)" @keydown.space.prevent="toggle(e.name)">
+                  <th scope="row">{{ e.name }}</th>
+                  <td>{{ fmt(e.total) }}</td>
+                  <td>{{ fmt(e.today) }}</td>
+                  <td>{{ e.accounts ? fmt(e.accounts) : '-' }}</td>
+                  <td class="st-spark" aria-hidden="true"><i v-for="(n, i) in e.daily" :key="i" :style="{ height: sparkHeight(n, e) }" /></td>
+                </tr>
+                <tr v-if="open === e.name" class="st-ev-detail">
+                  <td colspan="5">
+                    <p v-if="!detail" class="st-empty">Loading…</p>
+                    <template v-else>
+                      <div v-if="Object.keys(detail.breakdown).length" class="st-break">
+                        <div v-for="(list, key) in detail.breakdown" :key="key">
+                          <b>{{ key }}</b>
+                          <ul><li v-for="v in list" :key="v.value"><span>{{ v.value }}</span><em>{{ fmt(v.n) }}</em></li></ul>
+                        </div>
+                      </div>
+                      <p v-else class="st-empty">This event carries no details.</p>
+                    </template>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p class="st-note">One row per event, sent from the same places that report to Google Analytics. Signed in is the number of different accounts. Tap an event to see its details.</p>
+      </section>
+
+      <p class="st-foot">Counting began when this page shipped, so earlier shares are not included. Visits by you and other admins, and link previews fetched by Discord or X, are not counted. The share numbers keep only a daily tally. Events keep no IP address and no cookie; a signed-in account is stored with an event only to count different accounts, and events are deleted after about 13 months.</p>
     </template>
   </div>
 </template>
@@ -106,12 +147,46 @@ const error = ref('')
 async function load() {
   loading.value = true
   error.value = ''
+  loadEvents()
   try {
     data.value = await statsApi.shares(days.value)
   } catch (err) {
     error.value = err instanceof ApiError ? err.message : 'Could not load the statistics.'
   } finally {
     loading.value = false
+  }
+}
+
+// Product events, and the detail of the one that is open.
+const events = ref(null)
+const eventsError = ref('')
+const eventFilter = ref('')
+const open = ref('')
+const detail = ref(null)
+async function loadEvents() {
+  eventsError.value = ''
+  open.value = ''
+  try {
+    events.value = (await statsApi.events(days.value)).events
+  } catch (err) {
+    events.value = null
+    eventsError.value = err instanceof ApiError ? err.message : 'Could not load the events.'
+  }
+}
+const shownEvents = computed(() => (events.value || []).filter((e) => !eventFilter.value || e.name.includes(eventFilter.value.toLowerCase())))
+const sparkHeight = (n, e) => (n ? `${Math.max(12, (n / Math.max(...e.daily, 1)) * 100)}%` : '2px')
+async function toggle(name) {
+  if (open.value === name) {
+    open.value = ''
+    return
+  }
+  open.value = name
+  detail.value = null
+  try {
+    const res = await statsApi.eventDetail(name, days.value)
+    if (open.value === name) detail.value = res
+  } catch {
+    if (open.value === name) detail.value = { breakdown: {} }
   }
 }
 function setDays(d) {

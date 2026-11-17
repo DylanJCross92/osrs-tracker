@@ -413,3 +413,33 @@ CREATE TABLE IF NOT EXISTS daily_top_gainers (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS daily_top_gainers_player_idx ON daily_top_gainers (player_id, day);
+
+-- Product events (button clicks, page features used), sent from the site's own track() calls. One row per event.
+-- Privacy: no IP address, no user agent, no cookie or browser id. The only link to a person is account_id, set from the
+-- signed-in session on the server (never trusted from the browser), and left empty for signed-out visitors and for anyone who
+-- sends Do Not Track / Global Privacy Control. Deleting an account clears it (SET NULL). Old rows are purged (see jobs/purgeEvents.js).
+CREATE TABLE IF NOT EXISTS events (
+  id BIGSERIAL PRIMARY KEY,
+  day DATE NOT NULL DEFAULT ((now() AT TIME ZONE 'utc')::date),
+  name TEXT NOT NULL,
+  props JSONB NOT NULL DEFAULT '{}'::jsonb,
+  account_id INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX IF NOT EXISTS events_name_day_idx ON events (name, day);
+CREATE INDEX IF NOT EXISTS events_day_idx ON events (day);
+CREATE INDEX IF NOT EXISTS events_account_idx ON events (account_id) WHERE account_id IS NOT NULL;
+
+-- Feedback sent from the form in the corner of the site. Every message is saved here first (so nothing is lost if the
+-- email to the owner fails), then emailed. reply_email is only what the sender typed; account_id is set from the signed-in session.
+CREATE TABLE IF NOT EXISTS feedback (
+  id SERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  kind TEXT NOT NULL,
+  message TEXT NOT NULL,
+  reply_email TEXT,
+  page TEXT,
+  viewport TEXT,
+  account_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  emailed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS feedback_created_idx ON feedback (created_at DESC);

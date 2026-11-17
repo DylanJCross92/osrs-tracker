@@ -45,6 +45,12 @@
       tools may set cookies and collect technical information such as pages visited, device and approximate location.
       When a new player is added to the tracker, the name that was added is sent along as an event, so TickGains can see which players are being looked up. Player names are public OSRS names, and visitors are never tied to a name or an account. You can block these tools with your browser's privacy settings or an extension.
     </p>
+    <p>
+      TickGains also keeps its own simple record of what is used, so the site can be improved: an event such as "refresh pressed" or "plan saved", the day it happened, and a few
+      non-personal details like which skill or tab was involved. This record has no IP address, no device or browser identifier and no cookie, and it never includes names,
+      emails or anything you type. If you are signed in, the event is stored with your account number, only so different accounts can be counted; if your browser sends Do Not Track
+      or Global Privacy Control, it is stored without one. These events are deleted after about 13 months, and when an account is deleted its events are no longer linked to it.
+    </p>
     <h2>Congratulations</h2>
     <p>
       When someone reaches a new 99, visitors can click a "Congratulate" button. To allow one click per visitor per achievement,

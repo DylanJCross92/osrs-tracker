@@ -1,5 +1,6 @@
 import { statsApi } from '@/api/stats'
 import { shareFromEvent } from '@/utils/shareEvents'
+import { logEvent } from '@/utils/eventLog'
 
 // Thin wrapper over Google Tag Manager's dataLayer. The container itself
 // (GTM-K6756RQ3) is loaded in index.html; this just pushes events to it, and
@@ -48,6 +49,8 @@ export function track(event, params = {}) {
     if (share) statsApi.share(share.kind, share.method).catch(() => {})
     window.dataLayer = window.dataLayer || []
     window.dataLayer.push({ event, ...params })
+    // The site's own record of the same event (no IP address, no cookie; see eventLog.js).
+    logEvent(event, params)
   } catch {
     /* analytics must never break the app */
   }
