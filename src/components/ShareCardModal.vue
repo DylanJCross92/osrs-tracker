@@ -3,7 +3,7 @@
     <div class="modal-card share-modal-card">
       <div class="share-modal-header">
         <h2>Share progress card</h2>
-        <button class="btn-text" @click="$emit('close')">✕</button>
+        <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
       </div>
 
       <div class="share-modal-controls">

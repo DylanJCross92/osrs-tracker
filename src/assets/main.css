@@ -5385,3 +5385,22 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .acct-sub-chev { flex: none; color: var(--muted); transition: transform 0.15s ease; }
 .acct-sub-chev.is-open { transform: rotate(180deg); }
 .acct-sub { margin: 0 0 4px 12px; padding-left: 8px; border-left: 1px solid var(--border-strong); }
+
+/* Modal close buttons: one big, easy-to-hit X everywhere. The X is drawn with two bars rather than a text character, so it is
+   the same size and weight whatever font the device falls back to; the text inside the button is hidden (the aria-label names it). */
+.modal-card button[aria-label="Close"] { position: relative; flex: none; align-self: flex-start; width: 40px; height: 40px; margin: -6px -8px -6px 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.07); color: var(--gold-bright); font-size: 0; line-height: 0; cursor: pointer; text-decoration: none; }
+.modal-card button[aria-label="Close"]::before,
+.modal-card button[aria-label="Close"]::after { content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 2.5px; margin: -1.25px 0 0 -9px; border-radius: 2px; background: currentColor; transform: rotate(45deg); }
+.modal-card button[aria-label="Close"]::after { transform: rotate(-45deg); }
+.modal-card button[aria-label="Close"]:hover,
+.modal-card button[aria-label="Close"]:focus-visible { background: rgba(255, 255, 255, 0.14); color: #fff; text-decoration: none; outline: none; }
+.modal-card button[aria-label="Close"]:focus-visible { box-shadow: 0 0 0 2px var(--gold); }
+.fb-x { width: 40px; height: 40px; background: rgba(255, 255, 255, 0.07); color: var(--gold-bright); }
+.fb-x svg { width: 20px; height: 20px; stroke-width: 2.6; }
+@media (max-width: 640px) {
+  .modal-card button[aria-label="Close"] { width: 48px; height: 48px; margin: -8px -10px -8px 8px; }
+  .modal-card button[aria-label="Close"]::before,
+  .modal-card button[aria-label="Close"]::after { width: 24px; height: 3px; margin: -1.5px 0 0 -12px; }
+  .fb-x { width: 48px; height: 48px; }
+  .fb-x svg { width: 24px; height: 24px; }
+}
