@@ -185,7 +185,7 @@ import { setPageMeta } from '@/utils/pageMeta'
 import { formatHours } from '@/utils/planner'
 import { listSavedPlans } from '@/utils/plannerTools'
 import { formatRelative } from '@/utils/time'
-import { weekDaysFrom } from '@/utils/weekDays'
+import { paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
 
 setPageMeta({ title: 'Your dashboard', description: 'Your week, goals and plans on TickGains.', path: '/' })
 
@@ -264,7 +264,7 @@ const tracked = computed(() => trackedSnapshots(player.value, snaps.value))
 const weekDays = computed(() => weekDaysFrom(tracked.value))
 const monthGain = computed(() => dailyXp(tracked.value, 30).reduce((sum, d) => sum + d.xp, 0))
 const shownGoals = computed(() => dashboardGoals(goals.value, 4))
-const nextItems = computed(() => whatsNext({ latest: player.value?.latest, achievements: profileData.value?.achievements || [], days: weekDays.value }))
+const nextItems = computed(() => whatsNext({ latest: player.value?.latest, achievements: profileData.value?.achievements || [], days: weekDays.value, spanDays: paceSpanDays(tracked.value) ?? undefined }))
 const milestones = computed(() => recentMilestones({ timeline: profileData.value?.timeline || [], celebrations: profileData.value?.celebrations || [], days: weekDays.value, records: records.value }))
 
 // Pulls this profile's latest hiscores, then reloads the week and goals built from them.

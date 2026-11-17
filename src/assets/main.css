@@ -4188,6 +4188,18 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .st-ymax { position: absolute; left: 0; top: -2px; color: var(--muted); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
 .st-cols { display: flex; align-items: flex-end; gap: 2px; height: 150px; border-bottom: 1px solid var(--border-strong); background: repeating-linear-gradient(to top, transparent 0, transparent 49px, rgba(255, 255, 255, 0.05) 49px, rgba(255, 255, 255, 0.05) 50px); }
 .st-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 1px; }
+.st-col-btn { appearance: none; border: 0; background: transparent; padding: 0; margin: 0; cursor: pointer; font: inherit; color: inherit; }
+.st-col-btn:hover, .st-col-btn.is-on { background: rgba(255, 255, 255, 0.06); }
+.st-col-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+.st-pop { position: absolute; top: 18px; z-index: 5; width: max-content; min-width: 220px; max-width: min(340px, calc(100% - 34px)); padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-alt); box-shadow: var(--shadow-md); pointer-events: none; }
+.st-pop-head { margin: 0 0 6px; color: var(--text); font-size: 0.85rem; line-height: 1.35; max-width: none; }
+.st-pop-note { margin: 0; color: var(--muted); font-size: 0.82rem; max-width: none; }
+.st-pop-list { margin: 0; padding: 0; list-style: none; }
+.st-pop-list li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-top: 1px solid var(--border); font-size: 0.82rem; }
+.st-pop-list li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-pop-list li em { color: var(--muted); font-style: normal; }
+.st-pop-list li small { color: var(--muted); flex: none; }
+.st-pop-more { color: var(--muted); }
 .st-bar { display: block; flex: 1 1 0; max-width: 12px; min-height: 0; border-radius: 3px 3px 0 0; }
 .st-xaxis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 0.74rem; }
 .st-table-wrap { overflow-x: auto; }

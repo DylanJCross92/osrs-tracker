@@ -63,17 +63,28 @@
         <p v-if="activeError" class="st-empty">{{ activeError }}</p>
         <p v-else-if="!active" class="st-empty">Loading…</p>
         <template v-else>
-          <div v-if="activeMax" class="st-chart" role="img" :aria-label="`Active accounts per day for the last ${days} days`">
+          <div v-if="activeMax" class="st-chart" role="group" :aria-label="`Active accounts per day for the last ${days} days. Choose a day to see which accounts were active.`">
             <span class="st-ymax">{{ fmt(activeMax) }}</span>
-            <div class="st-cols">
-              <div v-for="d in active" :key="d.day" class="st-col" :title="`${dayLabel(d.day)}: ${count(d.active, 'account')} active, ${count(d.logins, 'sign-in')}, ${fmt(d.resumed)} came back`">
+            <div class="st-cols" @mouseleave="pickActive(-1)">
+              <button v-for="(d, i) in active" :key="d.day" type="button" class="st-col st-col-btn" :class="{ 'is-on': i === activeIndex }" :aria-pressed="i === activeIndex" :aria-label="`${dayLabel(d.day)}: ${count(d.active, 'account')} active`" @mouseenter="pickActive(i)" @focus="pickActive(i)" @click="pickActive(i, true)">
                 <i class="st-bar is-visits" :style="{ height: d.active ? `${Math.max(4, (d.active / activeMax) * 100)}%` : '0' }" />
-              </div>
+              </button>
             </div>
             <div class="st-xaxis"><span>{{ dayLabel(active[0].day) }}</span><span>{{ dayLabel(active[active.length - 1].day) }}</span></div>
+            <!-- Floats over the chart, so showing it never moves anything else on the page. -->
+            <div v-if="shownActive" class="st-pop" :style="popStyle" role="status" aria-live="polite">
+              <p class="st-pop-head"><b>{{ dayLabel(shownActive.day) }}</b> · {{ count(shownActive.active, 'account') }} active<template v-if="shownActive.logins || shownActive.resumed"> · {{ count(shownActive.logins, 'sign-in') }}, {{ fmt(shownActive.resumed) }} came back</template></p>
+              <p v-if="!shownActive.active" class="st-pop-note">Nobody signed in or came back.</p>
+              <p v-else-if="whoError" class="st-pop-note">{{ whoError }}</p>
+              <p v-else-if="whoLoading || !who || who.day !== shownActive.day" class="st-pop-note">Loading…</p>
+              <ul v-else-if="who && who.accounts.length" class="st-pop-list">
+                <li v-for="a in who.accounts.slice(0, POP_ROWS)" :key="a.email"><span>{{ a.email }}<em v-if="a.players"> · {{ a.players }}</em></span><small>{{ a.logins ? 'signed in' : 'came back' }}</small></li>
+                <li v-if="who.accounts.length > POP_ROWS" class="st-pop-more">and {{ who.accounts.length - POP_ROWS }} more</li>
+              </ul>
+            </div>
           </div>
           <p v-else class="st-empty">No signed-in activity recorded in this time yet.</p>
-          <p class="st-note">Accounts that signed in or came back that day, counted once each. Counting began when this shipped, so earlier days are empty. Your own visits and anyone with Do Not Track on are not counted.</p>
+          <p class="st-note">Accounts that signed in or came back that day, counted once each. Hover or tap a day to see which. Counting began when this shipped, so earlier days are empty. Your own visits and anyone with Do Not Track on are not counted.</p>
         </template>
       </section>
 
@@ -155,7 +166,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError } from '@/api/client'
 import { statsApi } from '@/api/stats'
 import { setPageMeta } from '@/utils/pageMeta'
@@ -186,10 +197,71 @@ async function load() {
 const active = ref(null)
 const activeError = ref('')
 const activeMax = computed(() => Math.max(0, ...(active.value || []).map((d) => d.active)))
+// Which accounts were active on the day being looked at: the hovered or tapped bar, else today. Fetched when a day is picked.
+const POP_ROWS = 6
+const hoverIndex = ref(-1)
+// The day being looked at (hovered, focused or tapped); null hides the popup.
+const activeIndex = computed(() => (hoverIndex.value >= 0 && hoverIndex.value < (active.value?.length || 0) ? hoverIndex.value : -1))
+const shownActive = computed(() => (activeIndex.value >= 0 ? active.value[activeIndex.value] : null))
+// The popup sits over the chart, level with the bar: its left edge at the first bar, its right edge at the last, so it never overflows.
+const popStyle = computed(() => {
+  const f = (activeIndex.value + 0.5) / (active.value?.length || 1)
+  return { left: `calc(34px + (100% - 34px) * ${f})`, transform: `translateX(${(-f * 100).toFixed(1)}%)` }
+})
+const who = ref(null)
+const whoLoading = ref(false)
+const whoError = ref('')
+const whoCache = new Map()
+let whoTimer = 0
+let pinned = -1
+function pickActive(i, tapped = false) {
+  // Tapping the day that is already open closes it (there is no mouse leaving on a phone).
+  if (tapped) pinned = pinned === i ? -1 : i
+  else if (i < 0) pinned = -1
+  hoverIndex.value = tapped ? pinned : i
+  whoError.value = ''
+  clearTimeout(whoTimer)
+  if (hoverIndex.value >= 0) whoTimer = setTimeout(loadWho, tapped ? 0 : 150)
+}
+// Tapping anywhere else on the page closes the popup.
+const closeOutside = (e) => {
+  if (hoverIndex.value >= 0 && !e.target.closest?.('.st-chart')) {
+    hoverIndex.value = -1
+    pinned = -1
+  }
+}
+async function loadWho() {
+  const d = shownActive.value
+  if (!d || !d.active) {
+    who.value = null
+    whoLoading.value = false
+    return
+  }
+  const day = d.day
+  if (whoCache.has(day)) {
+    who.value = whoCache.get(day)
+    whoLoading.value = false
+    whoError.value = ''
+    return
+  }
+  whoLoading.value = true
+  whoError.value = ''
+  try {
+    const res = await statsApi.activeAccounts(day)
+    whoCache.set(day, res)
+    if (shownActive.value?.day === day) who.value = res
+  } catch (err) {
+    if (shownActive.value?.day === day) whoError.value = err instanceof ApiError ? err.message : 'Could not load the accounts.'
+  } finally {
+    if (shownActive.value?.day === day) whoLoading.value = false
+  }
+}
 async function loadActive() {
   activeError.value = ''
   try {
     active.value = (await statsApi.dailyActive(days.value)).days
+    whoCache.clear()
+    hoverIndex.value = -1
   } catch (err) {
     active.value = null
     activeError.value = err instanceof ApiError ? err.message : 'Could not load the active accounts.'
@@ -233,7 +305,14 @@ function setDays(d) {
   days.value = d
   load()
 }
-onMounted(load)
+onMounted(() => {
+  load()
+  document.addEventListener('pointerdown', closeOutside)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', closeOutside)
+  clearTimeout(whoTimer)
+})
 
 const fmt = (n) => Number(n || 0).toLocaleString('en-US')
 const count = (n, word) => `${fmt(n)} ${word}${Number(n) === 1 ? '' : 's'}`

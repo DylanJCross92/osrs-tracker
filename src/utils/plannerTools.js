@@ -299,7 +299,9 @@ export function projectFinish({ snapshots, goals, remainingXp, plannedDays, base
   const before = [...rows].reverse().find((r) => r.t <= windowStart.getTime())
   const startXp = before ? before.xp : windowStart.getTime() === baseline.getTime() ? goals.reduce((a, g) => a + g.currentXp, 0) : rows[0].xp
   const startT = before || windowStart.getTime() === baseline.getTime() ? windowStart.getTime() : rows[0].t
-  const days = (now.getTime() - startT) / 86_400_000
+  // The pace is measured up to the newest snapshot: XP gained since then is not known yet, so counting that time as a day of
+  // nothing would make the pace look slower every hour that passes between refreshes.
+  const days = (rows[rows.length - 1].t - startT) / 86_400_000
   if (days < 1) return { status: 'none', reason: 'too-soon' }
   const gained = Math.max(0, rows[rows.length - 1].xp - startXp)
   if (gained <= 0) return { status: 'none', reason: 'no-gain' }

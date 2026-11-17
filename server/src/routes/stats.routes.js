@@ -3,7 +3,7 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
-import { dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
+import { activeAccounts, dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -121,6 +121,18 @@ statsRouter.get('/admin/stats/daily-active', ...adminOnly, async (req, res, next
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await dailyActive(req.query.days))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: which accounts were active on one day (hovering a bar in the Active accounts chart).
+statsRouter.get('/admin/stats/daily-active/:day', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    const out = await activeAccounts(req.params.day)
+    if (!out) return res.status(400).json({ error: 'Use a day like 2026-11-17.' })
+    res.json(out)
   } catch (err) {
     next(err)
   }

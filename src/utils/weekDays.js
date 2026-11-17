@@ -5,13 +5,30 @@
 import { gameDay, recentGameDays, startOfGameDay } from '@/utils/gameDay'
 import { SKILL_NAMES, levelForSkill, xpForSkill } from '@/utils/osrsSkills'
 
-export function weekDaysFrom(snapshots, now = Date.now()) {
-  const list = snapshots
-  const days = recentGameDays(7, now)
+// The snapshots the week is measured from: the newest one before the window (the starting point) and everything inside it.
+function windowSnapshots(list, now) {
   const cutoff = startOfGameDay(now - 6 * 86_400_000)
   const firstInside = list.findIndex((s) => new Date(s.capturedAt).getTime() >= cutoff)
   if (firstInside < 0) return []
-  const windowSnaps = list.slice(Math.max(firstInside - 1, 0))
+  return list.slice(Math.max(firstInside - 1, 0))
+}
+
+/**
+ * How many days of real time the week's gains cover, for working out a pace. A game day resets at 6 AM, so counting seven
+ * days would make a morning look like a day of nothing: instead the gains are divided by the time from the starting snapshot
+ * to the newest one, so the pace holds steady through the day and moves a little with every hour played. At least one day
+ * (a pace over a few hours is not worth much) and at most two weeks. Null when there is not enough to measure.
+ */
+export function paceSpanDays(snapshots, now = Date.now()) {
+  const w = windowSnapshots(snapshots, now)
+  if (w.length < 2) return null
+  const span = (new Date(w[w.length - 1].capturedAt).getTime() - new Date(w[0].capturedAt).getTime()) / 86_400_000
+  return Math.min(Math.max(span, 1), 14)
+}
+
+export function weekDaysFrom(snapshots, now = Date.now()) {
+  const days = recentGameDays(7, now)
+  const windowSnaps = windowSnapshots(snapshots, now)
   if (windowSnaps.length < 2) return []
   const byDay = new Map()
   const skillsByDay = new Map()

@@ -48,7 +48,7 @@
     <p>
       TickGains also keeps its own simple record of what is used, so the site can be improved: an event such as "refresh pressed" or "plan saved", the day it happened, and a few
       non-personal details like which skill or tab was involved. This record has no IP address, no device or browser identifier and no cookie, and it never includes names,
-      emails or anything you type. If you are signed in, the event is stored with your account number, only so different accounts can be counted; if your browser sends Do Not Track
+      emails or anything you type. If you are signed in, the event is stored with your account number, so different accounts can be counted and so the site owner can see which accounts were active on a given day; if your browser sends Do Not Track
       or Global Privacy Control, it is stored without one. These events are deleted after about 13 months, and when an account is deleted its events are no longer linked to it.
     </p>
     <h2>Congratulations</h2>

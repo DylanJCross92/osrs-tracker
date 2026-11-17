@@ -102,3 +102,27 @@ export async function dailyActive(days = 30) {
   )
   return { days: fillDailyActive(rows, n, today()) }
 }
+
+/**
+ * Which accounts were active on one UTC day (YYYY-MM-DD): { day, accounts: [{ email, players, logins, returned }] }, busiest
+ * first. For the site owner only. players is the OSRS names the account has claimed, if any.
+ */
+export async function activeAccounts(day) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(day)) || Number.isNaN(Date.parse(`${day}T00:00:00Z`))) return null
+  const { rows } = await pool.query(
+    `SELECT u.email,
+            (SELECT string_agg(p.display_name, ', ' ORDER BY p.display_name)
+               FROM profile_claims c JOIN players p ON p.id = c.player_id
+              WHERE c.user_id = u.id AND c.status = 'verified') AS players,
+            count(*) FILTER (WHERE e.name = 'login')::int AS logins,
+            coalesce(bool_or(e.name = 'session_resumed'), false) AS returned,
+            count(*)::int AS events
+     FROM events e JOIN users u ON u.id = e.account_id
+     WHERE e.day = $1::date
+     GROUP BY u.id
+     ORDER BY events DESC, u.email
+     LIMIT 100`,
+    [day],
+  )
+  return { day, accounts: rows.map((r) => ({ email: r.email, players: r.players || '', logins: r.logins, returned: r.returned })) }
+}

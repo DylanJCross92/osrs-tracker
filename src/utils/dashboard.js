@@ -121,11 +121,15 @@ export function etaText(days) {
   return ''
 }
 
-/** XP a day gained in each skill over the week's days: Map(skill -> xp/day). */
-export function skillRates(days) {
+/**
+ * XP a day gained in each skill over the week's days: Map(skill -> xp/day). `spanDays` is how much real time those gains cover
+ * (see paceSpanDays); without it the number of days is used. Counting today as a whole day would drag the pace down every
+ * morning, before any XP has been gained, and the projected dates would jump back up by evening.
+ */
+export function skillRates(days, spanDays) {
   const sums = new Map()
   for (const d of days || []) for (const s of d.skills || []) sums.set(s.skill, (sums.get(s.skill) || 0) + s.xp)
-  const n = Math.max(days?.length || 0, 1)
+  const n = Math.max(Number(spanDays) > 0 ? Number(spanDays) : days?.length || 0, 1)
   return new Map([...sums].map(([skill, xp]) => [skill, xp / n]))
 }
 
@@ -142,9 +146,9 @@ function goalTitle(a) {
  * in the skills being trained, the closest 99s, and the achievements nearly earned. Each: { key, kind, skill, title,
  * detail, eta, pct } where eta is "about 9 days" (at the player's pace) or ''. Soonest first.
  */
-export function whatsNext({ latest, achievements = [], days = [], limit = 5 }) {
+export function whatsNext({ latest, achievements = [], days = [], spanDays, limit = 5 }) {
   const skills = latest?.skills || {}
-  const rates = skillRates(days)
+  const rates = skillRates(days, spanDays)
   const totalRate = [...rates.values()].reduce((a, b) => a + b, 0)
   const etaFor = (remaining, rate) => (rate > 0 ? etaText(remaining / rate) : '')
   const daysFor = (remaining, rate) => (rate > 0 ? remaining / rate : Infinity)
