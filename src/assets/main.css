@@ -5293,12 +5293,13 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .adm-modal .share-modal-header { align-items: flex-start; }
 .adm-modal h2 { margin: 0; }
 .adm-sub { margin: 2px 0 0; color: var(--muted); font-size: 0.84rem; max-width: none; }
-.adm-list { margin: 8px 0 0; padding: 0; list-style: none; overflow-y: auto; overscroll-behavior: contain; }
+.adm-list { margin: 8px 0 0; padding: 0; list-style: none; max-height: 300px; overflow-y: auto; overscroll-behavior: contain; }
 .adm-row { display: flex; align-items: center; gap: 12px; padding: 9px 6px; border-radius: 10px; color: var(--text); text-decoration: none; }
 a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-decoration: none; outline: none; }
 .adm-av { flex: none; width: 36px; height: 36px; border-radius: 10px; overflow: hidden; display: flex; border: 1px solid var(--border-strong); }
 .adm-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.adm-main b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adm-main b { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.adm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .adm-main small { color: var(--muted); font-size: 0.78rem; }
 .adm-when { flex: none; color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 .adm-xp { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 10px; }
@@ -5329,3 +5330,17 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .dxc-axis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 0.72rem; }
 .dxc-sk { height: 128px; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) { .dxc-col i { transition: none; } }
+
+/* Players tracked per day (admin recent players modal) */
+.dpc { margin: 12px 0 4px; }
+.dpc-plot { position: relative; height: 112px; }
+.dpc-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.dpc-area { fill: rgba(124, 184, 105, 0.16); }
+.dpc-line { fill: none; stroke: var(--xp-green); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.dpc-min { position: absolute; left: 0; bottom: 2px; color: var(--muted); font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+.dpc-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--xp-green); box-shadow: 0 0 0 2px var(--panel); pointer-events: none; }
+.dpc-cols { position: absolute; inset: 0; display: flex; }
+.dpc-col { flex: 1; min-width: 0; padding: 0; border: 0; background: transparent; cursor: default; }
+.dpc-col:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; border-radius: 4px; }
+.dpc .dxc-max { top: -2px; right: auto; left: 0; }
+.dpc .dxc-read span { color: var(--xp-green); }

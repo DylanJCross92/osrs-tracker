@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
+import { dailyPlayers, dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
 import { eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -101,6 +101,16 @@ statsRouter.get('/admin/stats/daily-xp', ...adminOnly, async (req, res, next) =>
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await dailyXp(req.query.days))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: how many players were being tracked at the end of each recent day (the chart above the recent players).
+statsRouter.get('/admin/stats/daily-players', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await dailyPlayers(req.query.days))
   } catch (err) {
     next(err)
   }
