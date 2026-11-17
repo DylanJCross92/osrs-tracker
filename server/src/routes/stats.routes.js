@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
+import { dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
 import { eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -91,6 +91,16 @@ statsRouter.get('/admin/stats/recent-players', ...adminOnly, async (req, res, ne
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await recentPlayers(req.query.limit))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: XP gained across the whole site on each recent day (the chart in the XP total on Discover).
+statsRouter.get('/admin/stats/daily-xp', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await dailyXp(req.query.days))
   } catch (err) {
     next(err)
   }

@@ -9,6 +9,9 @@
         <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
       </header>
 
+      <DailyXpChart v-if="daily" :days="daily" />
+      <div v-else-if="!chartFailed" class="dxc dash-sk" aria-busy="true" aria-label="Loading the daily chart"><div class="dxc-read"><b class="sk sk-w100">Mon, Jan 1</b></div><div class="sk dxc-sk" /></div>
+
       <ul class="adm-xp">
         <li v-for="r in rows" :key="r.key" class="adm-xp-row">
           <div class="adm-xp-label"><b>{{ r.label }}</b><small>{{ r.note }}</small></div>
@@ -24,10 +27,13 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import DailyXpChart from '@/components/admin/DailyXpChart.vue'
+import { statsApi } from '@/api/stats'
 import { formatXp } from '@/utils/osrsSkills'
 
-// For admins: the XP gained across the whole site over the last day, 7 days and 30 days, from the players Discover already has.
+// For admins: the XP gained across the whole site over the last day, 7 days and 30 days (from the players Discover already has),
+// with a bar for each of the last 30 days above them.
 const props = defineProps({ players: { type: Array, required: true } })
 const emit = defineEmits(['close'])
 
@@ -51,6 +57,17 @@ const rows = computed(() =>
     return { ...p, xp, players, perDay: p.days > 1 ? Math.round(xp / p.days) : 0 }
   }),
 )
+
+// The day-by-day chart above the totals; if it cannot load, the totals still show.
+const daily = ref(null)
+const chartFailed = ref(false)
+onMounted(async () => {
+  try {
+    daily.value = (await statsApi.dailyXp(30)).days
+  } catch {
+    chartFailed.value = true
+  }
+})
 
 const onKey = (e) => e.key === 'Escape' && emit('close')
 onMounted(() => document.addEventListener('keydown', onKey))

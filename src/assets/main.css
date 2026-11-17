@@ -5310,3 +5310,22 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .adm-xp-num b { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .adm-foot { margin: 12px 2px 0; color: var(--muted); font-size: 0.78rem; max-width: none; }
 @media (max-width: 520px) { .adm-xp-row { flex-direction: column; align-items: flex-start; gap: 6px; } .adm-xp-num { align-items: flex-start; text-align: left; } }
+
+/* Daily site XP chart (admin XP modal) */
+.dxc { margin: 12px 0 4px; }
+.dxc-read { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; min-height: 1.6rem; margin: 0 0 8px; }
+.dxc-read b { font-size: 0.95rem; }
+.dxc-read span { font-weight: 700; font-variant-numeric: tabular-nums; }
+.dxc-read small { color: var(--muted); font-size: 0.78rem; }
+.dxc-plot { position: relative; height: 128px; padding-top: 14px; }
+.dxc-max { position: absolute; top: 0; right: 0; color: var(--muted); font-size: 0.68rem; font-variant-numeric: tabular-nums; }
+.dxc-grid { position: absolute; left: 0; right: 0; top: 14px; border-top: 1px dashed var(--border); }
+.dxc-cols { position: relative; display: flex; align-items: flex-end; gap: 3px; height: 100%; }
+.dxc-col { flex: 1; min-width: 0; height: 100%; display: flex; align-items: flex-end; padding: 0; border: 0; background: transparent; cursor: default; }
+.dxc-col i { display: block; width: 100%; border-radius: 3px 3px 1px 1px; background: var(--xp-green); opacity: 0.55; transition: opacity 0.12s; }
+.dxc-col.is-today i { opacity: 0.8; }
+.dxc-col.is-on i, .dxc-col:hover i { opacity: 1; }
+.dxc-col:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; border-radius: 4px; }
+.dxc-axis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 0.72rem; }
+.dxc-sk { height: 128px; border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) { .dxc-col i { transition: none; } }

@@ -10,5 +10,7 @@ export const statsApi = {
   events: (days = 30) => api.get(`/admin/stats/events?days=${days}`),
   // Site owner only: { total, players: [{ username, displayName, trackedAt, level, xp }] }, newest first.
   recentPlayers: (limit = 50) => api.get(`/admin/stats/recent-players?limit=${limit}`),
+  // Site owner only: { days: [{ day, xp, players }] }, oldest first, ending with today so far.
+  dailyXp: (days = 30) => api.get(`/admin/stats/daily-xp?days=${days}`),
   eventDetail: (name, days = 30) => api.get(`/admin/stats/events/${encodeURIComponent(name)}?days=${days}`),
 }

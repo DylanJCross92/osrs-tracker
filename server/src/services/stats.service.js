@@ -1,5 +1,7 @@
 import { pool } from '../db.js'
 import { summarize } from '../utils/shareStats.js'
+import { APP_TIMEZONE, localDay } from '../utils/dates.js'
+import { fillDailyXp } from '../utils/dailyXp.js'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -47,4 +49,30 @@ export async function recentPlayers(limit = 50) {
       xp: r.overall_xp == null ? null : Number(r.overall_xp),
     })),
   }
+}
+
+/**
+ * XP gained across every tracked player on each of the last `days` game days (6 AM to 6 AM Eastern), oldest first, ending with
+ * today so far. Worked out from the gains between saved snapshots, so a day's figure is what players gained during it.
+ */
+export async function dailyXp(days = 30) {
+  const n = Math.min(Math.max(Math.floor(Number(days)) || 30, 7), 60)
+  const { rows } = await pool.query(
+    `WITH tracked AS (
+       SELECT s.player_id, s.captured_at, s.overall_xp
+       FROM snapshots s JOIN players p ON p.id = s.player_id
+       -- A few days of padding, so the first snapshot in the window still has one before it to measure against.
+       WHERE s.captured_at >= now() - ($2::int + 10) * interval '1 day'
+         AND s.captured_at >= p.created_at - interval '1 minute'
+     ), deltas AS (
+       SELECT player_id,
+              (date_trunc('day', (captured_at AT TIME ZONE $1) - interval '6 hours'))::date AS day,
+              overall_xp - LAG(overall_xp) OVER (PARTITION BY player_id ORDER BY captured_at) AS delta
+       FROM tracked
+     )
+     SELECT to_char(day, 'YYYY-MM-DD') AS day, SUM(GREATEST(delta, 0))::bigint AS xp, COUNT(DISTINCT player_id) FILTER (WHERE delta > 0)::int AS players
+     FROM deltas WHERE delta IS NOT NULL GROUP BY day`,
+    [APP_TIMEZONE, n],
+  )
+  return { days: fillDailyXp(rows, n, localDay(Date.now())) }
 }
