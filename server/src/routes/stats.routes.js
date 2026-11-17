@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { dailyPlayers, dailyXp, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
+import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -133,6 +133,16 @@ statsRouter.get('/admin/stats/daily-active/:day', ...adminOnly, async (req, res,
     const out = await activeAccounts(req.params.day)
     if (!out) return res.status(400).json({ error: 'Use a day like 2026-11-17.' })
     res.json(out)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: the plans players have set up, by player name (the Player plans page).
+statsRouter.get('/admin/plans', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await plansByPlayer())
   } catch (err) {
     next(err)
   }

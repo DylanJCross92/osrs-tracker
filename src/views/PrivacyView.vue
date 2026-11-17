@@ -21,7 +21,7 @@
       (never the password itself), when the account was made, and a few settings you choose to sync: your OSRS name, your rivals and
       your preferred gain period. Signed-in browsers keep a cookie so you stay logged in for 30 days. When you are signed in we also keep, with your account, the browser data that
       makes the site follow you between devices: saved planner plans and goals, recent searches, the players you follow and which
-      congratulations you have sent or hidden, plus a list of notifications about things like claims and the players you follow.
+      congratulations you have sent or hidden, plus a list of notifications about things like claims and the players you follow. The site owner can see the plans an account has saved, listed by the player each plan is for and without the account's email, to understand how the planner is used.
       An account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
       and you can ask us to delete your account and its saved settings from the contact page. Password reset emails are sent through Resend.
     </p>

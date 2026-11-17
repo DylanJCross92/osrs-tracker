@@ -17,6 +17,8 @@ export const statsApi = {
   // Site owner only: { days: [{ day, active, logins, resumed }] }.
   dailyActive: (days = 30) => api.get(`/admin/stats/daily-active?days=${days}`),
   // Site owner only: { day, accounts: [{ email, players, logins, returned }] }.
+  // Site owner only: { totals, players: [{ key, name, accounts, plans }] }.
+  plans: () => api.get('/admin/plans'),
   activeAccounts: (day) => api.get(`/admin/stats/daily-active/${day}`),
   eventDetail: (name, days = 30) => api.get(`/admin/stats/events/${encodeURIComponent(name)}?days=${days}`),
 }

@@ -5356,3 +5356,32 @@ a.adm-row:hover, a.adm-row:focus-visible { background: var(--panel-alt); text-de
 .dpc-col:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; border-radius: 4px; }
 .dpc .dxc-max { top: -2px; right: auto; left: 0; }
 .dpc .dxc-read span { color: var(--xp-green); }
+
+/* Admin: player plans */
+.ap-totals { margin: 0 0 12px; color: var(--muted); font-size: 0.92rem; max-width: none; }
+.ap-totals b { color: var(--text); }
+.ap-toggle { margin-left: 8px; }
+.ap-player { padding: 0; overflow: hidden; }
+.ap-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 16px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ap-head:hover { background: rgba(255, 255, 255, 0.03); }
+.ap-head h2 { margin: 0; font-size: 1.05rem; color: var(--gold); }
+.ap-chev { flex: none; color: var(--muted); transition: transform 0.15s ease; }
+.ap-chev.is-open { transform: rotate(90deg); }
+.ap-meta { margin-left: auto; color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+.ap-open { flex: none; color: var(--muted); font-size: 0.82rem; text-decoration: underline; }
+.ap-plans { margin: 0; padding: 0 16px 8px; list-style: none; }
+.ap-plan { padding: 12px 0; border-top: 1px solid var(--border); }
+.ap-plan-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.ap-plan-top b { color: var(--text); }
+.ap-plan-top small { color: var(--muted); }
+.ap-tag { padding: 1px 7px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.72rem; font-style: normal; }
+.ap-goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px 14px; margin: 10px 0 0; padding: 0; list-style: none; }
+.ap-goals li { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 0.88rem; }
+.ap-goals li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-goals li small { margin-left: auto; color: var(--muted); white-space: nowrap; }
+.ap-none { margin: 8px 0 0; color: var(--muted); font-size: 0.85rem; }
+
+/* Account menu: the Admin group */
+.acct-sub-chev { flex: none; color: var(--muted); transition: transform 0.15s ease; }
+.acct-sub-chev.is-open { transform: rotate(180deg); }
+.acct-sub { margin: 0 0 4px 12px; padding-left: 8px; border-left: 1px solid var(--border-strong); }

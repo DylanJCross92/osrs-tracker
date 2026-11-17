@@ -3,6 +3,7 @@ import { summarize } from '../utils/shareStats.js'
 import { APP_TIMEZONE, localDay } from '../utils/dates.js'
 import { fillDailyXp } from '../utils/dailyXp.js'
 import { playersByDay } from '../utils/dailyPlayers.js'
+import { groupPlansByPlayer } from '../utils/adminPlans.js'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -86,4 +87,10 @@ export async function dailyXp(days = 30) {
     [APP_TIMEZONE, n],
   )
   return { days: fillDailyXp(rows, n, localDay(Date.now())) }
+}
+
+/** Every plan accounts have saved (and the planner left in progress), grouped by player name. For the site owner only. */
+export async function plansByPlayer() {
+  const { rows } = await pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`)
+  return groupPlansByPlayer(rows)
 }

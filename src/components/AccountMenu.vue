@@ -15,7 +15,16 @@
         <RouterLink class="acct-item" role="menuitem" :to="{ name: 'account' }" @click="open = false">My account<span v-if="countOf('claim_code')" class="acct-count" :aria-label="`${countOf('claim_code')} to finish`">{{ countOf('claim_code') }}</span></RouterLink>
         <RouterLink class="acct-item" role="menuitem" :to="{ name: 'myClans' }" @click="open = false">My clans<span v-if="clanRequests" class="acct-count" :aria-label="`${clanRequests} requests to answer`">{{ clanRequests }}</span></RouterLink>
         <RouterLink v-if="isAdmin" class="acct-item" role="menuitem" :to="{ name: 'adminClaims' }" @click="open = false">Profile claims<span v-if="countOf('claims_waiting')" class="acct-count" :aria-label="`${countOf('claims_waiting')} waiting`">{{ countOf('claims_waiting') }}</span></RouterLink>
-        <RouterLink v-if="isAdmin" class="acct-item" role="menuitem" :to="{ name: 'adminStats' }" @click="open = false">Statistics</RouterLink>
+        <template v-if="isAdmin">
+          <button class="acct-item acct-sub-toggle" type="button" role="menuitem" aria-haspopup="true" :aria-expanded="adminOpen" @click="adminOpen = !adminOpen">
+            Admin
+            <svg class="acct-sub-chev" :class="{ 'is-open': adminOpen }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+          </button>
+          <div v-if="adminOpen" class="acct-sub" role="group" aria-label="Admin">
+            <RouterLink class="acct-item" role="menuitem" :to="{ name: 'adminStats' }" @click="open = false">Statistics</RouterLink>
+            <RouterLink class="acct-item" role="menuitem" :to="{ name: 'adminPlans' }" @click="open = false">Player plans</RouterLink>
+          </div>
+        </template>
         <button class="acct-item" type="button" role="menuitem" @click="doLogout">Log out</button>
       </div>
     </div>
@@ -35,6 +44,9 @@ const { user, ready, loggedIn, isAdmin, profiles, notifications } = useAuth()
 const route = useRoute()
 const router = useRouter()
 const open = ref(false)
+// The Admin group inside the menu; it opens by itself when you are on one of its pages.
+const ADMIN_PAGES = ['adminStats', 'adminPlans']
+const adminOpen = ref(false)
 const rootEl = ref(null)
 
 // An owner who uploaded a picture for their profile sees it here instead of their initial.
@@ -54,6 +66,7 @@ const countOf = (type) => notifications.value.items.filter((n) => n.type === typ
 function toggle() {
   open.value = !open.value
   if (open.value) {
+    adminOpen.value = ADMIN_PAGES.includes(route.name)
     refreshProfiles()
     refreshNotifications()
   }
