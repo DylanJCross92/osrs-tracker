@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
+import { recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
 import { eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -81,6 +81,16 @@ statsRouter.get('/admin/stats/events/:name', ...adminOnly, async (req, res, next
     if (!/^[a-z][a-z0-9_]{1,63}$/.test(name)) return res.status(404).end()
     res.set('Cache-Control', 'no-store')
     res.json(await eventDetail(name, askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: the players added most recently (opened from the player count on Discover).
+statsRouter.get('/admin/stats/recent-players', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await recentPlayers(req.query.limit))
   } catch (err) {
     next(err)
   }

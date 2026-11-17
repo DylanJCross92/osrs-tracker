@@ -22,3 +22,29 @@ export async function shareOverview(days) {
   )
   return summarize(rows, days, today())
 }
+
+/** The players most recently added to the tracker, newest first, with where they stand now (for the admin view on Discover). */
+export async function recentPlayers(limit = 50) {
+  const n = Math.min(Math.max(Math.floor(Number(limit)) || 50, 1), 100)
+  const [{ rows }, { rows: total }] = await Promise.all([
+    pool.query(
+      `SELECT p.username, p.display_name, p.created_at, s.overall_level, s.overall_xp
+       FROM players p
+       LEFT JOIN LATERAL (SELECT overall_level, overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) s ON true
+       ORDER BY p.created_at DESC, p.id DESC
+       LIMIT $1`,
+      [n],
+    ),
+    pool.query('SELECT count(*)::int AS n FROM players'),
+  ])
+  return {
+    total: total[0].n,
+    players: rows.map((r) => ({
+      username: r.username,
+      displayName: r.display_name,
+      trackedAt: r.created_at,
+      level: r.overall_level ?? null,
+      xp: r.overall_xp == null ? null : Number(r.overall_xp),
+    })),
+  }
+}

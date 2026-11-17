@@ -8,19 +8,24 @@
         <p class="disc-sub">Level-ups, 99s, big XP days and rising stars across every tracked OSRS player, right now.</p>
 
         <div v-if="players.length" class="disc-stat-tiles">
-          <div class="disc-stat-tile">
+          <component :is="isAdmin ? 'button' : 'div'" class="disc-stat-tile" :class="{ 'is-action': isAdmin }" :type="isAdmin ? 'button' : undefined" :aria-label="isAdmin ? 'Show the most recently tracked players' : undefined" @click="isAdmin && (recentOpen = true)">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
             <span><b>{{ players.length.toLocaleString('en-US') }}</b><small>players</small></span>
-          </div>
-          <div class="disc-stat-tile">
+          </component>
+          <component :is="isAdmin ? 'button' : 'div'" class="disc-stat-tile" :class="{ 'is-action': isAdmin }" :type="isAdmin ? 'button' : undefined" :aria-label="isAdmin ? 'Show the XP gained on the site over the last day, 7 days and 30 days' : undefined" @click="isAdmin && (xpOpen = true)">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
             <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? 'today' : '· 7 days' }}</small></span>
-          </div>
+          </component>
           <div class="disc-stat-tile">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
             <span><b>{{ levelUps }}</b><small>level-ups · 7 days</small></span>
           </div>
         </div>
+
+        <Teleport to="body">
+          <AdminRecentPlayersModal v-if="recentOpen" @close="recentOpen = false" />
+          <AdminXpModal v-if="xpOpen" :players="players" @close="xpOpen = false" />
+        </Teleport>
 
         <div class="suggest-wrap">
         <label class="disc-search">
@@ -317,6 +322,9 @@
 </template>
 
 <script setup>
+import AdminRecentPlayersModal from '@/components/admin/AdminRecentPlayersModal.vue'
+import AdminXpModal from '@/components/admin/AdminXpModal.vue'
+import { useAuth } from '@/composables/useAuth'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
@@ -436,6 +444,10 @@ const boardMax = computed(() => Math.max(board.value[0]?.xp || 0, 1))
 watch([period, skill], () => track('discover_leaderboard', { period: period.value, skill: skill.value }))
 
 // --- hero ---
+// Admins can open the player count and the XP total for more detail.
+const { isAdmin } = useAuth()
+const recentOpen = ref(false)
+const xpOpen = ref(false)
 const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.day?.xp || 0, 0), 0))
 const totalWeek = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.week?.xp || 0, 0), 0))
 const levelUps = computed(() => (data.value.activity || []).filter((e) => e.kind === 'levelup' || e.kind === 'max').reduce((n, e) => n + (e.to - e.from), 0))
