@@ -1,13 +1,24 @@
 <template>
   <section class="pp" :class="{ complete: progress.complete }" aria-label="Plan progress">
-    <div class="pp-head">
-      <b class="pp-pct">
-        <template v-if="focusPer"><img :src="skillIconSrc(focusPer.skill)" alt="" width="20" height="20" />{{ view.complete ? `${focusPer.skill} complete` : `${focusPer.skill} ${pctText} complete` }}</template>
-        <template v-else>{{ view.complete ? 'Plan complete' : `${pctText} complete` }}</template>
-      </b>
-      <span v-if="badge && !view.complete" class="pp-badge" :class="`is-${badge.kind}`">{{ badge.text }}</span>
-      <button v-if="focusPer" class="pp-focus" type="button" @click="$emit('focus', '')">Show all skills</button>
-      <span class="pp-xp">{{ formatNum(view.gainedXp) }} XP gained · {{ formatNum(view.remainingXp) }} left</span>
+    <!-- The finish line and how it is going, together -->
+    <div class="pp-top" :class="{ 'has-finish': !!finish }">
+      <div v-if="finish" class="pp-finish">
+        <span class="fl-kicker">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5" /></svg>
+          Finish line
+        </span>
+        <b>{{ finish.dateText }}</b>
+        <small>{{ finish.untilText }}</small>
+      </div>
+      <div class="pp-head">
+        <b class="pp-pct">
+          <template v-if="focusPer"><img :src="skillIconSrc(focusPer.skill)" alt="" width="20" height="20" />{{ view.complete ? `${focusPer.skill} complete` : `${focusPer.skill} ${pctText} complete` }}</template>
+          <template v-else>{{ view.complete ? 'Plan complete' : `${pctText} complete` }}</template>
+        </b>
+        <span v-if="badge && !view.complete" class="pp-badge" :class="`is-${badge.kind}`">{{ badge.text }}</span>
+        <button v-if="focusPer" class="pp-focus" type="button" @click="$emit('focus', '')">Show all skills</button>
+        <span class="pp-xp">{{ formatNum(view.gainedXp) }} XP gained · {{ formatNum(view.remainingXp) }} left</span>
+      </div>
     </div>
 
     <!-- Your pace in the skill being trained, against what the plan needs -->
@@ -75,6 +86,8 @@ import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 
 const props = defineProps({
+  // When the plan will be finished, shown at the top: { dateText, untilText }.
+  finish: { type: Object, default: null },
   progress: { type: Object, required: true },
   updatedAt: { type: String, default: '' },
   baselineAt: { type: String, default: '' },

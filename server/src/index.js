@@ -824,7 +824,7 @@ if (distExists) {
   // The planner's title/description are baked into the HTML for crawlers and
   // link unfurls; parameterized plan URLs share the same page (the client
   // marks those noindex).
-  app.get('/planner', (req, res) => {
+  app.get(['/planner', '/planner/new'], (req, res) => {
     // A shared plan link names the player and skills in its description;
     // the bare page keeps the generic one. Query parsing is defensive,
     // it's user-controlled text that ends up in HTML meta (escaped by injectCardMeta).

@@ -199,6 +199,8 @@ export const METHOD_ICONS = {
   'runecraft-lava': 'lava_rune.png',
   'runecraft-law-double': 'law_rune.png',
   'runecraft-nature': 'nature_rune.png',
+  'runecraft-nature-cape': 'nature_rune.png',
+  'runecraft-nature-double': 'nature_rune.png',
   'runecraft-ourania': 'death_rune.png',
   'runecraft-soul': 'soul_rune.png',
   'runecraft-tiaras': 'air_tiara.png',

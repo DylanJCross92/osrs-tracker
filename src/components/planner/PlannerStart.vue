@@ -6,7 +6,6 @@
     <div id="ps-start" class="ps-block">
       <header class="ps-head">
         <h2>Start from a recommended plan</h2>
-        <button v-if="canShowAll" class="btn-text ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">More plans</button>
       </header>
       <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ hasPlayer ? `${playerLabel}'s` : 'your' }} stats{{ hasPlayer ? '' : ' (every skill starts from level 1 until you add your name)' }}. Change anything afterwards.</p>
       <RecommendedPlans
@@ -19,6 +18,7 @@
         :gp-value="gpValue"
         @use="(r) => $emit('use', r)"
       />
+      <p v-if="canShowAll" class="ps-seemore"><button class="ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">See more plans</button></p>
     </div>
 
     <PlannerPlansModal

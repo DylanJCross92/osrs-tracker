@@ -182,6 +182,9 @@
         <details class="planner-all-methods calc-route" open>
           <summary>Level-by-level route</summary>
           <PlannerRoute :segments="plan.segments" />
+          <div class="calc-actions">
+            <RouteImageButton :skill="skill" :start-level="levelAtXp(currentXpNum, true)" :end-level="levelAtXp(targetXpNum, true)" :segments="plan.segments" :hours="plan.hours" :net-gp="plan.netGp" :label="routeLabel" :url="shareUrl()" />
+          </div>
         </details>
       </section>
     </template>
@@ -217,6 +220,7 @@ import PlannerQuests from '@/components/planner/PlannerQuests.vue'
 import PlannerCompare from '@/components/planner/PlannerCompare.vue'
 import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
 import MethodPicker from '@/components/planner/MethodPicker.vue'
+import RouteImageButton from '@/components/planner/RouteImageButton.vue'
 import CalcPlayerLookup from '@/components/calculators/CalcPlayerLookup.vue'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
@@ -245,7 +249,7 @@ import {
   formatHours,
   formatGp,
 } from '@/utils/planner'
-import { STRATEGY_LABELS, materialsForPlan } from '@/utils/plannerTools'
+import { STRATEGY_LABELS, listSavedPlans, materialsForPlan, savePlan } from '@/utils/plannerTools'
 import { agilityLaps, METHOD_PRESETS } from '@/utils/calculatorExtras'
 
 const props = defineProps({
@@ -504,6 +508,12 @@ async function copyLink() {
   }
 }
 
+// The line under the title of the route picture: the picked method, or the best-route strategy.
+const routeLabel = computed(() => {
+  const method = methodChoice.value === 'strategy' ? null : getMethod(methodChoice.value)
+  return method ? `Using ${method.name}` : `${STRATEGY_LABELS[strategy.value] || 'Fastest'} route`
+})
+
 // Adds (or replaces) this skill's goal in the saved Account Planner plan, then opens the planner.
 function addToPlanner() {
   track('calc_add_to_planner', { skill })
@@ -523,8 +533,19 @@ function addToPlanner() {
     quests: [...quests.value],
     allowedMethodIds: allowedIds.value || undefined,
   })
+  // A plan that is saved gets the goal added to it, and opens at its own address.
+  const savedPlan = state.planId ? listSavedPlans().find((p) => p.id === state.planId) : null
+  if (savedPlan) {
+    const added = goals[goals.length - 1]
+    const kept = (savedPlan.goals || []).filter((g) => g.skill !== skill)
+    if (savePlan({ ...savedPlan, goals: [...kept, added].slice(0, 24), updatedAt: new Date().toISOString() })) {
+      router.push(`/planner/${savedPlan.id}`)
+      return
+    }
+  }
   const next = {
     ...state,
+    planId: '',
     goals: goals.slice(0, 24),
     hoursPerDay: state.hoursPerDay || hoursPerDay.value,
     username: state.username || player.value?.username || '',
@@ -534,7 +555,7 @@ function addToPlanner() {
   } catch {
     /* storage unavailable: the planner opens with whatever it already had */
   }
-  router.push('/planner')
+  router.push('/planner/new')
 }
 
 const goalLinks = goalsForSkill(props.info)

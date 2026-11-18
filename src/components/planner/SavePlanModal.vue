@@ -18,9 +18,9 @@
       </p>
 
       <div class="save-plan-actions">
-        <button class="btn btn-primary" type="submit" :disabled="!name.trim()">{{ forShare ? (noSave ? 'Continue' : 'Save and continue') : exists ? 'Update plan' : 'Save plan' }}</button>
-        <button v-if="exists && !forShare" class="btn btn-ghost" type="button" :disabled="!name.trim()" @click="submit(true)">Save as a new plan</button>
         <button class="btn-text" type="button" @click="$emit('close')">Cancel</button>
+        <button v-if="exists && !forShare" class="btn btn-ghost" type="button" :disabled="!name.trim()" @click="submit(true)">Save as a new plan</button>
+        <button class="btn btn-primary" type="submit" :disabled="!name.trim()">{{ forShare ? (noSave ? 'Continue' : 'Save and continue') : exists ? 'Update plan' : 'Save plan' }}</button>
       </div>
     </form>
   </div>

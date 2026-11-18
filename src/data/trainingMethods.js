@@ -296,6 +296,7 @@ export const TRAINING_METHODS = [
   m('Runecraft', 'astral-double', 'Double astral runes', 82, 50000, 2000000, 'Medium', 'Double astral runes with the Lunar spellbook.', 'Lunar Diplomacy'),
   m('Runecraft', 'soul', 'Soul runes (Zeah)', 90, 44000, 705000, 'High', 'Run soul runes at the Soul Altar.', 'Soul Altar access'),
   m('Runecraft', 'aether', 'Aether runes (no runners)', 90, 99000, 1844000, 'Medium', 'Aether runes with a POH fairy ring, with the Raiments of the Eye.', 'Aether catalyst, 82 Magic'),
+  m('Runecraft', 'nature-double', 'Double nature runes (Abyss)', 91, 28000, 1200000, 'High', 'The Abyss nature run again, now with double runes from level 91. No diary cape needed.', ''),
   m('Runecraft', 'nature-cape', 'Double nature runes (diary cape)', 91, 69000, 3875000, 'High', 'Twice as fast with the Achievement diary cape teleport.', 'Achievement diary cape, 79 Agility'),
   m('Runecraft', 'law-double', 'Double law runes', 95, 44000, 800000, 'Low', 'Low-effort double law runes.', 'Troll Stronghold'),
   m('Runecraft', 'wrath', 'Wrath runes', 95, 42000, 1650000, 'Medium', 'Wrath runes, one of the best late-game profits.', 'Dragon Slayer II, dragonfire protection'),

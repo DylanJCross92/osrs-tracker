@@ -1,0 +1,225 @@
+<template>
+  <section class="path" aria-labelledby="path-h">
+    <header class="path-head-main">
+      <h2 id="path-h">Training path</h2>
+      <p v-if="dragging" class="path-reorder-hint" role="status">Drop <b>{{ dragging }}</b> where it should be trained.</p>
+      <p v-else>Your skills in the order the plan trains them, with every step.<template v-if="goals.length > 1"> Drag a skill to change the order.</template></p>
+    </header>
+
+    <ol class="path-list" :class="{ reordering: !!dragging }">
+      <li
+        v-for="(g, i) in goals"
+        :id="`path-${g.skill.toLowerCase()}`"
+        :key="g.skill"
+        :ref="(el) => setItemRef(el, i)"
+        class="path-card"
+        :class="[`cat-${entries[i]?.category}`, { done: isDone(i), hl: highlight === g.skill, 'can-drag': canDrag(i), dragging: dragging === g.skill }]"
+        :style="itemStyle(i)"
+        @pointerdown="onDown($event, i)"
+      >
+        <header class="path-head">
+          <span class="path-n" aria-hidden="true">{{ shownNumber(i) }}</span>
+          <img :src="skillIconSrc(g.skill)" :alt="g.skill" width="30" height="30" />
+          <span class="path-title">
+            <RouterLink v-if="planId" class="path-name" :to="{ name: 'plannerSkill', params: { id: planId, skill: g.skill.toLowerCase() } }" :title="`Link to ${g.skill} in this plan`"><b>{{ g.skill }}</b></RouterLink>
+            <b v-else class="path-name">{{ g.skill }}</b>
+            <em>{{ levelAtXp(g.currentXp, true) }} → {{ levelAtXp(g.targetXp, true) }}</em>
+            <span v-if="i === nextIndex && !dragging" class="path-next">Up next</span>
+          </span>
+          <span class="path-when">
+            <template v-if="isDone(i)"><b class="path-ok">✓ Done</b></template>
+            <template v-else>
+              <b>{{ formatHours(plans[i].hours) }}</b>
+              <small v-if="entries[i] && !entries[i].done">by {{ fmtShort(entries[i].endDate) }}</small>
+            </template>
+          </span>
+          <button v-if="editSkill !== g.skill" class="path-edit" type="button" :aria-label="`Edit ${g.skill}`" @click="$emit('edit', g.skill)">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
+            Edit
+          </button>
+        </header>
+
+        <div v-if="progress?.per?.[i]" class="path-prog">
+          <span class="path-prog-top">
+            <span>{{ progress.per[i].done ? 'Complete' : `Level ${progress.per[i].liveLevel} of ${progress.per[i].targetLevel}` }}</span>
+            <b>{{ pctText(progress.per[i].pct) }}</b>
+          </span>
+          <span class="path-bar" role="progressbar" :aria-valuenow="Math.round(progress.per[i].pct * 100)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${g.skill} progress`"><i :style="{ width: progress.per[i].pct * 100 + '%' }" /></span>
+        </div>
+
+        <!-- Being edited: the editor takes the place of the route (the route is inside it, and changes as you edit) -->
+        <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
+        <template v-else-if="!isDone(i)">
+          <PlannerRoute :segments="plans[i].segments" />
+          <div class="path-share">
+            <RouteImageButton :skill="g.skill" :start-level="levelAtXp(g.currentXp, true)" :end-level="levelAtXp(g.targetXp, true)" :segments="plans[i].segments" :hours="plans[i].hours" :net-gp="plans[i].netGp" :label="`${strategyLabel} route`" />
+          </div>
+        </template>
+      </li>
+    </ol>
+    <button class="path-add" type="button" @click="$emit('add')">+ Add a skill</button>
+  </section>
+</template>
+
+<script setup>
+import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue'
+import PlannerRoute from '@/components/planner/PlannerRoute.vue'
+import RouteImageButton from '@/components/planner/RouteImageButton.vue'
+import { skillIconSrc } from '@/utils/osrsSkills'
+import { formatHours, levelAtXp } from '@/utils/planner'
+
+// A read-only view of the plan: each skill in training order as a card with its route, nothing to type into.
+const props = defineProps({
+  goals: { type: Array, required: true },
+  plans: { type: Array, required: true },
+  entries: { type: Array, default: () => [] },
+  progress: { type: Object, default: null },
+  strategyLabel: { type: String, default: 'Fastest' },
+  // The saved plan's id, so each skill can link to itself (/planner/<id>/<skill>). Empty for a plan that is not saved.
+  planId: { type: String, default: '' },
+  // The skill named in the address: scrolled to and outlined.
+  highlight: { type: String, default: '' },
+  // The skill whose editor is open.
+  editSkill: { type: String, default: '' },
+})
+const emit = defineEmits(['edit', 'add', 'reorder'])
+
+const isDone = (i) => props.plans[i]?.remainingXp === 0 || !!props.progress?.per?.[i]?.done
+// The first skill with something left to train.
+const nextIndex = computed(() => props.goals.findIndex((_, i) => !isDone(i)))
+const fmtShort = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '')
+const pctText = (v) => {
+  const p = v * 100
+  return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
+}
+
+// --- Drag a skill card to change the order it is trained in --------------------------------------------------------------
+// Press on a card (anywhere that is not a button, link or the editor) and drag. While you drag, every card folds down to its title
+// row so the whole order is in view, the others slide aside to make room, and letting go drops the card there. A touch screen
+// needs a short press first, so scrolling still works.
+const GAP = 14
+const dragging = ref('')
+const drag = reactive({ from: -1, to: -1, dy: 0, h: 0 })
+const items = []
+const setItemRef = (el, i) => {
+  if (el) items[i] = el
+}
+let st = null
+let raf = 0
+const canDrag = (i) => props.goals.length > 1 && props.editSkill !== props.goals[i]?.skill
+
+function onDown(e, i) {
+  if (st || (e.pointerType === 'mouse' && e.button !== 0) || !canDrag(i)) return
+  if (e.target.closest('button, a, input, select, textarea, label, .se, .planner-route')) return
+  st = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, from: i, active: false, timer: 0 }
+  // Touch and pen: hold for a moment first, so a swipe is still a scroll.
+  if (e.pointerType !== 'mouse') st.timer = setTimeout(begin, 260)
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onUp)
+  window.addEventListener('pointercancel', stop)
+  window.addEventListener('keydown', onKey)
+  window.addEventListener('touchmove', holdScroll, { passive: false })
+}
+function holdScroll(e) {
+  if (st?.active) e.preventDefault()
+}
+async function begin() {
+  if (!st || st.active) return
+  st.active = true
+  const el = items[st.from]
+  const r = el.getBoundingClientRect()
+  st.grab = Math.max(8, Math.min(st.y - r.top, 36))
+  dragging.value = props.goals[st.from].skill
+  document.body.style.userSelect = 'none'
+  window.getSelection()?.removeAllRanges()
+  // Every card is folded now: measure where they sit.
+  await nextTick()
+  if (!st) return
+  const top = (n) => n.getBoundingClientRect().top + window.scrollY
+  st.tops = props.goals.map((_, j) => top(items[j]))
+  st.heights = props.goals.map((_, j) => items[j].getBoundingClientRect().height)
+  drag.from = st.from
+  drag.to = st.from
+  drag.h = st.heights[st.from]
+  update()
+  loop()
+}
+function onMove(e) {
+  if (!st || e.pointerId !== st.id) return
+  if (!st.active) {
+    const moved = Math.hypot(e.clientX - st.x, e.clientY - st.y)
+    if (st.type === 'mouse') {
+      if (moved > 6) {
+        st.y = e.clientY
+        begin()
+      }
+    } else if (moved > 10) stop()
+    return
+  }
+  st.y = e.clientY
+  update()
+}
+function update() {
+  if (!st?.tops) return
+  const desired = st.y + window.scrollY - st.grab
+  drag.dy = desired - st.tops[st.from]
+  const center = desired + st.heights[st.from] / 2
+  let to = 0
+  for (let j = 0; j < props.goals.length; j++) if (j !== st.from && st.tops[j] + st.heights[j] / 2 < center) to++
+  drag.to = to
+}
+// Near the top or bottom edge of the screen the page scrolls on its own.
+function loop() {
+  if (!st?.active) return
+  const edge = 90
+  if (st.y < edge) window.scrollBy(0, -Math.ceil((edge - st.y) / 6))
+  else if (st.y > window.innerHeight - edge) window.scrollBy(0, Math.ceil((st.y - (window.innerHeight - edge)) / 6))
+  update()
+  raf = requestAnimationFrame(loop)
+}
+async function onUp(e) {
+  if (!st || e.pointerId !== st.id) return
+  const moved = st.active && drag.to !== drag.from
+  const { from, to } = drag
+  if (moved) emit('reorder', from, to)
+  await nextTick()
+  stop()
+}
+function onKey(e) {
+  if (e.key === 'Escape') stop()
+}
+function stop() {
+  if (!st) return
+  clearTimeout(st.timer)
+  cancelAnimationFrame(raf)
+  window.removeEventListener('pointermove', onMove)
+  window.removeEventListener('pointerup', onUp)
+  window.removeEventListener('pointercancel', stop)
+  window.removeEventListener('keydown', onKey)
+  window.removeEventListener('touchmove', holdScroll)
+  document.body.style.userSelect = ''
+  st = null
+  dragging.value = ''
+  drag.from = -1
+  drag.to = -1
+  drag.dy = 0
+}
+// The card being dragged follows the pointer; the cards between its old and new place slide out of the way.
+function itemStyle(i) {
+  if (!dragging.value || drag.from < 0) return null
+  if (i === drag.from) return { transform: `translateY(${drag.dy}px)`, transition: 'none' }
+  const step = drag.h + GAP
+  if (drag.from < i && i <= drag.to) return { transform: `translateY(${-step}px)` }
+  if (drag.to <= i && i < drag.from) return { transform: `translateY(${step}px)` }
+  return null
+}
+// While dragging, the numbers show the order the cards would have if dropped now.
+function shownNumber(i) {
+  if (!dragging.value || drag.from < 0) return i + 1
+  if (i === drag.from) return drag.to + 1
+  if (drag.from < i && i <= drag.to) return i
+  if (drag.to <= i && i < drag.from) return i + 2
+  return i + 1
+}
+onBeforeUnmount(stop)
+</script>

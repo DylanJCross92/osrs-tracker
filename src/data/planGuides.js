@@ -98,7 +98,7 @@ export function buildPlanGuide(def) {
     skillCount: skills.length,
     skills,
     faq,
-    plannerHref: `/planner?${params.toString()}`,
+    plannerHref: `/planner/new?${params.toString()}`,
     short: def.short,
   }
 }

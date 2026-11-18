@@ -72,6 +72,7 @@ const SPECIFIC = {
   'construction-mahogany-homes': 'You buy the mahogany planks and steel bars. The minigame pays carpenter points, not coins, so it costs gp.',
   'runecraft-gotr': 'Runes and rewards from the minigame sell for a solid profit.',
   'runecraft-nature': 'Nature runes crafted from bought essence sell for more than the essence cost.',
+  'runecraft-nature-double': 'Double nature runes from bought essence sell for well more than the essence cost.',
   'runecraft-blood': 'Blood runes are worth a lot, even after paying for essence.',
   'runecraft-soul': 'Soul runes sell for a good price after paying for essence.',
   'slayer-tasks': 'Monster drops and task rewards usually sell for more than the supplies you use.',

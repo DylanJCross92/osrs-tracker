@@ -38,7 +38,8 @@ describe('plan guides', () => {
   it('opens the planner with the whole plan filled in, in the format Share makes', () => {
     const max = guides.find((g) => g.slug === 'max-cape')
     const url = new URL(max.plannerHref, 'https://tickgains.com')
-    expect(url.pathname).toBe('/planner')
+    // A plan carried in the address opens at /planner/new (an old /planner?... link is sent there too).
+    expect(url.pathname).toBe('/planner/new')
     expect(url.searchParams.get('from')).toBe('share')
     expect(url.searchParams.has('u')).toBe(false)
     const decoded = decodePlan(Object.fromEntries(url.searchParams), SKILL_NAMES)

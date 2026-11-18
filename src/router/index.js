@@ -66,11 +66,16 @@ const routes = [
   { path: '/join/:token', name: 'clanJoin', component: () => import('@/views/ClanJoinView.vue') },
   { path: '/account', name: 'account', component: () => import('@/views/AccountView.vue'), meta: { requiresAuth: true } },
   { path: '/compare/:a?/:b?', name: 'compare', component: () => import('@/views/CompareView.vue') },
-  {
-    path: '/planner',
-    name: 'planner',
-    component: () => import('@/views/PlannerView.vue'),
-  },
+  // The planner: /planner is the overview of your plans (or the way to start one), /planner/new starts one, and each saved plan
+  // has its own address: /planner/<id>, /planner/<id>/edit, and /planner/<id>/<skill> (a skill's route opened) or
+  // /planner/<id>/edit/<skill> (that skill open for editing). All of them are one page that reads the address.
+  { path: '/planner', name: 'planner', component: () => import('@/views/PlannerView.vue') },
+  { path: '/planner/new', name: 'plannerNew', component: () => import('@/views/PlannerView.vue') },
+  { path: '/planner/:id', name: 'plannerPlan', component: () => import('@/views/PlannerView.vue') },
+  // There is no whole-plan edit page: each skill is edited on the plan's page. The old address goes to the plan.
+  { path: '/planner/:id/edit', name: 'plannerEdit', redirect: (to) => ({ name: 'plannerPlan', params: { id: to.params.id } }) },
+  { path: '/planner/:id/edit/:skill', name: 'plannerEditSkill', component: () => import('@/views/PlannerView.vue') },
+  { path: '/planner/:id/:skill', name: 'plannerSkill', component: () => import('@/views/PlannerView.vue') },
   // A plan someone made public: read-only, no account needed.
   { path: '/plan/:slug', name: 'sharedPlan', component: () => import('@/views/SharedPlanView.vue') },
   {
@@ -101,9 +106,11 @@ export function createAppRouter() {
   const router = createRouter({
     history: createWebHistory(),
     routes,
-    scrollBehavior(to) {
+    scrollBehavior(to, from) {
       // Footer links like /#features scroll to their section (below the sticky nav).
       if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
+      // Opening or closing a skill inside the same plan changes the address but not the page position.
+      if (to.params.id && to.params.id === from.params.id) return false
       return { top: 0 }
     },
   })

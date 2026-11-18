@@ -1,7 +1,7 @@
 <template>
   <div ref="rootEl" class="sp">
     <div class="sp-bar" role="group" aria-label="Plan actions">
-      <div class="sp-menu">
+      <div v-if="!hideSwitcher" class="sp-menu">
         <button class="sp-switch" :class="{ open }" type="button" aria-haspopup="true" :aria-expanded="open" title="Your saved plans" @click="open = !open">
           <svg class="sp-switch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
           <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : hasGoals ? 'Unsaved plan' : 'Saved plans' }}</span>
@@ -111,6 +111,8 @@ const props = defineProps({
   // Plans can only be saved for the player's own profile (or for no player at all).
   canSave: { type: Boolean, default: true },
   saveBlockedReason: { type: String, default: '' },
+  // Leave out the list of plans (the plan page has its own way back to them).
+  hideSwitcher: { type: Boolean, default: false },
 })
 const emit = defineEmits(['save', 'save-new', 'load', 'duplicate', 'delete', 'rename', 'share', 'share-current', 'blocked', 'revert', 'new'])
 

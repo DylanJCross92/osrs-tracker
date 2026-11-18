@@ -146,6 +146,7 @@ export const MATERIALS = {
     item('Rune essence', 20, 7.5),
   ],
   'runecraft-nature': [item('Pure essence', 44, 9)],
+  'runecraft-nature-double': [item('Pure essence', 91, 9)],
 }
 
 /** Wiki icon URL for an item name. */

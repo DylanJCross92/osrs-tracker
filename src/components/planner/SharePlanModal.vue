@@ -119,7 +119,7 @@ const longUrl = computed(() => {
     statsAt: named ? props.plan.statsAt : null,
   })
   if (!named) params.set('from', 'share')
-  return `${window.location.origin}/planner?${params.toString()}`
+  return `${window.location.origin}/planner/new?${params.toString()}`
 })
 const publicUrl = computed(() => (current.value ? sharedPlansApi.pageUrl(current.value.slug) : ''))
 // Once there is a short public link, that is the one to hand out.
