@@ -914,23 +914,19 @@ function openShare(stored, { auto = false } = {}) {
   sharingAuto.value = auto
   sharing.value = res.plan
 }
-// Sharing the plan on screen: save it first (so the public copy matches what is shown), then open the share window.
+// Sharing the plan on screen: the public copy is made from what is on screen, and nothing is saved or changed here. Opening the
+// share window is not an edit, so the saved plan (and its "updated" date) stays exactly as it was.
 function shareCurrent(name) {
   if (!goals.value.length) return
-  // A saved plan is brought up to date first so the public copy matches what is on screen. Anything else is shared as it is,
-  // the link carries the whole plan, so there is nothing to save.
-  if (currentPlanId.value && canSavePlan.value) {
-    saveCurrent(name, false)
-    const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
-    if (saved) return openShare(saved)
-  }
   shareWithoutSaving(name)
 }
-// Share the plan on screen as it is, without putting it in Saved plans. Used for plans about a profile that is not yours.
+// Share the plan on screen as it is, without saving anything. A saved plan keeps its id (so its link stays the same) and its
+// created date; a plan that is not saved gets one id for the visit, so sharing it again updates the same link.
 function shareWithoutSaving(name) {
+  const saved = currentPlanId.value ? savedPlans.value.find((p) => p.id === currentPlanId.value) : null
   const id = currentPlanId.value || unsavedShareId.value || `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`
   if (!currentPlanId.value) unsavedShareId.value = id
-  const plan = snapshotPlan(currentSnapshotState(), name || currentPlanName.value || 'Shared plan', { id })
+  const plan = snapshotPlan(currentSnapshotState(), name || currentPlanName.value || 'Shared plan', saved ? { id, createdAt: saved.createdAt } : { id })
   openShare(plan)
 }
 function applyPlan(plan) {

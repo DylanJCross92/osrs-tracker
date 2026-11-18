@@ -1,8 +1,8 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
-import { cleanEvents } from '../utils/events.js'
+import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview } from '../services/stats.service.js'
+import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js'
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -60,6 +60,20 @@ statsRouter.post('/stats/events', eventsLimiter, attachUser, async (req, res, ne
       await recordEvents(events, anon || !req.user ? null : req.user.id, vid)
     }
     res.status(204).end()
+  } catch (err) {
+    next(err)
+  }
+})
+
+// The plans saved in a signed-out visitor's browser, under their random visitor id (see visitorPlans.js in the app). Nothing is kept
+// for a browser that asks not to be tracked, or for a request that carries a sign-in (those plans sync to the account).
+const plansLimiter = rateLimit({ windowMs: 60_000, max: 12, message: 'Too many requests.' })
+statsRouter.post('/stats/visitor-plans', plansLimiter, attachUser, async (req, res, next) => {
+  try {
+    const vid = cleanVisitorId(req.body?.vid)
+    if (!vid || req.user || askedNotToTrack(req.headers)) return res.status(204).end()
+    const ok = await saveVisitorPlans(vid, req.body?.plans, req.body?.planner)
+    res.status(ok ? 204 : 413).end()
   } catch (err) {
     next(err)
   }

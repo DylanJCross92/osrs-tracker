@@ -234,6 +234,7 @@ export async function changePassword(userId, current, next, keepToken) {
 export async function deleteAccount(userId, password) {
   await checkPassword(userId, password)
   // What this person did stays only as anonymous counts: their browser ids are cleared from the events along with the link.
+  await pool.query('DELETE FROM visitor_data WHERE visitor_id IN (SELECT visitor_id FROM visitor_links WHERE account_id = $1)', [userId])
   await pool.query('UPDATE events SET visitor_id = NULL WHERE visitor_id IN (SELECT visitor_id FROM visitor_links WHERE account_id = $1)', [userId])
   await pool.query('DELETE FROM users WHERE id = $1', [userId])
 }

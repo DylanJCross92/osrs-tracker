@@ -19,7 +19,7 @@ describe('groupPlansByPlayer', () => {
     const z = out.players[1]
     expect(z.accounts).toBe(2)
     expect(z.plans.map((p) => p.id)).toEqual(['c', 'a']) // newest first
-    expect(out.totals).toEqual({ players: 2, plans: 3, accounts: 2 })
+    expect(out.totals).toEqual({ players: 2, plans: 3, accounts: 2, visitors: 0 })
   })
 
   it('puts plans with no player name last', () => {
@@ -40,5 +40,34 @@ describe('groupPlansByPlayer', () => {
     const out = groupPlansByPlayer([{ plans: { value: [null, 'x', { id: 'q', goals: 'no' }] }, planner: { value: { goals: [] } }, email: 'a@b.c' }, {}, null])
     expect(JSON.stringify(out)).not.toContain('a@b.c')
     expect(out.players[0].plans[0].goals).toEqual([])
+  })
+})
+
+describe('plans from visitors who are not signed in', () => {
+  const vid = 'ab'.repeat(16)
+  const visitor = (id, plans, planner = null) => ({ id, plans, planner, updatedAt: '2026-11-06T00:00:00.000Z' })
+
+  it('groups them with the same player and tags each plan with the visitor it belongs to', () => {
+    const out = groupPlansByPlayer([saved([plan('a', 'Zezima', '2026-11-02')])], [visitor(vid, [plan('v1', 'zezima', '2026-11-05')])])
+    expect(out.players).toHaveLength(1)
+    const z = out.players[0]
+    expect(z.accounts).toBe(1)
+    expect(z.visitors).toBe(1)
+    expect(z.plans.map((p) => p.id)).toEqual(['v1', 'a'])
+    expect(z.plans[0].owner).toEqual({ key: `v:${vid}`, label: 'Visitor ababab' })
+    expect(z.plans[1].owner).toBeUndefined()
+    expect(out.totals).toMatchObject({ plans: 2, accounts: 1, visitors: 1 })
+  })
+
+  it('counts a visitor once however many plans they have, and includes their unsaved planner', () => {
+    const draft = { rsn: 'Bob', goals: [{ skill: 'Mining', currentXp: 0, targetXp: 10 }], planId: 'x', planName: '' }
+    const out = groupPlansByPlayer([], [visitor(vid, [plan('v1', 'Bob', '2026-11-05'), plan('v2', 'Bob', '2026-11-04')], draft)])
+    expect(out.totals).toMatchObject({ plans: 3, accounts: 0, visitors: 1 })
+    expect(out.players[0].plans.some((p) => p.source === 'working')).toBe(true)
+  })
+
+  it('ignores a visitor with a malformed id, and never lets them be mistaken for an account', () => {
+    const out = groupPlansByPlayer([], [visitor('not-an-id', [plan('v1', 'Bob', '2026-11-05')])])
+    expect(out.totals).toMatchObject({ plans: 0, visitors: 0 })
   })
 })

@@ -108,6 +108,37 @@ export async function dailyXp(days = 30) {
 
 /** Every plan accounts have saved (and the planner left in progress), grouped by player name. For the site owner only. */
 export async function plansByPlayer() {
-  const { rows } = await pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`)
-  return groupPlansByPlayer(rows)
+  const [{ rows }, { rows: visitorRows }] = await Promise.all([
+    pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`),
+    // Visitors who later signed in are left out: their plans are already in their account's data.
+    pool.query(
+      `SELECT v.visitor_id AS id, v.plans, v.planner, v.updated_at
+       FROM visitor_data v WHERE NOT EXISTS (SELECT 1 FROM visitor_links l WHERE l.visitor_id = v.visitor_id)`,
+    ),
+  ])
+  return groupPlansByPlayer(rows, visitorRows.map((v) => ({ ...v, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null })))
+}
+
+const MAX_VISITOR_PLANS = 30
+const MAX_VISITOR_JSON = 150_000
+
+/**
+ * Keeps the plans saved in a signed-out visitor's browser under their visitor id (replacing what was there). An empty set removes
+ * the row. Returns false when what was sent is too large to keep.
+ */
+export async function saveVisitorPlans(visitorId, plans, planner) {
+  const list = (Array.isArray(plans) ? plans : []).filter((p) => p && typeof p === 'object').slice(0, MAX_VISITOR_PLANS)
+  const draft = planner && typeof planner === 'object' && !Array.isArray(planner) && Array.isArray(planner.goals) && planner.goals.length ? planner : null
+  if (!list.length && !draft) {
+    await pool.query('DELETE FROM visitor_data WHERE visitor_id = $1', [visitorId])
+    return true
+  }
+  const json = JSON.stringify({ list, draft })
+  if (json.length > MAX_VISITOR_JSON) return false
+  await pool.query(
+    `INSERT INTO visitor_data (visitor_id, plans, planner, updated_at) VALUES ($1, $2::jsonb, $3::jsonb, now())
+     ON CONFLICT (visitor_id) DO UPDATE SET plans = EXCLUDED.plans, planner = EXCLUDED.planner, updated_at = now()`,
+    [visitorId, JSON.stringify(list), draft ? JSON.stringify(draft) : null],
+  )
+  return true
 }

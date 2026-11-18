@@ -32,20 +32,40 @@ const planOf = (p, source, updatedAt) => ({
 /**
  * accounts: [{ plans, planner }] where plans is the account's saved plans (an array) and planner its working state
  * ({ rsn, goals, planId, planName, ... }) with the time it last changed, as { value, updatedAt } entries or plain values.
- * Returns { totals: { players, plans, accounts }, players: [{ key, name, accounts, plans }] }, players A to Z, plans newest
- * first, and plans with no player name last in a group called "" (shown as "No player set").
+ * visitors: the same for people who are not signed in, each with the random visitor id they are known by in the statistics:
+ * [{ id, plans, planner, updatedAt }]. Their plans carry owner: { key: 'v:<id>', label: 'Visitor 1a2b3c' }.
+ * Returns { totals: { players, plans, accounts, visitors }, players: [{ key, name, accounts, visitors, plans }] }, players A to Z,
+ * plans newest first, and plans with no player name last in a group called "" (shown as "No player set").
  */
-export function groupPlansByPlayer(accounts) {
+export function groupPlansByPlayer(accounts, visitors = []) {
   const groups = new Map()
   const seenAccounts = new Set()
-  const add = (accountIndex, rsn, plan) => {
+  const seenVisitors = new Set()
+  const add = (accountIndex, rsn, plan, visitorId = null) => {
     const key = playerKey(rsn)
     let g = groups.get(key)
-    if (!g) groups.set(key, (g = { key, name: text(rsn, 12), accounts: new Set(), plans: [] }))
+    if (!g) groups.set(key, (g = { key, name: text(rsn, 12), accounts: new Set(), visitors: new Set(), plans: [] }))
     if (!g.name) g.name = text(rsn, 12)
-    g.accounts.add(accountIndex)
+    if (visitorId) {
+      g.visitors.add(visitorId)
+      seenVisitors.add(visitorId)
+      plan.owner = { key: `v:${visitorId}`, label: `Visitor ${visitorId.slice(0, 6)}` }
+    } else {
+      g.accounts.add(accountIndex)
+      seenAccounts.add(accountIndex)
+    }
     g.plans.push(plan)
-    seenAccounts.add(accountIndex)
+  }
+  const visitorId = (v) => (typeof v?.id === 'string' && /^[a-f0-9]{32}$/.test(v.id) ? v.id : null)
+  for (const v of visitors) {
+    const id = visitorId(v)
+    if (!id) continue
+    const saved = Array.isArray(v.plans) ? v.plans : []
+    const draft = v.planner && Array.isArray(v.planner.goals) ? v.planner : null
+    for (const p of saved) if (p && typeof p === 'object') add(null, p.player?.rsn, planOf(p, 'saved', v.updatedAt), id)
+    if (draft && draft.goals.length && !saved.some((p) => p && p.id === draft.planId)) {
+      add(null, draft.rsn, planOf({ ...draft, id: draft.planId || 'working', name: draft.planName || 'Unsaved plan' }, 'working', v.updatedAt), id)
+    }
   }
   accounts.forEach((a, i) => {
     const saved = Array.isArray(a?.plans?.value) ? a.plans.value : Array.isArray(a?.plans) ? a.plans : []
@@ -60,8 +80,9 @@ export function groupPlansByPlayer(accounts) {
     key: g.key,
     name: g.name,
     accounts: g.accounts.size,
+    visitors: g.visitors.size,
     plans: g.plans.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))),
   }))
   players.sort((a, b) => (a.key === '') - (b.key === '') || a.key.localeCompare(b.key))
-  return { totals: { players: players.filter((p) => p.key).length, plans: players.reduce((n, p) => n + p.plans.length, 0), accounts: seenAccounts.size }, players }
+  return { totals: { players: players.filter((p) => p.key).length, plans: players.reduce((n, p) => n + p.plans.length, 0), accounts: seenAccounts.size, visitors: seenVisitors.size }, players }
 }

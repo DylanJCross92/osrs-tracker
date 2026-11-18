@@ -459,6 +459,14 @@ CREATE TABLE IF NOT EXISTS visitor_links (
   linked_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS visitor_links_account_idx ON visitor_links (account_id);
+-- The planner plans saved in the browser of a visitor who is not signed in, under their random visitor id, for the owner's Player
+-- plans page. Replaced whenever the plans change; removed with the account they later sign in to, and after the retention period.
+CREATE TABLE IF NOT EXISTS visitor_data (
+  visitor_id TEXT PRIMARY KEY,
+  plans JSONB NOT NULL DEFAULT '[]'::jsonb,
+  planner JSONB,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 -- Feedback sent from the form in the corner of the site. Every message is saved here first (so nothing is lost if the
 -- email to the owner fails), then emailed. reply_email is only what the sender typed; account_id is set from the signed-in session.

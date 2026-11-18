@@ -60,6 +60,7 @@ import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
 import AccountMenu from '@/components/AccountMenu.vue'
 import { initAuth, useAuth } from '@/composables/useAuth'
+import { startVisitorPlans } from '@/utils/visitorPlans'
 import { initModalScrollLock } from '@/utils/modalScrollLock'
 
 const route = useRoute()
@@ -89,6 +90,7 @@ let stopScrollLock = () => {}
 onMounted(() => {
   document.addEventListener('click', onDocClick)
   stopScrollLock = initModalScrollLock()
+  startVisitorPlans(() => loggedIn.value)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocClick)

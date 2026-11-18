@@ -24,18 +24,21 @@ export async function recordEvents(events, accountId, visitorId = null) {
 
 /** Remembers which account a browser id belongs to. Written when it changes, and at most once a day otherwise. */
 export async function linkVisitor(visitorId, accountId) {
-  await pool.query(
+  const { rowCount } = await pool.query(
     `INSERT INTO visitor_links (visitor_id, account_id) VALUES ($1, $2)
      ON CONFLICT (visitor_id) DO UPDATE SET account_id = EXCLUDED.account_id, linked_at = now()
      WHERE visitor_links.account_id IS DISTINCT FROM EXCLUDED.account_id OR visitor_links.linked_at < now() - interval '1 day'`,
     [visitorId, accountId],
   )
+  // Their plans now sync to the account, so the copy kept under the visitor id is not needed.
+  if (rowCount) await pool.query('DELETE FROM visitor_data WHERE visitor_id = $1', [visitorId])
 }
 
 /** Deletes events older than the retention period, and browser links nobody has refreshed for as long. */
 export async function purgeOldEvents() {
   const { rowCount } = await pool.query(`DELETE FROM events WHERE day <= (now() AT TIME ZONE 'utc')::date - $1::int`, [RETENTION_DAYS])
   await pool.query(`DELETE FROM visitor_links WHERE linked_at < now() - $1::int * interval '1 day'`, [RETENTION_DAYS])
+  await pool.query(`DELETE FROM visitor_data WHERE updated_at < now() - $1::int * interval '1 day'`, [RETENTION_DAYS])
   return rowCount
 }
 

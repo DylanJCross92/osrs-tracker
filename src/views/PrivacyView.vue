@@ -57,6 +57,9 @@
       If your browser sends Do Not Track or Global Privacy Control, no number is created or sent, and an existing one is removed. You can also clear it at any time by clearing this site's data in your browser.
     </p>
     <p>
+      If you use the Account Planner without signing in, the plans saved in your browser (the skills, levels, hours per day and any player name you entered) are also copied to the site owner's records under that same random number, so the owner can see what kinds of plans people make. A plan that was shared by link is already public; this copy is not. Nothing is copied when your browser sends Do Not Track or Global Privacy Control. When you sign in, your plans sync to your account instead and this copy is removed. Copies are replaced when your plans change and deleted after about 13 months without an update.
+    </p>
+    <p>
       If you are signed in, an event is also stored with your account number, so different accounts can be counted and so the site owner can see which accounts were active on a given day; if your browser sends Do Not Track
       or Global Privacy Control, it is stored without one. These events are deleted after about 13 months. When an account is deleted, its events are no longer linked to it, and the random numbers that were linked to it are removed from them.
     </p>

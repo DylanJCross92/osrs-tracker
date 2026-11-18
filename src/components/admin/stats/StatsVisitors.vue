@@ -83,6 +83,7 @@
 
 <script setup>
 import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { statsApi } from '@/api/stats'
 import StatChart from './StatChart.vue'
 import { ago, count, fmt } from './statsFormat'
@@ -90,6 +91,9 @@ import { useStatsLoad } from './useStatsLoad'
 import { describeEvent } from '@/utils/describeEvent'
 
 const props = defineProps({ days: { type: Number, required: true } })
+const route = useRoute()
+// A link from another page (the Player plans page) can open one visitor: /admin/stats?tab=visitors&v=v:<id>.
+const asked = typeof route?.query?.v === 'string' ? route.query.v : ''
 const people = useStatsLoad((d) => statsApi.visitors(d), 'Could not load the visitors.')
 const list = people.data
 const listError = people.error
@@ -113,11 +117,13 @@ watch(() => props.days, (d) => people.load(d), { immediate: true })
 // The most recently active visitor is open by default; a visitor already open stays open when the range changes.
 watch(list, (l) => {
   if (!l?.visitors.length) {
-    selected.value = ''
+    // Not in the recent list (quiet for the whole range), but a link can still ask for them.
+    if (asked && selected.value !== asked) pick(asked, false)
+    else if (!asked) selected.value = ''
     return
   }
   if (l.visitors.some((v) => v.key === selected.value)) one.load(selected.value, props.days)
-  else pick(l.visitors[0].key, false)
+  else pick(l.visitors.some((v) => v.key === asked) ? asked : l.visitors[0].key, false)
 })
 
 async function pick(key, scroll = true) {

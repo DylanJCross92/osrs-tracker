@@ -5858,3 +5858,5 @@ b.path-name { font-size: 1.12rem; }
   .vz-grid { grid-template-columns: 1fr; }
   .vz-list { position: static; max-height: 360px; }
 }
+.ap-visitor { padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; text-decoration: none; }
+.ap-visitor:hover, .ap-visitor:focus-visible { color: var(--gold-bright); border-color: var(--gold); text-decoration: none; outline: none; }
