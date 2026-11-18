@@ -125,7 +125,7 @@ export const SKILL_INFO = [
     ], 'Planks needed'),
   s('Runecraft', 'Artisan', 'Essence, runes and profit for Runecraft.', 'Runes, Time & GP', 'Calculate the essence, hours and profit to your Runecraft goal.',
     [
-      'Runecraft methods include early altars, Ourania, Guardians of the Rift, lava runes, Arceuus blood and soul runes, and the late-game astral, nature, law and wrath runes. Some of the best profits come from the highest levels.',
+      'Runecraft methods include early altars, Ourania (with bought essence, or with daeyalt essence you mine yourself), Guardians of the Rift, lava runes, Arceuus blood and soul runes, and the late-game astral, nature, law and wrath runes. Some of the best profits come from the highest levels.',
       'Essence counts are listed where each run is a simple crafting of essence. Combination runes and runner setups depend on pouches and other players, so those lines show xp and gp only.',
     ], 'Essence needed'),
 

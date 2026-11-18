@@ -110,10 +110,12 @@ export async function dailyXp(days = 30) {
 export async function plansByPlayer() {
   const [{ rows }, { rows: visitorRows }] = await Promise.all([
     pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`),
-    // Visitors who later signed in are left out: their plans are already in their account's data.
+    // Visitors who later signed in are left out once their plans are in the account's own data (until then this copy is all there is).
     pool.query(
       `SELECT v.visitor_id AS id, v.plans, v.planner, v.updated_at
-       FROM visitor_data v WHERE NOT EXISTS (SELECT 1 FROM visitor_links l WHERE l.visitor_id = v.visitor_id)`,
+       FROM visitor_data v WHERE NOT EXISTS (
+         SELECT 1 FROM visitor_links l JOIN users u ON u.id = l.account_id
+         WHERE l.visitor_id = v.visitor_id AND u.data ? 'plans')`,
     ),
   ])
   return groupPlansByPlayer(rows, visitorRows.map((v) => ({ ...v, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null })))

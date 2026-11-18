@@ -55,21 +55,17 @@ export async function notifyNewSubscriber({ email, source = '', total = null }) 
 }
 
 /**
- * Tell the owner about an account: once when someone signs up (confirmed: false, they still have to click the link in
- * their email) and once more when they confirm it. Same rules as notifyNewSubscriber: never throws, capped per hour.
+ * Tell the owner when someone signs up. Once per account: not again when they confirm their email. Same rules as
+ * notifyNewSubscriber: never throws, capped per hour.
  */
-export async function notifyNewAccount({ email, total = null, confirmed = false }) {
+export async function notifyNewAccount({ email, total = null }) {
   if (!notifyConfigured()) return false
   if (!underHourlyCap()) return false
   const message = renderEmail({
-    preheader: confirmed ? `${email} confirmed their email.` : `${email} signed up.`,
-    title: confirmed ? 'Account confirmed' : 'New signup',
-    paragraphs: [
-      confirmed
-        ? { text: `${email} confirmed their email. Their TickGains account is ready.`, strong: email }
-        : { text: `${email} signed up for a TickGains account. They still need to confirm their email.`, strong: email },
-    ],
-    rows: [{ label: 'Email', value: email }, { label: 'Status', value: confirmed ? 'Confirmed' : 'Waiting for confirmation' }, ...(total != null ? [{ label: 'Accounts now', value: total }] : [])],
+    preheader: `${email} signed up.`,
+    title: 'New signup',
+    paragraphs: [{ text: `${email} signed up for a TickGains account. They still need to confirm their email.`, strong: email }],
+    rows: [{ label: 'Email', value: email }, { label: 'Status', value: 'Waiting for confirmation' }, ...(total != null ? [{ label: 'Accounts now', value: total }] : [])],
   })
   try {
     const res = await fetch(API_URL, {
@@ -78,7 +74,7 @@ export async function notifyNewAccount({ email, total = null, confirmed = false 
       body: JSON.stringify({
         from: process.env.NOTIFY_FROM || DEFAULT_FROM,
         to: [process.env.NOTIFY_EMAIL],
-        subject: confirmed ? 'TickGains account confirmed' : 'New TickGains signup',
+        subject: 'New TickGains signup',
         ...message,
       }),
     })

@@ -22,8 +22,11 @@ export async function recordEvents(events, accountId, visitorId = null) {
   if (visitorId && accountId) await linkVisitor(visitorId, accountId)
 }
 
-/** Remembers which account a browser id belongs to. Written when it changes, and at most once a day otherwise. */
-export async function linkVisitor(visitorId, accountId) {
+/**
+ * Remembers which account a browser id belongs to. Written when it changes, and at most once a day otherwise. keepPlans leaves the
+ * plans copied from that browser where they are: at sign-up the browser is not signed in yet, so its plans have not reached the account.
+ */
+export async function linkVisitor(visitorId, accountId, { keepPlans = false } = {}) {
   const { rowCount } = await pool.query(
     `INSERT INTO visitor_links (visitor_id, account_id) VALUES ($1, $2)
      ON CONFLICT (visitor_id) DO UPDATE SET account_id = EXCLUDED.account_id, linked_at = now()
@@ -31,7 +34,7 @@ export async function linkVisitor(visitorId, accountId) {
     [visitorId, accountId],
   )
   // Their plans now sync to the account, so the copy kept under the visitor id is not needed.
-  if (rowCount) await pool.query('DELETE FROM visitor_data WHERE visitor_id = $1', [visitorId])
+  if (rowCount && !keepPlans) await pool.query('DELETE FROM visitor_data WHERE visitor_id = $1', [visitorId])
 }
 
 /** Deletes events older than the retention period, and browser links nobody has refreshed for as long. */

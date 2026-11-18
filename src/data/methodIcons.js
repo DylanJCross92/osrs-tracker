@@ -194,6 +194,7 @@ export const METHOD_ICONS = {
   'runecraft-astral-double': 'astral_rune.png',
   'runecraft-blood': 'blood_rune.png',
   'runecraft-cosmic-double': 'cosmic_rune.png',
+  'runecraft-daeyalt-ourania': 'death_rune.png',
   'runecraft-early': 'air_rune.png',
   'runecraft-gotr': 'guardian_essence.png',
   'runecraft-lava': 'lava_rune.png',

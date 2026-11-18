@@ -82,12 +82,13 @@ describe('notifyNewAccount', () => {
     expect(body.text).toContain('3')
   })
 
-  it('sends a different email once they confirm', async () => {
+  it('sends one email per account, at signup, and has no separate email for confirming', async () => {
     Object.assign(process.env, ENV)
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 })
     vi.stubGlobal('fetch', fetchMock)
+    // An old caller that still passes confirmed: true gets the signup email, never an "account confirmed" one.
     await notifyNewAccount({ email: 'new@example.com', confirmed: true })
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).subject).toBe('TickGains account confirmed')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).subject).toBe('New TickGains signup')
   })
 
   it('never throws when the mail service fails', async () => {

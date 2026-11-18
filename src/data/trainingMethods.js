@@ -287,6 +287,7 @@ export const TRAINING_METHODS = [
   // --- Runecraft ---
   m('Runecraft', 'early', 'Early altars (air / water / earth / fire)', 1, 20000, 0, 'Medium', 'Craft low-level runes at the nearest altar.', '', 22),
   m('Runecraft', 'ourania', 'Ourania Altar (ZMI)', 1, 55000, 375000, 'Medium', 'Lower-effort, high-profit runecrafting with a good setup.', 'Ourania Teleport, Magic 71'),
+  m('Runecraft', 'daeyalt-ourania', 'Daeyalt essence at Ourania (mine and craft)', 1, 44000, null, 'Medium', 'Mine daeyalt shards, trade them for daeyalt essence and craft it at Ourania for 50% more xp per essence. Around 80% as fast as Ourania with bought essence, but you need no essence from the Grand Exchange, which suits ironmen. Mining xp comes along but is not counted here.', 'Sins of the Father, 60 Mining, Ourania Teleport, Magic 71'),
   m('Runecraft', 'tiaras', 'Talisman tiaras', 1, 45000, -1350000, 'High', 'Make tiaras for xp at low levels.', '', 50),
   m('Runecraft', 'lava', 'Lava runes', 23, 70000, 100000, 'High', 'Fast mid-level runecrafting.', 'Rune pouches, Fire altar access, Hat of the Eye recommended'),
   m('Runecraft', 'gotr', 'Guardians of the Rift', 27, 50000, 1077000, 'Medium', 'Minigame with good xp and the best low-level Runecraft profit.', 'Temple of the Eye'),

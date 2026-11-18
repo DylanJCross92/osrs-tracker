@@ -3,7 +3,8 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { sendMail, mailConfigured } from '../utils/mailer.js'
 import { renderEmail } from '../utils/emailTemplate.js'
 import { hasRole } from '../utils/roles.js'
-import { noteActivity, recordLogin } from '../services/events.service.js'
+import { linkVisitor, noteActivity, recordLogin } from '../services/events.service.js'
+import { askedNotToTrack, cleanVisitorId } from '../utils/events.js'
 import { subscribe } from '../services/subscribers.service.js'
 import { notifyNewAccount } from '../services/notify.service.js'
 import {
@@ -110,6 +111,15 @@ async function sendVerification({ email, token }) {
   return false
 }
 
+// Joins what this browser did before it had an account to the account, in the statistics. Signing up does not sign the browser in,
+// so the link is made here, when it asks for the account, not only from later events. Nothing is linked for a browser that asks
+// not to be tracked, or for the site's own admins (their activity is not counted).
+function linkBrowser(req, user, opts) {
+  const vid = cleanVisitorId(req.body?.vid)
+  if (!vid || !user?.id || askedNotToTrack(req.headers) || hasRole(user.roles, 'admin', 'owner')) return
+  linkVisitor(vid, user.id, opts).catch(() => {})
+}
+
 // Creating an account does not log you in: the email has to be confirmed first (see /verify and /login).
 authRouter.post(
   '/signup',
@@ -120,9 +130,10 @@ authRouter.post(
     if (typeof body.website === 'string' && body.website.trim() !== '') return res.status(201).json({ pending: true, email: String(body.email || ''), emailSent: true })
     const user = await signUp(body.email, body.password, body.confirmPassword, body.settings)
     const token = await createVerification(user.id, body.newsletter === true)
+    linkBrowser(req, user, { keepPlans: true })
     // Tell the owner right away; the visitor is not kept waiting on it.
     countUsers()
-      .then((total) => notifyNewAccount({ email: user.email, total, confirmed: false }))
+      .then((total) => notifyNewAccount({ email: user.email, total }))
       .catch(() => {})
     const emailSent = await sendVerification({ email: user.email, token })
     res.status(201).json({ pending: true, email: user.email, emailSent })
@@ -137,10 +148,9 @@ authRouter.post(
     const { user, newsletter } = await verifyEmail(req.body?.token)
     setSession(res, await createSession(user.id))
     recordLogin(user, 'email_link', req.headers)
+    linkBrowser(req, user)
     if (newsletter) subscribe(user.email, 'signup').catch(() => {})
-    countUsers()
-      .then((total) => notifyNewAccount({ email: user.email, total, confirmed: true }))
-      .catch(() => {})
+    // The owner is told once, when the person signs up (above), not again when they confirm.
     res.json({ user })
   }),
 )
@@ -163,6 +173,7 @@ authRouter.post(
     const user = await logIn(req.body?.email, req.body?.password)
     setSession(res, await createSession(user.id))
     recordLogin(user, 'password', req.headers)
+    linkBrowser(req, user)
     res.json({ user })
   }),
 )
