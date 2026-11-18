@@ -50,8 +50,8 @@ describe('cleanEvents', () => {
     expect(cleanEvents({}).anon).toBe(false)
   })
   it('survives a body that is not an object', () => {
-    expect(cleanEvents(undefined)).toEqual({ events: [], anon: false })
-    expect(cleanEvents({ events: 'no' })).toEqual({ events: [], anon: false })
+    expect(cleanEvents(undefined)).toEqual({ events: [], anon: false, vid: null })
+    expect(cleanEvents({ events: 'no' })).toEqual({ events: [], anon: false, vid: null })
   })
 })
 

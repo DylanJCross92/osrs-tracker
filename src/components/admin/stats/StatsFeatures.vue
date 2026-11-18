@@ -43,7 +43,7 @@
       <section class="st-card" aria-labelledby="st-top">
         <div class="st-card-head"><h2 id="st-top">Most used actions</h2></div>
         <StatBars :items="topActions" color="var(--st-c)" />
-        <p class="st-note">Signed-out visitors cannot be told apart, so the user counts only include signed-in accounts.</p>
+        <p class="st-note">These counts only include signed-in accounts. To follow one visitor, signed in or not, open the Visitors tab.</p>
       </section>
 
       <section class="st-card" aria-labelledby="st-events">

@@ -17,6 +17,7 @@
     <div id="st-panel" role="tabpanel" :aria-labelledby="`st-tab-${tab}`">
       <StatsOverview v-if="tab === 'overview'" :days="days" />
       <StatsFeatures v-else-if="tab === 'features'" :days="days" />
+      <StatsVisitors v-else-if="tab === 'visitors'" :days="days" />
       <StatsSharing v-else :days="days" />
     </div>
   </div>
@@ -28,6 +29,7 @@ import { useRoute, useRouter } from 'vue-router'
 import StatsFeatures from '@/components/admin/stats/StatsFeatures.vue'
 import StatsOverview from '@/components/admin/stats/StatsOverview.vue'
 import StatsSharing from '@/components/admin/stats/StatsSharing.vue'
+import StatsVisitors from '@/components/admin/stats/StatsVisitors.vue'
 import { setPageMeta } from '@/utils/pageMeta'
 
 setPageMeta({ title: 'Statistics', description: 'Site statistics.', path: '/admin/stats', noindex: true })
@@ -36,6 +38,7 @@ const RANGES = [7, 30, 90]
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'features', label: 'What people do' },
+  { key: 'visitors', label: 'Visitors' },
   { key: 'sharing', label: 'Sharing' },
 ]
 const route = useRoute()

@@ -41,7 +41,10 @@ export function cleanProps(raw) {
   return JSON.stringify(out).length > MAX_JSON ? {} : out
 }
 
-/** { events: [{ name, props }], anon } from a request body. Unknown or malformed events are skipped, never an error. */
+/** The random id a browser keeps: 32 hex characters, or null. */
+export const cleanVisitorId = (v) => (typeof v === 'string' && /^[a-f0-9]{32}$/.test(v) ? v : null)
+
+/** { events: [{ name, props }], anon, vid } from a request body. Unknown or malformed events are skipped, never an error. */
 export function cleanEvents(body) {
   const list = Array.isArray(body?.events) ? body.events.slice(0, MAX_BATCH) : []
   const events = []
@@ -51,7 +54,9 @@ export function cleanEvents(body) {
     events.push({ name, props: cleanProps(e.props) })
   }
   // The browser asked not to be tracked (Do Not Track / Global Privacy Control): count the event, but not against an account.
-  return { events, anon: body?.anon === true }
+  const anon = body?.anon === true
+  // A browser that asked not to be tracked never has an id, whatever it sends.
+  return { events, anon, vid: anon ? null : cleanVisitorId(body?.vid) }
 }
 
 /** The days between two YYYY-MM-DD dates, oldest first, ending at `today`. */

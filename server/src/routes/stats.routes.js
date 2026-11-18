@@ -3,7 +3,7 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, shareOverview } from '../services/stats.service.js'
 import { cleanEvents } from '../utils/events.js'
-import { activeAccounts, dailyActive, eventDetail, eventsOverview, recordEvents } from '../services/events.service.js'
+import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
@@ -55,9 +55,9 @@ statsRouter.get('/admin/stats/shares', attachUser, requireRole('admin', 'owner')
 const eventsLimiter = rateLimit({ windowMs: 60_000, max: 40, message: 'Too many events.' })
 statsRouter.post('/stats/events', eventsLimiter, attachUser, async (req, res, next) => {
   try {
-    const { events, anon } = cleanEvents(req.body)
+    const { events, anon, vid } = cleanEvents(req.body)
     if (events.length && !(req.user && hasRole(req.user.roles, 'admin', 'owner'))) {
-      await recordEvents(events, anon || !req.user ? null : req.user.id)
+      await recordEvents(events, anon || !req.user ? null : req.user.id, vid)
     }
     res.status(204).end()
   } catch (err) {
@@ -81,6 +81,25 @@ statsRouter.get('/admin/stats/events', ...adminOnly, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await eventsOverview(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+// For the site owner: the people (accounts and browsers) active lately, and one person's steps in order.
+statsRouter.get('/admin/stats/visitors', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await visitors(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+statsRouter.get('/admin/stats/visitors/:key', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    const out = await journeyOf(req.params.key, askedDays(req))
+    if (!out) return res.status(404).end()
+    res.json(out)
   } catch (err) {
     next(err)
   }

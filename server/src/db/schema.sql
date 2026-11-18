@@ -444,6 +444,22 @@ CREATE INDEX IF NOT EXISTS events_name_day_idx ON events (name, day);
 CREATE INDEX IF NOT EXISTS events_day_idx ON events (day);
 CREATE INDEX IF NOT EXISTS events_account_idx ON events (account_id) WHERE account_id IS NOT NULL;
 
+-- The moment of each event, and the random id a browser keeps (for 90 days) so one visitor's steps can be followed in order.
+-- Rows from before this existed have neither. No id is kept for a browser that sends Do Not Track / Global Privacy Control.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS at TIMESTAMPTZ;
+ALTER TABLE events ALTER COLUMN at SET DEFAULT now();
+ALTER TABLE events ADD COLUMN IF NOT EXISTS visitor_id TEXT;
+CREATE INDEX IF NOT EXISTS events_visitor_idx ON events (visitor_id, id) WHERE visitor_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS events_at_idx ON events (at) WHERE at IS NOT NULL;
+-- Which account a browser's id signed in as, so what the person did before signing in joins their account. Deleting the account
+-- removes the link (and see deleteAccount, which also clears the id from the events).
+CREATE TABLE IF NOT EXISTS visitor_links (
+  visitor_id TEXT PRIMARY KEY,
+  account_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  linked_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS visitor_links_account_idx ON visitor_links (account_id);
+
 -- Feedback sent from the form in the corner of the site. Every message is saved here first (so nothing is lost if the
 -- email to the owner fails), then emailed. reply_email is only what the sender typed; account_id is set from the signed-in session.
 CREATE TABLE IF NOT EXISTS feedback (

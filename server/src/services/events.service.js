@@ -1,25 +1,123 @@
 import { pool } from '../db.js'
 import { RETENTION_DAYS, askedNotToTrack, summarizeBreakdown, summarizeEvents } from '../utils/events.js'
 import { fillDailyActive } from '../utils/dailyActive.js'
+import { buildJourney, parsePersonKey } from '../utils/journeys.js'
 import { hasRole } from '../utils/roles.js'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const WINDOW = `day > (now() AT TIME ZONE 'utc')::date - $1::int`
 
-/** Stores a batch of cleaned events (see utils/events.js). accountId is null for signed-out visitors. */
-export async function recordEvents(events, accountId) {
+/**
+ * Stores a batch of cleaned events (see utils/events.js). accountId is null for signed-out visitors. visitorId is the random id
+ * the browser keeps (null when it asked not to be tracked); with an account, the id is linked to it, so what the person did
+ * before signing in joins their account.
+ */
+export async function recordEvents(events, accountId, visitorId = null) {
   if (!events.length) return
   await pool.query(
-    `INSERT INTO events (name, props, account_id)
-     SELECT t.n, t.p::jsonb, $3::int FROM unnest($1::text[], $2::text[]) AS t(n, p)`,
-    [events.map((e) => e.name), events.map((e) => JSON.stringify(e.props)), accountId],
+    `INSERT INTO events (name, props, account_id, visitor_id)
+     SELECT t.n, t.p::jsonb, $3::int, $4::text FROM unnest($1::text[], $2::text[]) AS t(n, p)`,
+    [events.map((e) => e.name), events.map((e) => JSON.stringify(e.props)), accountId, visitorId],
+  )
+  if (visitorId && accountId) await linkVisitor(visitorId, accountId)
+}
+
+/** Remembers which account a browser id belongs to. Written when it changes, and at most once a day otherwise. */
+export async function linkVisitor(visitorId, accountId) {
+  await pool.query(
+    `INSERT INTO visitor_links (visitor_id, account_id) VALUES ($1, $2)
+     ON CONFLICT (visitor_id) DO UPDATE SET account_id = EXCLUDED.account_id, linked_at = now()
+     WHERE visitor_links.account_id IS DISTINCT FROM EXCLUDED.account_id OR visitor_links.linked_at < now() - interval '1 day'`,
+    [visitorId, accountId],
   )
 }
 
-/** Deletes events older than the retention period. */
+/** Deletes events older than the retention period, and browser links nobody has refreshed for as long. */
 export async function purgeOldEvents() {
   const { rowCount } = await pool.query(`DELETE FROM events WHERE day <= (now() AT TIME ZONE 'utc')::date - $1::int`, [RETENTION_DAYS])
+  await pool.query(`DELETE FROM visitor_links WHERE linked_at < now() - $1::int * interval '1 day'`, [RETENTION_DAYS])
   return rowCount
+}
+
+// --- following one visitor ---------------------------------------------------------------------------------------------------
+// A person is an account when the event (or the browser id behind it) belongs to one, otherwise a browser id. Only events with a
+// time and either of those can be followed, so this starts from when the ids shipped.
+
+const PERSON = `COALESCE(e.account_id, l.account_id)`
+
+/** The people active in the last `days` days, most recently active first: [{ key, kind, label, players, events, pages, first, last }]. */
+export async function visitors(days) {
+  const { rows } = await pool.query(
+    `SELECT CASE WHEN ${PERSON} IS NOT NULL THEN 'a:' || ${PERSON} ELSE 'v:' || e.visitor_id END AS key,
+            ${PERSON} AS account_id,
+            count(*)::int AS events,
+            count(*) FILTER (WHERE e.name = 'spa_page_view')::int AS pages,
+            min(e.at) AS first, max(e.at) AS last
+     FROM events e LEFT JOIN visitor_links l ON l.visitor_id = e.visitor_id
+     WHERE e.at > now() - $1::int * interval '1 day' AND (e.visitor_id IS NOT NULL OR e.account_id IS NOT NULL)
+     GROUP BY 1, 2
+     ORDER BY max(e.at) DESC
+     LIMIT 150`,
+    [days],
+  )
+  const ids = rows.filter((r) => r.account_id).map((r) => r.account_id)
+  const who = new Map()
+  if (ids.length) {
+    const { rows: accounts } = await pool.query(
+      `SELECT u.id, u.email,
+              (SELECT string_agg(p.display_name, ', ' ORDER BY p.display_name) FROM profile_claims c JOIN players p ON p.id = c.player_id
+                WHERE c.user_id = u.id AND c.status = 'verified') AS players
+       FROM users u WHERE u.id = ANY($1::int[])`,
+      [ids],
+    )
+    for (const a of accounts) who.set(a.id, a)
+  }
+  return {
+    days,
+    visitors: rows.map((r) => {
+      const a = r.account_id ? who.get(r.account_id) : null
+      return {
+        key: r.key,
+        kind: r.account_id ? 'account' : 'visitor',
+        label: a ? a.email : `Visitor ${r.key.slice(2, 8)}`,
+        players: a?.players || '',
+        events: r.events,
+        pages: r.pages,
+        first: new Date(r.first).toISOString(),
+        last: new Date(r.last).toISOString(),
+      }
+    }),
+  }
+}
+
+/** One person's journey over the last `days` days (see utils/journeys.js), or null for a key that is not one. */
+export async function journeyOf(key, days) {
+  const person = parsePersonKey(key)
+  if (!person) return null
+  const where = person.kind === 'account' ? `${PERSON} = $2::int` : `e.visitor_id = $2::text AND ${PERSON} IS NULL`
+  const [{ rows }, { rows: info }] = await Promise.all([
+    pool.query(
+      `SELECT e.at, e.name, e.props FROM events e LEFT JOIN visitor_links l ON l.visitor_id = e.visitor_id
+       WHERE e.at > now() - $1::int * interval '1 day' AND ${where} ORDER BY e.at, e.id LIMIT 1500`,
+      [days, person.id],
+    ),
+    person.kind === 'account'
+      ? pool.query(
+          `SELECT u.email, (SELECT string_agg(p.display_name, ', ' ORDER BY p.display_name) FROM profile_claims c JOIN players p ON p.id = c.player_id
+                             WHERE c.user_id = u.id AND c.status = 'verified') AS players FROM users u WHERE u.id = $1`,
+          [person.id],
+        )
+      : Promise.resolve({ rows: [] }),
+  ])
+  const a = info[0]
+  return {
+    key,
+    kind: person.kind,
+    label: a ? a.email : `Visitor ${String(person.id).slice(0, 6)}`,
+    players: a?.players || '',
+    days,
+    ...buildJourney(rows, days, today()),
+  }
 }
 
 /** Every event seen in the last `days` days: total, different accounts (overall and today), today and a count per day. */

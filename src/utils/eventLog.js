@@ -1,7 +1,9 @@
 import { BASE_URL } from '@/api/client'
+import { getVisitorId } from '@/utils/visitorId'
 
 // The site's own record of product events (see server/src/utils/events.js). Events are gathered for a few seconds and sent
-// together, so a busy page makes one request, not dozens. Nothing is stored in the browser: no cookie, no id. Who the person
+// together, so a busy page makes one request, not dozens. No cookie. The browser keeps one random id for 90 days (see
+// visitorId.js) so a visitor's steps can be followed in order; a browser that asks not to be tracked has none. Who the person
 // is (when signed in) is worked out on the server from the sign-in session that is already there.
 const FLUSH_MS = 3000
 const BATCH = 20
@@ -50,7 +52,7 @@ export function flushEvents() {
       credentials: 'include',
       keepalive: true,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ events, anon: askedNotToTrack() }),
+      body: JSON.stringify({ events, anon: askedNotToTrack(), vid: getVisitorId() }),
     }).catch(() => {})
   }
 }

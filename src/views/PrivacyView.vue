@@ -46,10 +46,19 @@
       When a new player is added to the tracker, the name that was added is sent along as an event, so TickGains can see which players are being looked up. Player names are public OSRS names, and visitors are never tied to a name or an account. You can block these tools with your browser's privacy settings or an extension.
     </p>
     <p>
-      TickGains also keeps its own simple record of what is used, so the site can be improved: an event such as "refresh pressed" or "plan saved", the day it happened, and a few
-      non-personal details like which skill or tab was involved. This record has no IP address, no device or browser identifier and no cookie, and it never includes names,
-      emails or anything you type. If you are signed in, the event is stored with your account number, so different accounts can be counted and so the site owner can see which accounts were active on a given day; if your browser sends Do Not Track
-      or Global Privacy Control, it is stored without one. These events are deleted after about 13 months, and when an account is deleted its events are no longer linked to it.
+      TickGains also keeps its own simple record of what is used, so the site can be improved: an event such as "page opened", "refresh pressed" or "plan saved", the day and time it happened, and a few
+      non-personal details like which page, skill or tab was involved. This record has no IP address and no cookie, and it never includes names,
+      emails or anything you type.
+    </p>
+    <p>
+      To see how one visit unfolds, your browser keeps a random number (32 letters and digits) in its local storage and sends it with these events. It is not tied to your name, your
+      device or your IP address, and it is replaced by a new one after 90 days. The site owner can follow the steps recorded under one number in order. If you sign in, the
+      number is linked to your account, so what was done in that browser before and after you signed in is shown together under your account (the owner sees your email and any player name you have claimed).
+      If your browser sends Do Not Track or Global Privacy Control, no number is created or sent, and an existing one is removed. You can also clear it at any time by clearing this site's data in your browser.
+    </p>
+    <p>
+      If you are signed in, an event is also stored with your account number, so different accounts can be counted and so the site owner can see which accounts were active on a given day; if your browser sends Do Not Track
+      or Global Privacy Control, it is stored without one. These events are deleted after about 13 months. When an account is deleted, its events are no longer linked to it, and the random numbers that were linked to it are removed from them.
     </p>
     <h2>Congratulations</h2>
     <p>
