@@ -103,6 +103,8 @@
         @rebase="refreshFromPlayer"
       />
 
+      <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
+
       <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @edit="(skill) => openSkillEditor(skill)" @add="openAdd()" @reorder="reorderTo">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
@@ -124,7 +126,7 @@
         </PlannerPath></div>
     </template>
 
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" @update:strategy="setGlobalStrategy" @update:hours="setHours" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -152,6 +154,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlannerSkillEditor from '@/components/planner/PlannerSkillEditor.vue'
+import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
@@ -160,6 +163,7 @@ import PlannerHero from '@/components/planner/PlannerHero.vue'
 import PlannerPath from '@/components/planner/PlannerPath.vue'
 import PlannerPlayerBox from '@/components/planner/PlannerPlayerBox.vue'
 import { buildSteps, withCompleted } from '@/utils/planSteps'
+import { planNext } from '@/utils/planNext'
 import PlannerAddGoal from '@/components/planner/PlannerAddGoal.vue'
 import PlannerFinishLine from '@/components/planner/PlannerFinishLine.vue'
 import PlannerProgress from '@/components/planner/PlannerProgress.vue'
@@ -527,6 +531,8 @@ const routeIssues = computed(() => {
   return { blocked, unconfirmed, blockedSkills }
 })
 const timeline = computed(() => buildTimeline(goals.value, plans.value, hoursPerDay.value))
+// The days the plan reaches its next level, next milestone and each goal.
+const nextItems = computed(() => planNext(goals.value, plans.value, timeline.value, hoursPerDay.value))
 // The same plan as a list of steps, for "what to train next" and the training route checklist.
 const liveSteps = computed(() => buildSteps(goals.value, plans.value, timeline.value, hoursPerDay.value))
 // For a tracked player the stretches already finished are put back in (marked done) so the route reads as a checklist.
@@ -609,13 +615,19 @@ function openSettings(toPlayer = false) {
     username.value = ''
   }
 }
-function closeSettings(name) {
+// Closing without Save leaves the plan as it was (the player, picked inside the window, applies as soon as it is chosen).
+function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
+}
+function saveSettings({ name, strategy, hours }) {
+  closeSettings()
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
     currentPlanName.value = name.slice(0, 60)
   }
+  if (strategy !== globalStrategy.value) setGlobalStrategy(strategy)
+  if (hours !== hoursPerDay.value) setHours(hours)
   saveIfChanged()
 }
 // The finish line as text, for the progress card (a plan that is not tracked shows the finish line box instead).

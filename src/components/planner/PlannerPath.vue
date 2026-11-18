@@ -33,10 +33,21 @@
               <small v-if="entries[i] && !entries[i].done">by {{ fmtShort(entries[i].endDate) }}</small>
             </template>
           </span>
-          <button v-if="editSkill !== g.skill" class="path-edit" type="button" :aria-label="`Edit ${g.skill}`" @click="$emit('edit', g.skill)">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
-            Edit
-          </button>
+          <div v-if="hasMenu(i)" class="path-menu" :class="{ open: menuFor === g.skill }">
+            <button class="po-dots" type="button" aria-haspopup="menu" :aria-expanded="menuFor === g.skill" :aria-label="`Options for ${g.skill}`" @click.stop="toggleMenu(g.skill)">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9" /><circle cx="12" cy="12" r="1.9" /><circle cx="12" cy="19" r="1.9" /></svg>
+            </button>
+            <div v-if="menuFor === g.skill" class="po-menu-list" role="menu" :aria-label="`Options for ${g.skill}`" @click.stop>
+              <button v-if="editSkill !== g.skill" class="po-item" role="menuitem" type="button" @click="editFromMenu(g.skill)">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
+                Edit
+              </button>
+              <button v-if="canShare(i)" class="po-item" role="menuitem" type="button" @click="shareFromMenu(i)">
+                <ShareIcon name="share" />
+                Share
+              </button>
+            </div>
+          </div>
         </header>
 
         <div v-if="progress?.per?.[i]" class="path-prog">
@@ -51,20 +62,30 @@
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
           <PlannerRoute :segments="plans[i].segments" />
-          <div class="path-share">
-            <RouteImageButton :skill="g.skill" :start-level="levelAtXp(g.currentXp, true)" :end-level="levelAtXp(g.targetXp, true)" :segments="plans[i].segments" :hours="plans[i].hours" :net-gp="plans[i].netGp" :label="`${strategyLabel} route`" />
-          </div>
         </template>
       </li>
     </ol>
     <button class="path-add" type="button" @click="$emit('add')">+ Add a skill</button>
+
+    <ShareRouteModal
+      v-if="sharing >= 0 && goals[sharing]"
+      :skill="goals[sharing].skill"
+      :start-level="levelAtXp(goals[sharing].currentXp, true)"
+      :end-level="levelAtXp(goals[sharing].targetXp, true)"
+      :segments="plans[sharing].segments"
+      :hours="plans[sharing].hours"
+      :net-gp="plans[sharing].netGp"
+      :label="`${strategyLabel} route`"
+      @close="sharing = -1"
+    />
   </section>
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, reactive, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
-import RouteImageButton from '@/components/planner/RouteImageButton.vue'
+import ShareIcon from '@/components/ShareIcon.vue'
+import ShareRouteModal from '@/components/planner/ShareRouteModal.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatHours, levelAtXp } from '@/utils/planner'
 
@@ -92,6 +113,32 @@ const pctText = (v) => {
   const p = v * 100
   return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
 }
+
+// --- The three-dot menu on each card: Edit and Share ------------------------------------------------------------------
+// The skill whose menu is open, closed by a click anywhere else or Escape.
+const menuFor = ref('')
+const sharing = ref(-1)
+const toggleMenu = (skill) => (menuFor.value = menuFor.value === skill ? '' : skill)
+const canShare = (i) => !isDone(i) && !!props.plans[i]?.segments?.length
+const hasMenu = (i) => props.editSkill !== props.goals[i]?.skill || canShare(i)
+function editFromMenu(skill) {
+  menuFor.value = ''
+  emit('edit', skill)
+}
+function shareFromMenu(i) {
+  menuFor.value = ''
+  sharing.value = i
+}
+const closeMenu = () => (menuFor.value = '')
+const onMenuKey = (e) => e.key === 'Escape' && closeMenu()
+onMounted(() => {
+  document.addEventListener('click', closeMenu)
+  document.addEventListener('keydown', onMenuKey)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeMenu)
+  document.removeEventListener('keydown', onMenuKey)
+})
 
 // --- Drag a skill card to change the order it is trained in --------------------------------------------------------------
 // Press on a card (anywhere that is not a button, link or the editor) and drag. While you drag, every card folds down to its title

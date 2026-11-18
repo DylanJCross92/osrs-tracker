@@ -4437,7 +4437,7 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .clan-newlink { display: block; margin-top: 10px; color: var(--muted); font-size: 0.8rem; text-decoration: underline; }
 
 /* The Clans page */
-.clans-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.clans-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px 14px; flex-wrap: wrap; }
 .clans-sort { display: flex; gap: 3px; padding: 3px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--panel); }
 .clans-sort-btn { padding: 5px 12px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 0.78rem; font-weight: 600; cursor: pointer; }
 .clans-sort-btn.on { background: var(--panel-alt); color: var(--gold-bright); box-shadow: inset 0 0 0 1px var(--gold); }
@@ -5587,7 +5587,6 @@ b.path-name { font-size: 1.12rem; }
 .path-bar i { display: block; height: 100%; border-radius: 3px; background: var(--gold-bright); transition: width 0.4s; }
 .path-card.done .path-bar i { background: var(--xp-green); }
 .path-card .planner-route { margin: 0; }
-.path-share { display: flex; justify-content: flex-end; }
 @media (max-width: 640px) {
   .hero .pgh-actions { width: 100%; flex-wrap: nowrap; }
   .hero-edit { order: -1; flex: 1 1 0; justify-content: center; }
@@ -5681,8 +5680,6 @@ b.path-name { font-size: 1.12rem; }
 @media (max-width: 640px) { .pgh h1 { font-size: 1.4rem; } }
 
 /* ---------- Planner: editing one skill ---------- */
-.path-edit { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 0.84rem; cursor: pointer; }
-.path-edit:hover, .path-edit:focus-visible { color: var(--gold-bright); border-color: var(--gold); outline: none; }
 .path-add { display: flex; align-items: center; justify-content: center; width: 100%; padding: 14px; border: 1px dashed var(--border-strong); border-radius: 14px; background: none; color: var(--gold-bright); font: inherit; font-size: 0.95rem; cursor: pointer; }
 .path-add:hover, .path-add:focus-visible { background: rgba(217, 175, 82, 0.08); border-color: var(--gold); outline: none; }
 .se { display: flex; flex-direction: column; gap: 14px; padding-top: 2px; }
@@ -5753,7 +5750,7 @@ b.path-name { font-size: 1.12rem; }
 .path-list.reordering { cursor: grabbing; }
 .path-list.reordering .path-card { cursor: grabbing; transition: transform 0.18s ease; }
 .path-list.reordering .path-card > :not(.path-head) { display: none; }
-.path-list.reordering .path-edit { visibility: hidden; }
+.path-list.reordering .path-menu { visibility: hidden; }
 .path-list.reordering .path-card.dragging { position: relative; z-index: 6; border-color: var(--gold); background: var(--panel-alt); box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6), inset 3px 0 0 var(--gold-bright); }
 .path-list.reordering .path-name { pointer-events: none; }
 
@@ -5781,6 +5778,10 @@ b.path-name { font-size: 1.12rem; }
 .clans-hub .clans-how li { background: linear-gradient(180deg, var(--panel-alt), var(--panel)); }
 .clans-hub .clans-empty { padding: 20px; border: 1px dashed var(--border-strong); border-radius: 14px; }
 .clans-hub .clans-sort { background: var(--panel); }
+.clans-hub .clans-tools { justify-content: flex-start; margin: 0 0 14px; }
+.clans-hub .clans-start { margin-left: auto; }
+.clans-hub .clans-search { flex: 1 1 220px; max-width: 340px; width: auto; }
+@media (max-width: 640px) { .clans-hub .clans-search { max-width: none; } .clans-hub .clans-start { margin-left: 0; width: 100%; } }
 @media (max-width: 640px) { .clans-hub .clans-grid { grid-template-columns: 1fr; } }
 
 /* The clan page: same look as the planner. Plain header and section headings, panels and cards in the planner's style */
@@ -5805,3 +5806,21 @@ b.path-name { font-size: 1.12rem; }
 .clan-create .cc-lead { margin: 0 0 14px; }
 .clan-create .cc-form { margin: 0; }
 .clan-create .cc-note { margin: 12px 0 18px; }
+
+/* The three-dot menu on a training path card */
+.path-menu { position: relative; flex: none; align-self: flex-start; margin: -4px -8px 0 0; }
+.path-card:has(.path-menu.open) { position: relative; z-index: 5; }
+.path-menu.open { z-index: 20; }
+.path-menu .po-item { display: flex; align-items: center; gap: 10px; }
+.path-menu .po-item svg { flex: none; width: 16px; height: 16px; }
+
+/* What's next on a plan page: the dashboard timeline, in the planner's card style */
+.pn { display: flex; flex-direction: column; gap: 12px; margin: 0 0 22px; }
+.pn-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 14px; }
+.pn-head h2 { margin: 0; font-size: 1.3rem; }
+.pn-card { padding: 18px 18px 18px; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(180deg, var(--panel-alt), var(--panel)); }
+.pn .dtl-tag { flex: none; margin-left: auto; padding: 2px 9px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+.pn .dtl-level .dtl-tag { color: var(--gold-bright); border-color: var(--gold); }
+.pn .dtl-goal .dtl-tag { color: var(--xp-green); border-color: rgba(120, 190, 110, 0.5); }
+.pn .dlater.first { margin-top: 0; padding-top: 0; border-top: 0; }
+@media (max-width: 560px) { .pn .dtl-item { flex-wrap: wrap; } .pn .dtl-tag { margin-left: 34px; } }

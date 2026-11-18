@@ -217,15 +217,15 @@ const startOfDay = (t) => {
 
 /**
  * Lays the "what's next" items out as a timeline: one stop per day, soonest first, each with the items that should be
- * reached that day at the player's pace. Items with no pace, or further off than about three months, go in `later`.
- * Returns { groups: [{ key, month, day, weekday, whenText, items }], later }.
+ * reached that day at the player's pace. Items with no pace, or further off than about three months (or `horizonDays`), go in `later`.
+ * Returns { groups: [{ key, month, day, year, weekday, whenText, items }], later }.
  */
-export function timelineModel(items, now = Date.now()) {
+export function timelineModel(items, now = Date.now(), horizonDays = HORIZON_DAYS) {
   const today = startOfDay(now)
   const withDue = []
   const later = []
   for (const item of items || []) {
-    if (item.etaDays == null || item.etaDays > HORIZON_DAYS) {
+    if (item.etaDays == null || item.etaDays > horizonDays) {
       later.push(item)
       continue
     }
@@ -247,6 +247,7 @@ export function timelineModel(items, now = Date.now()) {
         key,
         month: item.due.toLocaleDateString(undefined, { month: 'short' }),
         day: item.due.getDate(),
+        year: item.due.getFullYear(),
         weekday: item.due.toLocaleDateString(undefined, { weekday: 'short' }),
         whenText: relText(item.due),
         items: [],

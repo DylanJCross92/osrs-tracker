@@ -6,33 +6,20 @@
         <h1>Clans</h1>
         <p class="pgh-sub">Team up with your clan or friends, run XP competitions, and see who is leading this week.</p>
       </div>
-      <div class="pgh-actions">
-        <button class="btn btn-primary" type="button" @click="startClan">Start a clan</button>
-      </div>
     </header>
 
     <PageSkeleton v-if="loading" kind="clans" />
 
     <template v-else>
-      <!-- Clans that were started recently -->
-      <section v-if="fresh.length" class="cl-sec" aria-labelledby="clans-new-h">
-        <header class="cl-sec-head"><h2 id="clans-new-h">New clans</h2><span class="dash-hint">recently started</span></header>
-        <ul class="clans-grid">
-          <li v-for="c in fresh" :key="c.slug"><ClanListCard :clan="c" /></li>
-        </ul>
-      </section>
-
-      <!-- The directory -->
-      <section class="cl-sec" aria-labelledby="clans-dir-h">
-        <header class="cl-sec-head">
-          <h2 id="clans-dir-h">All clans</h2>
-          <div class="clans-tools">
-            <div class="clans-sort" role="group" aria-label="Sort clans">
-              <button v-for="o in SORTS" :key="o.key" type="button" class="clans-sort-btn" :class="{ on: sort === o.key }" :aria-pressed="sort === o.key" @click="sort = o.key">{{ o.label }}</button>
-            </div>
-            <input v-model.trim="query" class="clans-search" type="search" placeholder="Find a clan" aria-label="Find a clan" autocomplete="off" data-1p-ignore />
+      <!-- The directory: find, sort, browse -->
+      <section class="cl-sec" aria-label="All clans">
+        <div v-if="everyClan.length" class="clans-tools">
+          <input v-model.trim="query" class="clans-search" type="search" placeholder="Find a clan" aria-label="Find a clan" autocomplete="off" data-1p-ignore />
+          <div class="clans-sort" role="group" aria-label="Sort clans">
+            <button v-for="o in SORTS" :key="o.key" type="button" class="clans-sort-btn" :class="{ on: sort === o.key }" :aria-pressed="sort === o.key" @click="sort = o.key">{{ o.label }}</button>
           </div>
-        </header>
+          <button class="btn btn-primary clans-start" type="button" @click="startClan">Start a clan</button>
+        </div>
 
         <div v-if="!everyClan.length" class="clans-empty">
           <p><b>No clans yet.</b> Start the first one and it shows up here for everyone.</p>
@@ -71,8 +58,6 @@ import { useAuth, waitForAuth } from '@/composables/useAuth'
 import { setPageMeta } from '@/utils/pageMeta'
 
 setPageMeta({ title: 'Clans', description: 'OSRS clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.', path: '/clans' })
-
-const FRESH_SHOWN = 4
 
 const { loggedIn } = useAuth()
 const route = useRoute()
@@ -115,10 +100,6 @@ const everyClan = computed(() => {
   const listed = new Set(list.map((c) => c.slug))
   return [...list, ...mine.value.filter((c) => !listed.has(c.slug))]
 })
-const byNewest = computed(() => [...everyClan.value].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
-// New clans only get their own list when there are more clans than it would show, so the two lists are never the same.
-const fresh = computed(() => (byNewest.value.length > FRESH_SHOWN ? byNewest.value.slice(0, FRESH_SHOWN) : []))
-
 const shown = computed(() => {
   const q = query.value.toLowerCase()
   const list = everyClan.value.filter((c) => !q || c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
