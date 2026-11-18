@@ -60,7 +60,8 @@ const routes = [
   // through an invite link does not.
   { path: '/clans', name: 'clans', component: () => import('@/views/ClansView.vue') },
   { path: '/clans/mine', name: 'myClans', component: () => import('@/views/MyClansView.vue'), meta: { requiresAuth: true } },
-  { path: '/clans/new', name: 'clanNew', component: () => import('@/views/ClanNewView.vue'), meta: { requiresAuth: true } },
+  // Starting a clan is a window on the Clans page now; the old address opens it.
+  { path: '/clans/new', name: 'clanNew', redirect: { name: 'clans', query: { new: '1' } } },
   { path: '/clans/:slug', name: 'clan', component: () => import('@/views/ClanView.vue') },
   { path: '/competitions/:id', name: 'competition', component: () => import('@/views/CompetitionView.vue') },
   { path: '/join/:token', name: 'clanJoin', component: () => import('@/views/ClanJoinView.vue') },

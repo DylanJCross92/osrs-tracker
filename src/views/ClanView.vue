@@ -1,5 +1,5 @@
 <template>
-  <div class="clan">
+  <div class="clan clan-detail">
     <PageSkeleton v-if="loading" kind="clan" />
 
     <section v-else-if="notFound" class="card clan-empty">
@@ -9,25 +9,35 @@
     </section>
 
     <template v-else-if="view">
-      <header class="card clan-head">
-        <div class="clan-head-main">
-          <p class="clan-kicker">Clan<span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span></p>
+      <header class="pgh">
+        <div class="pgh-title">
+          <div class="pgh-eyebrow">
+            <RouterLink class="hero-back" :to="{ name: 'clans' }">← All clans</RouterLink>
+            <span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span>
+          </div>
           <h1>{{ view.clan.name }}</h1>
-          <p v-if="view.clan.description" class="clan-desc">{{ view.clan.description }}</p>
-          <p class="clan-meta">{{ view.members.length }} member{{ view.members.length === 1 ? '' : 's' }} · created {{ createdText }}</p>
+          <p class="pgh-sub">
+            <span v-if="view.clan.description" class="pgh-desc">{{ view.clan.description }}</span>
+            <span aria-hidden="true" v-if="view.clan.description">·</span>
+            <span>{{ view.members.length }} member{{ view.members.length === 1 ? '' : 's' }}</span>
+            <span aria-hidden="true">·</span>
+            <span>created {{ createdText }}</span>
+          </p>
         </div>
-        <button class="btn btn-ghost" type="button" @click="copy(clansApi.pageUrl(view.clan.slug), 'Clan page link copied')">Copy page link</button>
+        <div class="pgh-actions">
+          <button class="btn btn-ghost" type="button" @click="copy(clansApi.pageUrl(view.clan.slug), 'Clan page link copied')">Copy page link</button>
+        </div>
       </header>
 
       <div class="clan-grid">
         <div class="clan-main">
           <!-- People waiting to be let in -->
-          <section v-if="view.requests.length" class="card clan-card clan-requests" aria-labelledby="clan-req-h">
-            <header class="dash-card-head">
+          <section v-if="view.requests.length" class="cl-sec clan-requests" aria-labelledby="clan-req-h">
+            <header class="cl-sec-head">
               <h2 id="clan-req-h">Join requests <span class="clan-req-count">{{ view.requests.length }}</span></h2>
               <span class="dash-hint">asked through the invite link</span>
             </header>
-            <ul class="clan-reqs">
+            <ul class="clan-reqs cl-panel">
               <li v-for="r in view.requests" :key="r.username" class="clan-req">
                 <RouterLink class="clan-avatar" :to="profileRoute(r)" :aria-label="`Open ${r.displayName}'s profile`"><PlayerAvatar :name="r.username" /></RouterLink>
                 <div class="clan-who">
@@ -43,8 +53,8 @@
           </section>
 
           <!-- Competitions -->
-          <section class="card clan-card" aria-labelledby="clan-comp-h">
-            <header class="dash-card-head">
+          <section class="cl-sec" aria-labelledby="clan-comp-h">
+            <header class="cl-sec-head">
               <h2 id="clan-comp-h">Competitions</h2>
               <button v-if="view.viewer.canManage" class="btn btn-primary clan-start" type="button" @click="startOpen = true">Start a competition</button>
             </header>
@@ -80,14 +90,14 @@
           </section>
 
           <!-- Members -->
-          <section class="card clan-card" aria-labelledby="clan-members-h">
-            <header class="dash-card-head">
+          <section class="cl-sec" aria-labelledby="clan-members-h">
+            <header class="cl-sec-head">
               <h2 id="clan-members-h">Members</h2>
               <span class="dash-hint">XP gained in the last 7 days</span>
             </header>
             <ClanAddMember v-if="view.viewer.canManage" :slug="view.clan.slug" :members="view.members.map((m) => m.username)" @added="load" />
             <p v-if="!view.members.length" class="dash-empty">Nobody has joined yet. Share the invite link and the members show up here.</p>
-            <ul v-else class="clan-members">
+            <ul v-else class="clan-members cl-panel">
               <li v-for="(m, i) in view.members" :key="m.username" class="clan-member">
                 <span class="clan-pos" aria-hidden="true">{{ i + 1 }}</span>
                 <RouterLink class="clan-avatar" :to="profileRoute(m)" :aria-label="`Open ${m.displayName}'s profile`"><PlayerAvatar :name="m.username" /></RouterLink>
@@ -112,8 +122,9 @@
         </div>
 
         <aside class="clan-side">
-          <section v-if="view.viewer.canInvite && view.viewer.inviteToken" class="card clan-card" aria-labelledby="clan-invite-h">
-            <h2 id="clan-invite-h">Invite people</h2>
+          <section v-if="view.viewer.canInvite && view.viewer.inviteToken" class="cl-sec" aria-labelledby="clan-invite-h">
+            <header class="cl-sec-head"><h2 id="clan-invite-h">Invite people</h2></header>
+            <div class="cl-panel cl-panel-pad">
             <p class="clan-note">Send the link, or share the card below. Anyone can ask to join with their RuneScape name, no account needed, and you approve each request here.</p>
             <button class="clan-invite-card" type="button" aria-label="Open the invite card to share" @click="inviteOpen = true">
               <img :src="clansApi.inviteImageUrl(view.viewer.inviteToken)" :alt="`Invite card for ${view.clan.name}`" loading="lazy" />
@@ -124,15 +135,19 @@
               <button class="btn btn-ghost" type="button" @click="inviteOpen = true">Share card</button>
             </div>
             <button v-if="view.viewer.canManage" class="btn-text clan-newlink" type="button" :disabled="busy" @click="resetInvite" @blur="confirming = ''">{{ confirming === '@reset' ? 'The old link stops working. Sure?' : 'Make a new link' }}</button>
+            </div>
           </section>
 
-          <section v-else-if="!view.viewer.role" class="card clan-card">
-            <h2>Join this clan</h2>
+          <section v-else-if="!view.viewer.role" class="cl-sec">
+            <header class="cl-sec-head"><h2>Join this clan</h2></header>
+            <div class="cl-panel cl-panel-pad">
             <p class="clan-note">{{ view.clan.acceptingRequests ? 'Ask a member or the owner for the invite link, then open it and ask to join with your RuneScape name. The owner or a moderator approves you.' : 'This clan is not taking new join requests right now.' }}</p>
+            </div>
           </section>
 
-          <section v-if="view.viewer.role === 'owner'" class="card clan-card clan-danger">
-            <h2>Owner</h2>
+          <section v-if="view.viewer.role === 'owner'" class="cl-sec clan-danger">
+            <header class="cl-sec-head"><h2>Owner</h2></header>
+            <div class="cl-panel cl-panel-pad">
             <div class="clan-switch-block">
               <div class="clan-switch-row">
                 <button type="button" class="clan-switch" :class="{ on: view.clan.acceptingRequests }" role="switch" :aria-checked="view.clan.acceptingRequests" aria-label="Accept new join requests" :disabled="busy" @click="toggleRequests"><i /></button>
@@ -153,6 +168,7 @@
                 <button class="btn btn-ghost" type="button" :disabled="busy" @click="closeDelete">Cancel</button>
               </div>
             </form>
+            </div>
           </section>
         </aside>
       </div>

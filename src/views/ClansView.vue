@@ -1,13 +1,13 @@
 <template>
   <div class="clan clans-hub">
-    <header class="card clan-head">
-      <div class="clan-head-main">
+    <header class="pgh">
+      <div class="pgh-title">
+        <div class="pgh-eyebrow"><span class="pt-badge">Community</span></div>
         <h1>Clans</h1>
-        <p class="clan-desc">Team up with your clan or friends, run XP competitions, and see who is leading this week.</p>
+        <p class="pgh-sub">Team up with your clan or friends, run XP competitions, and see who is leading this week.</p>
       </div>
-      <div class="clan-head-actions">
-        <RouterLink v-if="loggedIn" class="btn btn-ghost" :to="{ name: 'myClans' }">My clans</RouterLink>
-        <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
+      <div class="pgh-actions">
+        <button class="btn btn-primary" type="button" @click="startClan">Start a clan</button>
       </div>
     </header>
 
@@ -15,16 +15,16 @@
 
     <template v-else>
       <!-- Clans that were started recently -->
-      <section v-if="fresh.length" class="card clan-card" aria-labelledby="clans-new-h">
-        <header class="dash-card-head"><h2 id="clans-new-h">New clans</h2><span class="dash-hint">recently started</span></header>
+      <section v-if="fresh.length" class="cl-sec" aria-labelledby="clans-new-h">
+        <header class="cl-sec-head"><h2 id="clans-new-h">New clans</h2><span class="dash-hint">recently started</span></header>
         <ul class="clans-grid">
           <li v-for="c in fresh" :key="c.slug"><ClanListCard :clan="c" /></li>
         </ul>
       </section>
 
       <!-- The directory -->
-      <section class="card clan-card" aria-labelledby="clans-dir-h">
-        <header class="dash-card-head">
+      <section class="cl-sec" aria-labelledby="clans-dir-h">
+        <header class="cl-sec-head">
           <h2 id="clans-dir-h">All clans</h2>
           <div class="clans-tools">
             <div class="clans-sort" role="group" aria-label="Sort clans">
@@ -36,7 +36,7 @@
 
         <div v-if="!everyClan.length" class="clans-empty">
           <p><b>No clans yet.</b> Start the first one and it shows up here for everyone.</p>
-          <RouterLink class="btn btn-primary" :to="loggedIn ? { name: 'clanNew' } : { name: 'login', query: { next: '/clans/new' } }">Start a clan</RouterLink>
+          <button class="btn btn-primary" type="button" @click="startClan">Start a clan</button>
         </div>
         <p v-else-if="!shown.length" class="dash-empty">No clan matches "{{ query }}".</p>
 
@@ -46,8 +46,8 @@
       </section>
 
       <!-- What a clan is -->
-      <section class="card clan-card" aria-labelledby="clans-how-h">
-        <h2 id="clans-how-h">How clans work</h2>
+      <section class="cl-sec" aria-labelledby="clans-how-h">
+        <header class="cl-sec-head"><h2 id="clans-how-h">How clans work</h2></header>
         <ol class="clans-how">
           <li><b>Start a clan</b><span>Sign in, name your clan and send the invite link. Anyone can ask to join with their RuneScape name, no account needed, and you approve each request.</span></li>
           <li><b>Run a competition</b><span>Pick a skill or overall XP and a start and end date. Everyone's gain is measured from a fresh hiscores check at the start.</span></li>
@@ -55,15 +55,19 @@
         </ol>
       </section>
     </template>
+
+    <ClanCreateModal v-if="createOpen" @close="createOpen = false" />
   </div>
 </template>
 
 <script setup>
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ClanListCard from '@/components/clans/ClanListCard.vue'
+import ClanCreateModal from '@/components/clans/ClanCreateModal.vue'
 import { clansApi } from '@/api/clans'
-import { useAuth } from '@/composables/useAuth'
+import { useAuth, waitForAuth } from '@/composables/useAuth'
 import { setPageMeta } from '@/utils/pageMeta'
 
 setPageMeta({ title: 'Clans', description: 'OSRS clans on TickGains: XP competitions, weekly leaders and who is on top. Start a clan and invite your friends.', path: '/clans' })
@@ -71,6 +75,14 @@ setPageMeta({ title: 'Clans', description: 'OSRS clans on TickGains: XP competit
 const FRESH_SHOWN = 4
 
 const { loggedIn } = useAuth()
+const route = useRoute()
+const router = useRouter()
+const createOpen = ref(false)
+// Starting a clan needs an account: signed out, sign in first and come back to this window.
+function startClan() {
+  if (loggedIn.value) createOpen.value = true
+  else router.push({ name: 'login', query: { next: '/clans?new=1' } })
+}
 const data = ref(null)
 const mine = ref([])
 const loading = ref(true)
@@ -84,6 +96,12 @@ const sort = ref('active')
 const query = ref('')
 
 onMounted(async () => {
+  // /clans?new=1 (and the old /clans/new address) opens the Start a clan window.
+  if (route.query.new) {
+    await waitForAuth()
+    router.replace({ name: 'clans' })
+    startClan()
+  }
   const [list, own] = await Promise.allSettled([clansApi.list(), loggedIn.value ? clansApi.mine() : Promise.resolve({ clans: [] })])
   data.value = list.status === 'fulfilled' ? list.value : null
   mine.value = own.status === 'fulfilled' ? own.value.clans : []

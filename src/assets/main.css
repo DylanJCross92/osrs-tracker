@@ -5766,3 +5766,42 @@ b.path-name { font-size: 1.12rem; }
 .callout-x { flex: none; width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--muted); font-size: 0.95rem; cursor: pointer; }
 .callout-x:hover, .callout-x:focus-visible { background: rgba(255, 255, 255, 0.08); color: var(--text); outline: none; }
 @media (max-width: 640px) { .callout { position: relative; padding-right: 44px; } .callout-x { position: absolute; top: 8px; right: 8px; } .callout-btn { width: 100%; } }
+
+/* The Clans page: the same look as the planner's plans overview (plain header and section headings, cards like plan cards) */
+.clans-hub { max-width: none; margin: 0; }
+.cl-sec { display: flex; flex-direction: column; }
+.cl-sec-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 14px; margin: 0 0 12px; }
+.cl-sec-head h2 { margin: 0; font-size: 1.3rem; }
+.clans-hub .clans-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.clans-hub .clans-card { padding: 14px 18px 16px; border: 1px solid var(--border); background: linear-gradient(180deg, var(--panel-alt), var(--panel)); transition: border-color 0.15s; }
+.clans-hub .clans-card:hover { border-color: var(--gold); transform: none; }
+.clans-hub .clans-card-comp { background: var(--bg); }
+.clans-hub .clans-face { border-color: var(--panel-alt); }
+.clans-hub .clans-how { margin-top: 0; }
+.clans-hub .clans-how li { background: linear-gradient(180deg, var(--panel-alt), var(--panel)); }
+.clans-hub .clans-empty { padding: 20px; border: 1px dashed var(--border-strong); border-radius: 14px; }
+.clans-hub .clans-sort { background: var(--panel); }
+@media (max-width: 640px) { .clans-hub .clans-grid { grid-template-columns: 1fr; } }
+
+/* The clan page: same look as the planner. Plain header and section headings, panels and cards in the planner's style */
+.clan-detail { max-width: none; margin: 0; }
+.pgh-eyebrow .clan-role { margin-left: 10px; }
+.pgh-desc { color: var(--text); }
+.clan-detail .pgh-sub { row-gap: 2px; }
+.cl-panel { margin: 0; padding: 4px 18px; list-style: none; border: 1px solid var(--border); border-radius: 14px; background: linear-gradient(180deg, var(--panel-alt), var(--panel)); }
+.cl-panel-pad { padding: 16px 18px; }
+.cl-panel-pad > :first-child { margin-top: 0; }
+.clan-detail .clan-grid { gap: 22px; }
+.clan-detail .clan-main, .clan-detail .clan-side { gap: 22px; }
+.clan-detail .clan-comp { border-color: var(--border); background: linear-gradient(180deg, var(--panel-alt), var(--panel)); }
+.clan-detail .clan-comp:hover { transform: none; }
+.clan-detail .clan-requests { border: 0; background: none; }
+.clan-detail .clan-requests .cl-panel { border-color: var(--gold); display: grid; gap: 10px; padding: 12px; }
+.clan-detail .clan-req { background: var(--bg); }
+.clan-detail .clan-member { padding: 10px 2px; }
+.clan-detail .clan-members { display: block; }
+.clan-detail .clan-danger .cl-panel { border-color: var(--border); }
+.clan-detail .clan-invite-card { margin-top: 12px; }
+.clan-create .cc-lead { margin: 0 0 14px; }
+.clan-create .cc-form { margin: 0; }
+.clan-create .cc-note { margin: 12px 0 18px; }
