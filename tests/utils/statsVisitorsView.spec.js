@@ -47,8 +47,8 @@ describe('Visitors tab', () => {
     expect(rows[0].text()).toContain('me@example.com')
     expect(rows[0].text()).toContain('Zezima')
     expect(rows[1].text()).toContain('Visitor ababab')
-    await rows[0].trigger('click')
-    await flushPromises()
+    // The most recent visitor is open without a click.
+    expect(rows[0].classes()).toContain('on')
     const steps = w.findAll('.vz-steps li').map((li) => li.text())
     expect(steps).toHaveLength(3)
     expect(steps[0]).toContain('Viewed')
@@ -57,6 +57,12 @@ describe('Visitors tab', () => {
     expect(steps[2]).toContain('Plan share')
     expect(steps[2]).toContain('method: copy_link')
     expect(w.text()).toContain('Signed-in account')
+  })
+
+  it('has no notice under the list', async () => {
+    const w = mount(StatsVisitors, { props: { days: 30 }, global: { stubs: { StatChart: true } } })
+    await flushPromises()
+    expect(w.find('.vz-list .st-note').exists()).toBe(false)
   })
 
   it('filters the list', async () => {

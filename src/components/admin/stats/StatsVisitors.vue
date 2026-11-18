@@ -23,11 +23,10 @@
               </button>
             </li>
           </ul>
-          <p class="st-note">Signed-in people are shown by email and player name. Everyone else is a random visitor number, kept in their browser for 90 days. Browsers that ask not to be tracked are not followed.</p>
         </section>
 
         <div ref="detail" class="vz-detail">
-          <p v-if="!selected" class="st-card st-empty">Pick a visitor to see what they did, in order.</p>
+          <p v-if="!selected" class="st-card st-empty">No visitor to show yet.</p>
           <p v-else-if="journeyError" class="cl-banner is-error" role="alert">{{ journeyError }}</p>
           <p v-else-if="!journey" class="st-card st-empty">Loading…</p>
           <template v-else>
@@ -109,19 +108,26 @@ const shown = computed(() => {
   return q ? all.filter((v) => v.label.toLowerCase().includes(q) || v.players.toLowerCase().includes(q)) : all
 })
 
-watch(() => props.days, (d) => {
-  people.load(d)
-  if (selected.value) one.load(selected.value, d)
-}, { immediate: true })
+watch(() => props.days, (d) => people.load(d), { immediate: true })
 
-async function pick(key) {
+// The most recently active visitor is open by default; a visitor already open stays open when the range changes.
+watch(list, (l) => {
+  if (!l?.visitors.length) {
+    selected.value = ''
+    return
+  }
+  if (l.visitors.some((v) => v.key === selected.value)) one.load(selected.value, props.days)
+  else pick(l.visitors[0].key, false)
+})
+
+async function pick(key, scroll = true) {
   selected.value = key
   openSessions.clear()
   openSessions.add(0)
   await one.load(key, props.days)
   await nextTick()
   // On a narrow screen the detail sits below the list.
-  if (window.matchMedia?.('(max-width: 900px)')?.matches) detail.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  if (scroll && window.matchMedia?.('(max-width: 900px)')?.matches) detail.value?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
 }
 
 const isOpen = (i) => openSessions.has(i)
