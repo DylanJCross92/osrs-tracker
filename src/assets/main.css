@@ -4996,27 +4996,6 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .prs-num.done { background: rgba(124, 184, 94, 0.2); color: var(--xp-green); }
 
 /* what to train next */
-.pn { margin: 0 0 14px; }
-.pn-card { padding: 16px 18px; border-radius: 14px; background: linear-gradient(135deg, rgba(217, 175, 82, 0.12), rgba(217, 175, 82, 0.03) 60%), var(--panel-alt); border: 1px solid var(--gold); }
-.pn-kicker { margin: 0 0 10px; color: var(--gold-bright); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; }
-.pn-main { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; }
-.pn-ico { flex: none; image-rendering: pixelated; }
-.pn-what { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.pn-what b { font-size: 1.3rem; line-height: 1.2; }
-.pn-what b em { font-style: normal; color: var(--gold-bright); margin-left: 6px; }
-.pn-what > span { color: var(--muted); font-size: 0.95rem; }
-.pn-meta { display: flex; gap: 6px 22px; margin: 0; }
-.pn-meta div { display: flex; flex-direction: column; }
-.pn-meta dt { color: var(--muted); font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.06em; }
-.pn-meta dd { margin: 0; font-weight: 700; font-size: 1.05rem; }
-.pn-then { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 12px 0 0; color: var(--muted); font-size: 0.84rem; }
-.pn-then > span:first-child { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-.pn-then-step { display: inline-flex; align-items: center; gap: 5px; color: var(--text); }
-.pn-then-step img { image-rendering: pixelated; }
-.pn-then i { font-style: normal; color: var(--muted); }
-.pn-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
-.pn-done p { margin: 0; color: var(--muted); }
-.pn-done p b { color: var(--text); }
 @media (max-width: 640px) {
   .pn-card { padding: 14px; }
   .pn-what b { font-size: 1.15rem; }
