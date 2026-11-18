@@ -2054,14 +2054,14 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .goal-faq-item p { margin: 0; color: var(--muted); line-height: 1.65; }
 .calc-related a.is-current { color: var(--gold-bright); font-weight: 600; pointer-events: none; }
 
-/* home feature cards: 3 + 2 layout, glowing icon, call to action pinned to the bottom */
+/* home feature cards: 3 + 3 + 2 layout, glowing icon, call to action pinned to the bottom */
 .home-features { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; }
 .home-feature {
   position: relative; overflow: hidden; grid-column: span 2; gap: 10px; padding: 26px 26px 22px;
   background: radial-gradient(120% 90% at 0% 0%, rgba(240, 201, 118, 0.09), transparent 55%), linear-gradient(180deg, var(--panel-alt), var(--panel));
   border-radius: 16px;
 }
-.home-feature:nth-child(n + 4) { grid-column: span 3; }
+.home-feature:nth-child(n + 7) { grid-column: span 3; }
 .home-feature::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.2s; }
 .home-feature:hover { transform: translateY(-3px); box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(217, 175, 82, 0.25); }
 .home-feature:hover::before { opacity: 1; }
@@ -2074,12 +2074,11 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .home-feature:hover .home-feature-link svg { transform: translateX(5px); }
 @media (max-width: 980px) {
   .home-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-feature, .home-feature:nth-child(n + 4) { grid-column: span 1; }
-  .home-feature:last-child { grid-column: 1 / -1; }
+  .home-feature, .home-feature:nth-child(n + 7) { grid-column: span 1; }
 }
 @media (max-width: 560px) {
   .home-features { grid-template-columns: 1fr; }
-  .home-feature, .home-feature:nth-child(n + 4), .home-feature:last-child { grid-column: 1 / -1; }
+  .home-feature, .home-feature:nth-child(n + 7), .home-feature:last-child { grid-column: 1 / -1; }
   .home-feature { padding: 22px 20px 18px; }
 }
 
@@ -2103,6 +2102,8 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .fa .fa-track { fill: rgba(255, 255, 255, 0.07); }
 .fa .fa-fill { fill: var(--gold); transform-box: fill-box; transform-origin: left; }
 .fa .fa-avatar { fill: var(--gold); }
+.fa .fa-fill-left { transform-origin: right; }
+.fa .fa-fill-alt { fill: #8ea6c8; }
 .fa .fa-arrow { fill: none; stroke: var(--muted); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .fa .fa-seg-1 { fill: #8a7440; }
 .fa .fa-seg-2 { fill: #b08f45; }

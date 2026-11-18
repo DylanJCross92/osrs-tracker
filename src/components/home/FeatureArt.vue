@@ -48,6 +48,40 @@
       <text class="fa-text fa-good" x="124" y="51" text-anchor="end">+176M gp</text>
     </template>
 
+    <!-- Clans: a competition and its live leaderboard -->
+    <template v-else-if="kind === 'clans'">
+      <rect class="fa-chip fa-chip-gold" x="4" y="2" width="68" height="15" rx="7.5" />
+      <text class="fa-text fa-strong fa-ink" x="38" y="12.4" text-anchor="middle">Agility race</text>
+      <text class="fa-text fa-gold" x="124" y="12.4" text-anchor="end">3d left</text>
+      <g v-for="(r, i) in rank" :key="r.g" :transform="`translate(0 ${22 + i * 16})`">
+        <circle class="fa-avatar" cx="8" cy="7" r="5.5" />
+        <text class="fa-text fa-ink" x="8" y="10" text-anchor="middle">{{ i + 1 }}</text>
+        <rect class="fa-track" x="19" y="3" width="68" height="8" rx="4" />
+        <rect class="fa-fill" :style="{ '--i': i }" x="19" y="3" :width="68 * r.p" height="8" rx="4" />
+        <text class="fa-text fa-good" x="124" y="10.5" text-anchor="end">{{ r.g }}</text>
+      </g>
+    </template>
+
+    <!-- Compare: two players, bar against bar -->
+    <template v-else-if="kind === 'compare'">
+      <g v-for="(r, i) in versus" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
+        <rect class="fa-track" x="6" y="3" width="46" height="8" rx="4" />
+        <rect class="fa-fill fa-fill-left" :style="{ '--i': i }" :x="52 - 46 * r.a" y="3" :width="46 * r.a" height="8" rx="4" />
+        <text class="fa-text fa-muted" x="64" y="10.5" text-anchor="middle">{{ r.n }}</text>
+        <rect class="fa-track" x="76" y="3" width="46" height="8" rx="4" />
+        <rect class="fa-fill fa-fill-alt" :style="{ '--i': i }" x="76" y="3" :width="46 * r.b" height="8" rx="4" />
+      </g>
+    </template>
+
+    <!-- Free account: what you keep -->
+    <template v-else-if="kind === 'account'">
+      <g v-for="(r, i) in kept" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
+        <rect class="fa-chip" x="4" y="1" width="76" height="14" rx="7" />
+        <text class="fa-text" x="42" y="11" text-anchor="middle">{{ r.n }}</text>
+        <text class="fa-text fa-gold fa-strong" x="124" y="11" text-anchor="end">{{ r.v }}</text>
+      </g>
+    </template>
+
     <!-- Player discovery: a mini leaderboard -->
     <template v-else>
       <g v-for="(r, i) in board" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
@@ -69,6 +103,20 @@ const goals = [
   { n: 'Slayer', p: 0.82, h: '12 h' },
   { n: 'Herblore', p: 0.55, h: '40 h' },
   { n: 'Farming', p: 0.28, h: '85 h' },
+]
+const rank = [
+  { p: 1, g: '+1.8M' },
+  { p: 0.7, g: '+1.2M' },
+]
+const versus = [
+  { n: 'Atk', a: 1, b: 0.7 },
+  { n: 'Str', a: 0.6, b: 0.95 },
+  { n: 'Mag', a: 0.85, b: 0.5 },
+]
+const kept = [
+  { n: 'Saved plans', v: '3' },
+  { n: 'Goals', v: '5' },
+  { n: 'Following', v: '8' },
 ]
 const board = [
   { n: 'a', p: 1, g: '+4.2M' },

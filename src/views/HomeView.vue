@@ -240,7 +240,7 @@
 
     <!-- 6. Stay in the loop -->
     <section v-if="showNews" class="card home-news" aria-label="Email updates">
-      <EmailSignup source="home" variant="card" heading="Be first to hear what's next" blurb="New features are on the way, including claiming your profile. Leave your email and we'll let you know when they land." />
+      <EmailSignup source="home" variant="card" heading="Be first to hear what's next" blurb="New features land often, from planner upgrades to clan tools. Leave your email and we'll let you know when they do." />
     </section>
 
     <!-- 7. Final CTA -->
@@ -348,9 +348,12 @@ const svg = (d) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" 
 const features = computed(() => [
   { key: 'tracking', title: 'Automatic XP Tracking', text: 'Track skill XP, levels, and progress with automatic updates every hour while a player is active.', cta: 'See a live profile', to: exampleTo('stats'), icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
   { key: 'history', title: 'Historical XP Data', text: 'Import available Wise Old Man history to view previous progress.', cta: 'Browse history', to: exampleTo('history'), icon: svg('<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />') },
-  { key: 'planner', title: 'Account Planner', text: 'Calculate XP requirements, training methods, and estimated hours to reach goals.', cta: 'Plan a goal', to: { path: '/planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
+  { key: 'planner', title: 'Account Planner', text: 'Build a training plan with the date you reach each level, unlock each method and hit your goal, then track it against your real stats.', cta: 'Plan a goal', to: { path: '/planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
   { key: 'calculators', title: 'Skill Calculators', text: 'Quick XP, time and gp calculators for every skill, with training methods and shareable links.', cta: 'Open calculators', to: { path: '/calculators' }, icon: svg('<rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2" />') },
   { key: 'discover', title: 'Player Discovery', text: 'Explore leaderboards, player achievements, and recent activity.', cta: 'Open Discover', to: { path: '/discover' }, icon: svg('<circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />') },
+  { key: 'clans', title: 'Clans & Competitions', text: 'Start a clan, share an invite link and run XP competitions with live leaderboards.', cta: 'Browse clans', to: { path: '/clans' }, icon: svg('<circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><circle cx="17" cy="9" r="2.6" /><path d="M17 14c2.8 0 5 2.2 5 5" />') },
+  { key: 'compare', title: 'Compare Players', text: 'Put two players side by side, skill by skill, and send a friend a challenge link.', cta: 'Compare players', to: { path: '/compare' }, icon: svg('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4" />') },
+  { key: 'account', title: 'Free Account', text: 'Save plans, set goals and follow players from your own dashboard, and verify your RuneScape name to make it yours.', cta: 'Create an account', to: { name: 'signup' }, icon: svg('<circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />') },
 ])
 const steps = [
   { title: 'Enter Your RSN', text: 'Search for your OSRS character.' },
