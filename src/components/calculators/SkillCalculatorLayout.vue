@@ -499,7 +499,7 @@ function withShareMark(url) {
 }
 
 async function copyLink() {
-  track('calc_share', { skill })
+  track('calc_share', { skill, item: String(skill) })
   try {
     await navigator.clipboard.writeText(withShareMark(shareUrl()))
     showToast('Calculator link copied')

@@ -46,11 +46,13 @@ export function track(event, params = {}) {
     if (isInternalTraffic()) return
     // The site's own share count (anonymous, just a tally): a link or image being shared.
     const share = shareFromEvent(event, params)
-    if (share) statsApi.share(share.kind, share.method).catch(() => {})
+    if (share) statsApi.share(share.kind, share.method, share.item).catch(() => {})
+    // What was shared (a name) is only for that count; it is not sent on to analytics or the event log.
+    const { item: _item, ...rest } = params
     window.dataLayer = window.dataLayer || []
-    window.dataLayer.push({ event, ...params })
+    window.dataLayer.push({ event, ...rest })
     // The site's own record of the same event (no IP address, no cookie; see eventLog.js).
-    logEvent(event, params)
+    logEvent(event, rest)
   } catch {
     /* analytics must never break the app */
   }

@@ -2,7 +2,7 @@ import { START_LOCATION, createRouter, createWebHistory } from 'vue-router'
 import { nextTick } from 'vue'
 import { isInternalTraffic, track } from '@/utils/analytics'
 import { statsApi } from '@/api/stats'
-import { claimVisit, referrerSource, sharedLinkKind } from '@/utils/shareEvents'
+import { claimVisit, referrerSource, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
 import { useRivals } from '@/composables/useRivals'
 import { authReady, useAuth } from '@/composables/useAuth'
@@ -147,7 +147,7 @@ export function createAppRouter() {
       const source = referrerSource(document.referrer, window.location.hostname)
       const asked = to.redirectedFrom || to
       const kind = sharedLinkKind(asked.path, asked.query)
-      if (kind && claimVisit(`${kind}:${asked.path}`)) statsApi.visit(kind, source).catch(() => {})
+      if (kind && claimVisit(`${kind}:${asked.path}`)) statsApi.visit(kind, source, sharedLinkItem(asked.path)).catch(() => {})
       // Every first visit of the day, so the admin page can say how many people arrive through shared links.
       if (claimVisit('site')) statsApi.visit('site', source).catch(() => {})
     } catch {

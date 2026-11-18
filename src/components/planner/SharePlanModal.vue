@@ -16,8 +16,8 @@
         <button class="btn btn-primary" type="button" @click="copyLink">Copy link</button>
       </div>
       <div class="share-actions ps-socials">
-        <a class="btn share-x" :href="xUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'x' })"><ShareIcon name="x" />Post on X</a>
-        <a class="btn btn-ghost" :href="redditUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'reddit' })"><ShareIcon name="reddit" />Reddit</a>
+        <a class="btn share-x" :href="xUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'x', item: plan.name })"><ShareIcon name="x" />Post on X</a>
+        <a class="btn btn-ghost" :href="redditUrl" target="_blank" rel="noopener" @click="track('plan_share', { method: 'reddit', item: plan.name })"><ShareIcon name="reddit" />Reddit</a>
         <button v-if="canNativeShare" class="btn btn-ghost" type="button" @click="nativeShare"><ShareIcon name="share" />More</button>
       </div>
       <label v-if="canName && !current" class="ps-toggle">
@@ -53,7 +53,7 @@
           <template v-if="current">
             <details class="ps-preview">
               <summary>Preview</summary>
-              <SharePreview :src="cardSrc" :alt="`Preview of ${plan.name}`" :filename="`${slugify(plan.name)}-plan.png`" loading-text="Drawing the preview…" @download="track('plan_share', { method: 'download' })" />
+              <SharePreview :src="cardSrc" :alt="`Preview of ${plan.name}`" :filename="`${slugify(plan.name)}-plan.png`" loading-text="Drawing the preview…" @download="track('plan_share', { method: 'download', item: plan.name })" />
             </details>
 
             <div class="ps-stop">
@@ -160,7 +160,7 @@ async function stopSharing() {
   }
 }
 async function copyLink() {
-  track('plan_share', { method: 'copy_link' })
+  track('plan_share', { method: 'copy_link', item: props.plan.name })
   try {
     await navigator.clipboard.writeText(url.value)
     showToast('Link copied!')
@@ -169,7 +169,7 @@ async function copyLink() {
   }
 }
 async function nativeShare() {
-  track('plan_share', { method: 'native' })
+  track('plan_share', { method: 'native', item: props.plan.name })
   try {
     await navigator.share({ title: text.value, text: text.value, url: url.value })
   } catch {

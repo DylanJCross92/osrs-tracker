@@ -5215,6 +5215,8 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .st-pop-list li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .st-pop-list li em { color: var(--muted); font-style: normal; }
 .st-pop-list li small { color: var(--muted); flex: none; }
+.st-pop-list li { flex-wrap: wrap; }
+.st-pop-list li .st-pop-seen { flex: 1 0 100%; font-size: 0.74rem; opacity: 0.85; }
 .st-pop-more { color: var(--muted); }
 .sbars { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .sbars li { display: grid; grid-template-columns: minmax(90px, 36%) minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; font-size: 0.9rem; }

@@ -150,7 +150,7 @@ function useThisPlan() {
   router.push({ name: 'planner', query: { template: route.params.slug } })
 }
 async function copyLink() {
-  track('shared_plan_link_copied')
+  track('shared_plan_link_copied', { item: String(share.value?.name || '') })
   try {
     await navigator.clipboard.writeText(window.location.href)
     showToast('Link copied!')

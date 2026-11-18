@@ -20,7 +20,7 @@
       </label>
       </div>
 
-      <SharePreview :src="previewUrl" :alt="`${username}'s ${period}ly card`" :filename="`${username}-${skill}-${period}.png`" loading-text="Loading preview…" @download="track('share_card', { method: 'download', period, skill })" />
+      <SharePreview :src="previewUrl" :alt="`${username}'s ${period}ly card`" :filename="`${username}-${skill}-${period}.png`" loading-text="Loading preview…" @download="track('share_card', { method: 'download', period, skill, item: username.toLowerCase() })" />
 
       <div class="share-actions is-pair">
         <button class="btn btn-primary" type="button" :disabled="copyingLive" @click="copyLiveLink"><ShareIcon name="live" />{{ copyingLive ? 'Copying…' : 'Copy live link' }}</button>
@@ -74,14 +74,14 @@ async function copyToClipboard(url) {
 }
 
 function copyLiveLink() {
-  track('share_card', { method: 'live', period: period.value, skill: skill.value })
+  track('share_card', { method: 'live', period: period.value, skill: skill.value, item: props.username.toLowerCase() })
   copyingLive.value = true
   const path = `/player/${encodeURIComponent(props.username)}/card/weekly${cardsApi.cardQuery(skill.value, period.value)}`
   copyToClipboard(`${window.location.origin}${path}`).finally(() => (copyingLive.value = false))
 }
 
 async function copySnapshotLink() {
-  track('share_card', { method: 'snapshot', period: period.value, skill: skill.value })
+  track('share_card', { method: 'snapshot', period: period.value, skill: skill.value, item: props.username.toLowerCase() })
   freezing.value = true
   try {
     const frozen = await cardsApi.freezeWeekly(props.username, skill.value, period.value)

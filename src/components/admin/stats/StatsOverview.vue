@@ -52,7 +52,7 @@
           <p v-else-if="whoError" class="st-pop-note">{{ whoError }}</p>
           <p v-else-if="!who || who.day !== active[index].day" class="st-pop-note">Loading…</p>
           <ul v-else-if="who.accounts.length" class="st-pop-list">
-            <li v-for="a in who.accounts.slice(0, POP_ROWS)" :key="a.email"><span>{{ a.email }}<em v-if="a.players"> · {{ a.players }}</em></span><small>{{ a.logins ? 'signed in' : 'came back' }}</small></li>
+            <li v-for="a in who.accounts.slice(0, POP_ROWS)" :key="a.email"><span>{{ a.email }}<em v-if="a.players"> · {{ a.players }}</em></span><small>{{ a.logins ? 'signed in' : 'came back' }}</small><small v-if="a.lastSeen" class="st-pop-seen" :title="new Date(a.lastSeen).toLocaleString()">Last seen {{ seenAgo(a.lastSeen) }}</small></li>
             <li v-if="who.accounts.length > POP_ROWS" class="st-pop-more">and {{ who.accounts.length - POP_ROWS }} more</li>
           </ul>
         </template>
@@ -120,6 +120,15 @@ const props = defineProps({ days: { type: Number, required: true } })
 
 // Which accounts were active on the day being looked at (see onActiveHover).
 const POP_ROWS = 6
+// "5 min ago", "3 h ago", "2 days ago", or the date once it is older than a month.
+function seenAgo(iso) {
+  const sec = Math.round((Date.now() - new Date(iso).getTime()) / 1000)
+  if (sec < 60) return 'just now'
+  if (sec < 3600) return `${Math.round(sec / 60)} min ago`
+  if (sec < 86_400) return `${Math.round(sec / 3600)} h ago`
+  if (sec < 30 * 86_400) return `${Math.round(sec / 86_400)} day${Math.round(sec / 86_400) === 1 ? '' : 's'} ago`
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+}
 const who = ref(null)
 const whoError = ref('')
 const whoCache = new Map()

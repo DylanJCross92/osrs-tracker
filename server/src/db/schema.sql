@@ -186,6 +186,8 @@ CREATE INDEX IF NOT EXISTS email_verifications_user_idx ON email_verifications (
 ALTER TABLE users ADD COLUMN IF NOT EXISTS roles TEXT[] NOT NULL DEFAULT '{user}';
 -- The last UTC day this account was seen using the site (a sign-in or a returning visit), so a returning visit is counted once a day.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_day DATE;
+-- The last moment this account was seen using the site (touched at most every few minutes), for the owner's Active accounts list.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;
 
 -- Profile claims. A signed-in account asks to claim a tracked OSRS name, gets a short code, and sends it in game to the
 -- site owner, who types it in to approve. The one 'verified' row for a player IS the ownership record (the unique index
@@ -326,6 +328,17 @@ CREATE TABLE IF NOT EXISTS share_stats (
   detail TEXT NOT NULL,
   n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, type, kind, detail)
+);
+
+-- What was shared and visited through, per day: a player's name, a clan or plan name, a skill. Only for the owner's Sharing page.
+-- Capped in the service so a script cannot fill it.
+CREATE TABLE IF NOT EXISTS share_items (
+  day DATE NOT NULL,
+  type TEXT NOT NULL CHECK (type IN ('share', 'visit')),
+  kind TEXT NOT NULL,
+  item TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, type, kind, item)
 );
 
 -- Clans (a real clan, or a few friends) and the competitions they run. A clan is a set of tracked players; an account owns it. The

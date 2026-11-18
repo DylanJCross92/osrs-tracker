@@ -27,12 +27,37 @@ const SHARE_EVENTS = {
 // Events that are always a copied link.
 const LINK_EVENTS = { calc_share: 'calculator', compare_share_copy: 'compare', shared_plan_link_copied: 'plan' }
 
-/** { kind, method } when an analytics event is somebody sharing a link or image, otherwise null. */
+/**
+ * { kind, method, item } when an analytics event is somebody sharing a link or image, otherwise null. `item` is what was shared
+ * (a player's name, a clan or plan name, a skill), when the share button said; it goes to the site's own share count only.
+ */
 export function shareFromEvent(event, params = {}) {
-  if (LINK_EVENTS[event]) return { kind: LINK_EVENTS[event], method: 'link' }
+  const item = typeof params?.item === 'string' && params.item.trim() ? { item: params.item.trim().slice(0, 80) } : {}
+  if (LINK_EVENTS[event]) return { kind: LINK_EVENTS[event], method: 'link', ...item }
   const kind = SHARE_EVENTS[event]
   const method = METHOD_GROUP[params?.method]
-  return kind && method ? { kind, method } : null
+  return kind && method ? { kind, method, ...item } : null
+}
+
+/**
+ * Which player (or player and record) a shared link is about, in the same words the share buttons use, so a share and the
+ * visits it brings add up on one line. '' for links that name nothing public (a clan invite, a plan).
+ */
+export function sharedLinkItem(path) {
+  const p = String(path || '')
+  const decode = (v) => {
+    try {
+      return decodeURIComponent(v).toLowerCase()
+    } catch {
+      return String(v).toLowerCase()
+    }
+  }
+  let m = /^\/challenge\/([^/?#]+)/i.exec(p)
+  if (m) return decode(m[1])
+  m = /^\/player\/([^/?#]+)\/records\/([^/?#]+)/i.exec(p)
+  if (m) return `${decode(m[1])} · ${decode(m[2])}`
+  m = /^\/player\/([^/?#]+)\/(?:goals|card\/weekly)(?:\/|$|\?)/i.exec(p)
+  return m ? decode(m[1]) : ''
 }
 
 /**

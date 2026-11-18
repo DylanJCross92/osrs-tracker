@@ -46,7 +46,7 @@ const redditUrl = computed(() => `https://www.reddit.com/submit?url=${encodeURIC
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 const canCopyImage = typeof navigator !== 'undefined' && !!navigator.clipboard?.write && typeof window !== 'undefined' && typeof window.ClipboardItem !== 'undefined'
 
-const sent = (method) => track('clan_share', { method })
+const sent = (method) => track('clan_share', { method, item: props.clan.name })
 
 async function copyLink() {
   sent('copy_link')

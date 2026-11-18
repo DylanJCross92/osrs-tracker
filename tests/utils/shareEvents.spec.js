@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { claimVisit, referrerSource, shareFromEvent, sharedLinkKind } from '@/utils/shareEvents'
+import { claimVisit, referrerSource, shareFromEvent, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
 
 describe('shareFromEvent', () => {
   it('groups share buttons into links, images and posts', () => {
@@ -80,5 +80,26 @@ describe('claimVisit', () => {
   })
   it('still counts when storage is blocked', () => {
     expect(claimVisit('site', new Date(), { getItem: () => { throw new Error('blocked') }, setItem: () => {} })).toBe(true)
+  })
+})
+
+describe('what was shared', () => {
+  it('carries the item a share button names, trimmed', () => {
+    expect(shareFromEvent('share_card', { method: 'live', item: '  zezima ' })).toEqual({ kind: 'weekly_card', method: 'link', item: 'zezima' })
+    expect(shareFromEvent('calc_share', { item: 'Mining' })).toEqual({ kind: 'calculator', method: 'link', item: 'Mining' })
+    expect(shareFromEvent('clan_share', { method: 'x', item: '   ' })).toEqual({ kind: 'clan', method: 'social' })
+  })
+  it('names the player behind a shared link, in the same words as the share buttons', () => {
+    expect(sharedLinkItem('/player/Zezima/card/weekly/abc123')).toBe('zezima')
+    expect(sharedLinkItem('/player/Zezima/card/weekly?skill=Mining')).toBe('zezima')
+    expect(sharedLinkItem('/player/Zezima/goals/12')).toBe('zezima')
+    expect(sharedLinkItem('/player/Zezima/records/Biggest-Day')).toBe('zezima · biggest-day')
+    expect(sharedLinkItem('/challenge/Lynx%20Titan')).toBe('lynx titan')
+  })
+  it('names nothing for links that are private or not about one player', () => {
+    expect(sharedLinkItem('/join/bEYPONY4aTuUMmZgGBx-TA')).toBe('')
+    expect(sharedLinkItem('/plan/my-plan')).toBe('')
+    expect(sharedLinkItem('/player/Zezima')).toBe('')
+    expect(sharedLinkItem(undefined)).toBe('')
   })
 })

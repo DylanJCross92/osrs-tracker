@@ -50,8 +50,27 @@
           <p class="st-note">Discord and most phone apps do not tell the site where a click came from, so those show as "Direct or app".</p>
         </section>
       </div>
+
+      <section class="st-card" aria-labelledby="st-items">
+        <div class="st-card-head"><h2 id="st-items">What exactly is being shared</h2></div>
+        <p v-if="!data.items?.length" class="st-empty">Nothing recorded yet. From now on each share notes which player, clan, plan or skill it was.</p>
+        <div v-else class="st-table-wrap">
+          <table class="st-table">
+            <thead><tr><th>What</th><th>Kind</th><th>Shares</th><th>Visits</th></tr></thead>
+            <tbody>
+              <tr v-for="i in data.items" :key="i.kind + i.item">
+                <th scope="row"><RouterLink v-if="playerLink(i)" :to="playerLink(i)">{{ i.item }}</RouterLink><template v-else>{{ i.item }}</template></th>
+                <td>{{ i.label }}</td>
+                <td>{{ fmt(i.shares) }}</td>
+                <td>{{ fmt(i.visits) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="st-note">Players, weekly cards, records, goals and challenges show the player's name, and a record also its type. Clans and plans show their names, calculators their skill, compares both players. Visits are only known for links that name a player; clan invites and plans are not matched to visits.</p>
+      </section>
     </template>
-    <p class="st-foot">Counting began when this page shipped, so earlier shares are not included. Visits by you and other admins, and link previews fetched by Discord or X, are not counted. The share numbers keep only a daily tally. Events keep no IP address and no cookie; a signed-in account is stored with an event only to count different accounts, and events are deleted after about 13 months.</p>
+    <p class="st-foot">Counting began when this page shipped, so earlier shares are not included. What was shared is kept from the day it was added. Visits by you and other admins, and link previews fetched by Discord or X, are not counted. The share numbers keep only a daily tally. Events keep no IP address and no cookie; a signed-in account is stored with an event only to count different accounts, and events are deleted after about 13 months.</p>
   </div>
 </template>
 
@@ -68,6 +87,10 @@ const shares = useStatsLoad((d) => statsApi.shares(d), 'Could not load the stati
 const data = shares.data
 const error = shares.error
 watch(() => props.days, (d) => shares.load(d), { immediate: true })
+
+// Player-named items link to the player's page.
+const PLAYER_KINDS = ['weekly_card', 'record', 'goal', 'challenge']
+const playerLink = (i) => (PLAYER_KINDS.includes(i.kind) ? { name: 'playerDetail', params: { username: i.item.split(' · ')[0] } } : null)
 
 const dailySeries = computed(() => [
   { key: 'shares', label: 'Shares', color: 'var(--st-a)', values: data.value.daily.map((d) => d.shares) },

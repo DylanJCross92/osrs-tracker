@@ -1,5 +1,5 @@
 import { pool } from '../db.js'
-import { summarize } from '../utils/shareStats.js'
+import { summarize, summarizeItems } from '../utils/shareStats.js'
 import { APP_TIMEZONE, localDay } from '../utils/dates.js'
 import { fillDailyXp } from '../utils/dailyXp.js'
 import { playersByDay } from '../utils/dailyPlayers.js'
@@ -15,16 +15,33 @@ const bump = (type, kind, detail) =>
     [type, kind, detail],
   )
 
-export const recordShare = ({ kind, method }) => bump('share', kind, method)
-export const recordVisit = ({ kind, source }) => bump('visit', kind, source)
+// The most different items kept for one day: a script cannot fill the table, and a real day is far below it.
+const MAX_ITEMS_PER_DAY = 3000
+const bumpItem = (type, kind, item) =>
+  pool.query(
+    `INSERT INTO share_items (day, type, kind, item, n)
+     SELECT (now() AT TIME ZONE 'utc')::date, $1, $2, $3, 1
+     WHERE (SELECT count(*) FROM share_items WHERE day = (now() AT TIME ZONE 'utc')::date) < $4
+     ON CONFLICT (day, type, kind, item) DO UPDATE SET n = share_items.n + 1`,
+    [type, kind, item, MAX_ITEMS_PER_DAY],
+  )
+
+export async function recordShare({ kind, method, item }) {
+  await bump('share', kind, method)
+  if (item) await bumpItem('share', kind, item)
+}
+export async function recordVisit({ kind, source, item }) {
+  await bump('visit', kind, source)
+  if (item) await bumpItem('visit', kind, item)
+}
 
 /** Shares and shared-link visits for the last `days` days (including today). */
 export async function shareOverview(days) {
-  const { rows } = await pool.query(
-    `SELECT day::text AS day, type, kind, detail, n FROM share_stats WHERE day > (now() AT TIME ZONE 'utc')::date - $1::int`,
-    [days],
-  )
-  return summarize(rows, days, today())
+  const [{ rows }, { rows: itemRows }] = await Promise.all([
+    pool.query(`SELECT day::text AS day, type, kind, detail, n FROM share_stats WHERE day > (now() AT TIME ZONE 'utc')::date - $1::int`, [days]),
+    pool.query(`SELECT type, kind, item, sum(n)::int AS n FROM share_items WHERE day > (now() AT TIME ZONE 'utc')::date - $1::int GROUP BY type, kind, item`, [days]),
+  ])
+  return { ...summarize(rows, days, today()), items: summarizeItems(itemRows) }
 }
 
 /** The players most recently added to the tracker, newest first, with where they stand now (for the admin view on Discover). */

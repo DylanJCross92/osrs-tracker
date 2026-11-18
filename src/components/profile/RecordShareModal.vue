@@ -48,7 +48,7 @@ const redditUrl = computed(() => `https://www.reddit.com/submit?url=${encodeURIC
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 const canCopyImage = typeof navigator !== 'undefined' && !!navigator.clipboard?.write && typeof window !== 'undefined' && typeof window.ClipboardItem !== 'undefined'
 
-const sent = (method) => track('record_share', { method, record: props.record.key })
+const sent = (method) => track('record_share', { method, record: props.record.key, item: `${props.username.toLowerCase()} · ${String(props.record.key).toLowerCase()}` })
 
 async function copyLink() {
   sent('copy_link')

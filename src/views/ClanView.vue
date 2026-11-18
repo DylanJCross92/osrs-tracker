@@ -262,7 +262,7 @@ function onCreated(competition) {
 }
 
 async function copyInvite() {
-  track('clan_share', { method: 'copy_link' })
+  track('clan_share', { method: 'copy_link', item: view.value.clan.name })
   await copy(clansApi.inviteUrl(view.value.viewer.inviteToken), 'Invite link copied')
 }
 

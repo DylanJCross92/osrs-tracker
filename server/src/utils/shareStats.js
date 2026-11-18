@@ -21,18 +21,48 @@ export const SHARE_METHODS = ['link', 'image', 'social']
 export const SOURCES = ['discord', 'x', 'reddit', 'facebook', 'google', 'other', 'direct']
 export const SOURCE_LABELS = { discord: 'Discord', x: 'X / Twitter', reddit: 'Reddit', facebook: 'Facebook', google: 'Google', other: 'Other sites', direct: 'Direct or app' }
 
-/** { kind, method } from a request body, or null when it is not a known share. */
+/**
+ * What was shared, as a short label ("zezima", "The Skilling Clan", "my 99 plan"): a player's name, a clan or plan name, a skill.
+ * Control characters go, runs of spaces collapse, and it is cut to 80 characters. '' when there is nothing usable.
+ */
+export function cleanItem(value) {
+  if (typeof value !== 'string') return ''
+  return value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80)
+}
+
+/** { kind, method, item } from a request body (item only when there is one), or null when it is not a known share. */
 export function cleanShare(body) {
   const kind = body?.kind
   const method = body?.method
-  return KINDS.includes(kind) && SHARE_METHODS.includes(method) ? { kind, method } : null
+  if (!KINDS.includes(kind) || !SHARE_METHODS.includes(method)) return null
+  const item = cleanItem(body?.item)
+  return item ? { kind, method, item } : { kind, method }
 }
 
-/** { kind, source } from a request body, or null. A missing or unknown source counts as direct. */
+/** { kind, source, item } from a request body, or null. A missing or unknown source counts as direct. */
 export function cleanVisit(body) {
   const kind = body?.kind
   if (kind !== 'site' && !KINDS.includes(kind)) return null
-  return { kind, source: SOURCES.includes(body?.source) ? body.source : 'direct' }
+  const out = { kind, source: SOURCES.includes(body?.source) ? body.source : 'direct' }
+  const item = kind === 'site' ? '' : cleanItem(body?.item)
+  return item ? { ...out, item } : out
+}
+
+/**
+ * The most shared items from the stored rows ({ type, kind, item, n }): one line per kind and item with its shares and the
+ * visits it brought, busiest first. [{ kind, label, item, shares, visits }].
+ */
+export function summarizeItems(rows, limit = 40) {
+  const out = new Map()
+  for (const r of rows) {
+    const label = KIND_LABELS[r.kind]
+    if (!label || !r.item) continue
+    const key = `${r.kind}\u0000${r.item}`
+    const line = out.get(key) || { kind: r.kind, label, item: r.item, shares: 0, visits: 0 }
+    line[r.type === 'share' ? 'shares' : 'visits'] += Number(r.n) || 0
+    out.set(key, line)
+  }
+  return [...out.values()].sort((a, b) => b.shares + b.visits - (a.shares + a.visits) || b.shares - a.shares || a.item.localeCompare(b.item)).slice(0, limit)
 }
 
 /**

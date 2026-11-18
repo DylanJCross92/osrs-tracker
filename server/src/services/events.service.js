@@ -57,14 +57,26 @@ export async function eventDetail(name, days) {
 const isAdmin = (user) => hasRole(user.roles, 'admin', 'owner')
 // The last day each account was noted in this process, so a busy account costs one database call a day, not one a request.
 const noted = new Map()
+// When each account's last-seen time was last written in this process, so it costs one database call every few minutes, not one a request.
+const touched = new Map()
+const TOUCH_EVERY_MS = 5 * 60_000
+
+async function touchLastSeen(user) {
+  const now = Date.now()
+  if (now - (touched.get(user.id) || 0) < TOUCH_EVERY_MS) return
+  if (touched.size > 5000) touched.clear()
+  touched.set(user.id, now)
+  await pool.query('UPDATE users SET last_seen_at = now() WHERE id = $1', [user.id])
+}
 
 /** A sign-in (method: password, email_link or password_reset). Never throws: counting must not get in the way of signing in. */
 export async function recordLogin(user, method, headers = {}) {
   try {
     const dnt = askedNotToTrack(headers)
     if (!dnt) {
-      await pool.query('UPDATE users SET last_seen_day = $2::date WHERE id = $1', [user.id, today()])
+      await pool.query('UPDATE users SET last_seen_day = $2::date, last_seen_at = now() WHERE id = $1', [user.id, today()])
       noted.set(user.id, today())
+      touched.set(user.id, Date.now())
     }
     if (!isAdmin(user)) await recordEvents([{ name: 'login', props: { method } }], dnt ? null : user.id)
   } catch (err) {
@@ -79,6 +91,7 @@ export async function recordLogin(user, method, headers = {}) {
 export async function noteActivity(user, headers = {}) {
   try {
     if (!user || askedNotToTrack(headers)) return
+    await touchLastSeen(user)
     const day = today()
     if (noted.get(user.id) === day) return
     if (noted.size > 5000) noted.clear()
@@ -106,7 +119,7 @@ export async function dailyActive(days = 30) {
 }
 
 /**
- * Which accounts were active on one UTC day (YYYY-MM-DD): { day, accounts: [{ email, players, logins, returned }] }, busiest
+ * Which accounts were active on one UTC day (YYYY-MM-DD): { day, accounts: [{ email, players, logins, returned, lastSeen }] }, busiest
  * first. For the site owner only. players is the OSRS names the account has claimed, if any.
  */
 export async function activeAccounts(day) {
@@ -118,6 +131,7 @@ export async function activeAccounts(day) {
               WHERE c.user_id = u.id AND c.status = 'verified') AS players,
             count(*) FILTER (WHERE e.name = 'login')::int AS logins,
             coalesce(bool_or(e.name = 'session_resumed'), false) AS returned,
+            coalesce(u.last_seen_at, u.last_login_at) AS last_seen,
             count(*)::int AS events
      FROM events e JOIN users u ON u.id = e.account_id
      WHERE e.day = $1::date
@@ -126,5 +140,5 @@ export async function activeAccounts(day) {
      LIMIT 100`,
     [day],
   )
-  return { day, accounts: rows.map((r) => ({ email: r.email, players: r.players || '', logins: r.logins, returned: r.returned })) }
+  return { day, accounts: rows.map((r) => ({ email: r.email, players: r.players || '', logins: r.logins, returned: r.returned, lastSeen: r.last_seen ? new Date(r.last_seen).toISOString() : null })) }
 }

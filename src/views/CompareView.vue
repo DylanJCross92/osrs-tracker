@@ -566,7 +566,7 @@ const highlightB = computed(() => (ready.value ? highlightFor(sideB, 'b') : { na
 
 // --- actions ------------------------------------------------------------------------------------------------------
 async function copyLink() {
-  track('compare_share_copy')
+  track('compare_share_copy', { item: hasNames.value ? `${nameA.value} vs ${nameB.value}`.toLowerCase() : '' })
   try {
     const link = new URL(window.location.href)
     link.searchParams.set('from', 'share')

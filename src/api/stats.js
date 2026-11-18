@@ -2,9 +2,9 @@ import { api } from './client'
 
 export const statsApi = {
   // Anonymous counters, fire and forget.
-  share: (kind, method) => api.post('/stats/share', { kind, method }),
-  visit: (kind, source) => api.post('/stats/visit', { kind, source }),
-  // Site owner only: { days, totals, byKind, sources, daily }.
+  share: (kind, method, item) => api.post('/stats/share', { kind, method, ...(item ? { item } : {}) }),
+  visit: (kind, source, item) => api.post('/stats/visit', { kind, source, ...(item ? { item } : {}) }),
+  // Site owner only: { days, totals, byKind, sources, daily, items: [{ kind, label, item, shares, visits }] }.
   shares: (days = 30) => api.get(`/admin/stats/shares?days=${days}`),
   // Site owner only: { days, labels, growth: [{ key, label, total, added, daily }], unverified, pendingClaims, activeWeek, feed: [{ at, kind, text, detail? }] }.
   overview: (days = 30) => api.get(`/admin/stats/overview?days=${days}`),
