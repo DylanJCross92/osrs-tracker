@@ -128,7 +128,8 @@
     </div>
   
     <div class="se-foot">
-      <button class="btn btn-primary" type="button" @click="$emit('done')">Done</button>
+      <button class="btn btn-ghost" type="button" @click="$emit('cancel')">Cancel</button>
+      <button class="btn btn-primary" type="button" @click="$emit('done')">Save</button>
     </div>
   </div>
 </template>
@@ -182,7 +183,7 @@ const props = defineProps({
   // Which tab opens first.
   initialTab: { type: String, default: 'method' },
 })
-const emit = defineEmits(['patch', 'pick', 'remove', 'done'])
+const emit = defineEmits(['patch', 'pick', 'remove', 'done', 'cancel'])
 
 const reqCtx = inject(plannerRequirementContext, null)
 const { respect } = useRequirements()

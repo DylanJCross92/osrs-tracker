@@ -121,6 +121,7 @@
               @pick="(id) => pickRoute(i, id)"
               @remove="removeSkill(i)"
               @done="closeSkillEditor"
+              @cancel="cancelSkillEditor"
             />
           </template>
         </PlannerPath></div>
@@ -591,6 +592,27 @@ function saveIfChanged() {
 function closeSkillEditor() {
   const skill = editSkill.value
   saveIfChanged()
+  if (mode.value === 'plan' && currentPlanId.value) router.replace(planLocation(currentPlanId.value, { skill }))
+  else editSkillLocal.value = ''
+}
+// The editor changes the plan as you go (so the route above it stays current), so what the skill was when the editor opened is
+// kept, and Cancel puts it back. Nothing is saved on the way out.
+let editSnapshot = null
+watch(editSkill, (skill, before) => {
+  if (!skill) editSnapshot = null
+  else if (skill !== before) {
+    const g = goals.value.find((x) => x.skill === skill)
+    editSnapshot = g ? { skill, goal: JSON.parse(JSON.stringify(g)) } : null
+  }
+}, { immediate: true })
+function cancelSkillEditor() {
+  const skill = editSkill.value
+  const i = goals.value.findIndex((g) => g.skill === skill)
+  if (editSnapshot && editSnapshot.skill === skill && i >= 0) {
+    const g = goals.value[i]
+    for (const key of Object.keys(g)) if (!(key in editSnapshot.goal)) delete g[key]
+    Object.assign(g, JSON.parse(JSON.stringify(editSnapshot.goal)))
+  }
   if (mode.value === 'plan' && currentPlanId.value) router.replace(planLocation(currentPlanId.value, { skill }))
   else editSkillLocal.value = ''
 }

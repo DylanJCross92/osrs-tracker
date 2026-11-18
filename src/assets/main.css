@@ -5680,7 +5680,7 @@ b.path-name { font-size: 1.12rem; }
 .se-tab.on { border-bottom-color: var(--gold-bright); color: var(--gold-bright); font-weight: 700; }
 .se-tab i { padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--muted); font-size: 0.7rem; font-style: normal; font-weight: 600; }
 .se-tab i.is-bad { background: rgba(217, 105, 90, 0.16); color: #e58a7c; }
-.se-foot { display: flex; justify-content: flex-end; margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+.se-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; padding-top: 14px; border-top: 1px solid var(--border); }
 .se-panel { display: flex; flex-direction: column; gap: 20px; }
 .se-field { display: flex; flex-direction: column; gap: 8px; }
 .se-field h4 { margin: 0; font-size: 1rem; color: var(--gold-bright); }
