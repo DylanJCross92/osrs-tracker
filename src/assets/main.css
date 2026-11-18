@@ -5215,8 +5215,15 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .st-pop-list li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .st-pop-list li em { color: var(--muted); font-style: normal; }
 .st-pop-list li small { color: var(--muted); flex: none; }
-.st-pop-list li { flex-wrap: wrap; }
-.st-pop-list li .st-pop-seen { flex: 1 0 100%; font-size: 0.74rem; opacity: 0.85; }
+.st-pop-head.is-stacked { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding-bottom: 8px; }
+.st-pop-head.is-stacked b { white-space: nowrap; }
+.st-pop-head.is-stacked span { color: var(--muted); font-size: 0.78rem; }
+.st-pop-list li.st-pop-acct { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 1px; padding: 7px 0; }
+.st-pop-acct .st-pop-who { display: flex; flex-direction: column; min-width: 0; }
+.st-pop-acct .st-pop-who b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-pop-acct .st-pop-who em { font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-pop-acct .st-pop-meta { font-size: 0.76rem; }
+.st-pop-acct .st-pop-meta span { overflow: visible; white-space: normal; }
 .st-pop-more { color: var(--muted); }
 .sbars { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
 .sbars li { display: grid; grid-template-columns: minmax(90px, 36%) minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; font-size: 0.9rem; }

@@ -47,12 +47,18 @@
       <p v-else-if="!active" class="st-empty">Loading…</p>
       <StatChart v-else :labels="active.map((d) => d.day)" :series="activeSeries" empty-text="No signed-in activity recorded in this time yet." @hover="onActiveHover">
         <template #tooltip="{ index }">
-          <p class="st-pop-head"><b>{{ dayLong(active[index].day) }}</b> · {{ count(active[index].active, 'account') }} active<template v-if="active[index].logins || active[index].resumed"> · {{ count(active[index].logins, 'sign-in') }}, {{ fmt(active[index].resumed) }} came back</template></p>
+          <p class="st-pop-head is-stacked">
+            <b>{{ dayLong(active[index].day) }}</b>
+            <span>{{ count(active[index].active, 'account') }} active<template v-if="active[index].logins || active[index].resumed"> · {{ count(active[index].logins, 'sign-in') }}, {{ fmt(active[index].resumed) }} came back</template></span>
+          </p>
           <p v-if="!active[index].active" class="st-pop-note">Nobody signed in or came back.</p>
           <p v-else-if="whoError" class="st-pop-note">{{ whoError }}</p>
           <p v-else-if="!who || who.day !== active[index].day" class="st-pop-note">Loading…</p>
           <ul v-else-if="who.accounts.length" class="st-pop-list">
-            <li v-for="a in who.accounts.slice(0, POP_ROWS)" :key="a.email"><span>{{ a.email }}<em v-if="a.players"> · {{ a.players }}</em></span><small>{{ a.logins ? 'signed in' : 'came back' }}</small><small v-if="a.lastSeen" class="st-pop-seen" :title="new Date(a.lastSeen).toLocaleString()">Last seen {{ seenAgo(a.lastSeen) }}</small></li>
+            <li v-for="a in who.accounts.slice(0, POP_ROWS)" :key="a.email" class="st-pop-acct">
+              <span class="st-pop-who"><b>{{ a.email }}</b><em v-if="a.players">{{ a.players }}</em></span>
+              <small class="st-pop-meta">{{ a.logins ? 'Signed in' : 'Came back' }}<template v-if="a.lastSeen"> · <span :title="new Date(a.lastSeen).toLocaleString()">last seen {{ seenAgo(a.lastSeen) }}</span></template></small>
+            </li>
             <li v-if="who.accounts.length > POP_ROWS" class="st-pop-more">and {{ who.accounts.length - POP_ROWS }} more</li>
           </ul>
         </template>
