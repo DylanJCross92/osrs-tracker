@@ -5802,4 +5802,4 @@ b.path-name { font-size: 1.12rem; }
 .pn .dtl-level .dtl-tag { color: var(--gold-bright); border-color: var(--gold); }
 .pn .dtl-goal .dtl-tag { color: var(--xp-green); border-color: rgba(120, 190, 110, 0.5); }
 .pn .dlater.first { margin-top: 0; padding-top: 0; border-top: 0; }
-@media (max-width: 560px) { .pn .dtl-item { flex-wrap: wrap; } .pn .dtl-tag { margin-left: 34px; } }
+@media (max-width: 560px) { .pn .dtl-item { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: start; gap: 6px 10px; } .pn .dtl-tag { grid-column: 2; justify-self: start; margin-left: 0; } }
