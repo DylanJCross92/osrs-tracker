@@ -12,10 +12,22 @@ import { pendingRequestCounts, pendingRequestsFor } from './clans.service.js'
 export async function getNotifications(user) {
   const items = []
 
-  // Site admins: profile claims waiting for a code to be checked.
+  // Site admins: each profile claim waiting for a code to be checked, with the profile's picture and name. A long queue
+  // shows the newest few and one line for the rest.
   if (hasRole(user.roles, 'admin', 'owner')) {
-    const waiting = await countPending()
-    if (waiting > 0) items.push({ id: 'claims-waiting', type: 'claims_waiting', count: waiting, text: waiting === 1 ? '1 profile claim waiting' : `${waiting} profile claims waiting`, to: '/admin/claims' })
+    const MAX_CLAIM_ITEMS = 6
+    const { rows: pending } = await pool.query(
+      `SELECT c.id, c.created_at, p.username, p.display_name FROM profile_claims c JOIN players p ON p.id = c.player_id
+       WHERE c.status = 'pending' AND c.expires_at > now() ORDER BY c.created_at DESC LIMIT $1`,
+      [MAX_CLAIM_ITEMS],
+    )
+    for (const r of pending) {
+      items.push({ id: `claim-waiting-${r.id}`, type: 'claims_waiting', count: 1, text: `${r.display_name} profile claim waiting`, to: '/admin/claims', subject: r.username, createdAt: r.created_at })
+    }
+    if (pending.length === MAX_CLAIM_ITEMS) {
+      const rest = (await countPending()) - MAX_CLAIM_ITEMS
+      if (rest > 0) items.push({ id: 'claims-waiting-more', type: 'claims_waiting', count: rest, text: `${rest} more profile claim${rest === 1 ? '' : 's'} waiting`, to: '/admin/claims' })
+    }
   }
 
   // Everyone: their own claims that still need the in-game code sent.
@@ -25,7 +37,7 @@ export async function getNotifications(user) {
     [user.id],
   )
   for (const r of rows) {
-    items.push({ id: `claim-${r.id}`, type: 'claim_code', count: 1, text: `Send your code to finish claiming ${r.display_name}`, to: `/player/${encodeURIComponent(r.username)}` })
+    items.push({ id: `claim-${r.id}`, type: 'claim_code', count: 1, text: `Send your code to finish claiming ${r.display_name}`, to: `/player/${encodeURIComponent(r.username)}`, subject: r.username })
   }
 
   // Clan owners and moderators: each person waiting to be let in, with their picture. A long queue shows the newest few
