@@ -3,6 +3,8 @@ import { generateClaimCode, normalizeClaimCode } from '../utils/claimCode.js'
 import { parseAvailability, pingWaitMinutes } from '../utils/claimAvailability.js'
 import { discordConfigured } from './discord.service.js'
 import { addNotification } from './inbox.service.js'
+import { mailConfigured } from '../utils/mailer.js'
+import { CLAIM_EMAIL_AFTER_HOURS } from '../utils/claimExpiryEmail.js'
 
 // Who to message in game. Change it with CLAIM_CONTACT_RSN if the account ever changes.
 export const claimContact = () => process.env.CLAIM_CONTACT_RSN || 'Dylanz297'
@@ -204,8 +206,15 @@ export async function revokeClaim(admin, id) {
 /** Waiting and verified claims for the owner's page. Codes are left out on purpose: the owner types in the one they received. */
 export async function adminOverview() {
   const { rows } = await pool.query(`${CLAIM_SELECT} WHERE c.status IN ('pending', 'verified') ORDER BY c.created_at DESC LIMIT 300`)
-  const all = rows.map((r) => ({ ...shape(r), email: r.email }))
-  return { pending: all.filter((c) => c.status === 'pending'), verified: all.filter((c) => c.status === 'verified') }
+  // When the closing email went out (or is due), so the page can show when each waiting claim will close. `emailing` is false until
+  // email is set up with the site's own sender: then no email goes out and claims keep their usual time.
+  const all = rows.map((r) => ({
+    ...shape(r),
+    email: r.email,
+    expiryEmailAt: r.expiry_email_at || null,
+    emailDueAt: new Date(new Date(r.created_at).getTime() + CLAIM_EMAIL_AFTER_HOURS * 3_600_000).toISOString(),
+  }))
+  return { pending: all.filter((c) => c.status === 'pending'), verified: all.filter((c) => c.status === 'verified'), emailing: mailConfigured() && Boolean(process.env.NOTIFY_FROM) }
 }
 
 export async function countPending() {

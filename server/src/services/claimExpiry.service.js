@@ -1,6 +1,6 @@
 import { pool } from '../db.js'
 import { mailConfigured, sendMail } from '../utils/mailer.js'
-import { CLAIM_EXPIRY_HOURS, claimExpiryEmail, deadlineLabel } from '../utils/claimExpiryEmail.js'
+import { CLAIM_EMAIL_AFTER_HOURS, CLAIM_EXPIRY_HOURS, claimExpiryEmail, deadlineLabel } from '../utils/claimExpiryEmail.js'
 import { claimContact } from './claims.service.js'
 import { addNotification } from './inbox.service.js'
 import { unsubscribeUrlFor } from './claimNudge.service.js'
@@ -12,12 +12,12 @@ import { unsubscribeUrlFor } from './claimNudge.service.js'
 // as handled, so nothing is sent or moved twice. Until email is set up with the site's own sender (NOTIFY_FROM), nobody but the
 // owner could receive it, so claims keep their usual 14 days instead of closing with no warning.
 
-export const CLAIM_EMAIL_AFTER_HOURS = 24
-export { CLAIM_EXPIRY_HOURS }
+export { CLAIM_EMAIL_AFTER_HOURS, CLAIM_EXPIRY_HOURS }
 const PAUSE_MS = 600 // the mail service allows about two messages a second
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-const emailReady = () => mailConfigured() && Boolean(process.env.NOTIFY_FROM)
+/** True once email is set up with the site's own sender, which is when the 24 hour email and the 48 hour deadline apply. */
+export const emailReady = () => mailConfigured() && Boolean(process.env.NOTIFY_FROM)
 
 /** Closes every waiting claim whose time has run out. Returns how many were closed. */
 export async function closeExpiredClaims() {

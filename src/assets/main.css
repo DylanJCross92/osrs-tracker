@@ -6066,3 +6066,11 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .fn-path-num { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
 .fn-path-num b { color: var(--text); }
 .fn-path-num small { color: var(--muted); font-size: 0.76rem; }
+
+/* Profile claims (admin): when a claim started, its email goes and it closes */
+.cl-times { display: grid; gap: 2px; margin: 8px 0 0; font-size: 0.82rem; }
+.cl-times div { display: grid; grid-template-columns: 8.6em minmax(0, 1fr); gap: 10px; }
+.cl-times dt { color: var(--muted); }
+.cl-times dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+.cl-times dd.is-done { color: var(--xp-green); }
+.cl-times dd.is-off { color: var(--muted); font-style: italic; }

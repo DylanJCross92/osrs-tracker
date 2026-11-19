@@ -18,6 +18,9 @@
             <RouterLink class="cl-name" :to="{ name: 'playerDetail', params: { username: c.player.username } }" target="_blank">{{ c.player.displayName }}</RouterLink>
             <span class="cl-meta">{{ c.email }} · {{ c.expired ? 'expired' : `started ${ago(c.createdAt)}` }}</span>
             <span v-if="!c.expired && presence(c)" class="cl-presence" :class="`is-${presence(c).kind}`">{{ presence(c).text }}</span>
+            <dl v-if="!c.expired" class="cl-times" aria-label="When this claim was started, reminded and closes">
+              <div v-for="t in times(c)" :key="t.label"><dt>{{ t.label }}</dt><dd :class="t.cls">{{ t.value }}</dd></div>
+            </dl>
           </div>
           <div v-if="openId !== c.id" class="cl-actions">
             <button class="btn btn-primary" type="button" :disabled="c.expired" @click="startVerify(c)">Verify</button>
@@ -63,7 +66,7 @@ import { describeWindow } from '@/utils/claimWindow'
 
 setPageMeta({ title: 'Profile claims', description: 'Verify profile claims.', path: '/admin/claims', noindex: true })
 
-const data = reactive({ pending: [], verified: [] })
+const data = reactive({ pending: [], verified: [], emailing: false })
 const loading = ref(true)
 const openId = ref(null)
 const code = ref('')
@@ -76,6 +79,26 @@ function ago(iso) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
   if (days <= 0) return 'today'
   return days === 1 ? 'yesterday' : `${days} days ago`
+}
+
+// "Nov 21, 3:25 PM EST": date and time in the viewer's own zone.
+const stamp = (iso) => new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })
+const HOUR = 3_600_000
+// When the claim was started, when its closing email goes (or went), and when it closes. Until email is set up with the site's
+// own sender no email goes out and a claim keeps its usual time; after the email it closes 48 hours later.
+function times(c) {
+  const out = [{ label: 'Started', value: stamp(c.createdAt) }]
+  if (c.expiryEmailAt) {
+    out.push({ label: 'Reminder email', value: `Sent ${stamp(c.expiryEmailAt)}`, cls: 'is-done' })
+    out.push({ label: 'Closes', value: stamp(c.expiresAt) })
+  } else if (data.emailing) {
+    out.push({ label: 'Reminder email', value: new Date(c.emailDueAt).getTime() > Date.now() ? `Due ${stamp(c.emailDueAt)}` : 'Due now, sends within the hour' })
+    out.push({ label: 'Closes', value: `About ${stamp(new Date(Math.max(Date.now(), new Date(c.emailDueAt).getTime()) + 48 * HOUR))}, 48 hours after the email` })
+  } else {
+    out.push({ label: 'Reminder email', value: 'Not sending yet (email is not set up)', cls: 'is-off' })
+    out.push({ label: 'Closes', value: stamp(c.expiresAt) })
+  }
+  return out
 }
 
 // Whether the player said they would be in game, and whether they have just pinged: the cue to log on.

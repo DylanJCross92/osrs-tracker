@@ -5,6 +5,8 @@ import { renderEmail } from './emailTemplate.js'
 const SITE = () => process.env.SITE_URL || 'https://tickgains.com'
 
 export const CLAIM_EXPIRY_HOURS = 48
+// How long after a claim is opened the email goes out.
+export const CLAIM_EMAIL_AFTER_HOURS = 24
 
 /** "Sat, Nov 21, 3:20 PM UTC": one fixed zone, so the wording is the same wherever it is read. */
 export function deadlineLabel(deadline) {
