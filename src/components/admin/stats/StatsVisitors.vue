@@ -90,10 +90,11 @@ import { ago, count, fmt } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
 import { describeEvent } from '@/utils/describeEvent'
 
-const props = defineProps({ days: { type: Number, required: true } })
+// `select` opens one person (a key from the list), for a link from the Overview tab.
+const props = defineProps({ days: { type: Number, required: true }, select: { type: String, default: '' } })
 const route = useRoute()
 // A link from another page (the Player plans page) can open one visitor: /admin/stats?tab=visitors&v=v:<id>.
-const asked = typeof route?.query?.v === 'string' ? route.query.v : ''
+const asked = props.select || (typeof route?.query?.v === 'string' ? route.query.v : '')
 const people = useStatsLoad((d) => statsApi.visitors(d), 'Could not load the visitors.')
 const list = people.data
 const listError = people.error

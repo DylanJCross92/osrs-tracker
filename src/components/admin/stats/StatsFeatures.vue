@@ -92,9 +92,10 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { statsApi } from '@/api/stats'
-import { SEARCH_FUNNEL, eventGroup, groupTotals } from '@/utils/eventGroups'
+import { eventGroup, groupTotals } from '@/utils/eventGroups'
 import StatBars from './StatBars.vue'
 import StatChart from './StatChart.vue'
+import { funnelRows } from './overviewData'
 import { fmt, lastDays } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
 
@@ -120,14 +121,7 @@ const daySeries = computed(() => [
   { key: 'pages', label: 'Page views', color: 'var(--st-b)', type: 'line', values: sumDaily(pageEvents.value) },
 ])
 const areas = computed(() => groupTotals(events.value || []))
-const funnel = computed(() => {
-  const by = new Map((events.value || []).map((e) => [e.name, e.total]))
-  return SEARCH_FUNNEL.map((s, i) => {
-    const value = by.get(s.name) || 0
-    const prev = i ? by.get(SEARCH_FUNNEL[i - 1].name) || 0 : 0
-    return { key: s.name, label: s.label, value, sub: i && prev ? `${Math.min(100, Math.round((value / prev) * 100))}% of the step before` : '' }
-  })
-})
+const funnel = computed(() => funnelRows(events.value))
 const topActions = computed(() =>
   actionEvents.value.slice(0, 12).map((e) => ({ key: e.name, label: e.name, value: e.total, sub: e.accounts ? `${fmt(e.accounts)} ${e.accounts === 1 ? 'user' : 'users'}` : '' })),
 )

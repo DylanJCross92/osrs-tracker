@@ -15,9 +15,9 @@
     </nav>
 
     <div id="st-panel" role="tabpanel" :aria-labelledby="`st-tab-${tab}`">
-      <StatsOverview v-if="tab === 'overview'" :days="days" />
+      <StatsOverview v-if="tab === 'overview'" :days="days" @go="goTo" />
       <StatsFeatures v-else-if="tab === 'features'" :days="days" />
-      <StatsVisitors v-else-if="tab === 'visitors'" :days="days" />
+      <StatsVisitors v-else-if="tab === 'visitors'" :days="days" :select="pick" />
       <StatsSharing v-else :days="days" />
     </div>
   </div>
@@ -48,6 +48,14 @@ const tab = ref(TABS.some((t) => t.key === route.query.tab) ? route.query.tab : 
 // The tab is kept in the address, so a refresh or a shared link opens the same one.
 function setTab(key) {
   tab.value = key
+  pick.value = ''
   router.replace({ query: key === 'overview' ? {} : { tab: key } })
+}
+// The Overview links through to the other tabs; a visitor's key opens that person on the Visitors tab.
+const pick = ref('')
+function goTo(key, person = '') {
+  setTab(key)
+  pick.value = person
+  window.scrollTo?.({ top: 0 })
 }
 </script>
