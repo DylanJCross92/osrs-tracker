@@ -7,7 +7,7 @@ import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, re
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
-import { claimNudgeOverview, sendClaimNudgeTest, sendLegacyClaimNudges } from '../services/claimNudge.service.js'
+import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -120,29 +120,13 @@ statsRouter.get('/admin/stats/accounts', ...adminOnly, async (req, res, next) =>
     next(err)
   }
 })
-// For the site owner: the reminder email for confirmed accounts that never claimed a player. What has gone out, who is left over from
-// before it existed, a test to yourself, and the button that emails those older accounts.
-const sendLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many sends. Wait a minute.' })
-statsRouter.get('/admin/emails/claim-nudge', ...adminOnly, async (req, res, next) => {
+// For the site owner: email one account the "claim your player" reminder (from the row menu on User Management).
+const sendLimiter = rateLimit({ windowMs: 60_000, max: 20, message: 'Too many emails. Wait a minute.' })
+statsRouter.post('/admin/users/:id/claim-email', ...adminOnly, sendLimiter, async (req, res, next) => {
   try {
-    res.set('Cache-Control', 'no-store')
-    res.json(await claimNudgeOverview())
+    res.json(await sendClaimNudgeToUser(req.params.id))
   } catch (err) {
-    next(err)
-  }
-})
-statsRouter.post('/admin/emails/claim-nudge/test', ...adminOnly, sendLimiter, async (req, res, next) => {
-  try {
-    const sent = await sendClaimNudgeTest(req.user)
-    res.json({ ok: sent, to: req.user.email })
-  } catch (err) {
-    next(err)
-  }
-})
-statsRouter.post('/admin/emails/claim-nudge/send', ...adminOnly, sendLimiter, async (req, res, next) => {
-  try {
-    res.json(await sendLegacyClaimNudges(Array.isArray(req.body?.ids) ? req.body.ids : null))
-  } catch (err) {
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
     next(err)
   }
 })

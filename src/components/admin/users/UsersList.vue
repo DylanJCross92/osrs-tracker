@@ -42,6 +42,7 @@
           </button>
         </div>
 
+        <p v-if="notice" class="cl-banner" :class="{ 'is-error': notice.error }" :role="notice.error ? 'alert' : 'status'">{{ notice.text }}</p>
         <p v-if="!data.accounts.length" class="st-empty">Nobody has signed up yet.</p>
         <p v-else-if="!rows.length" class="st-empty">Nobody matches that.</p>
         <div v-else class="st-table-wrap">
@@ -66,6 +67,8 @@
                   </template>
                   <RouterLink v-else-if="a.pending" class="su-flag is-wait su-link-flag" :to="{ name: 'adminClaims' }" title="Open the profile claims"><i aria-hidden="true">…</i> {{ a.pending === 1 ? 'Claim waiting' : `${a.pending} claims waiting` }}</RouterLink>
                   <span v-else class="su-none">None</span>
+                  <small v-if="!a.players.length && a.nudgedAt" class="su-sub" :title="`The claim email was sent ${longDate(a.nudgedAt)}`">Emailed {{ shortDate(a.nudgedAt) }}</small>
+                  <small v-else-if="!a.players.length && a.optedOut" class="su-sub">Unsubscribed from reminders</small>
                 </td>
                 <td data-label="Signed up" :title="longDate(a.createdAt)">{{ shortDate(a.createdAt) }}</td>
                 <td data-label="Last seen" :title="longDate(a.lastSeen)">
@@ -95,7 +98,21 @@
     <Teleport to="body">
       <div v-if="menu" class="su-menu" role="menu" :style="{ top: `${menu.y}px`, left: `${menu.x}px` }" @click.stop>
         <button type="button" class="su-menu-item" role="menuitem" @click="seeActivity">See what they did</button>
+        <button type="button" class="su-menu-item" role="menuitem" :disabled="!!emailBlock(menu.account)" :title="emailBlock(menu.account)" @click="askEmail">{{ menu.account.nudgedAt ? 'Send claim email again' : 'Send claim email' }}</button>
         <button type="button" class="su-menu-item is-danger" role="menuitem" :disabled="menu.account.team" :title="menu.account.team ? 'Team accounts cannot be deleted here' : ''" @click="askDelete">Delete account</button>
+      </div>
+      <div v-if="emailing" class="modal-overlay" @click.self="cancelEmail">
+        <div class="modal-card su-confirm" role="alertdialog" aria-modal="true" aria-labelledby="su-email-title" aria-describedby="su-email-text">
+          <div class="share-modal-header">
+            <h2 id="su-email-title">Send the claim email?</h2>
+            <button class="btn-text" type="button" aria-label="Close" :disabled="sendingEmail" @click="cancelEmail">✕</button>
+          </div>
+          <p id="su-email-text" class="su-confirm-text"><b>{{ emailing.email }}</b> will get the "claim your player" email, which lists what a claimed profile unlocks. <template v-if="emailing.nudgedAt">They already got it on {{ shortDate(emailing.nudgedAt) }}. </template>It has an unsubscribe link.</p>
+          <div class="save-plan-actions">
+            <button ref="emailCancelBtn" class="btn-text" type="button" :disabled="sendingEmail" @click="cancelEmail">Cancel</button>
+            <button class="btn btn-primary" type="button" :disabled="sendingEmail" @click="confirmEmail">{{ sendingEmail ? 'Sending…' : 'Send email' }}</button>
+          </div>
+        </div>
       </div>
       <div v-if="confirming" class="modal-overlay" @click.self="cancelDelete">
         <div class="modal-card su-confirm" role="alertdialog" aria-modal="true" aria-labelledby="su-confirm-title" aria-describedby="su-confirm-text">
@@ -151,7 +168,7 @@ function openMenu(account, event) {
   menu.value = { id: account.id, account, x: Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8)), y: r.bottom + 4 }
 }
 const closeMenu = () => (menu.value = null)
-const onKey = (e) => e.key === 'Escape' && (confirming.value ? cancelDelete() : closeMenu())
+const onKey = (e) => e.key === 'Escape' && (emailing.value ? cancelEmail() : confirming.value ? cancelDelete() : closeMenu())
 onMounted(() => {
   document.addEventListener('click', closeMenu)
   document.addEventListener('keydown', onKey)
@@ -168,6 +185,37 @@ function seeActivity() {
   const id = menu.value.id
   closeMenu()
   emit('go', `a:${id}`)
+}
+
+// The claim email, one account at a time: only for a confirmed email and no claimed player, and it asks first.
+const emailing = ref(null)
+const sendingEmail = ref(false)
+const emailCancelBtn = ref(null)
+const notice = ref(null)
+const emailBlock = (a) => (a.team ? 'Team accounts do not get this email' : !a.verifiedAt ? 'Their email is not confirmed' : a.players.length ? 'They already claimed a player' : a.optedOut ? 'They unsubscribed from reminder emails' : '')
+async function askEmail() {
+  if (emailBlock(menu.value.account)) return
+  emailing.value = menu.value.account
+  closeMenu()
+  await nextTick()
+  emailCancelBtn.value?.focus()
+}
+function cancelEmail() {
+  if (!sendingEmail.value) emailing.value = null
+}
+async function confirmEmail() {
+  const target = emailing.value
+  sendingEmail.value = true
+  try {
+    const r = await statsApi.sendClaimEmail(target.id)
+    data.value = { ...data.value, accounts: data.value.accounts.map((a) => (a.id === target.id ? { ...a, nudgedAt: r.sentAt } : a)) }
+    notice.value = { text: `Sent the claim email to ${target.email}.`, error: false }
+  } catch (err) {
+    notice.value = { text: err instanceof ApiError ? err.message : 'Could not send the email.', error: true }
+  } finally {
+    sendingEmail.value = false
+    emailing.value = null
+  }
 }
 
 // Deleting asks first, and says what goes with the account.

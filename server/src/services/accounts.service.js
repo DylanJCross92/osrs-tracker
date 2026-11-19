@@ -14,7 +14,7 @@ export async function accountsOverview(days) {
     pool.query(
       `SELECT u.id, u.email, u.created_at, u.email_verified_at, u.roles,
               coalesce(u.last_seen_at, u.last_login_at) AS last_seen,
-              u.last_login_at,
+              u.last_login_at, u.claim_nudge_at, u.email_optout_at,
               coalesce((SELECT array_agg(p.display_name ORDER BY p.display_name) FROM profile_claims c JOIN players p ON p.id = c.player_id
                          WHERE c.user_id = u.id AND c.status = 'verified'), '{}') AS players,
               (SELECT count(*)::int FROM profile_claims c WHERE c.user_id = u.id AND c.status = 'pending') AS pending,
@@ -43,6 +43,8 @@ export async function accountsOverview(days) {
       lastSeen: iso(r.last_seen),
       players: r.players || [],
       pending: r.pending,
+      nudgedAt: iso(r.claim_nudge_at),
+      optedOut: Boolean(r.email_optout_at),
       steps: r.steps,
       activeDays: r.active_days,
       team: Array.isArray(r.roles) && (r.roles.includes('admin') || r.roles.includes('owner')),

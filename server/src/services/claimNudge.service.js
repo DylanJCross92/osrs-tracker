@@ -2,12 +2,13 @@ import crypto from 'node:crypto'
 import { pool } from '../db.js'
 import { mailConfigured, sendMail } from '../utils/mailer.js'
 import { claimNudgeEmail } from '../utils/claimNudgeEmail.js'
+import { AuthError } from './auth.service.js'
 
 // The reminder email for confirmed accounts that never claimed a player (see utils/claimNudgeEmail.js).
-//  - New accounts: an hourly job emails each one about a day after it confirmed its email (once NOTIFY_FROM is set).
-//  - Accounts that already existed when this shipped are marked 'legacy' and are only emailed when the owner asks for it on the
-//    User Management page.
-// Nobody is emailed twice, nobody who claimed or started a claim, nobody who unsubscribed, and never the team.
+//  - By hand: the owner sends it to one account from the row menu on User Management.
+//  - Automatically: an hourly job emails each new account about a day after it confirmed its email (once NOTIFY_FROM is set).
+//    Accounts that already existed when this shipped are marked 'legacy' in claim_nudge_state, so the job never touches them.
+// The job never emails anyone twice, nobody who claimed or started a claim, nobody who unsubscribed, and never the team.
 
 export const NUDGE_AFTER_HOURS = 24
 const PAUSE_MS = 600 // the mail service allows about two messages a second
@@ -18,29 +19,6 @@ const site = () => process.env.SITE_URL || 'https://tickgains.com'
 const ELIGIBLE = `u.email_verified_at IS NOT NULL AND u.email_optout_at IS NULL
   AND NOT ('admin' = ANY(u.roles) OR 'owner' = ANY(u.roles))
   AND NOT EXISTS (SELECT 1 FROM profile_claims c WHERE c.user_id = u.id AND (c.status = 'verified' OR (c.status = 'pending' AND c.expires_at > now())))`
-
-const iso = (d) => (d ? new Date(d).toISOString() : null)
-
-/** What the User Management page shows: who has been emailed, who is waiting, and who is left over from before this existed. */
-export async function claimNudgeOverview() {
-  const [{ rows: legacy }, { rows: counts }] = await Promise.all([
-    pool.query(`SELECT u.id, u.email, u.email_verified_at, u.created_at FROM users u WHERE u.claim_nudge_state = 'legacy' AND ${ELIGIBLE} ORDER BY u.created_at DESC, u.id DESC LIMIT 500`),
-    pool.query(
-      `SELECT count(*) FILTER (WHERE u.claim_nudge_state = 'sent')::int AS sent,
-              count(*) FILTER (WHERE u.claim_nudge_state IS NULL AND ${ELIGIBLE})::int AS waiting,
-              count(*) FILTER (WHERE u.email_optout_at IS NOT NULL)::int AS opted_out
-       FROM users u`,
-    ),
-  ])
-  return {
-    mail: { configured: mailConfigured(), sharedSender: !process.env.NOTIFY_FROM },
-    afterHours: NUDGE_AFTER_HOURS,
-    sent: counts[0].sent,
-    waiting: counts[0].waiting,
-    optedOut: counts[0].opted_out,
-    legacy: legacy.map((r) => ({ id: r.id, email: r.email, verifiedAt: iso(r.email_verified_at), createdAt: iso(r.created_at) })),
-  }
-}
 
 async function unsubscribeUrlFor(userId) {
   const { rows } = await pool.query('SELECT unsub_token FROM users WHERE id = $1', [userId])
@@ -54,23 +32,36 @@ async function unsubscribeUrlFor(userId) {
   return `${site()}/unsubscribe?t=${token}`
 }
 
-async function deliver(user, { mark }) {
+async function deliver(user) {
   const unsubscribeUrl = await unsubscribeUrlFor(user.id)
   const email = claimNudgeEmail({ unsubscribeUrl })
   const ok = await sendMail({ to: user.email, subject: email.subject, text: email.text, html: email.html, headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } })
-  if (ok && mark) await pool.query(`UPDATE users SET claim_nudge_state = 'sent', claim_nudge_at = now() WHERE id = $1`, [user.id])
+  if (ok) await pool.query(`UPDATE users SET claim_nudge_state = 'sent', claim_nudge_at = now() WHERE id = $1`, [user.id])
   return ok
 }
 
-async function sendAll(users) {
-  let sent = 0
-  let failed = 0
-  for (const u of users) {
-    if (sent + failed) await sleep(PAUSE_MS)
-    if (await deliver(u, { mark: true })) sent++
-    else failed++
-  }
-  return { sent, failed }
+/**
+ * The owner's choice: email this one account the reminder now. Refused (with a plain reason) when the account is unconfirmed,
+ * already owns a profile, unsubscribed, or is on the team. Sending again is allowed. Returns { ok, email, sentAt }.
+ */
+export async function sendClaimNudgeToUser(userId) {
+  const id = Number(userId)
+  if (!Number.isInteger(id) || id < 1) throw new AuthError('No such account.', 404)
+  const { rows } = await pool.query(
+    `SELECT u.id, u.email, u.email_verified_at, u.email_optout_at, u.roles,
+            EXISTS (SELECT 1 FROM profile_claims c WHERE c.user_id = u.id AND c.status = 'verified') AS claimed
+     FROM users u WHERE u.id = $1`,
+    [id],
+  )
+  const u = rows[0]
+  if (!u) throw new AuthError('No such account.', 404)
+  if (u.roles?.includes('admin') || u.roles?.includes('owner')) throw new AuthError('Team accounts do not get this email.', 409)
+  if (!u.email_verified_at) throw new AuthError('This account has not confirmed its email yet.', 409)
+  if (u.claimed) throw new AuthError('This account has already claimed a player.', 409)
+  if (u.email_optout_at) throw new AuthError('This person unsubscribed from reminder emails.', 409)
+  if (!mailConfigured()) throw new AuthError('Email is not set up on this server (no RESEND_API_KEY).', 503)
+  if (!(await deliver(u))) throw new AuthError('The email could not be sent. Until NOTIFY_FROM is set, only your own address can receive it.', 502)
+  return { ok: true, email: u.email, sentAt: new Date().toISOString() }
 }
 
 /**
@@ -85,24 +76,12 @@ export async function sendDueClaimNudges(limit = 25) {
      ORDER BY u.email_verified_at ASC LIMIT $2`,
     [NUDGE_AFTER_HOURS, limit],
   )
-  return sendAll(rows)
-}
-
-/** The owner's button: the accounts from before this existed (all of them, or just these ids). At most 100 at a time. */
-export async function sendLegacyClaimNudges(ids = null) {
-  if (!mailConfigured()) return { sent: 0, failed: 0, notConfigured: true }
-  const wanted = Array.isArray(ids) ? ids.map(Number).filter(Number.isInteger).slice(0, 100) : null
-  const { rows } = await pool.query(
-    `SELECT u.id, u.email FROM users u
-     WHERE u.claim_nudge_state = 'legacy' AND ${ELIGIBLE} ${wanted ? 'AND u.id = ANY($1::int[])' : ''}
-     ORDER BY u.created_at DESC, u.id DESC LIMIT 100`,
-    wanted ? [wanted] : [],
-  )
-  return { ...(await sendAll(rows)), remaining: Math.max(0, (await claimNudgeOverview()).legacy.length) }
-}
-
-/** One email to the person asking (the owner), so they can see it in a real inbox. Nobody is marked as emailed. */
-export async function sendClaimNudgeTest(user) {
-  if (!mailConfigured()) return false
-  return deliver({ id: user.id, email: user.email }, { mark: false })
+  let sent = 0
+  let failed = 0
+  for (const u of rows) {
+    if (sent + failed) await sleep(PAUSE_MS)
+    if (await deliver(u)) sent++
+    else failed++
+  }
+  return { sent, failed }
 }
