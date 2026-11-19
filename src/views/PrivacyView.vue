@@ -47,8 +47,8 @@
     </p>
     <p>
       TickGains also keeps its own simple record of what is used, so the site can be improved: an event such as "page opened", "refresh pressed" or "plan saved", the day and time it happened, and a few
-      non-personal details like which page, skill or tab was involved. This record has no IP address and no cookie, and it never includes names,
-      emails or anything you type.
+      non-personal details like which page, skill or tab was involved. This record has no IP address and no cookie, and it never includes emails or
+      anything else you type, with one exception: when you search for a player, the player name you searched for is kept, so the owner can see which players are being looked up. Player names are public OSRS names.
     </p>
     <p>
       To see how one visit unfolds, your browser keeps a random number (32 letters and digits) in its local storage and sends it with these events. It is not tied to your name, your

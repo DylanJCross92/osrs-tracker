@@ -12,6 +12,9 @@ describe('cleanProps', () => {
     const out = cleanProps({ player_name: 'Zezima', username: 'x', email: 'a@b.c', query: 'abc', clan_name: 'Foo', username_length: 6, skill: 'Cooking' })
     expect(out).toEqual({ username_length: 6, skill: 'Cooking' })
   })
+  it('keeps the player a search was for', () => {
+    expect(cleanProps({ player: 'Zezima', source: 'home', username_length: 6 })).toEqual({ player: 'Zezima', source: 'home', username_length: 6 })
+  })
   it('drops an email-looking value whatever the key is', () => {
     expect(cleanProps({ source: 'me@example.com', tab: 'stats' })).toEqual({ tab: 'stats' })
   })

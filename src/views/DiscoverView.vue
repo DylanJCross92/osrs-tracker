@@ -501,7 +501,7 @@ watch(query, (q) => {
       const rows = await playersApi.search(term)
       if (query.value.trim() === term) {
         suggestions.value = rows
-        track('player_search', { source: 'discover', username_length: term.length, matches: rows.length })
+        track('player_search', { player: term, source: 'discover', username_length: term.length, matches: rows.length })
       }
     } catch {
       suggestions.value = []
@@ -539,7 +539,7 @@ async function trackNew() {
   if (!validName.value || addingPlayer.value) return
   addingPlayer.value = true
   addError.value = ''
-  track('player_search', { source: 'discover', username_length: name.length })
+  track('player_search', { player: name, source: 'discover', username_length: name.length })
   try {
     if (!store.loaded) await store.loadPlayers()
     await store.addPlayer(name)

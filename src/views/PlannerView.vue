@@ -346,7 +346,7 @@ async function loadPlayer({ typed = false } = {}) {
   }
   lookingUp.value = true
   lookupError.value = ''
-  track('player_search', { source: 'planner', username_length: name.length })
+  track('player_search', { player: name, source: 'planner', username_length: name.length })
   try {
     // Re-read the player list once per planner visit so the plan shows the newest tracked XP.
     if (!store.loaded || !playersFreshened) {

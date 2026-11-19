@@ -49,8 +49,10 @@ export function track(event, params = {}) {
     if (share) statsApi.share(share.kind, share.method, share.item).catch(() => {})
     // What was shared (a name) is only for that count; it is not sent on to analytics or the event log.
     const { item: _item, ...rest } = params
+    // The player a search was for is kept in the site's own record only (so the owner can read a visit in order), not sent to analytics.
+    const { player: _player, ...forAnalytics } = rest
     window.dataLayer = window.dataLayer || []
-    window.dataLayer.push({ event, ...rest })
+    window.dataLayer.push({ event, ...forAnalytics })
     // The site's own record of the same event (no IP address, no cookie; see eventLog.js).
     logEvent(event, rest)
   } catch {

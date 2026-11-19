@@ -13,8 +13,10 @@ export function describeEvent(name, props = {}) {
   if (name === 'spa_page_view') return { kind: 'page', text: 'Viewed', detail: String(props.page_path || '/') }
   if (name === 'login') return { kind: 'action', text: 'Signed in', detail: props.method ? String(props.method).replace(/_/g, ' ') : '' }
   if (name === 'session_resumed') return { kind: 'action', text: 'Came back (still signed in)', detail: '' }
+  // A search shows who was searched for, so the name's length (kept for older records) adds nothing.
+  const named = typeof props.player === 'string' && props.player !== ''
   const detail = Object.entries(props)
-    .filter(([k, v]) => !SKIP.has(k) && v !== '' && v != null)
+    .filter(([k, v]) => !SKIP.has(k) && !(named && k === 'username_length') && v !== '' && v != null)
     .map(([k, v]) => (typeof v === 'boolean' ? (v ? k.replace(/_/g, ' ') : '') : `${k.replace(/_/g, ' ')}: ${v}`))
     .filter(Boolean)
     .join(' · ')

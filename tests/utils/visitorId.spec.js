@@ -47,4 +47,9 @@ describe('describeEvent', () => {
     expect(describeEvent('login', { method: 'email_link' })).toEqual({ kind: 'action', text: 'Signed in', detail: 'email link' })
     expect(describeEvent('search_started', {}).detail).toBe('')
   })
+  it('shows who a search was for, in place of the length of the name', () => {
+    expect(describeEvent('player_search', { player: 'iMandark', source: 'planner', username_length: 8 })).toEqual({ kind: 'action', text: 'Player search', detail: 'player: iMandark · source: planner' })
+    // Older records have no name, so the length stays.
+    expect(describeEvent('player_search', { source: 'planner', username_length: 8 }).detail).toBe('source: planner · username length: 8')
+  })
 })

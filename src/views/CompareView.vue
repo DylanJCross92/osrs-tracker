@@ -307,7 +307,7 @@ async function trackNew(k) {
   if (!name || adding.value) return
   adding.value = true
   clearFailed()
-  track('player_search', { source: 'compare', username_length: name.length })
+  track('player_search', { player: name, source: 'compare', username_length: name.length })
   const problem = await ensureTracked(name)
   adding.value = false
   if (problem) return Object.assign(failed, { k, name, message: problem })

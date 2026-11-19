@@ -369,7 +369,7 @@ async function submitAdd() {
   const username = newUsername.value.trim()
   if (!username) return
   adding.value = true
-  track('player_search', { source: 'home', username_length: username.length })
+  track('player_search', { player: username, source: 'home', username_length: username.length })
   try {
     await store.addPlayer(username)
     // A 201 from the API means this name was not tracked on the site before.
