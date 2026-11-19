@@ -11,6 +11,8 @@ import { AuthError } from './auth.service.js'
 // The job never emails anyone twice, nobody who claimed or started a claim, nobody who unsubscribed, and never the team.
 
 export const NUDGE_AFTER_HOURS = 24
+// Once the email has gone to an account, the owner cannot send it again for a day.
+export const NUDGE_COOLDOWN_HOURS = 24
 const PAUSE_MS = 600 // the mail service allows about two messages a second
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const site = () => process.env.SITE_URL || 'https://tickgains.com'
@@ -42,13 +44,13 @@ async function deliver(user) {
 
 /**
  * The owner's choice: email this one account the reminder now. Refused (with a plain reason) when the account is unconfirmed,
- * already owns a profile, unsubscribed, or is on the team. Sending again is allowed. Returns { ok, email, sentAt }.
+ * already owns a profile, unsubscribed, or is on the team, or when it was already sent in the last 24 hours. Returns { ok, email, sentAt }.
  */
 export async function sendClaimNudgeToUser(userId) {
   const id = Number(userId)
   if (!Number.isInteger(id) || id < 1) throw new AuthError('No such account.', 404)
   const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.email_verified_at, u.email_optout_at, u.roles,
+    `SELECT u.id, u.email, u.email_verified_at, u.email_optout_at, u.roles, u.claim_nudge_at,
             EXISTS (SELECT 1 FROM profile_claims c WHERE c.user_id = u.id AND c.status = 'verified') AS claimed
      FROM users u WHERE u.id = $1`,
     [id],
@@ -59,6 +61,7 @@ export async function sendClaimNudgeToUser(userId) {
   if (!u.email_verified_at) throw new AuthError('This account has not confirmed its email yet.', 409)
   if (u.claimed) throw new AuthError('This account has already claimed a player.', 409)
   if (u.email_optout_at) throw new AuthError('This person unsubscribed from reminder emails.', 409)
+  if (u.claim_nudge_at && Date.now() - new Date(u.claim_nudge_at).getTime() < NUDGE_COOLDOWN_HOURS * 3_600_000) throw new AuthError(`The claim email was already sent to this account in the last ${NUDGE_COOLDOWN_HOURS} hours.`, 429)
   if (!mailConfigured()) throw new AuthError('Email is not set up on this server (no RESEND_API_KEY).', 503)
   if (!(await deliver(u))) throw new AuthError('The email could not be sent. Until NOTIFY_FROM is set, only your own address can receive it.', 502)
   return { ok: true, email: u.email, sentAt: new Date().toISOString() }

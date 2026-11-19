@@ -6028,3 +6028,4 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
   .su-table td.su-menu-cell { position: absolute; top: 6px; right: 0; width: auto; padding: 0; }
   .su-table tbody th { padding-right: 40px; }
 }
+.su-menu-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 0.72rem; }

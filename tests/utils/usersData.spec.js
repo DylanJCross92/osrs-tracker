@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activityLevel, filterUsers, usersSummary } from '@/components/admin/users/usersData'
+import { activityLevel, claimEmailWait, filterUsers, usersSummary } from '@/components/admin/users/usersData'
 
 const acct = (o = {}) => ({ id: 1, email: 'a@x.com', createdAt: '2026-01-01T00:00:00Z', verifiedAt: null, lastSeen: null, players: [], pending: 0, steps: 0, activeDays: 0, team: false, ...o })
 
@@ -54,5 +54,17 @@ describe('filterUsers', () => {
   it('searches emails and claimed player names', () => {
     expect(ids({ query: 'MID@' })).toEqual([3])
     expect(ids({ query: 'zez' })).toEqual([1])
+  })
+})
+
+describe('claimEmailWait', () => {
+  const now = Date.parse('2026-11-19T12:00:00Z')
+  it('is zero when the email was never sent', () => {
+    expect(claimEmailWait(acct(), now)).toBe(0)
+  })
+  it('counts down the day after it was sent', () => {
+    expect(claimEmailWait(acct({ nudgedAt: '2026-11-19T06:00:00Z' }), now)).toBe(18 * 3_600_000)
+    expect(claimEmailWait(acct({ nudgedAt: '2026-11-18T12:00:00Z' }), now)).toBe(0)
+    expect(claimEmailWait(acct({ nudgedAt: '2026-11-10T12:00:00Z' }), now)).toBe(0)
   })
 })

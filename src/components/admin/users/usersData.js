@@ -72,3 +72,10 @@ export function filterUsers(accounts, { query = '', filter = 'all', sort = 'seen
   }[sort] || (() => 0)
   return out.sort(by)
 }
+
+/** The claim email can go to an account once a day: how many milliseconds are left before it can be sent again (0 when it can). */
+export const CLAIM_EMAIL_COOLDOWN_MS = 24 * 3_600_000
+export function claimEmailWait(account, now = Date.now()) {
+  if (!account?.nudgedAt) return 0
+  return Math.max(0, new Date(account.nudgedAt).getTime() + CLAIM_EMAIL_COOLDOWN_MS - now)
+}

@@ -67,7 +67,7 @@
                   </template>
                   <RouterLink v-else-if="a.pending" class="su-flag is-wait su-link-flag" :to="{ name: 'adminClaims' }" title="Open the profile claims"><i aria-hidden="true">…</i> {{ a.pending === 1 ? 'Claim waiting' : `${a.pending} claims waiting` }}</RouterLink>
                   <span v-else class="su-none">None</span>
-                  <small v-if="!a.players.length && a.nudgedAt" class="su-sub" :title="`The claim email was sent ${longDate(a.nudgedAt)}`">Emailed {{ shortDate(a.nudgedAt) }}</small>
+                  <small v-if="!a.players.length && a.nudgedAt" class="su-sub">Emailed {{ dateTime(a.nudgedAt) }}</small>
                   <small v-else-if="!a.players.length && a.optedOut" class="su-sub">Unsubscribed from reminders</small>
                 </td>
                 <td data-label="Signed up" :title="longDate(a.createdAt)">{{ shortDate(a.createdAt) }}</td>
@@ -98,7 +98,7 @@
     <Teleport to="body">
       <div v-if="menu" class="su-menu" role="menu" :style="{ top: `${menu.y}px`, left: `${menu.x}px` }" @click.stop>
         <button type="button" class="su-menu-item" role="menuitem" @click="seeActivity">See what they did</button>
-        <button type="button" class="su-menu-item" role="menuitem" :disabled="!!emailBlock(menu.account)" :title="emailBlock(menu.account)" @click="askEmail">{{ menu.account.nudgedAt ? 'Send claim email again' : 'Send claim email' }}</button>
+        <button type="button" class="su-menu-item" role="menuitem" :disabled="!!emailBlock(menu.account)" :title="emailBlock(menu.account)" @click="askEmail">{{ menu.account.nudgedAt ? 'Send claim email again' : 'Send claim email' }}<small v-if="claimEmailWait(menu.account)" class="su-menu-sub">Again after {{ timeOnly(new Date(menu.account.nudgedAt).getTime() + CLAIM_EMAIL_COOLDOWN_MS) }}</small></button>
         <button type="button" class="su-menu-item is-danger" role="menuitem" :disabled="menu.account.team" :title="menu.account.team ? 'Team accounts cannot be deleted here' : ''" @click="askDelete">Delete account</button>
       </div>
       <div v-if="emailing" class="modal-overlay" @click.self="cancelEmail">
@@ -107,7 +107,7 @@
             <h2 id="su-email-title">Send the claim email?</h2>
             <button class="btn-text" type="button" aria-label="Close" :disabled="sendingEmail" @click="cancelEmail">✕</button>
           </div>
-          <p id="su-email-text" class="su-confirm-text"><b>{{ emailing.email }}</b> will get the "claim your player" email, which lists what a claimed profile unlocks. <template v-if="emailing.nudgedAt">They already got it on {{ shortDate(emailing.nudgedAt) }}. </template>It has an unsubscribe link.</p>
+          <p id="su-email-text" class="su-confirm-text"><b>{{ emailing.email }}</b> will get the "claim your player" email, which lists what a claimed profile unlocks. <template v-if="emailing.nudgedAt">They got it on {{ dateTime(emailing.nudgedAt) }}. </template>It has an unsubscribe link.</p>
           <div class="save-plan-actions">
             <button ref="emailCancelBtn" class="btn-text" type="button" :disabled="sendingEmail" @click="cancelEmail">Cancel</button>
             <button class="btn btn-primary" type="button" :disabled="sendingEmail" @click="confirmEmail">{{ sendingEmail ? 'Sending…' : 'Send email' }}</button>
@@ -138,7 +138,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ApiError } from '@/api/client'
 import { statsApi } from '@/api/stats'
 import { ago, count, fmt } from '../stats/statsFormat'
-import { activityLevel, FILTERS, filterUsers, SORTS, usersSummary } from './usersData'
+import { activityLevel, CLAIM_EMAIL_COOLDOWN_MS, claimEmailWait, FILTERS, filterUsers, SORTS, usersSummary } from './usersData'
 import { useStatsLoad } from '../stats/useStatsLoad'
 
 const props = defineProps({ days: { type: Number, required: true } })
@@ -192,7 +192,14 @@ const emailing = ref(null)
 const sendingEmail = ref(false)
 const emailCancelBtn = ref(null)
 const notice = ref(null)
-const emailBlock = (a) => (a.team ? 'Team accounts do not get this email' : !a.verifiedAt ? 'Their email is not confirmed' : a.players.length ? 'They already claimed a player' : a.optedOut ? 'They unsubscribed from reminder emails' : '')
+const emailBlock = (a) => {
+  if (a.team) return 'Team accounts do not get this email'
+  if (!a.verifiedAt) return 'Their email is not confirmed'
+  if (a.players.length) return 'They already claimed a player'
+  if (a.optedOut) return 'They unsubscribed from reminder emails'
+  if (!claimEmailWait(a)) return ''
+  return `Sent ${dateTime(a.nudgedAt)}. You can send it again after ${dateTime(new Date(a.nudgedAt).getTime() + CLAIM_EMAIL_COOLDOWN_MS)}.`
+}
 async function askEmail() {
   if (emailBlock(menu.value.account)) return
   emailing.value = menu.value.account
@@ -249,6 +256,9 @@ async function confirmDelete() {
   }
 }
 
+// A date with the time of day, for when an email went out, like Nov 19, 2026, 9:41 AM.
+const dateTime = (v) => new Date(v).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+const timeOnly = (v) => new Date(v).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-')
 const longDate = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '')
 </script>
