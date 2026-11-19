@@ -5,6 +5,7 @@ import { AUTO_FAST, DEFAULT_GP_VALUE, formatNum, levelAtXp, planGoal, xpAtLevel 
 import { buildProgress, liveGoalFor, projectFinish, resolveGoal, summarizePlan } from '@/utils/plannerTools'
 import { blockedMethodIds } from '@/utils/requirements'
 import { TRAINING_METHODS } from '@/data/trainingMethods'
+import { plannedQuestReqIds } from '@/data/quests'
 import { SKILL_NAMES, formatXp } from '@/utils/osrsSkills'
 import { recordUnitText, recordValueText } from '@/utils/recordText'
 
@@ -19,6 +20,7 @@ export function blockedFor(plan, latest, confirmations = {}, respect = true) {
   return blockedMethodIds(TRAINING_METHODS, {
     levels: latest?.skills ? levels : null,
     planned: Object.fromEntries((plan.goals || []).map((g) => [g.skill, levelAtXp(g.targetXp, true)])),
+    plannedQuests: plannedQuestReqIds(plan.goals),
     confirmations,
   })
 }

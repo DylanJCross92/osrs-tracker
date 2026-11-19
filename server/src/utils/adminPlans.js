@@ -34,17 +34,23 @@ const planOf = (p, source, updatedAt) => ({
  * ({ rsn, goals, planId, planName, ... }) with the time it last changed, as { value, updatedAt } entries or plain values.
  * visitors: the same for people who are not signed in, each with the random visitor id they are known by in the statistics:
  * [{ id, plans, planner, updatedAt }]. Their plans carry owner: { key: 'v:<id>', label: 'Visitor 1a2b3c' }.
- * Returns { totals: { players, plans, accounts, visitors }, players: [{ key, name, accounts, visitors, plans }] }, players A to Z,
- * plans newest first, and plans with no player name last in a group called "" (shown as "No player set").
+ * Returns { totals: { players, plans, accounts, visitors }, players: [{ key, name, visitor?, accounts, visitors, plans }] }, players A to Z,
+ * plans newest first. A visitor's plans that name no player get a group of their own, per visitor (key 'v:<id>', visitor: { key,
+ * label }), after the players; accounts' plans with no player name come last in a group called "" (shown as "No player set").
  */
 export function groupPlansByPlayer(accounts, visitors = []) {
   const groups = new Map()
   const seenAccounts = new Set()
   const seenVisitors = new Set()
   const add = (accountIndex, rsn, plan, visitorId = null) => {
-    const key = playerKey(rsn)
+    // A visitor's plans with no player name are kept apart, one group per visitor, rather than all in one heap.
+    const key = visitorId && !playerKey(rsn) ? `v:${visitorId}` : playerKey(rsn)
     let g = groups.get(key)
-    if (!g) groups.set(key, (g = { key, name: text(rsn, 12), accounts: new Set(), visitors: new Set(), plans: [] }))
+    if (!g) {
+      g = { key, name: text(rsn, 12), accounts: new Set(), visitors: new Set(), plans: [] }
+      if (key.startsWith('v:')) g.visitor = { key, label: `Visitor ${visitorId.slice(0, 6)}` }
+      groups.set(key, g)
+    }
     if (!g.name) g.name = text(rsn, 12)
     if (visitorId) {
       g.visitors.add(visitorId)
@@ -79,10 +85,12 @@ export function groupPlansByPlayer(accounts, visitors = []) {
   const players = [...groups.values()].map((g) => ({
     key: g.key,
     name: g.name,
+    ...(g.visitor ? { visitor: g.visitor } : {}),
     accounts: g.accounts.size,
     visitors: g.visitors.size,
     plans: g.plans.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || ''))),
   }))
-  players.sort((a, b) => (a.key === '') - (b.key === '') || a.key.localeCompare(b.key))
-  return { totals: { players: players.filter((p) => p.key).length, plans: players.reduce((n, p) => n + p.plans.length, 0), accounts: seenAccounts.size, visitors: seenVisitors.size }, players }
+  const rank = (p) => (p.key === '' ? 2 : p.visitor ? 1 : 0)
+  players.sort((a, b) => rank(a) - rank(b) || a.key.localeCompare(b.key))
+  return { totals: { players: players.filter((p) => p.key && !p.visitor).length, plans: players.reduce((n, p) => n + p.plans.length, 0), accounts: seenAccounts.size, visitors: seenVisitors.size }, players }
 }

@@ -47,7 +47,7 @@
         <div v-else class="st-table-wrap">
           <table class="st-table su-table">
             <thead>
-              <tr><th>Account</th><th>Email</th><th>Claimed players</th><th>Signed up</th><th>Last seen</th><th>Activity in {{ days }} days</th></tr>
+              <tr><th>Account</th><th>Email</th><th>Claimed players</th><th>Signed up</th><th>Last seen</th><th>Activity in {{ days }} days</th><th class="su-menu-col"><span class="sr-only">Actions</span></th></tr>
             </thead>
             <tbody>
               <tr v-for="a in rows" :key="a.id">
@@ -62,9 +62,9 @@
                 <td class="su-players" data-label="Claimed players">
                   <template v-if="a.players.length">
                     <span class="su-flag is-yes"><i aria-hidden="true">✓</i> {{ a.players.length }}</span>
-                    <span class="su-names">{{ a.players.join(', ') }}</span>
+                    <span class="su-names"><template v-for="(p, i) in a.players" :key="p"><template v-if="i">, </template><RouterLink class="su-link" :to="{ name: 'playerDetail', params: { username: p } }" :title="`Open ${p}'s profile`">{{ p }}</RouterLink></template></span>
                   </template>
-                  <span v-else-if="a.pending" class="su-flag is-wait"><i aria-hidden="true">…</i> {{ a.pending === 1 ? 'Claim waiting' : `${a.pending} claims waiting` }}</span>
+                  <RouterLink v-else-if="a.pending" class="su-flag is-wait su-link-flag" :to="{ name: 'adminClaims' }" title="Open the profile claims"><i aria-hidden="true">…</i> {{ a.pending === 1 ? 'Claim waiting' : `${a.pending} claims waiting` }}</RouterLink>
                   <span v-else class="su-none">None</span>
                 </td>
                 <td data-label="Signed up" :title="longDate(a.createdAt)">{{ shortDate(a.createdAt) }}</td>
@@ -80,6 +80,11 @@
                     <small class="su-sub">{{ a.activeDays ? `${count(a.activeDays, 'day')} · ${count(a.steps, 'step')}` : 'Nothing recorded' }}</small>
                   </template>
                 </td>
+                <td class="su-menu-cell">
+                  <button type="button" class="su-dots" :aria-label="`Actions for ${a.email}`" aria-haspopup="menu" :aria-expanded="menu?.id === a.id" @click.stop="openMenu(a, $event)">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -87,12 +92,33 @@
         <p v-if="data.total > data.accounts.length" class="st-note">Showing the {{ fmt(data.accounts.length) }} most recently seen of {{ fmt(data.total) }} accounts.</p>
       </section>
     </template>
+    <Teleport to="body">
+      <div v-if="menu" class="su-menu" role="menu" :style="{ top: `${menu.y}px`, left: `${menu.x}px` }" @click.stop>
+        <button type="button" class="su-menu-item" role="menuitem" @click="seeActivity">See what they did</button>
+        <button type="button" class="su-menu-item is-danger" role="menuitem" :disabled="menu.account.team" :title="menu.account.team ? 'Team accounts cannot be deleted here' : ''" @click="askDelete">Delete account</button>
+      </div>
+      <div v-if="confirming" class="modal-overlay" @click.self="cancelDelete">
+        <div class="modal-card su-confirm" role="alertdialog" aria-modal="true" aria-labelledby="su-confirm-title" aria-describedby="su-confirm-text">
+          <div class="share-modal-header">
+            <h2 id="su-confirm-title">Delete this account?</h2>
+            <button class="btn-text" type="button" aria-label="Close" :disabled="deleting" @click="cancelDelete">✕</button>
+          </div>
+          <p id="su-confirm-text" class="su-confirm-text"><b>{{ confirming.email }}</b> and everything tied to it will be deleted for good: sign-in, saved plans, profile claims<template v-if="confirming.players.length"> (including {{ confirming.players.join(', ') }})</template>, and any clans they own. This cannot be undone.</p>
+          <p v-if="deleteError" class="cl-banner is-error" role="alert">{{ deleteError }}</p>
+          <div class="save-plan-actions">
+            <button ref="cancelBtn" class="btn-text" type="button" :disabled="deleting" @click="cancelDelete">Cancel</button>
+            <button class="btn su-delete" type="button" :disabled="deleting" @click="confirmDelete">{{ deleting ? 'Deleting…' : 'Delete account' }}</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
     <p class="st-foot">Last seen is the last time the account signed in or came back to the site. Activity counts the different days in the chosen range that the account did anything (a page opened, a button used), and the steps behind it: Very active is about 2 days in 5 or more, Regular is about 1 day in 7 or more. Browsers that send Do Not Track or Global Privacy Control, and team accounts, are not counted, so they can show as Quiet or Team.</p>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ApiError } from '@/api/client'
 import { statsApi } from '@/api/stats'
 import { ago, count, fmt } from '../stats/statsFormat'
 import { activityLevel, FILTERS, filterUsers, SORTS, usersSummary } from './usersData'
@@ -114,6 +140,66 @@ const rows = computed(() => filterUsers(accounts.value, { query: query.value, fi
 // How many accounts each filter would show, so the chips say what is behind them.
 const counts = computed(() => Object.fromEntries(FILTERS.map((f) => [f.key, filterUsers(accounts.value, { filter: f.key }).length])))
 const level = (a) => activityLevel(a, props.days)
+
+// The row menu: one popover for the whole table, placed beside the button that opened it (the table scrolls sideways, so it
+// cannot live inside it).
+const menu = ref(null)
+const MENU_W = 190
+function openMenu(account, event) {
+  if (menu.value?.id === account.id) return closeMenu()
+  const r = event.currentTarget.getBoundingClientRect()
+  menu.value = { id: account.id, account, x: Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8)), y: r.bottom + 4 }
+}
+const closeMenu = () => (menu.value = null)
+const onKey = (e) => e.key === 'Escape' && (confirming.value ? cancelDelete() : closeMenu())
+onMounted(() => {
+  document.addEventListener('click', closeMenu)
+  document.addEventListener('keydown', onKey)
+  window.addEventListener('scroll', closeMenu, true)
+  window.addEventListener('resize', closeMenu)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeMenu)
+  document.removeEventListener('keydown', onKey)
+  window.removeEventListener('scroll', closeMenu, true)
+  window.removeEventListener('resize', closeMenu)
+})
+function seeActivity() {
+  const id = menu.value.id
+  closeMenu()
+  emit('go', `a:${id}`)
+}
+
+// Deleting asks first, and says what goes with the account.
+const confirming = ref(null)
+const deleting = ref(false)
+const deleteError = ref('')
+const cancelBtn = ref(null)
+async function askDelete() {
+  if (menu.value.account.team) return
+  confirming.value = menu.value.account
+  deleteError.value = ''
+  closeMenu()
+  await nextTick()
+  cancelBtn.value?.focus()
+}
+function cancelDelete() {
+  if (!deleting.value) confirming.value = null
+}
+async function confirmDelete() {
+  const target = confirming.value
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await statsApi.deleteAccount(target.id)
+    data.value = { ...data.value, total: Math.max(0, data.value.total - 1), accounts: data.value.accounts.filter((a) => a.id !== target.id) }
+    confirming.value = null
+  } catch (err) {
+    deleteError.value = err instanceof ApiError ? err.message : 'Could not delete the account.'
+  } finally {
+    deleting.value = false
+  }
+}
 
 const shortDate = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '-')
 const longDate = (iso) => (iso ? new Date(iso).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '')

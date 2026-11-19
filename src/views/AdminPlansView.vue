@@ -25,9 +25,10 @@
       <section v-for="p in shown" :key="p.key" class="st-card ap-player">
         <button class="ap-head" type="button" :aria-expanded="isOpen(p.key)" @click="toggle(p.key)">
           <svg class="ap-chev" :class="{ 'is-open': isOpen(p.key) }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-          <h2>{{ p.name || 'No player set' }}</h2>
+          <h2>{{ p.name || p.visitor?.label || 'No player set' }}</h2>
           <span class="ap-meta">{{ count(p.plans.length, 'plan') }}<template v-if="p.accounts > 1"> · {{ p.accounts }} accounts</template><template v-if="p.visitors"> · {{ count(p.visitors, 'visitor') }}</template></span>
           <RouterLink v-if="p.name" class="ap-open" :to="{ name: 'playerDetail', params: { username: p.name } }" @click.stop>Profile</RouterLink>
+          <RouterLink v-else-if="p.visitor" class="ap-open" :to="{ name: 'adminStats', query: { tab: 'visitors', v: p.visitor.key } }" :title="`See what ${p.visitor.label} did`" @click.stop>Activity</RouterLink>
         </button>
         <ul v-show="isOpen(p.key)" class="ap-plans">
           <li v-for="plan in p.plans" :key="plan.source + plan.id" class="ap-plan">
@@ -82,7 +83,7 @@ const shown = computed(() => {
   const q = filter.value.toLowerCase()
   const list = data.value?.players || []
   if (!q) return list
-  return list.filter((p) => p.name.toLowerCase().includes(q) || p.plans.some((pl) => pl.goals.some((g) => g.skill.toLowerCase().includes(q))))
+  return list.filter((p) => p.name.toLowerCase().includes(q) || (p.visitor?.label || '').toLowerCase().includes(q) || p.plans.some((pl) => pl.goals.some((g) => g.skill.toLowerCase().includes(q))))
 })
 const isOpen = (key) => open.has(key) || !!filter.value
 const toggle = (key) => (open.has(key) ? open.delete(key) : open.add(key))

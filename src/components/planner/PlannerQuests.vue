@@ -7,9 +7,10 @@
     <label v-for="o in options" :key="o.quest.id" class="planner-quest" :class="{ locked: o.locked }">
       <input type="checkbox" :value="o.quest.id" :checked="modelValue.includes(o.quest.id)" :disabled="o.locked" @change="toggle(o.quest.id)" />
       <span class="planner-quest-name">
-        {{ o.quest.name }}
+        {{ o.quest.name }}<i v-if="o.quest.suggest" class="planner-quest-tag">Short</i>
         <small v-if="o.locked">needs {{ o.lockText }}</small>
         <small v-else-if="o.quest.needs">needs {{ o.quest.needs }}</small>
+        <small v-if="o.minutes">takes about {{ o.minutes }} min<template v-if="o.chainNames.length"> with {{ o.chainNames.join(' and ') }}</template></small>
       </span>
       <span class="planner-quest-xp stat-gain">+{{ formatNum(o.xp) }} xp<small v-if="o.levelsSkipped > 0"> · ~{{ o.levelsSkipped }} level{{ o.levelsSkipped === 1 ? '' : 's' }} skipped</small></span>
       <span class="planner-quest-hours">{{ !o.locked && o.hoursSaved > 0.05 ? `saves ~${formatHours(o.hoursSaved)}` : '' }}</span>
@@ -32,7 +33,7 @@ import { track } from '@/utils/analytics'
 import { computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
-import { questsForSkill } from '@/data/quests'
+import { getQuest, questChain, questsForSkill, withPrerequisites, withoutQuest } from '@/data/quests'
 import { AUTO_FAST, planGoal, levelAtXp, formatNum, formatHours } from '@/utils/planner'
 
 const props = defineProps({
@@ -55,21 +56,28 @@ const options = computed(() => {
   if (remaining <= 0) return []
   const level = levelAtXp(props.currentXp, true)
   const base = planGoal({ skill: props.skill, currentXp: props.currentXp, targetXp: props.targetXp, methodId: props.methodId, gpValuePerHour: props.gpValue, quests: [] })
+  const done = new Set(doneQuestIds.value)
   return questsForSkill(props.skill)
-    .filter((quest) => !doneQuestIds.value.includes(quest.id))
+    .filter((quest) => !done.has(quest.id))
     .filter((quest) => quest.rewards[props.skill] <= remaining || props.modelValue.includes(quest.id))
-    .slice(0, 5)
+    .slice(0, 6)
     .map((quest) => {
       const xp = quest.rewards[props.skill]
       const need = quest.reqs[props.skill]
-      const withQuest = planGoal({ skill: props.skill, currentXp: props.currentXp, targetXp: props.targetXp, methodId: props.methodId, gpValuePerHour: props.gpValue, quests: [quest.id] })
+      // What has to be done first (and is not finished yet), its xp, and its time, so the saving is for the whole set.
+      const before = questChain(quest.id).slice(0, -1).filter((id) => !done.has(id))
+      const chain = [...before, quest.id]
+      const beforeXp = before.reduce((sum, id) => sum + (getQuest(id).rewards[props.skill] || 0), 0)
+      const withQuest = planGoal({ skill: props.skill, currentXp: props.currentXp, targetXp: props.targetXp, methodId: props.methodId, gpValuePerHour: props.gpValue, quests: chain })
       return {
         quest,
         xp,
-        locked: need != null && level < need,
+        locked: need != null && levelAtXp(props.currentXp + beforeXp, true) < need,
         lockText: `${need} ${props.skill}`,
-        levelsSkipped: levelAtXp(props.currentXp + xp, true) - level,
-        hoursSaved: (base.hours || 0) - (withQuest.hours || 0),
+        levelsSkipped: levelAtXp(props.currentXp + xp + beforeXp, true) - level,
+        hoursSaved: (base.hours || 0) - (withQuest.hours || 0) + (withQuest.questHours || 0),
+        minutes: chain.reduce((sum, id) => sum + (getQuest(id).minutes || 0), 0),
+        chainNames: before.map((id) => getQuest(id).name),
       }
     })
 })
@@ -81,9 +89,10 @@ function markDone(quest) {
   setQuestDone(quest.name, true)
 }
 
+// Ticking a quest ticks what it needs first; unticking one unticks whatever needs it.
 function toggle(id) {
-  track('planner_quest_toggled', { quest: id, skill: props.skill, enabled: !props.modelValue.includes(id) })
-  const next = props.modelValue.includes(id) ? props.modelValue.filter((x) => x !== id) : [...props.modelValue, id]
-  emit('update:modelValue', next)
+  const on = !props.modelValue.includes(id)
+  track('planner_quest_toggled', { quest: id, skill: props.skill, enabled: on })
+  emit('update:modelValue', on ? withPrerequisites([...props.modelValue, id]) : withoutQuest(props.modelValue, id))
 }
 </script>

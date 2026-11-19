@@ -58,7 +58,7 @@
 
         <template v-if="preview">
           <p class="agm-route-help">The best method for each set of levels, {{ STRATEGY_LABELS[strategy].toLowerCase() }}. Press <b>Choose method</b> on any step to see the options and pick your own.</p>
-          <PlannerRoute :segments="preview.segments" :skill="form.skill" @set="setRange" />
+          <PlannerRoute :segments="preview.segments" :quests="preview.questList" :skill="form.skill" @set="setRange" />
           <p v-if="preview.warning" class="planner-warning">⚠ {{ preview.warning }}</p>
           <p v-if="form.overrides.length" class="agm-reset">
             You chose the method for {{ form.overrides.length }} set{{ form.overrides.length === 1 ? '' : 's' }} of levels.
@@ -87,7 +87,7 @@ import { computed, reactive, ref } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
-import { MAX_XP, xpAtLevel, levelAtXp, planGoal, setOverrideRange, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, GLOBAL_STRATEGIES, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
+import { MAX_XP, xpAtLevel, levelAtXp, planGoal, suggestedQuests, setOverrideRange, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, GLOBAL_STRATEGIES, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
 import { STRATEGY_LABELS, resolveGoal } from '@/utils/plannerTools'
 
 const props = defineProps({
@@ -171,14 +171,15 @@ function setRange({ fromLevel, toLevel, methodId }) {
   form.overrides = setOverrideRange(form.overrides, fromLevel, toLevel, methodId)
 }
 
-const preview = computed(() => {
+// The goal as the planner would run it, plus the short XP quests that pay off for it (or that a method on its route needs).
+const baseGoal = computed(() => {
   const cur = Math.min(Math.max(Math.floor(form.currentXp || 0), 0), MAX_XP)
   if (targetXp.value <= cur) return null
   const id = strategy.value
-  return planGoal(
-    resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue),
-  )
+  return resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue)
 })
+const suggested = computed(() => (baseGoal.value ? suggestedQuests(baseGoal.value) : []))
+const preview = computed(() => (baseGoal.value ? planGoal({ ...baseGoal.value, quests: suggested.value }) : null))
 
 function submit() {
   error.value = ''
@@ -201,7 +202,7 @@ function submit() {
     error.value = 'Your target has to be higher than your current XP.'
     return
   }
-  const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [] }
+  const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [...suggested.value] }
   if (form.overrides.length) goal.overrides = form.overrides.map((o) => ({ ...o }))
   emit('add', goal)
 }

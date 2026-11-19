@@ -50,7 +50,7 @@
       <section class="se-field">
         <h4>Route by level</h4>
         <p class="se-hint">Tap a step to choose a different method for those levels.</p>
-        <PlannerRoute :segments="plan.segments" :skill="goal.skill" @set="setRange" />
+        <PlannerRoute :segments="plan.segments" :quests="plan.questList" :skill="goal.skill" @set="setRange" />
         <p v-if="overrideCount" class="se-hint">
           You chose the method for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels.
           <button class="btn-text" type="button" @click="$emit('patch', { overrides: [] })">Back to recommended</button>

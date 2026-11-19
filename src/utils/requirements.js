@@ -5,7 +5,8 @@
 //  - quests, diaries, gear and unlocks cannot be read from the hiscores, so they stay "unknown" until the player confirms
 //    them ("I have this" / "I don't have this").
 //
-// ctx: { levels: { Skill: level } | null, planned: { Skill: targetLevel }, confirmations: { requirementId: 'have' | 'missing' } }
+// ctx: { levels: { Skill: level } | null, planned: { Skill: targetLevel }, plannedQuests: [requirementId], confirmations: { requirementId: 'have' | 'missing' } }
+// plannedQuests are quests the plan itself does first (a chosen quest shortcut), which cover a method that needs them.
 import { requirementsFor } from '@/data/methodRequirements'
 
 export const MET = 'met'
@@ -35,6 +36,7 @@ export function requirementStatus(req, ctx = {}) {
   }
   const answer = confirmationFor(req, ctx.confirmations)
   if (answer === 'have') return MET
+  if (req.kind === 'quest' && ctx.plannedQuests?.includes(fullQuestId(req) || req.id)) return PLANNED
   if (answer === 'missing') return UNMET
   return UNKNOWN
 }

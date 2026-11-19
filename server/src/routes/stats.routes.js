@@ -6,6 +6,7 @@ import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
+import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -118,7 +119,18 @@ statsRouter.get('/admin/stats/accounts', ...adminOnly, async (req, res, next) =>
     next(err)
   }
 })
-statsRouter.get('/admin/stats/visitors/:key',...adminOnly, async (req, res, next) => {
+// For the site owner: delete someone else's account (never a team account, never your own). The page asks first.
+statsRouter.post('/admin/users/:id/delete', ...adminOnly, async (req, res, next) => {
+  try {
+    const email = await adminDeleteAccount(req.params.id, req.user.id)
+    if (!email) return res.status(404).json({ error: 'No such account.' })
+    res.json({ ok: true, email })
+  } catch (err) {
+    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
+    next(err)
+  }
+})
+statsRouter.get('/admin/stats/visitors/:key', ...adminOnly, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store')
     const out = await journeyOf(req.params.key, askedDays(req))

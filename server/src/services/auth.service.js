@@ -239,6 +239,24 @@ export async function deleteAccount(userId, password) {
   await pool.query('DELETE FROM users WHERE id = $1', [userId])
 }
 
+/**
+ * Deletes someone else's account from the admin page (no password: the caller is an admin). Team accounts and the caller's own
+ * account are refused. Returns the deleted account's email, or null when there is no such account. Everything tied to the account
+ * goes with it (sessions, claims, plans, clans it owns), and its browser ids are cleared from the events, like deleteAccount.
+ */
+export async function adminDeleteAccount(targetId, callerId) {
+  const id = Number(targetId)
+  if (!Number.isInteger(id) || id < 1) return null
+  if (id === callerId) throw new AuthError('You cannot delete your own account here.')
+  const { rows } = await pool.query('SELECT email, roles FROM users WHERE id = $1', [id])
+  if (!rows.length) return null
+  if (rows[0].roles?.includes('admin') || rows[0].roles?.includes('owner')) throw new AuthError('Team accounts cannot be deleted here.')
+  await pool.query('DELETE FROM visitor_data WHERE visitor_id IN (SELECT visitor_id FROM visitor_links WHERE account_id = $1)', [id])
+  await pool.query('UPDATE events SET visitor_id = NULL WHERE visitor_id IN (SELECT visitor_id FROM visitor_links WHERE account_id = $1)', [id])
+  await pool.query('DELETE FROM users WHERE id = $1', [id])
+  return rows[0].email
+}
+
 export async function countUsers() {
   const { rows } = await pool.query('SELECT count(*)::int AS n FROM users')
   return rows[0].n

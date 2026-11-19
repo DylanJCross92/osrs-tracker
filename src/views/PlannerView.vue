@@ -203,7 +203,9 @@ import {
   formatGp,
   encodePlan,
   decodePlan,
+  suggestedQuests,
 } from '@/utils/planner'
+import { plannedQuestReqIds } from '@/data/quests'
 import {
   STRATEGY_LABELS,
   resolveGoal,
@@ -434,12 +436,15 @@ const reqCtx = computed(() => {
   return {
     levels: skills ? levels : null,
     planned: Object.fromEntries(goals.value.map((g) => [g.skill, levelAtXp(g.targetXp, true)])),
+    plannedQuests: plannedQuestReqIds(goals.value),
     confirmations: confirmations.value,
   }
 })
 provide(plannerRequirementContext, reqCtx)
 const blockedIds = computed(() => (respect.value ? blockedMethodIds(TRAINING_METHODS, reqCtx.value) : []))
 const withBlocked = (g) => ({ ...g, blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value })
+// A new goal starts with the short XP quests that pay off for it (or that a method on its route needs anyway).
+const withSuggestedQuests = (g) => ({ ...g, quests: suggestedQuests(withBlocked(resolveGoal({ ...g, quests: [] }, globalStrategy.value, gpValue.value))) })
 const resolved = computed(() => liveGoals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
 const resolvedOriginal = computed(() => goals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
 const planCache = new Map()
@@ -896,7 +901,7 @@ function personalizeTemplate() {
   // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
   if (template.value?.recommendedId) {
     const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
-    if (rec) goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
+    if (rec) goals.value = rec.goals.map(withSuggestedQuests)
     else goals.value = []
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
@@ -941,7 +946,7 @@ function useRecommended(rec) {
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
-  goals.value = rec.goals.map((g) => ({ ...g, quests: [] }))
+  goals.value = rec.goals.map(withSuggestedQuests)
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)
@@ -1216,7 +1221,7 @@ function cardProgress(p) {
   if (!skills || !baseline || !p.goals?.length) return null
   const levels = {}
   for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
-  const ctx = { levels, planned: Object.fromEntries(p.goals.map((g) => [g.skill, levelAtXp(g.targetXp, true)])), confirmations: confirmations.value }
+  const ctx = { levels, planned: Object.fromEntries(p.goals.map((g) => [g.skill, levelAtXp(g.targetXp, true)])), plannedQuests: plannedQuestReqIds(p.goals), confirmations: confirmations.value }
   const blocked = respect.value ? blockedMethodIds(TRAINING_METHODS, ctx) : []
   const prep = (g) => ({ ...resolveGoal(g, p.globalStrategy, p.gpValue), blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value })
   const live = p.goals.map((g) => liveGoalFor(g, skills[g.skill]?.xp))

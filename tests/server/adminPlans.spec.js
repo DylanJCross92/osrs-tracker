@@ -71,3 +71,22 @@ describe('plans from visitors who are not signed in', () => {
     expect(out.totals).toMatchObject({ plans: 0, visitors: 0 })
   })
 })
+
+describe('visitors whose plans name no player', () => {
+  const idA = 'aa'.repeat(16)
+  const idB = 'bb'.repeat(16)
+  const visitor = (id, plans) => ({ id, plans, planner: null, updatedAt: '2026-11-06T00:00:00.000Z' })
+
+  it('gives each visitor a group of their own, after the players and before "No player set"', () => {
+    const out = groupPlansByPlayer(
+      [saved([plan('n', '', '2026-11-02'), plan('b', 'Bob', '2026-11-01')])],
+      [visitor(idA, [plan('a1', '', '2026-11-05'), plan('a2', '', '2026-11-04')]), visitor(idB, [plan('b1', '', '2026-11-03')])],
+    )
+    expect(out.players.map((p) => p.key)).toEqual(['bob', `v:${idA}`, `v:${idB}`, ''])
+    const a = out.players[1]
+    expect(a.visitor).toEqual({ key: `v:${idA}`, label: 'Visitor aaaaaa' })
+    expect(a.plans.map((p) => p.id)).toEqual(['a1', 'a2'])
+    expect(out.players[3].plans.map((p) => p.id)).toEqual(['n'])
+    expect(out.totals).toEqual({ players: 1, plans: 5, accounts: 1, visitors: 2 })
+  })
+})

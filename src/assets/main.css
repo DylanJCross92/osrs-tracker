@@ -5994,3 +5994,37 @@ b.path-name { font-size: 1.12rem; }
   .su-table td.su-players, .su-table td.su-act { min-width: 0; }
   .su-sub { display: inline; margin-left: 6px; }
 }
+
+/* The quests done before a route starts */
+.planner-step-quest { border-left-color: var(--gold); background: rgba(217, 175, 82, 0.07); }
+.planner-step-quest .planner-step-levels { color: var(--gold-bright); font-weight: 700; }
+.planner-step-quest .planner-step-name em { display: block; color: var(--muted); font-style: normal; font-size: 0.76rem; }
+.planner-step-quest .planner-step-gp { color: var(--xp-green); }
+.planner-quest-tag { margin-left: 6px; padding: 1px 7px; border: 1px solid var(--gold); border-radius: 999px; color: var(--gold-bright); font-size: 0.64rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* User Management: links, the row menu and the delete confirmation */
+.su-link { color: var(--text); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+.su-link:hover, .su-link:focus-visible { color: var(--gold-bright); text-decoration-color: var(--gold); outline: none; }
+a.su-link-flag { text-decoration: none; }
+a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline; text-underline-offset: 3px; outline: none; }
+.su-table .su-menu-col, .su-table .su-menu-cell { width: 44px; padding-left: 0; padding-right: 8px; text-align: right; }
+.su-dots { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid transparent; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
+.su-dots:hover, .su-dots:focus-visible, .su-dots[aria-expanded="true"] { color: var(--text); border-color: var(--border-strong); background: rgba(217, 175, 82, 0.08); outline: none; }
+.su-menu { position: fixed; z-index: 200; width: 190px; padding: 6px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--panel); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45); }
+.su-menu-item { display: block; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px; background: none; color: var(--text); font: inherit; font-size: 0.88rem; text-align: left; white-space: nowrap; cursor: pointer; }
+.su-menu-item:hover:not(:disabled), .su-menu-item:focus-visible { background: rgba(217, 175, 82, 0.12); outline: none; }
+.su-menu-item.is-danger { color: #e8836b; }
+.su-menu-item.is-danger:hover:not(:disabled), .su-menu-item.is-danger:focus-visible { background: rgba(232, 131, 107, 0.14); }
+.su-menu-item:disabled { color: var(--muted); cursor: not-allowed; opacity: 0.6; }
+.su-confirm { max-width: 460px; }
+.su-confirm-text { margin: 0 0 16px; color: var(--muted); font-size: 0.92rem; line-height: 1.55; }
+.su-confirm-text b { color: var(--text); overflow-wrap: anywhere; }
+.su-delete { background: #c4553f; border-color: #c4553f; color: #fff; }
+.su-delete:hover:not(:disabled) { background: #d4624a; border-color: #d4624a; }
+.su-delete:disabled { opacity: 0.6; cursor: wait; }
+@media (max-width: 700px) {
+  .su-table tr { position: relative; }
+  .su-table .su-menu-col { display: none; }
+  .su-table td.su-menu-cell { position: absolute; top: 6px; right: 0; width: auto; padding: 0; }
+  .su-table tbody th { padding-right: 40px; }
+}

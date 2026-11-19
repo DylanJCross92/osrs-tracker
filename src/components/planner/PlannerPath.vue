@@ -65,7 +65,7 @@
         <!-- Being edited: the editor takes the place of the route (the route is inside it, and changes as you edit) -->
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
-          <PlannerRoute :segments="plans[i].segments" />
+          <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" />
         </template>
       </li>
     </ol>

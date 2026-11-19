@@ -1,5 +1,15 @@
 <template>
   <ol v-if="segments.length" class="planner-route">
+    <li v-if="questList.length" class="planner-step planner-step-quest" :title="questTitle">
+      <span class="planner-step-levels">Quests</span>
+      <span class="planner-step-name">
+        {{ questList.length === 1 ? questList[0].name : `${questList.length} quests first` }}
+        <em>{{ questList.length === 1 ? 'done first, it skips the early levels' : questNames }}</em>
+      </span>
+      <span class="planner-step-meta">{{ formatNum(questXp) }} xp</span>
+      <span class="planner-step-gp">Free</span>
+      <span class="planner-step-hours">{{ formatQuestTime(questMinutes) }}</span>
+    </li>
     <li
       v-for="(seg, k) in segments"
       :key="k"
@@ -74,8 +84,17 @@ import { formatNum, formatHours, formatGp } from '@/utils/planner'
 const props = defineProps({
   segments: { type: Array, required: true },
   skill: { type: String, default: '' },
+  // The quests done before the route starts: [{ id, name, xp, minutes }] (from planGoal's questList).
+  quests: { type: Array, default: () => [] },
 })
 const emit = defineEmits(['set'])
+
+const questList = computed(() => props.quests || [])
+const questXp = computed(() => questList.value.reduce((sum, x) => sum + x.xp, 0))
+const questMinutes = computed(() => questList.value.reduce((sum, x) => sum + x.minutes, 0))
+const questNames = computed(() => questList.value.map((x) => x.name).join(', '))
+const questTitle = computed(() => questList.value.map((x) => `${x.name}: +${formatNum(x.xp)} xp`).join('\n'))
+const formatQuestTime = (min) => (min >= 60 ? formatHours(min / 60) : `~${min} min`)
 
 const editing = ref(-1)
 const current = computed(() => props.segments[editing.value] || null)

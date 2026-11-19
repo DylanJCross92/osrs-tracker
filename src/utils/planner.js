@@ -1,5 +1,7 @@
 import { getMethod, methodsForSkill } from '@/data/trainingMethods'
-import { getQuest, questXpFor } from '@/data/quests'
+import { requirementsFor } from '@/data/methodRequirements'
+import { questId } from '@/utils/questSlug'
+import { QUESTS, getQuest, questChain, questXpFor, withPrerequisites } from '@/data/quests'
 
 export const MAX_XP = 200_000_000
 export const MAX_VIRTUAL_LEVEL = 126
@@ -198,7 +200,11 @@ export function planGoal(goal) {
   const targetXp = Math.min(Math.floor(goal.targetXp || 0), MAX_XP)
   // Quests the player has already finished cannot give their reward again.
   const doneQuests = Array.isArray(goal.doneQuestIds) && goal.doneQuestIds.length ? new Set(goal.doneQuestIds) : null
-  const questXp = Math.min(questXpFor(doneQuests ? (goal.quests || []).filter((id) => !doneQuests.has(id)) : goal.quests, goal.skill), Math.max(targetXp - currentXp, 0))
+  // The quests still to do, with what each one needs in front of it. They take a little time of their own.
+  const todo = withPrerequisites(goal.quests).filter((id) => !doneQuests?.has(id))
+  const questList = todo.map((id) => getQuest(id)).filter((x) => x && x.rewards[goal.skill]).map((x) => ({ id: x.id, name: x.name, xp: x.rewards[goal.skill], minutes: x.minutes || 0 }))
+  const questHours = questList.reduce((sum, x) => sum + x.minutes, 0) / 60
+  const questXp = Math.min(questXpFor(todo, goal.skill), Math.max(targetXp - currentXp, 0))
   const startXp = currentXp + questXp
   const remainingXp = Math.max(targetXp - startXp, 0)
   const auto = isAuto(goal.methodId) ? goal.methodId : null
@@ -208,8 +214,8 @@ export function planGoal(goal) {
   // Optional: method ids with a confirmed unmet requirement, skipped when the planner picks methods itself.
   const blockedSet = Array.isArray(goal.blockedMethodIds) && goal.blockedMethodIds.length ? new Set(goal.blockedMethodIds) : null
 
-  const result = { currentXp, startXp, questXp, targetXp, remainingXp, method: chosen, segments: [], hours: null, netGp: null, gpPartial: false, warning: null, complete: true }
-  if (remainingXp === 0) return { ...result, hours: 0, netGp: 0 }
+  const result = { currentXp, startXp, questXp, questList, questHours, targetXp, remainingXp, method: chosen, segments: [], hours: null, netGp: null, gpPartial: false, warning: null, complete: true }
+  if (remainingXp === 0) return { ...result, hours: questHours, netGp: 0 }
 
   let segments = []
   if (auto) {
@@ -239,7 +245,7 @@ export function planGoal(goal) {
   const gpKnown = finished.filter((seg) => seg.netGp != null)
 
   result.segments = finished
-  result.hours = timed.reduce((sum, seg) => sum + seg.hours, 0)
+  result.hours = timed.reduce((sum, seg) => sum + seg.hours, 0) + questHours
   result.netGp = gpKnown.length ? gpKnown.reduce((sum, seg) => sum + seg.netGp, 0) : null
   result.gpPartial = gpKnown.length > 0 && gpKnown.length < timed.length
   if (gaps.length) {
@@ -388,4 +394,49 @@ export function decodePlan(query, validSkills) {
   const t = parseInt(query.t, 10)
   const statsAt = Number.isFinite(t) && t > 0 && t <= Date.now() + 86_400_000 ? new Date(t).toISOString() : null
   return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt }
+}
+
+/**
+ * The quests to turn on for a skill goal without being asked, prerequisites first, from the short XP quests (`suggest` in
+ * data/quests.js). Two reasons to pick one: the route uses a method that needs the quest anyway (Guardians of the Rift needs
+ * Temple of the Eye, so its quests are done first and their XP skips the early levels), or the XP they give saves more time
+ * and gp than the quests take. Quests already finished are left out.
+ */
+export function suggestedQuests(goal) {
+  const done = new Set(goal.doneQuestIds || [])
+  const remaining = (goal.targetXp || 0) - (goal.currentXp || 0)
+  if (remaining <= 0) return []
+  const candidates = QUESTS.filter((x) => x.suggest && x.rewards[goal.skill])
+  if (!candidates.length) return []
+  const baseGoal = planGoal({ ...goal, quests: [] })
+
+  // Choose the quests in order, as long as their XP still fits inside the goal and each one's level requirement is met by then.
+  const choose = (wanted) => {
+    const picked = []
+    let xp = goal.currentXp || 0
+    for (const quest of wanted) {
+      const extra = questChain(quest.id).filter((id) => !done.has(id) && !picked.includes(id))
+      if (!extra.length) continue
+      const gain = extra.reduce((sum, id) => sum + (getQuest(id).rewards[goal.skill] || 0), 0)
+      const need = quest.reqs[goal.skill]
+      if (xp + gain > goal.targetXp) continue
+      if (need != null && levelAtXp(xp + gain - (quest.rewards[goal.skill] || 0), true) < need) continue
+      picked.push(...extra)
+      xp += gain
+    }
+    return picked
+  }
+
+  // Needed by a method the route uses: worth doing whatever it costs.
+  const needed = new Set(baseGoal.segments.flatMap((seg) => (seg.method ? requirementsFor(seg.method) : [])).filter((r) => r.kind === 'quest' && !r.partial).map((r) => r.id))
+  const required = choose(candidates.filter((x) => needed.has(questId(x.name))))
+  if (required.length) return required
+
+  // Otherwise only when it pays: time saved is worth `value` gp an hour, and any gp saved comes on top.
+  const picked = choose(candidates)
+  if (!picked.length) return []
+  const withQuests = planGoal({ ...goal, quests: picked })
+  if (baseGoal.hours == null || withQuests.hours == null) return []
+  const gpGain = baseGoal.netGp != null && withQuests.netGp != null ? withQuests.netGp - baseGoal.netGp : 0
+  return (baseGoal.hours - withQuests.hours) * (goal.gpValuePerHour ?? DEFAULT_GP_VALUE) + gpGain > 0 ? picked : []
 }
