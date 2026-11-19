@@ -22,11 +22,11 @@ const safeUrl = (u) => (/^https?:\/\//i.test(String(u)) ? String(u) : '')
 
 /**
  * title: the heading. paragraphs: plain strings, or { text, strong } to bold a part (strong must appear in text).
- * button: { label, url }. rows: [{ label, value }] shown as a small table. note: small muted text under the button.
- * preheader: the preview line some inboxes show next to the subject.
+ * features: [{ title, text, image?: { src, alt } }] shown as a short list with a tick beside each, and an optional picture under the text. button: { label, url }. rows: [{ label, value }] shown as a small table. note: small muted text under the button.
+ * unsubscribeUrl: for emails that are not about the account itself, a link in the footer to stop them. preheader: the preview line some inboxes show next to the subject.
  * Returns { html, text }.
  */
-export function renderEmail({ preheader = '', title, paragraphs = [], button = null, rows = [], note = '' }) {
+export function renderEmail({ preheader = '', title, paragraphs = [], features = [], afterFeatures = [], button = null, rows = [], note = '', unsubscribeUrl = '' }) {
   const site = SITE()
   const url = button ? safeUrl(button.url) : ''
 
@@ -36,6 +36,18 @@ export function renderEmail({ preheader = '', title, paragraphs = [], button = n
     if (strong) html = html.replace(esc(strong), `<strong style="color:${C.goldBright};font-weight:700;">${esc(strong)}</strong>`)
     return `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${C.text};">${html}</p>`
   }
+
+  const featuresHtml = features.length
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:2px 0 22px;">${features
+        .map((f) => {
+          const pic = f.image && safeUrl(f.image.src)
+          const picHtml = pic
+            ? `<tr><td></td><td valign="top" style="padding:2px 0 22px;"><img src="${esc(pic)}" width="100%" alt="${esc(f.image.alt || '')}" style="display:block;width:100%;max-width:100%;height:auto;border:0;border-radius:12px;"></td></tr>`
+            : ''
+          return `<tr><td width="34" valign="top" style="padding:0 0 ${pic ? 10 : 14}px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" width="24" height="24" bgcolor="#2c3a22" style="width:24px;height:24px;border-radius:12px;background:#2c3a22;color:${C.green};font-size:14px;font-weight:700;line-height:24px;">&#10003;</td></tr></table></td><td valign="top" style="padding:0 0 ${pic ? 10 : 14}px;font-size:14px;line-height:1.55;color:${C.muted};"><strong style="color:${C.text};font-size:15px;">${esc(f.title)}</strong><br>${esc(f.text)}</td></tr>${picHtml}`
+        })
+        .join('')}</table>`
+    : ''
 
   const rowsHtml = rows.length
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 20px;border:1px solid ${C.border};border-radius:10px;border-collapse:separate;table-layout:fixed;background:${C.page};">${rows
@@ -51,6 +63,9 @@ export function renderEmail({ preheader = '', title, paragraphs = [], button = n
        <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:${C.muted};">Button not working? Copy this link into your browser:</p>
        <p style="margin:0 0 18px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="${esc(url)}" target="_blank" style="color:${C.gold};text-decoration:underline;">${esc(url)}</a></p>`
     : ''
+
+  const unsub = safeUrl(unsubscribeUrl)
+  const unsubHtml = unsub ? `<br><a href="${esc(unsub)}" target="_blank" style="color:${C.muted};text-decoration:underline;">Unsubscribe from reminder emails</a>` : ''
 
   const noteHtml = note ? `<p style="margin:0;font-size:13px;line-height:1.6;color:${C.muted};">${esc(note)}</p>` : ''
 
@@ -79,6 +94,8 @@ export function renderEmail({ preheader = '', title, paragraphs = [], button = n
     <tr><td bgcolor="${C.panel}" style="background:${C.panel};border:1px solid ${C.border};border-radius:14px;padding:32px 30px 28px;">
       <h1 style="margin:0 0 18px;font-family:${FONT};font-size:24px;line-height:1.25;font-weight:700;letter-spacing:-0.01em;color:${C.goldBright};">${esc(title)}</h1>
       ${paragraphs.map(para).join('\n      ')}
+      ${featuresHtml}
+      ${afterFeatures.map(para).join('\n      ')}
       ${rowsHtml}
       ${buttonHtml}
       ${noteHtml}
@@ -86,7 +103,7 @@ export function renderEmail({ preheader = '', title, paragraphs = [], button = n
     <tr><td style="padding:20px 8px 0;font-size:12px;line-height:1.6;color:${C.muted};text-align:center;">
       <a href="${esc(site)}" target="_blank" style="color:${C.gold};text-decoration:none;font-weight:700;">tickgains.com</a><br>
       Free OSRS XP tracking, hiscores history and account planning.<br>
-      TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd.
+      TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd.${unsubHtml}
     </td></tr>
   </table>
 </td></tr>
@@ -98,11 +115,14 @@ export function renderEmail({ preheader = '', title, paragraphs = [], button = n
     title,
     '',
     ...paragraphs.map((p) => (typeof p === 'string' ? p : p.text)),
+    ...(features.length ? ['', ...features.map((f) => `- ${f.title}: ${f.text}`)] : []),
+    ...afterFeatures.map((p) => (typeof p === 'string' ? p : p.text)),
     ...(rows.length ? ['', ...rows.map((r) => `${r.label}: ${r.value}`)] : []),
     ...(url ? ['', `${button.label}:`, url] : []),
     ...(note ? ['', note] : []),
     '',
     `TickGains - ${site}`,
+    ...(unsub ? [`Unsubscribe from reminder emails: ${unsub}`] : []),
   ]
   return { html, text: textParts.join('\n') }
 }

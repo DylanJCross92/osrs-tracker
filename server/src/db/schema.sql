@@ -497,3 +497,19 @@ CREATE INDEX IF NOT EXISTS feedback_created_idx ON feedback (created_at DESC);
 -- When the current leader of that day took the lead (kept while the same player stays on top), so "top gainer for 3 hours" can be shown.
 ALTER TABLE daily_top_gainers ADD COLUMN IF NOT EXISTS lead_since TIMESTAMPTZ;
 UPDATE daily_top_gainers SET lead_since = updated_at WHERE lead_since IS NULL AND day = (now() AT TIME ZONE 'utc')::date;
+
+-- A reminder email to confirmed accounts that never claimed a player (see services/claimNudge.service.js).
+--   claim_nudge_state: NULL = not emailed yet (the hourly job emails it about a day after the email was confirmed), 'sent', or
+--     'legacy' = the account already existed when this shipped, so it is only emailed when the owner presses the button on User Management.
+--   email_optout_at: the person used the unsubscribe link; unsub_token is what that link carries.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'claim_nudge_state') THEN
+    ALTER TABLE users ADD COLUMN claim_nudge_state TEXT;
+    UPDATE users SET claim_nudge_state = 'legacy' WHERE email_verified_at IS NOT NULL;
+  END IF;
+END $$;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS claim_nudge_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_optout_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS unsub_token TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS users_unsub_token_idx ON users (unsub_token) WHERE unsub_token IS NOT NULL;

@@ -3,7 +3,7 @@
     <h1>Unsubscribe</h1>
     <p v-if="state === 'working'" class="info-updated">One moment…</p>
     <template v-else-if="state === 'done'">
-      <p><b>You're unsubscribed.</b> We won't email you again. If that was a mistake, you can sign up again from the footer of any page.</p>
+      <p><b>You're unsubscribed.</b> We won't send you news or reminder emails again. Emails about your account, like a password reset, will still arrive. If that was a mistake, you can sign up again from the footer of any page.</p>
     </template>
     <template v-else>
       <p>That unsubscribe link isn't valid. If you still get emails from us, reply to one and we'll remove you by hand, or use the <RouterLink to="/contact">contact page</RouterLink>.</p>

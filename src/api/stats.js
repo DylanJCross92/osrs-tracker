@@ -26,6 +26,10 @@ export const statsApi = {
   visitors: (days = 30) => api.get(`/admin/stats/visitors?days=${days}`),
   // Site owner only: { days, total, accounts: [{ id, email, createdAt, verifiedAt, lastSeen, players, pending, steps, activeDays, team }] }.
   accounts: (days = 30) => api.get(`/admin/stats/accounts?days=${days}`),
+  // Site owner only: the claim reminder email. { mail: { configured, sharedSender }, afterHours, sent, waiting, optedOut, legacy: [{ id, email, verifiedAt, createdAt }] }.
+  claimNudge: () => api.get('/admin/emails/claim-nudge'),
+  claimNudgeTest: () => api.post('/admin/emails/claim-nudge/test', {}),
+  claimNudgeSend: (ids) => api.post('/admin/emails/claim-nudge/send', ids ? { ids } : {}),
   // Site owner only: delete an account (not a team account, not your own). { ok, email }.
   deleteAccount: (id) => api.post(`/admin/users/${id}/delete`, {}),
   journey: (key, days = 30) => api.get(`/admin/stats/visitors/${encodeURIComponent(key)}?days=${days}`),

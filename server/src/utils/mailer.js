@@ -6,13 +6,13 @@ export const DEFAULT_FROM = 'TickGains <onboarding@resend.dev>'
 
 export const mailConfigured = () => Boolean(process.env.RESEND_API_KEY)
 
-export async function sendMail({ to, subject, text, html }) {
+export async function sendMail({ to, subject, text, html, headers }) {
   if (!mailConfigured()) return false
   try {
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: process.env.NOTIFY_FROM || DEFAULT_FROM, to: [to], subject, text, ...(html ? { html } : {}) }),
+      body: JSON.stringify({ from: process.env.NOTIFY_FROM || DEFAULT_FROM, to: [to], subject, text, ...(html ? { html } : {}), ...(headers ? { headers } : {}) }),
     })
     if (!res.ok) {
       console.error(`Email to a user failed: Resend answered ${res.status}`)

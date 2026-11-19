@@ -34,7 +34,10 @@ async function countActive() {
 export async function unsubscribeByToken(token) {
   if (typeof token !== 'string' || !/^[a-f0-9]{48}$/.test(token)) return false
   const { rowCount } = await pool.query('UPDATE email_subscribers SET unsubscribed_at = COALESCE(unsubscribed_at, now()) WHERE unsub_token = $1', [token])
-  return rowCount > 0
+  if (rowCount > 0) return true
+  // Or an account that asked not to get reminder emails (see claimNudge.service.js). Emails about the account itself still arrive.
+  const account = await pool.query('UPDATE users SET email_optout_at = COALESCE(email_optout_at, now()) WHERE unsub_token = $1', [token])
+  return account.rowCount > 0
 }
 
 /** Everyone currently subscribed, oldest first (for the owner's export). */

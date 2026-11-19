@@ -27,6 +27,7 @@ import { startScheduler } from './jobs/sync.js'
 import { startCompetitionJob } from './jobs/competitions.js'
 import { startEventsPurgeJob } from './jobs/purgeEvents.js'
 import { startClaimReminderJob } from './jobs/claimReminders.js'
+import { startClaimNudgeJob } from './jobs/claimNudges.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
@@ -946,6 +947,7 @@ startScheduler()
 startCompetitionJob()
 startEventsPurgeJob()
 startClaimReminderJob()
+startClaimNudgeJob()
 // Warm the cached homepage/Discover data so the first visitor doesn't pay for it.
 getHome().catch(() => {})
 // Reconstruct achievements/milestones for players tracked before they existed (idempotent).

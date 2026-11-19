@@ -9,6 +9,7 @@
         <button v-for="d in RANGES" :key="d" type="button" class="st-range-btn" :class="{ on: days === d }" :aria-pressed="days === d" @click="days = d">{{ d }} days</button>
       </div>
     </header>
+    <ClaimEmailCard />
     <UsersList :days="days" @go="openVisitor" />
   </div>
 </template>
@@ -16,6 +17,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ClaimEmailCard from '@/components/admin/users/ClaimEmailCard.vue'
 import UsersList from '@/components/admin/users/UsersList.vue'
 import { setPageMeta } from '@/utils/pageMeta'
 
