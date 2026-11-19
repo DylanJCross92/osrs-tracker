@@ -6,9 +6,10 @@ import { notifyNewSubscriber } from './notify.service.js'
  * Adds an address to the news list. Safe to call twice with the same address: the second call changes nothing, and an
  * address that had unsubscribed is switched back on (they asked again). The caller gets nothing back about whether the
  * address was already known, so the form cannot be used to find out who is on the list. The owner is emailed only for a
- * brand-new or returning address, never for someone who is already subscribed.
+ * brand-new or returning address, never for someone who is already subscribed, and not at all with { notify: false }: a person who
+ * joins the list while making an account already gets the owner a "New TickGains signup" email, so a second one would be a repeat.
  */
-export async function subscribe(email, source = '') {
+export async function subscribe(email, source = '', { notify = true } = {}) {
   const token = crypto.randomBytes(24).toString('hex')
   const { rows } = await pool.query(
     `INSERT INTO email_subscribers (email, source, unsub_token)
@@ -18,7 +19,7 @@ export async function subscribe(email, source = '') {
      RETURNING id`,
     [email, source, token],
   )
-  if (!rows.length) return
+  if (!rows.length || !notify) return
   // Fire and forget: the visitor is not kept waiting on the notification.
   countActive()
     .then((total) => notifyNewSubscriber({ email, source, total }))

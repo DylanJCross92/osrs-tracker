@@ -149,7 +149,7 @@ authRouter.post(
     setSession(res, await createSession(user.id))
     recordLogin(user, 'email_link', req.headers)
     linkBrowser(req, user)
-    if (newsletter) subscribe(user.email, 'signup').catch(() => {})
+    if (newsletter) subscribe(user.email, 'signup', { notify: false }).catch(() => {})
     // The owner is told once, when the person signs up (above), not again when they confirm.
     res.json({ user })
   }),
