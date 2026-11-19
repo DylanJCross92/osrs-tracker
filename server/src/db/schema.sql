@@ -513,3 +513,14 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS claim_nudge_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_optout_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS unsub_token TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS users_unsub_token_idx ON users (unsub_token) WHERE unsub_token IS NOT NULL;
+
+-- A claim nobody finishes: 24 hours after it was opened the person is emailed, and the claim closes 48 hours after that email
+-- (see services/claimExpiry.service.js). expiry_email_at marks a claim as handled; a closed one gets the status 'expired'.
+ALTER TABLE profile_claims ADD COLUMN IF NOT EXISTS expiry_email_at TIMESTAMPTZ;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profile_claims_status_check' AND pg_get_constraintdef(oid) NOT LIKE '%expired%') THEN
+    ALTER TABLE profile_claims DROP CONSTRAINT profile_claims_status_check;
+    ALTER TABLE profile_claims ADD CONSTRAINT profile_claims_status_check CHECK (status IN ('pending', 'verified', 'rejected', 'cancelled', 'revoked', 'expired'));
+  END IF;
+END $$;

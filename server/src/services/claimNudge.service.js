@@ -22,7 +22,7 @@ const ELIGIBLE = `u.email_verified_at IS NOT NULL AND u.email_optout_at IS NULL
   AND NOT ('admin' = ANY(u.roles) OR 'owner' = ANY(u.roles))
   AND NOT EXISTS (SELECT 1 FROM profile_claims c WHERE c.user_id = u.id AND (c.status = 'verified' OR (c.status = 'pending' AND c.expires_at > now())))`
 
-async function unsubscribeUrlFor(userId) {
+export async function unsubscribeUrlFor(userId) {
   const { rows } = await pool.query('SELECT unsub_token FROM users WHERE id = $1', [userId])
   let token = rows[0]?.unsub_token
   if (!token) {

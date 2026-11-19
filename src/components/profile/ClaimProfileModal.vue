@@ -40,7 +40,7 @@
           </button>
           <p class="claim-ping-hint">Sends {{ state.contact }} a Discord notification. Stay logged in, and send your code once they are online.</p>
         </div>
-        <p class="empty-hint share-modal-hint">The message has to come from {{ displayName }}, since that is how we know it is you. The code works until {{ expires }}. You can close this and come back any time, your code stays on your profile page and your account page.</p>
+        <p class="empty-hint share-modal-hint">The message has to come from {{ displayName }}, since that is how we know it is you. The code works until {{ expires }}. If the claim is not confirmed by then it closes, and you can open a new one. You can close this and come back any time, your code stays on your profile page and your account page.</p>
         <p v-if="error" class="auth-error" role="alert">{{ error }}</p>
         <button class="btn-text claim-cancel" type="button" :disabled="busy" @click="cancel">Cancel this claim</button>
       </template>
@@ -85,7 +85,7 @@ const error = ref('')
 const draft = ref(null)
 
 const next = computed(() => `/player/${encodeURIComponent(props.username)}`)
-const expires = computed(() => (props.state.expiresAt ? new Date(props.state.expiresAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : ''))
+const expires = computed(() => (props.state.expiresAt ? new Date(props.state.expiresAt).toLocaleString('en-US', { month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''))
 const title = computed(() => {
   if (props.state.mine === 'owner') return 'Your profile'
   if (props.state.claimed) return 'Already claimed'
