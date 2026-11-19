@@ -1,6 +1,18 @@
 <template>
   <div class="hub-stack">
     <section class="card hub-card">
+      <div class="acc-title">
+        <h2>Notification settings</h2>
+        <span class="acc-status" :class="`is-${state}`" role="status">{{ stateText }}</span>
+      </div>
+      <p class="acc-note">Choose what you want to hear about. Claim updates always arrive.</p>
+      <label v-for="g in GROUPS" :key="g.id" class="hn-pref">
+        <input type="checkbox" :checked="!muted.includes(g.id)" :disabled="state === 'saving'" @change="toggle(g.id, $event.target.checked)" />
+        <span><b>{{ g.label }}</b><small>{{ g.hint }}</small></span>
+      </label>
+    </section>
+
+    <section class="card hub-card">
       <div class="hub-card-head">
         <div>
           <h2>Notifications</h2>
@@ -19,18 +31,6 @@
           </a>
         </li>
       </ul>
-    </section>
-
-    <section class="card hub-card">
-      <div class="acc-title">
-        <h2>Notification settings</h2>
-        <span class="acc-status" :class="`is-${state}`" role="status">{{ stateText }}</span>
-      </div>
-      <p class="acc-note">Choose what you want to hear about. Claim updates always arrive.</p>
-      <label v-for="g in GROUPS" :key="g.id" class="hn-pref">
-        <input type="checkbox" :checked="!muted.includes(g.id)" :disabled="state === 'saving'" @change="toggle(g.id, $event.target.checked)" />
-        <span><b>{{ g.label }}</b><small>{{ g.hint }}</small></span>
-      </label>
     </section>
   </div>
 </template>

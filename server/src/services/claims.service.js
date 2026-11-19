@@ -2,6 +2,7 @@ import { pool } from '../db.js'
 import { generateClaimCode, normalizeClaimCode } from '../utils/claimCode.js'
 import { parseAvailability, pingWaitMinutes } from '../utils/claimAvailability.js'
 import { discordConfigured } from './discord.service.js'
+import { addNotification } from './inbox.service.js'
 
 // Who to message in game. Change it with CLAIM_CONTACT_RSN if the account ever changes.
 export const claimContact = () => process.env.CLAIM_CONTACT_RSN || 'Dylanz297'
@@ -210,4 +211,32 @@ export async function adminOverview() {
 export async function countPending() {
   const { rows } = await pool.query(`SELECT count(*)::int AS n FROM profile_claims WHERE status = 'pending' AND expires_at > now()`)
   return rows[0].n
+}
+
+export const CLAIM_REMINDER_HOURS = 24
+
+/**
+ * Nudges everyone who started a claim a day ago (they have a code but it was never sent in game) with a notice in their
+ * notification centre. One reminder per claim, ever: the claim's id is the notice's dedupe key, so running this every
+ * hour is safe. Claims that expired, were approved or cancelled are left alone. Returns how many reminders were added.
+ */
+export async function remindStaleClaims() {
+  const { rows } = await pool.query(
+    `SELECT c.id, c.user_id, p.username, p.display_name FROM profile_claims c JOIN players p ON p.id = c.player_id
+     WHERE c.status = 'pending' AND c.expires_at > now() AND c.created_at <= now() - make_interval(hours => $1)
+     ORDER BY c.created_at ASC LIMIT 200`,
+    [CLAIM_REMINDER_HOURS],
+  )
+  let added = 0
+  for (const r of rows) {
+    const ok = await addNotification(r.user_id, {
+      type: 'claim_reminder',
+      text: `Still want to claim ${r.display_name}? Send your code in game to finish.`,
+      link: `/player/${encodeURIComponent(r.username)}`,
+      dedupeKey: `claim-reminder:${r.id}`,
+      subject: r.username,
+    })
+    if (ok) added++
+  }
+  return added
 }
