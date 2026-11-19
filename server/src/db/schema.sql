@@ -283,6 +283,17 @@ CREATE TABLE IF NOT EXISTS profile_goals (
 );
 CREATE INDEX IF NOT EXISTS profile_goals_player_idx ON profile_goals (player_id, created_at DESC);
 
+-- A whole plan shown on a profile as its goal: the plan's skills become goals (from_plan, in plan order), and this row says
+-- which of the owner's plans it is (the browser's plan id) and what it is called. One plan per profile.
+ALTER TABLE profile_goals ADD COLUMN IF NOT EXISTS from_plan BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE profile_goals ADD COLUMN IF NOT EXISTS plan_pos INTEGER;
+CREATE TABLE IF NOT EXISTS profile_plans (
+  player_id INTEGER PRIMARY KEY REFERENCES players(id) ON DELETE CASCADE,
+  plan_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- The player a notification is about (its RSN), so the bell can show their picture. NULL when it is not about one
 -- player, or when the person should stay anonymous.
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS subject TEXT;

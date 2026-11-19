@@ -105,7 +105,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @edit="(skill) => openSkillEditor(skill)" @add="openAdd()" @reorder="reorderTo">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @add="openAdd()" @reorder="reorderTo">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -127,7 +127,7 @@
         </PlannerPath></div>
     </template>
 
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" @save="saveSettings" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -174,6 +174,7 @@ import { sharedPlansApi } from '@/api/sharedPlans'
 import { recordPlanEvent } from '@/utils/planEvents'
 import { useRivals } from '@/composables/useRivals'
 import { useAuth, waitForAuth } from '@/composables/useAuth'
+import { dropProfilePlan, useProfilePlan } from '@/composables/useProfilePlan'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
@@ -624,6 +625,13 @@ function removeSkill(i) {
     saveIfChanged()
   }
 }
+// "Delete from plan" in a skill card's menu: asks first, since the plan saves as soon as the skill goes.
+function removeSkillFromMenu(skill) {
+  const i = goals.value.findIndex((g) => g.skill === skill)
+  if (i < 0) return
+  if (!window.confirm(`Delete ${skill} from this plan?`)) return
+  removeSkill(i)
+}
 // The first skill that uses a method with something missing, opened on its requirements.
 function reviewRequirements() {
   const skill = routeIssues.value.blockedSkills[0]
@@ -642,7 +650,7 @@ function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
 }
-function saveSettings({ name, strategy, hours }) {
+async function saveSettings({ name, strategy, hours, profile }) {
   closeSettings()
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
@@ -651,6 +659,32 @@ function saveSettings({ name, strategy, hours }) {
   if (strategy !== globalStrategy.value) setGlobalStrategy(strategy)
   if (hours !== hoursPerDay.value) setHours(hours)
   saveIfChanged()
+  if (profilePlan.available.value) await applyProfileChoice(!!profile)
+}
+// The "Show this plan on my profile" setting: turned on (saving the plan first if it was never saved), turned off, or kept current.
+async function applyProfileChoice(on) {
+  const was = profilePlan.isPublic.value
+  try {
+    if (on && !was) {
+      if (!currentPlanId.value) {
+        settingProfile = true
+        saveCurrent(currentPlanName.value || (player.value ? `${player.value.displayName}'s training plan` : 'My training plan'), false)
+        settingProfile = false
+      }
+      if (!currentPlanId.value) return
+      await profilePlan.publish(planForProfile())
+      track('planner_profile_plan', { on: true })
+      showToast('This plan is now the goal on your profile.')
+    } else if (!on && was) {
+      await profilePlan.unpublish()
+      track('planner_profile_plan', { on: false })
+      showToast('Removed from your profile.')
+    } else if (on && was) {
+      await profilePlan.publish(planForProfile())
+    }
+  } catch (err) {
+    showToast(err.message, 4000)
+  }
 }
 // The finish line as text, for the progress card (a plan that is not tracked shows the finish line box instead).
 const finishInfo = computed(() => {
@@ -762,6 +796,32 @@ function planState() {
 const savedPlans = ref(listSavedPlans())
 const currentPlanId = ref('')
 const currentPlanName = ref('')
+// A plan for a profile you own can be that profile's goal (a setting in the plan's settings window). While it is, saving the plan
+// keeps the profile in step.
+const profilePlan = useProfilePlan(computed(() => player.value?.username || ''), currentPlanId)
+// Showing a plan on your profile is the default: a new plan for your profile goes there (unless another plan already is), and the
+// settings window starts with the box ticked. Turning it off is remembered, because only a brand-new plan is put there on its own.
+const profileOption = computed(() => (profilePlan.available.value ? { on: profilePlan.isPublic.value, other: profilePlan.other.value, willSave: !currentPlanId.value, byDefault: !currentPlanId.value && !profilePlan.other.value && profilePlan.ready.value } : null))
+const planForProfile = () => ({ planId: currentPlanId.value, name: currentPlanName.value, goals: goals.value.map((g) => ({ skill: g.skill, targetXp: g.targetXp })) })
+// A plan saved for the first time goes on the profile it is for, when that profile has no plan yet.
+let settingProfile = false
+async function showNewPlanOnProfile() {
+  if (settingProfile || !profilePlan.available.value || !profilePlan.ready.value || profilePlan.isPublic.value || profilePlan.other.value) return
+  try {
+    await profilePlan.publish(planForProfile())
+    showToast('Saved, and showing on your profile. You can turn that off in Plan settings.', 4200)
+  } catch (err) {
+    showToast(err.message)
+  }
+}
+async function syncProfilePlan() {
+  if (!profilePlan.isPublic.value || !currentPlanId.value) return
+  try {
+    await profilePlan.publish(planForProfile())
+  } catch (err) {
+    showToast(err.message)
+  }
+}
 // A plan with nothing in it has nothing to edit.
 watch(
   () => goals.value.length === 0,
@@ -814,6 +874,8 @@ function saveCurrent(name, asNew) {
   scratch.value = false
   refreshSaved()
   track('planner_plan_saved', { goals: plan.goals.length })
+  syncProfilePlan()
+  if (!wasSaved) showNewPlanOnProfile()
   showToast(wasSaved ? `Updated "${plan.name}".` : `Saved "${plan.name}".`)
   // A plan that was not saved before (or a copy) now has its own address.
   if (mode.value !== 'plan' || routeId.value !== plan.id) {
@@ -1025,6 +1087,8 @@ function renameSaved(id, name) {
   refreshSaved()
 }
 function deleteSaved(id) {
+  const gone = savedPlans.value.find((p) => p.id === id)
+  if (gone) dropProfilePlan(id, gone.player?.rsn)
   deletePlan(id)
   refreshSaved()
   if (id === currentPlanId.value) {

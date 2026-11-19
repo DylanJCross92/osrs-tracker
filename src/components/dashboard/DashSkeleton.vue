@@ -93,21 +93,6 @@
     </ol>
   </section>
 
-  <section v-else-if="kind === 'inbox'" class="card dash-card dash-sk" aria-busy="true" aria-labelledby="dash-inbox-sk">
-    <header class="dash-card-head">
-      <h2 id="dash-inbox-sk">Inbox</h2>
-      <span class="dash-more sk sk-w60">See all</span>
-    </header>
-    <ul class="di-list" aria-hidden="true">
-      <li v-for="n in 3" :key="n">
-        <span class="di-item">
-          <span class="di-av sk" />
-          <span class="di-text"><span class="sk sk-w200">New follower alert</span><small class="sk sk-w60">0h ago</small></span>
-        </span>
-      </li>
-    </ul>
-  </section>
-
   <section v-else-if="kind === 'following'" class="card fol dash-sk" aria-busy="true" aria-labelledby="dash-fol-sk">
     <header class="fol-head">
       <h2 id="dash-fol-sk">Following</h2>
@@ -157,7 +142,7 @@
 
 <script setup>
 defineProps({
-  // head | week | clans | plans | next | inbox | following | milestones | goals
+  // head | week | clans | plans | next | following | milestones | goals
   kind: { type: String, required: true },
 })
 

@@ -11,7 +11,6 @@
           <DashSkeleton kind="next" />
         </div>
         <aside class="dash-side">
-          <DashSkeleton kind="inbox" />
           <DashSkeleton kind="following" />
           <DashSkeleton kind="milestones" />
           <DashSkeleton kind="goals" />
@@ -111,7 +110,6 @@
         </div>
 
         <aside class="dash-side">
-          <DashInbox />
           <FollowingStrip v-if="following.length" />
           <section v-else class="card dash-card">
             <h2>Following</h2>
@@ -125,9 +123,11 @@
           <section v-else-if="current" class="card dash-card" aria-labelledby="dash-goals-h">
             <header class="dash-card-head">
               <h2 id="dash-goals-h">Goals</h2>
-              <RouterLink class="dash-more" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'goals' } }">{{ shownGoals.length ? 'All goals →' : 'Set a goal →' }}</RouterLink>
+              <RouterLink v-if="shownGoals.length" class="dash-more" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'goals' } }">All goals →</RouterLink>
+              <RouterLink v-else class="dash-more" :to="{ name: 'planner', query: { u: current.username } }">Plan a goal →</RouterLink>
             </header>
-            <p v-if="!shownGoals.length" class="dash-empty">{{ 'No goals yet. Pick a skill and a target on your profile and the progress shows up here.' }}</p>
+            <p v-if="goalPlan" class="dash-goal-plan"><b>{{ goalPlan.name }}</b> · {{ goalPlan.percent }}% · {{ goalPlan.reached }} of {{ goalPlan.count }} reached</p>
+            <p v-if="!shownGoals.length" class="dash-empty">No goal yet. In the planner, open your plan's Plan settings and turn on Show this plan on my profile, and its progress shows up here.</p>
             <ul v-else class="dash-goals">
               <li v-for="g in shownGoals" :key="g.id" class="dash-goal" :class="{ 'is-done': g.reached }">
                 <img :src="skillIconSrc(g.skill)" alt="" width="26" height="26" />
@@ -160,7 +160,6 @@ import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashWelcome from '@/components/dashboard/DashWelcome.vue'
-import DashInbox from '@/components/dashboard/DashInbox.vue'
 import DashMilestones from '@/components/dashboard/DashMilestones.vue'
 import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import DashNext from '@/components/dashboard/DashNext.vue'
@@ -230,6 +229,8 @@ const player = computed(() => (current.value ? store.players.find((p) => sameNam
 const snaps = ref([])
 const streak = ref(null)
 const goals = ref([])
+// The plan shown on the profile as its goal, if any ({ name, percent, reached, count }).
+const goalPlan = ref(null)
 // The achievements, timeline and congratulations from the profile, and its records.
 const profileData = ref(null)
 const records = ref([])
@@ -244,6 +245,7 @@ async function loadMine() {
     snaps.value = []
     streak.value = null
     goals.value = []
+    goalPlan.value = null
     profileData.value = null
     records.value = []
     return
@@ -255,6 +257,7 @@ async function loadMine() {
   profileData.value = pr.status === 'fulfilled' ? pr.value : null
   streak.value = profileData.value?.streak || null
   goals.value = g.status === 'fulfilled' ? g.value.goals : []
+  goalPlan.value = g.status === 'fulfilled' ? g.value.plan : null
   records.value = rec.status === 'fulfilled' ? rec.value.records : []
   loadingMine.value = false
 }

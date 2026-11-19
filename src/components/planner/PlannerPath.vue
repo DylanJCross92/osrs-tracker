@@ -33,7 +33,7 @@
               <small v-if="entries[i] && !entries[i].done">by {{ fmtShort(entries[i].endDate) }}</small>
             </template>
           </span>
-          <div v-if="hasMenu(i)" class="path-menu" :class="{ open: menuFor === g.skill }">
+          <div class="path-menu" :class="{ open: menuFor === g.skill }">
             <button class="po-dots" type="button" aria-haspopup="menu" :aria-expanded="menuFor === g.skill" :aria-label="`Options for ${g.skill}`" @click.stop="toggleMenu(g.skill)">
               <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9" /><circle cx="12" cy="12" r="1.9" /><circle cx="12" cy="19" r="1.9" /></svg>
             </button>
@@ -45,6 +45,10 @@
               <button v-if="canShare(i)" class="po-item" role="menuitem" type="button" @click="shareFromMenu(i)">
                 <ShareIcon name="share" />
                 Share
+              </button>
+              <button class="po-item po-item-danger" role="menuitem" type="button" @click="removeFromMenu(i)">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3" /></svg>
+                Delete from plan
               </button>
             </div>
           </div>
@@ -103,7 +107,7 @@ const props = defineProps({
   // The skill whose editor is open.
   editSkill: { type: String, default: '' },
 })
-const emit = defineEmits(['edit', 'add', 'reorder'])
+const emit = defineEmits(['edit', 'add', 'reorder', 'remove'])
 
 const isDone = (i) => props.plans[i]?.remainingXp === 0 || !!props.progress?.per?.[i]?.done
 // The first skill with something left to train.
@@ -114,16 +118,19 @@ const pctText = (v) => {
   return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
 }
 
-// --- The three-dot menu on each card: Edit and Share ------------------------------------------------------------------
+// --- The three-dot menu on each card: Edit, Share and Delete from plan ------------------------------------------------------------------
 // The skill whose menu is open, closed by a click anywhere else or Escape.
 const menuFor = ref('')
 const sharing = ref(-1)
 const toggleMenu = (skill) => (menuFor.value = menuFor.value === skill ? '' : skill)
 const canShare = (i) => !isDone(i) && !!props.plans[i]?.segments?.length
-const hasMenu = (i) => props.editSkill !== props.goals[i]?.skill || canShare(i)
 function editFromMenu(skill) {
   menuFor.value = ''
   emit('edit', skill)
+}
+function removeFromMenu(i) {
+  menuFor.value = ''
+  emit('remove', props.goals[i].skill)
 }
 function shareFromMenu(i) {
   menuFor.value = ''

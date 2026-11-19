@@ -2,8 +2,7 @@
   <section class="po" aria-labelledby="po-h">
     <header class="pgh">
       <div class="pgh-title">
-        <div class="pgh-eyebrow"><span class="pt-badge">Account Planner</span></div>
-        <h1 id="po-h">Your plans</h1>
+        <h1 id="po-h">Account Planner</h1>
         <p class="pgh-sub">Open a plan to see your training path, or start a new one.</p>
       </div>
       <div class="pgh-actions">
@@ -15,7 +14,7 @@
       <li v-for="p in rows" :key="p.id" class="po-card">
         <RouterLink class="po-main" :to="{ name: 'plannerPlan', params: { id: p.id } }" :aria-label="`Open ${p.name}`">
           <span class="po-title">
-            <b>{{ p.name }}</b>
+            <b>{{ p.name }}<span v-if="onProfile.isOn(p.id)" class="po-onprofile" title="This plan is the goal on your profile">On profile</span></b>
             <span class="po-sub">
               <small>{{ p.sub }}</small>
               <span class="po-icons" aria-hidden="true">
@@ -42,6 +41,7 @@
           <div v-if="menuFor === p.id" class="po-menu-list" role="menu" :aria-label="`Options for ${p.name}`" @click.stop>
             <RouterLink class="po-item" role="menuitem" :to="{ name: 'plannerEdit', params: { id: p.id } }">Edit</RouterLink>
             <button class="po-item" role="menuitem" type="button" @click="duplicate(p.id)">Duplicate</button>
+            <button v-if="onProfile.available(p.id)" class="po-item" role="menuitem" type="button" :disabled="onProfile.busy.value" @click="profileToggle(p.id)">{{ onProfile.isOn(p.id) ? 'Remove from profile' : 'Show on profile' }}</button>
             <button class="po-item po-item-danger" role="menuitem" type="button" @click="askDelete(p)">Delete</button>
           </div>
         </div>
@@ -73,6 +73,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
+import { useProfilePlansFor } from '@/composables/useProfilePlan'
 
 // Every saved plan as a card, each linking to the plan's own address.
 const props = defineProps({
@@ -82,6 +83,13 @@ const props = defineProps({
   progressLoading: { type: Boolean, default: false },
 })
 const emit = defineEmits(['duplicate', 'delete'])
+
+// Which plan is the goal on your profile, and showing or removing one from the card's menu.
+const onProfile = useProfilePlansFor(computed(() => props.plans))
+function profileToggle(id) {
+  menuFor.value = ''
+  onProfile.toggle(id)
+}
 
 const MAX_ICONS = 5
 // The three-dot menu that is open (a plan id), closed by a click anywhere else or Escape.

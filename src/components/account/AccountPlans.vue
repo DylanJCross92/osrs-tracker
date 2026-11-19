@@ -53,6 +53,7 @@ import ShareIcon from '@/components/ShareIcon.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { useSharedPlans } from '@/composables/useSharedPlans'
 import { useToast } from '@/composables/useToast'
+import { dropProfilePlan } from '@/composables/useProfilePlan'
 import { deletePlan, listSavedPlans, summarizePlan } from '@/utils/plannerTools'
 import { formatHours } from '@/utils/planner'
 import { skillIconSrc } from '@/utils/osrsSkills'
@@ -83,6 +84,7 @@ async function remove(plan) {
   const share = shareFor(plan.id)
   // A deleted plan must not stay public.
   if (share) await stop(share.slug).catch(() => {})
+  dropProfilePlan(plan.id, plan.player?.rsn)
   deletePlan(plan.id)
   plans.value = listSavedPlans()
   confirming.value = ''

@@ -3,7 +3,7 @@ import { getPlayerByUsername } from '../services/players.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireUser } from './auth.routes.js'
 import { isOwner } from '../services/profilePages.service.js'
-import { GoalError, addGoal, deleteGoal, getGoal, listGoals, pinGoal } from '../services/goals.service.js'
+import { GoalError, addGoal, clearProfilePlan, deleteGoal, getGoal, pinGoal, profileGoals, setProfilePlan } from '../services/goals.service.js'
 import { renderGoalCardPng } from '../services/cardImage.service.js'
 
 export const goalsRouter = Router()
@@ -44,7 +44,7 @@ goalsRouter.get(
     const player = await playerOr404(req, res)
     if (!player) return
     res.set('Cache-Control', 'no-store')
-    res.json({ goals: await listGoals(player.id) })
+    res.json(await profileGoals(player.id))
   }),
 )
 
@@ -57,7 +57,7 @@ goalsRouter.post(
     const player = await ownerOnly(req, res)
     if (!player) return
     await addGoal(player.id, req.body)
-    res.status(201).json({ goals: await listGoals(player.id) })
+    res.status(201).json(await profileGoals(player.id))
   }),
 )
 
@@ -70,7 +70,7 @@ goalsRouter.post(
     const player = await ownerOnly(req, res)
     if (!player) return
     await deleteGoal(player.id, Number(req.params.id))
-    res.json({ goals: await listGoals(player.id) })
+    res.json(await profileGoals(player.id))
   }),
 )
 
@@ -83,7 +83,34 @@ goalsRouter.post(
     const player = await ownerOnly(req, res)
     if (!player) return
     await pinGoal(player.id, Number(req.params.id), req.body?.pinned !== false)
-    res.json({ goals: await listGoals(player.id) })
+    res.json(await profileGoals(player.id))
+  }),
+)
+
+// Owner: make a whole plan the profile's goal (or update it after the plan changed), or take it off again.
+goalsRouter.post(
+  '/players/:username/plan',
+  attachUser,
+  requireUser,
+  writeLimiter,
+  handle(async (req, res) => {
+    const player = await ownerOnly(req, res)
+    if (!player) return
+    await setProfilePlan(player.id, req.body)
+    res.json(await profileGoals(player.id))
+  }),
+)
+
+goalsRouter.post(
+  '/players/:username/plan/delete',
+  attachUser,
+  requireUser,
+  writeLimiter,
+  handle(async (req, res) => {
+    const player = await ownerOnly(req, res)
+    if (!player) return
+    await clearProfilePlan(player.id)
+    res.json(await profileGoals(player.id))
   }),
 )
 

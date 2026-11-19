@@ -47,3 +47,44 @@ export function goalProgress(g, currentXp) {
     reached: xp >= targetXp,
   }
 }
+
+// --- A whole plan as the profile's goal -------------------------------------------------------------------------------------
+export const MAX_PLAN_GOALS = 30
+const PLAN_ID = /^[A-Za-z0-9_-]{1,64}$/
+
+/** A target in XP as a profile goal: a level when the XP is exactly a level (2 to 126), otherwise an XP amount. */
+export function targetFromXp(xp) {
+  const n = Math.round(Number(xp))
+  for (let level = 2; level <= MAX_LEVEL; level++) if (xpAtLevel(level) === n) return { type: 'level', target: level }
+  return { type: 'xp', target: n }
+}
+
+/**
+ * A plan sent by its owner, cleaned: { planId, name, goals: [{ skill, type, target }] } in plan order, one goal per skill,
+ * or null when it is not usable. Each goal arrives as { skill, targetXp }.
+ */
+export function cleanPlanInput(input) {
+  if (!input || typeof input !== 'object') return null
+  const planId = String(input.planId || '')
+  if (!PLAN_ID.test(planId)) return null
+  const name = String(input.name || '').trim().slice(0, 60) || 'Training plan'
+  if (!Array.isArray(input.goals) || !input.goals.length || input.goals.length > MAX_PLAN_GOALS) return null
+  const seen = new Set()
+  const goals = []
+  for (const g of input.goals) {
+    const skill = String(g?.skill || '')
+    const xp = Math.round(Number(g?.targetXp))
+    if (!SKILL_NAMES.includes(skill) || !Number.isFinite(xp) || xp < 1 || xp > MAX_XP) return null
+    if (seen.has(skill)) continue
+    seen.add(skill)
+    goals.push({ skill, ...targetFromXp(xp) })
+  }
+  return { planId, name, goals }
+}
+
+/** Overall progress of a plan's goals (each with targetXp, currentXp, reached): the XP gained toward all the targets, and how many are reached. */
+export function planSummary(goals) {
+  const total = goals.reduce((s, g) => s + g.targetXp, 0)
+  const done = goals.reduce((s, g) => s + (g.reached ? g.targetXp : Math.min(g.currentXp, g.targetXp)), 0)
+  return { percent: total ? Math.min(Math.floor((done / total) * 100), 100) : 0, reached: goals.filter((g) => g.reached).length, count: goals.length }
+}

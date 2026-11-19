@@ -57,7 +57,6 @@
       </div>
 
       <aside class="dash-side">
-        <DashInbox />
         <FollowingStrip v-if="following.length" />
       </aside>
     </div>
@@ -68,7 +67,6 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import DashInbox from '@/components/dashboard/DashInbox.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'

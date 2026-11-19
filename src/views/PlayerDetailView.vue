@@ -2,6 +2,7 @@
   <div class="card detail-header">
     <div class="profile-banner">
       <a href="#" class="btn-text back-link" @click.prevent="router.push({ name: 'players' })">← Home</a>
+      <div class="banner-right">
       <div class="detail-buttons banner-actions">
           <button
             v-if="player?.womImportStatus === 'none'"
@@ -36,6 +37,16 @@
             Share
           </button>
       </div>
+      <p v-if="latest" class="last-synced banner-sync">
+        <span :title="`Last checked ${formatRelative(player?.lastCheckedAt || latest.capturedAt)}`">Updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
+        <span v-if="checkingForUpdates" class="checking-indicator">
+          <span class="spinner" /> Checking for updates…
+        </span>
+        <button class="refresh-icon" :class="{ 'is-spinning': refreshing }" type="button" :title="refreshing ? 'Syncing…' : 'Refresh from the OSRS hiscores'" :aria-label="refreshing ? 'Syncing' : 'Refresh now'" :disabled="refreshing || !player" @click="refresh">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 11-2.6-5.9" /><path d="M20 4v5h-5" /></svg>
+        </button>
+      </p>
+      </div>
     </div>
     <div class="detail-body">
       <div class="profile-avatar" aria-hidden="true">
@@ -43,31 +54,23 @@
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
-        <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
-          <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
-          <span><b>{{ formatCount(followCounts.following) }}</b> following</span>
-        </p>
-        <ProfileFlair v-if="profile" :streak="profile.streak" :achievements="profile.achievements" :pinned-key="page.pinnedAchievement || ''" :is-owner="isProfileOwner" @open-achievements="setTab('achievements')" @customize="customizeOpen = true" />
+        <div v-if="followCounts || profile" class="pp-meta">
+          <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
+            <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
+            <span><b>{{ formatCount(followCounts.following) }}</b> following</span>
+          </p>
+          <ProfileFlair v-if="profile" :streak="profile.streak" :achievements="profile.achievements" :pinned-key="page.pinnedAchievement || ''" @open-achievements="setTab('achievements')" />
+        </div>
         <p v-if="page.bio" class="pp-bio">{{ page.bio }}</p>
         <ul v-if="page.links.length" class="pp-links">
           <li v-for="l in page.links" :key="l.url"><a :href="l.url" target="_blank" rel="noopener nofollow ugc">{{ LINK_LABELS[l.kind] || l.kind }}</a></li>
         </ul>
-        <button v-if="pinnedGoal" type="button" class="pp-goal" @click="setTab('goals')" :aria-label="`Goal: ${pinnedGoal.title}, ${pinnedGoal.percent} percent. Open goals`">
+        <button v-if="headerGoal" type="button" class="pp-goal" @click="setTab('goals')" :aria-label="`Goal: ${headerGoal.title}, ${headerGoal.percent} percent. Open goals`">
           <span class="pp-goal-label">Goal</span>
-          <b>{{ pinnedGoal.title }}</b>
-          <span class="pp-goal-bar"><i :style="{ width: pinnedGoal.percent + '%' }" /></span>
-          <span class="pp-goal-pct">{{ pinnedGoal.percent }}%</span>
+          <b>{{ headerGoal.title }}</b>
+          <span class="pp-goal-bar"><i :style="{ width: headerGoal.percent + '%' }" /></span>
+          <span class="pp-goal-pct">{{ headerGoal.percent }}%</span>
         </button>
-        <p v-if="latest" class="last-synced">
-          <span title="When new XP last came in from the hiscores">Last updated {{ lastXpAt ? formatRelative(lastXpAt) : 'never (no XP gained yet)' }}</span>
-          <span class="last-checked" title="When we last asked the OSRS hiscores for this player">· Last checked {{ formatRelative(player?.lastCheckedAt || latest.capturedAt) }}</span>
-          <button class="btn-text refresh-link" :disabled="refreshing || !player" @click="refresh">
-            {{ refreshing ? 'Syncing…' : 'Refresh Now' }}
-          </button>
-          <span v-if="checkingForUpdates" class="checking-indicator">
-            <span class="spinner" /> Checking for updates…
-          </span>
-        </p>
         <div v-if="latest" class="profile-chips">
           <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <b>{{ latest.overallLevel.toLocaleString('en-US') }}</b></span>
           <span>Total XP <b>{{ latest.overallXp.toLocaleString('en-US') }}</b></span>
@@ -106,8 +109,7 @@
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileRecords v-else-if="tab === 'records'" :player="player" />
     <template v-else-if="tab === 'goals'">
-      <ProfileGoalsPublic v-if="goals.length || isProfileOwner" :username="player.username" :display-name="player.displayName" :goals="goals" :is-owner="isProfileOwner" :target-id="Number(route.query.goal) || null" @update="(g) => (goals = g)" @share="(g) => (shareGoal = g)" />
-      <ProfileGoals :player="player" :snapshots="snapshots" />
+      <ProfileGoalsPublic :username="player.username" :display-name="player.displayName" :goals="goals" :plan="goalPlan" :is-owner="isProfileOwner" :target-id="Number(route.query.goal) || null" @update="(g) => (goals = g)" @share="(g) => (shareGoal = g)" />
     </template>
     <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
     <template v-else>
@@ -319,7 +321,6 @@ import ProfileCelebrations from '@/components/profile/ProfileCelebrations.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import ProfileOverview from '@/components/profile/ProfileOverview.vue'
 import ProfileAchievements from '@/components/profile/ProfileAchievements.vue'
-import ProfileGoals from '@/components/profile/ProfileGoals.vue'
 import ProfileRecords from '@/components/profile/ProfileRecords.vue'
 import ProfileHistory from '@/components/profile/ProfileHistory.vue'
 import { playersApi } from '@/api/players'
@@ -503,16 +504,24 @@ const customizeOpen = ref(false)
 // Public goals the owner set, with live progress; the pinned one shows in the header.
 const goals = ref([])
 const shareGoal = ref(null)
-const pinnedGoal = computed(() => goals.value.find((g) => g.pinned) || null)
+// The plan the owner shows on the profile (null when none): its name and overall progress.
+const goalPlan = ref(null)
+const pinnedGoal = computed(() => goals.value.find((g) => g.pinned && !g.fromPlan) || null)
+// The header shows the plan when there is one, otherwise the goal pinned by hand.
+const headerGoal = computed(() => (goalPlan.value ? { title: goalPlan.value.name, percent: goalPlan.value.percent } : pinnedGoal.value))
 watch(
   () => player.value?.username,
   async (name) => {
     goals.value = []
+    goalPlan.value = null
     if (!name) return
     try {
-      goals.value = (await goalsApi.list(name)).goals
+      const res = await goalsApi.list(name)
+      goals.value = res.goals
+      goalPlan.value = res.plan
     } catch {
       goals.value = []
+      goalPlan.value = null
     }
   },
   { immediate: true },
@@ -622,6 +631,7 @@ async function load() {
   }
 }
 onMounted(load)
+
 watch(() => route.params.username, load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)

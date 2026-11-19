@@ -1,7 +1,7 @@
 <template>
   <div>
     <p v-if="loading" class="card acc-empty">Loading…</p>
-    <ProfileGoalsPublic v-else :username="profile.username" :display-name="profile.displayName" :goals="goals" is-owner @update="(g) => (goals = g)" @share="copyShare" />
+    <ProfileGoalsPublic v-else :username="profile.username" :display-name="profile.displayName" :goals="goals" :plan="plan" is-owner @update="(g) => (goals = g)" @share="copyShare" />
   </div>
 </template>
 
@@ -14,6 +14,7 @@ import { useToast } from '@/composables/useToast'
 const props = defineProps({ profile: { type: Object, required: true } })
 const { showToast } = useToast()
 const goals = ref([])
+const plan = ref(null)
 const loading = ref(true)
 
 watch(
@@ -21,9 +22,12 @@ watch(
   async (username) => {
     loading.value = true
     try {
-      goals.value = (await goalsApi.list(username)).goals
+      const res = await goalsApi.list(username)
+      goals.value = res.goals
+      plan.value = res.plan
     } catch {
       goals.value = []
+      plan.value = null
     } finally {
       loading.value = false
     }

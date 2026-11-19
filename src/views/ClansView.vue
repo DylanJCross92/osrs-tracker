@@ -2,7 +2,6 @@
   <div class="clan clans-hub">
     <header class="pgh">
       <div class="pgh-title">
-        <div class="pgh-eyebrow"><span class="pt-badge">Community</span></div>
         <h1>Clans</h1>
         <p class="pgh-sub">Team up with your clan or friends, run XP competitions, and see who is leading this week.</p>
       </div>
