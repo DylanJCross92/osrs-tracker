@@ -6029,3 +6029,40 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
   .su-table tbody th { padding-right: 40px; }
 }
 .su-menu-sub { display: block; margin-top: 2px; color: var(--muted); font-size: 0.72rem; }
+
+/* Statistics: conversion funnel and user journey (Overview) */
+.fn { margin-bottom: 14px; align-items: start; }
+.fn > .st-card { margin-bottom: 0; }
+.fn-steps, .fn-line, .fn-paths { margin: 0; padding: 0; list-style: none; }
+.fn-step { display: grid; gap: 6px; }
+.fn-drop { margin: 10px 0 10px 4px; color: var(--muted); font-size: 0.78rem; max-width: none; }
+.fn-drop span { margin-right: 6px; color: var(--gold); }
+.fn-row { display: flex; align-items: baseline; gap: 10px; }
+.fn-label { flex: 1; min-width: 0; font-weight: 700; }
+.fn-num { color: var(--gold-bright); font-size: 1.35rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.fn-pct { min-width: 3.4em; text-align: right; color: var(--muted); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.fn-track { display: block; height: 14px; border-radius: 7px; background: var(--bg); overflow: hidden; }
+.fn-track i { display: block; height: 100%; border-radius: 7px; background: var(--st-a); }
+.fn-sub { color: var(--muted); font-size: 0.78rem; }
+.fn-line { display: grid; gap: 0; }
+.fn-line li { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 0 0 16px; }
+.fn-line li:last-child { padding-bottom: 0; }
+.fn-line li::before { content: ''; position: absolute; left: 8px; top: 18px; bottom: 0; width: 2px; background: var(--border-strong); }
+.fn-line li:last-child::before { display: none; }
+.fn-dot { width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; border: 3px solid var(--st-a); background: var(--panel); box-sizing: border-box; position: relative; z-index: 1; }
+.fn-line li.is-empty .fn-dot { border-color: var(--border-strong); }
+.fn-line li.is-empty .fn-line-name { color: var(--muted); }
+.fn-line-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.fn-line-name { font-weight: 700; }
+.fn-line-main small, .fn-line-num small { color: var(--muted); font-size: 0.78rem; }
+.fn-line-num { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.fn-line-num b { color: var(--gold-bright); font-size: 1.15rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.fn-paths { display: grid; gap: 8px; }
+.fn-paths li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+.fn-path { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; min-width: 0; }
+.fn-chip { padding: 2px 9px; border: 1px solid var(--border-strong); border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+.fn-chip.is-end { border-color: var(--st-a); color: var(--gold-bright); }
+.fn-arrow { color: var(--muted); font-size: 0.8rem; }
+.fn-path-num { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.fn-path-num b { color: var(--text); }
+.fn-path-num small { color: var(--muted); font-size: 0.76rem; }

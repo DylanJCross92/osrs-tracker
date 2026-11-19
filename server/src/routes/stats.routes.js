@@ -6,6 +6,7 @@ import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
+import { funnelOverview } from '../services/funnel.service.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -107,6 +108,15 @@ statsRouter.get('/admin/stats/visitors', ...adminOnly, async (req, res, next) =>
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await visitors(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+// For the site owner: the conversion funnel (visit, add or view a player, sign up, claim) and the user journey behind it.
+statsRouter.get('/admin/stats/funnel', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await funnelOverview(askedDays(req)))
   } catch (err) {
     next(err)
   }
