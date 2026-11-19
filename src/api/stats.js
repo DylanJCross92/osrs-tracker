@@ -24,6 +24,8 @@ export const statsApi = {
   activeAccounts: (day) => api.get(`/admin/stats/daily-active/${day}`),
   // Site owner only: the people (accounts and browsers) active lately, and one person's journey in order.
   visitors: (days = 30) => api.get(`/admin/stats/visitors?days=${days}`),
+  // Site owner only: { days, total, accounts: [{ id, email, createdAt, verifiedAt, lastSeen, players, pending, steps, activeDays, team }] }.
+  accounts: (days = 30) => api.get(`/admin/stats/accounts?days=${days}`),
   journey: (key, days = 30) => api.get(`/admin/stats/visitors/${encodeURIComponent(key)}?days=${days}`),
   // A visitor who is not signed in: the plans saved in their browser, under their random visitor number.
   visitorPlans: (vid, plans, planner) => api.post('/stats/visitor-plans', { vid, plans, planner }),

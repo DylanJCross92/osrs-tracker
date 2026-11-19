@@ -22,6 +22,7 @@
           </button>
           <div v-if="adminOpen" class="acct-sub" role="group" aria-label="Admin">
             <RouterLink class="acct-item" role="menuitem" :to="{ name: 'adminStats' }" @click="open = false">Statistics</RouterLink>
+            <RouterLink class="acct-item" role="menuitem" :to="{ name: 'adminUsers' }" @click="open = false">User Management</RouterLink>
             <RouterLink class="acct-item" role="menuitem" :to="{ name: 'adminPlans' }" @click="open = false">Player plans</RouterLink>
           </div>
         </template>
@@ -45,7 +46,7 @@ const route = useRoute()
 const router = useRouter()
 const open = ref(false)
 // The Admin group inside the menu; it opens by itself when you are on one of its pages.
-const ADMIN_PAGES = ['adminStats', 'adminPlans']
+const ADMIN_PAGES = ['adminStats', 'adminUsers', 'adminPlans']
 const adminOpen = ref(false)
 const rootEl = ref(null)
 

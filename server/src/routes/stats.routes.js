@@ -5,6 +5,7 @@ import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recor
 import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js'
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
+import { accountsOverview } from '../services/accounts.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -108,7 +109,16 @@ statsRouter.get('/admin/stats/visitors', ...adminOnly, async (req, res, next) =>
     next(err)
   }
 })
-statsRouter.get('/admin/stats/visitors/:key', ...adminOnly, async (req, res, next) => {
+// For the site owner: every account that has signed up, with verification, claimed players, last seen and how active it is.
+statsRouter.get('/admin/stats/accounts', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await accountsOverview(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+statsRouter.get('/admin/stats/visitors/:key',...adminOnly, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store')
     const out = await journeyOf(req.params.key, askedDays(req))

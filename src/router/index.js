@@ -55,6 +55,7 @@ const routes = [
   { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
   { path: '/admin/claims', name: 'adminClaims', component: () => import('@/views/AdminClaimsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/plans', name: 'adminPlans', component: () => import('@/views/AdminPlansView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/users', name: 'adminUsers', component: () => import('@/views/AdminUsersView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/stats', name: 'adminStats', component: () => import('@/views/AdminStatsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   // Clans: a clan or friends running XP competitions. The Clans page is open to everyone; making one needs an account, and viewing a clan and joining
   // through an invite link does not.

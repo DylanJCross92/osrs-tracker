@@ -5944,3 +5944,53 @@ b.path-name { font-size: 1.12rem; }
 .po-onprofile { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle; white-space: nowrap; }
 .po-menu .po-menu-list { min-width: 190px; }
 .po-menu .po-item { white-space: nowrap; }
+
+/* Statistics: the Users tab */
+.st-tiles.is-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .st-tiles.is-four { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.su-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.su-sort { padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 0.86rem; }
+.su-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.su-chip { padding: 5px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: none; color: var(--muted); font: inherit; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.su-chip small { margin-left: 4px; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.su-chip:hover, .su-chip:focus-visible { color: var(--text); outline: none; border-color: var(--gold); }
+.su-chip.on { border-color: var(--gold); background: rgba(217, 175, 82, 0.14); color: var(--gold-bright); }
+.su-table th, .su-table td { text-align: left; vertical-align: middle; }
+.su-table tbody th { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+.su-who { max-width: 220px; padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-weight: 600; text-align: left; text-overflow: ellipsis; overflow: hidden; cursor: pointer; vertical-align: middle; }
+.su-who:hover, .su-who:focus-visible { color: var(--gold-bright); text-decoration: underline; outline: none; }
+.su-team { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.su-flag { display: inline-flex; align-items: center; gap: 5px; font-size: 0.84rem; font-weight: 600; }
+.su-flag i { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; font-style: normal; font-size: 0.7rem; font-weight: 800; }
+.su-flag.is-yes { color: var(--xp-green); }
+.su-flag.is-yes i { background: rgba(94, 200, 120, 0.18); }
+.su-flag.is-no { color: #e08a5a; }
+.su-flag.is-no i { background: rgba(224, 138, 90, 0.18); }
+.su-flag.is-wait { color: var(--gold-bright); }
+.su-flag.is-wait i { background: rgba(217, 175, 82, 0.18); }
+.su-players { white-space: normal; }
+.su-table td.su-players { white-space: normal; min-width: 150px; }
+.su-names { margin-left: 8px; color: var(--text); font-size: 0.84rem; }
+.su-none { color: var(--muted); }
+.su-sub { display: block; color: var(--muted); font-size: 0.74rem; }
+.su-act { min-width: 150px; }
+.su-level { display: inline-block; margin-right: 8px; font-size: 0.82rem; font-weight: 700; }
+.su-level.is-high { color: var(--xp-green); }
+.su-level.is-regular { color: var(--gold-bright); }
+.su-level.is-light { color: var(--text); }
+.su-level.is-quiet, .su-level.is-team { color: var(--muted); }
+.su-meter { display: inline-block; width: 64px; height: 6px; border-radius: 3px; background: var(--border); vertical-align: middle; overflow: hidden; }
+.su-meter i { display: block; height: 100%; border-radius: 3px; background: var(--gold); }
+/* On a phone each account becomes a small card instead of a wide table. */
+@media (max-width: 700px) {
+  .su-table thead { display: none; }
+  .su-table, .su-table tbody, .su-table tr, .su-table th, .su-table td { display: block; }
+  .su-table tr { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .su-table th, .su-table td { padding: 3px 0; border: 0; white-space: normal; }
+  .su-table tbody th { max-width: none; padding-bottom: 6px; }
+  .su-who { max-width: 100%; }
+  .su-table td[data-label] { display: flex; gap: 12px; align-items: baseline; }
+  .su-table td[data-label]::before { content: attr(data-label); flex: none; width: 110px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .su-table td.su-players, .su-table td.su-act { min-width: 0; }
+  .su-sub { display: inline; margin-left: 6px; }
+}
