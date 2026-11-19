@@ -51,7 +51,7 @@ const GROUPS = [
   { id: 'records', label: 'My personal records', hint: 'One notice a day when you beat a record.' },
   { id: 'mine', label: 'My goals and milestones', hint: 'When you reach a goal you set, or a milestone like a new 99.' },
   { id: 'following', label: 'Players I follow', hint: 'When someone you follow reaches a goal or milestone.' },
-  { id: 'social', label: 'Followers and challenges', hint: 'When someone follows you or accepts your challenge.' },
+  { id: 'social', label: 'Followers, challenges and congratulations', hint: 'When someone follows you, accepts your challenge or congratulates you.' },
 ]
 
 const items = ref([])

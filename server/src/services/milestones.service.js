@@ -237,20 +237,50 @@ export async function getCelebrations(playerId, visitor) {
 }
 
 /** Record one congratulation. Returns the new count, or null if that milestone is not currently celebrated. */
-export async function addCheer(playerId, { type, skill, value }, visitor) {
+export async function addCheer(playerId, { type, skill, value }, visitor, cheerer = null) {
   const { rows } = await pool.query(
     `SELECT 1 FROM player_milestones m WHERE m.player_id = $1 AND m.milestone_type = $2 AND m.skill = $3 AND m.value = $4 AND ${celebrationWhere}`,
     [playerId, type, skill || '', value],
   )
   if (!rows.length) return null
-  await pool.query(
+  const { rowCount: isNew } = await pool.query(
     `INSERT INTO milestone_cheers (player_id, milestone_type, skill, value, visitor_hash) VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT DO NOTHING`,
     [playerId, type, skill || '', value, visitor],
   )
+  // Only a first click counts, so one visitor can never notify the owner twice for the same milestone.
+  if (isNew) notifyCheer(playerId, { type, skill: skill || '', value }, visitor, cheerer)
   const count = await pool.query(
     `SELECT COUNT(*)::int AS n FROM milestone_cheers WHERE player_id = $1 AND milestone_type = $2 AND skill = $3 AND value = $4`,
     [playerId, type, skill || '', value],
   )
   return count.rows[0].n
+}
+
+/**
+ * Tells the account that owns the profile that someone congratulated them. The person is named only when they are signed
+ * in and own a profile themselves (that name is public); anyone else is "Someone", never an email. Never throws.
+ */
+async function notifyCheer(playerId, { type, skill, value }, visitor, cheerer) {
+  try {
+    const ownerId = await ownerOfPlayer(playerId)
+    if (!ownerId || ownerId === cheerer?.id) return
+    const { rows: mine } = cheerer
+      ? await pool.query(
+          `SELECT p.username, p.display_name FROM profile_claims c JOIN players p ON p.id = c.player_id WHERE c.user_id = $1 AND c.status = 'verified' ORDER BY c.decided_at ASC LIMIT 1`,
+          [cheerer.id],
+        )
+      : { rows: [] }
+    const { rows: theirs } = await pool.query('SELECT username FROM players WHERE id = $1', [playerId])
+    const title = achievementDefinitions().find((d) => d.type === type && d.skill === skill && d.value === Number(value))?.title || 'your milestone'
+    await addNotification(ownerId, {
+      type: 'cheer',
+      text: `${mine[0]?.display_name || 'Someone'} congratulated you on ${title}`,
+      link: `/player/${encodeURIComponent(theirs[0]?.username || '')}`,
+      dedupeKey: `cheer:${playerId}:${type}:${skill}:${value}:${cheerer?.id ? `u${cheerer.id}` : visitor}`,
+      subject: mine[0]?.username || null,
+    })
+  } catch (err) {
+    console.error('[milestones] could not notify the owner of a congratulation:', err.message)
+  }
 }

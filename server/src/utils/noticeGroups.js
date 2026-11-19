@@ -4,7 +4,7 @@ export const NOTICE_GROUPS = {
   records: ['record'],
   mine: ['goal_reached', 'milestone'],
   following: ['follow_goal', 'follow_milestone'],
-  social: ['new_follower', 'challenge_accepted'],
+  social: ['new_follower', 'challenge_accepted', 'cheer'],
 }
 
 export const NOTICE_GROUP_IDS = Object.keys(NOTICE_GROUPS)

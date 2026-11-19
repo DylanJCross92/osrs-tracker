@@ -84,8 +84,8 @@ export async function listInbox(userId, limit = 50) {
   )
   // Older notices have no subject; most link to the player they are about.
   const fromLink = (r) => {
-    // A follower who stayed anonymous ("Someone ...") links to the followed profile, so that link must not be read as them.
-    if (r.type === 'new_follower' && /^someone\b/i.test(r.text)) return null
+    // A follower or congratulator who stayed anonymous ("Someone ...") links to the followed profile, so that link must not be read as them.
+    if ((r.type === 'new_follower' || r.type === 'cheer') && /^someone\b/i.test(r.text)) return null
     const m = /^\/player\/([^/?#]+)/.exec(r.link || '')
     try {
       return m ? decodeURIComponent(m[1]) : null

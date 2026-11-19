@@ -14,6 +14,7 @@ import { searchPlayers } from '../services/discover.service.js'
 import { getFollowCounts } from '../services/follows.service.js'
 import { getStreak } from '../services/records.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
+import { attachUser } from './auth.routes.js'
 
 const importLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many player lookups, try again in a minute.' })
 const searchLimiter = rateLimit({ windowMs: 10_000, max: 20 })
@@ -69,15 +70,15 @@ playersRouter.get('/:id/follow-counts', async (req, res, next) => {
   }
 })
 
-// Congratulate a player on a fresh 99 / 200M. Anonymous, one per visitor per milestone.
+// Congratulate a player on a fresh 99 / 200M. One per visitor per milestone; anyone can, and if the profile has an owner they are told (by name when you are signed in with a profile of your own).
 const cheerLimiter = rateLimit({ windowMs: 3_600_000, max: 40, message: 'That is a lot of congratulations, try again later.' })
-playersRouter.post('/:id/cheer', cheerLimiter, async (req, res, next) => {
+playersRouter.post('/:id/cheer', cheerLimiter, attachUser, async (req, res, next) => {
   try {
     const player = await getPlayer(req.params.id)
     if (!player) return res.status(404).json({ error: 'Player not found.' })
     const { type, skill, value } = req.body || {}
     if (!['skill_level', 'skill_xp'].includes(type) || !Number.isFinite(Number(value))) return res.status(400).json({ error: 'Invalid milestone.' })
-    const cheers = await addCheer(player.id, { type, skill: typeof skill === 'string' ? skill : '', value: Number(value) }, visitorHash(req.ip))
+    const cheers = await addCheer(player.id, { type, skill: typeof skill === 'string' ? skill : '', value: Number(value) }, visitorHash(req.ip), req.user)
     if (cheers == null) return res.status(404).json({ error: 'That milestone is no longer being celebrated.' })
     res.json({ cheers, cheered: true })
   } catch (err) {
