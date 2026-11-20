@@ -187,11 +187,17 @@ statsRouter.get('/admin/stats/recent-players', ...adminOnly, async (req, res, ne
   }
 })
 
-// For the site owner: XP gained across the whole site on each recent day (the chart in the XP total on Discover).
-statsRouter.get('/admin/stats/daily-xp', ...adminOnly, async (req, res, next) => {
+// XP gained across the whole site on each recent day (the chart in the XP total on Discover). Public: it is a site-wide total with nothing
+// about any one person. The query reads a lot of snapshots, so each answer is kept for five minutes and the endpoint is limited.
+const DAILY_XP_TTL_MS = 300_000
+const dailyXpCache = new Map()
+statsRouter.get('/stats/daily-xp', rateLimit({ windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
-    res.set('Cache-Control', 'no-store')
-    res.json(await dailyXp(req.query.days))
+    const n = Math.min(Math.max(Math.floor(Number(req.query.days)) || 30, 7), 60)
+    const hit = dailyXpCache.get(n)
+    if (!hit || Date.now() - hit.at > DAILY_XP_TTL_MS) dailyXpCache.set(n, { at: Date.now(), body: await dailyXp(n) })
+    res.set('Cache-Control', 'public, max-age=300')
+    res.json(dailyXpCache.get(n).body)
   } catch (err) {
     next(err)
   }

@@ -32,7 +32,7 @@ import DailyXpChart from '@/components/admin/DailyXpChart.vue'
 import { statsApi } from '@/api/stats'
 import { formatXp } from '@/utils/osrsSkills'
 
-// For admins: the XP gained across the whole site over the last day, 7 days and 30 days (from the players Discover already has),
+// For everyone: the XP gained across the whole site over the last day, 7 days and 30 days (from the players Discover already has),
 // with a bar for each of the last 30 days above them.
 const props = defineProps({ players: { type: Array, required: true } })
 const emit = defineEmits(['close'])

@@ -13,7 +13,7 @@ export const statsApi = {
   // Site owner only: { total, players: [{ username, displayName, badge, claimed, trackedAt, level, xp }] }, newest first.
   recentPlayers: (limit = 25) => api.get(`/admin/stats/recent-players?limit=${limit}`),
   // Site owner only: { days: [{ day, xp, players }] }, oldest first, ending with today so far.
-  dailyXp: (days = 30) => api.get(`/admin/stats/daily-xp?days=${days}`),
+  dailyXp: (days = 30) => api.get(`/stats/daily-xp?days=${days}`),
   // Site owner only: { days: [{ day, total, added }] }, oldest first, ending today.
   dailyPlayers: (days = 30) => api.get(`/admin/stats/daily-players?days=${days}`),
   // Site owner only: { days: [{ day, active, logins, resumed }] }.
