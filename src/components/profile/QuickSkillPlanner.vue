@@ -68,6 +68,10 @@ import { computed, ref, watch } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_PROFIT, MAX_XP, compareMethods, encodePlan, formatGp, formatHours, formatNum, levelAtXp, planGoal, xpAtLevel } from '@/utils/planner'
 import { track } from '@/utils/analytics'
+import { useLivePrices } from '@/composables/useLivePrices'
+
+// The Grand Exchange prices behind every gp figure on this page.
+useLivePrices()
 
 const props = defineProps({
   skill: { type: String, required: true },

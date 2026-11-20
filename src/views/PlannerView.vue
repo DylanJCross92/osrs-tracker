@@ -227,7 +227,12 @@ import {
   duplicatePlan,
   validatePlan,
 } from '@/utils/plannerTools'
+import { useLivePrices } from '@/composables/useLivePrices'
+import { priceVersion } from '@/utils/priceBook'
 
+
+// The Grand Exchange prices behind every gp figure on this page.
+useLivePrices()
 const store = usePlayersStore()
 const route = useRoute()
 const router = useRouter()
@@ -459,7 +464,7 @@ function memo(cache, key, fn) {
   cache.set(key, value)
   return value
 }
-const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.overrides || null, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null])
+const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.overrides || null, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null, priceVersion.value])
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 // A plan that is just being explored (not saved to anything) is not tracked: progress only starts once it is saved.

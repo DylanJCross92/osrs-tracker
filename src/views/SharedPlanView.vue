@@ -95,6 +95,10 @@ import { formatGp, formatHours, formatNum, isAuto, levelAtXp, planGoal, planTota
 import { STRATEGY_LABELS, buildProgress, buildTimeline, liveGoalFor, resolveGoal } from '@/utils/plannerTools'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
+import { useLivePrices } from '@/composables/useLivePrices'
+
+// The Grand Exchange prices behind every gp figure on this page.
+useLivePrices()
 
 const route = useRoute()
 const router = useRouter()

@@ -139,7 +139,11 @@
           <button class="btn btn-primary" type="button" @click="copyLink">Copy link</button>
           <button class="btn btn-ghost" type="button" @click="addToPlanner">Add to Account Planner</button>
         </div>
-        <p class="planner-hint">GP and time are approximate estimates from community rates, net of supplies and loot. Price data comes from the planner's catalog and has no live timestamp.</p>
+        <p class="planner-hint">
+          GP and time are approximate estimates from community rates, net of supplies and loot.
+          <template v-if="priceStatus.loaded">Methods that use or make items with a Grand Exchange price are worked out from live prices<template v-if="priceStatus.updatedAt"> (updated {{ ago(priceStatus.updatedAt) }})</template>, after the 2% tax; the others use saved estimates.</template>
+          <template v-else>Prices come from the planner's catalog.</template>
+        </p>
       </template>
       <p v-else class="empty-hint">{{ inputError ? 'Fix the goal above to see your results.' : 'You have already reached this target. Pick a higher goal.' }}</p>
     </section>
@@ -251,6 +255,11 @@ import {
 } from '@/utils/planner'
 import { STRATEGY_LABELS, listSavedPlans, materialsForPlan, savePlan } from '@/utils/plannerTools'
 import { agilityLaps, METHOD_PRESETS } from '@/utils/calculatorExtras'
+import { useLivePrices } from '@/composables/useLivePrices'
+import { ago } from '@/components/admin/stats/statsFormat'
+
+// The Grand Exchange prices behind every gp figure on this page.
+const { priceStatus } = useLivePrices()
 
 const props = defineProps({
   info: { type: Object, required: true },

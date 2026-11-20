@@ -23,6 +23,10 @@
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" /></svg>
             Planner
           </RouterLink>
+          <RouterLink :to="{ name: 'items' }" class="app-nav-link" title="Grand Exchange prices" aria-label="Grand Exchange prices" :class="{ 'is-active': ['items', 'item'].includes(route.name) }">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" /></svg>
+            GE Prices
+          </RouterLink>
         </nav>
         <AccountMenu />
       </div>
@@ -46,15 +50,18 @@
     </footer>
     <FeedbackWidget />
     <ToastHost />
+    <ItemModal v-if="modalSlug" :slug="modalSlug" @close="closeItemModal" />
   </div>
 </template>
 
 <script setup>
 import { track } from '@/utils/analytics'
 import { DISCORD_URL } from '@/config'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
+import ItemModal from '@/components/ItemModal.vue'
+import { closeItemModal, modalSlug } from '@/composables/useItemModal'
 import FeedbackWidget from '@/components/FeedbackWidget.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
@@ -64,6 +71,8 @@ import { startVisitorPlans } from '@/utils/visitorPlans'
 import { initModalScrollLock } from '@/utils/modalScrollLock'
 
 const route = useRoute()
+// The item popup closes when the page changes underneath it.
+watch(() => route.fullPath, closeItemModal)
 const { loggedIn } = useAuth()
 // Find out right away whether this browser is signed in (the answer also restores saved settings).
 initAuth()
@@ -113,6 +122,7 @@ const footerCols = computed(() => [
       { label: 'Leaderboards', to: { name: 'leaderboard' } },
       { label: 'Compare players', to: { name: 'compare' } },
       { label: 'Clans', to: { name: 'clans' } },
+      { label: 'Grand Exchange prices', to: { name: 'items' } },
     ],
   },
   {

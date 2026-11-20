@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import PlannerQuests from '@/components/planner/PlannerQuests.vue'
@@ -146,8 +146,7 @@ import GpTip from '@/components/planner/GpTip.vue'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { methodsForSkill, getMethod } from '@/data/trainingMethods'
 import { questsForSkill } from '@/data/quests'
-import { methodAvailability } from '@/utils/requirements'
-import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
+import { useRouteRequirements } from '@/composables/useRouteRequirements'
 import { useRequirements } from '@/composables/useRequirements'
 import { useAuth } from '@/composables/useAuth'
 import {
@@ -185,7 +184,6 @@ const props = defineProps({
 })
 const emit = defineEmits(['patch', 'pick', 'remove', 'done', 'cancel'])
 
-const reqCtx = inject(plannerRequirementContext, null)
 const { respect } = useRequirements()
 const { loggedIn } = useAuth()
 const STATE_TEXT = { blocked: 'Requirement missing', unconfirmed: 'Needs confirming', planned: 'Your plan covers it', available: 'Requirements met' }
@@ -201,19 +199,7 @@ const plannedLevel = computed(() => levelAtXp(planned.value.currentXp, true))
 const globalLabel = computed(() => (STRATEGY_LABELS[props.globalStrategy] || 'Fastest').toLowerCase())
 
 // --- Requirements of every method the route uses, plus the one picked by hand
-const routeMethods = computed(() => {
-  const seen = new Map()
-  for (const seg of props.plan.segments || []) {
-    const m = seg.method
-    if (m?.id && m.requirements && !seen.has(m.id)) seen.set(m.id, methodAvailability(m, reqCtx?.value || {}))
-  }
-  if (method.value?.requirements && !seen.has(method.value.id)) seen.set(method.value.id, methodAvailability(method.value, reqCtx?.value || {}))
-  return [...seen.values()].filter((a) => a.items.length)
-})
-const routeState = computed(() => {
-  const states = routeMethods.value.map((a) => a.state)
-  return states.includes('blocked') ? 'blocked' : states.includes('unconfirmed') ? 'unconfirmed' : 'available'
-})
+const { routeMethods, routeState } = useRouteRequirements(computed(() => props.plan), method)
 const chosenBlocked = computed(() => {
   const a = method.value ? routeMethods.value.find((x) => x.method.id === method.value.id) : null
   return a && a.state === 'blocked' ? a : null

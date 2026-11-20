@@ -22,12 +22,16 @@ import { clansRouter } from './routes/clans.routes.js'
 import { getClanSeo, getInviteCardData, listClansForSitemap } from './services/clans.service.js'
 import { describeInvite } from './utils/clans.js'
 import { statsRouter } from './routes/stats.routes.js'
+import { geRouter } from './routes/ge.routes.js'
+import { getItemBySlug, getItemIndex, listItemsForSitemap } from './services/ge.service.js'
+import { pickMovers } from './utils/ge.js'
 import { getPublicShare } from './services/sharedPlans.service.js'
 import { startScheduler } from './jobs/sync.js'
 import { startCompetitionJob } from './jobs/competitions.js'
 import { startEventsPurgeJob } from './jobs/purgeEvents.js'
 import { startClaimReminderJob } from './jobs/claimReminders.js'
 import { startClaimNudgeJob } from './jobs/claimNudges.js'
+import { startGePricesJob } from './jobs/gePrices.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
 import { getDiscover } from './services/discover.service.js'
@@ -71,6 +75,7 @@ app.use('/api', goalsRouter)
 app.use('/api', plansRouter)
 app.use('/api', clansRouter)
 app.use('/api', statsRouter)
+app.use('/api', geRouter)
 app.get('/api/home', async (req, res, next) => {
   try {
     res.json(await getHome())
@@ -130,6 +135,7 @@ const xpTable = readBuilt('xp-table.json', null)
 app.get('/sitemap.xml', async (req, res) => {
   let players = []
   let clans = []
+  let items = { slugs: [], updatedAt: null }
   try {
     players = await listPlayers()
   } catch (err) {
@@ -139,6 +145,11 @@ app.get('/sitemap.xml', async (req, res) => {
     clans = await listClansForSitemap()
   } catch (err) {
     console.error('Failed to list clans for sitemap.xml', err)
+  }
+  try {
+    items = await listItemsForSitemap()
+  } catch (err) {
+    console.error('Failed to list items for sitemap.xml', err)
   }
 
   // Every public, indexable page with how often it changes and how important it is. Player pages carry the date
@@ -152,6 +163,7 @@ app.get('/sitemap.xml', async (req, res) => {
     { path: '/compare', changefreq: 'weekly', priority: '0.6' },
     { path: '/planner', changefreq: 'weekly', priority: '0.9' },
     { path: '/clans', changefreq: 'daily', priority: '0.7', lastmod: today },
+    { path: '/items', changefreq: 'hourly', priority: '0.8', lastmod: today },
     { path: '/calculators', changefreq: 'weekly', priority: '0.9' },
     ...calculators.map((c) => ({ path: `/calculators/${c.slug}`, changefreq: 'weekly', priority: '0.8' })),
     ...goalPages.map((g) => ({ path: g.path, changefreq: 'monthly', priority: g.from === 1 && g.to === 99 ? '0.8' : '0.7' })),
@@ -165,6 +177,8 @@ app.get('/sitemap.xml', async (req, res) => {
       lastmod: p.latest?.capturedAt ? new Date(p.latest.capturedAt).toISOString().slice(0, 10) : undefined,
     })),
     ...clans.map((c) => ({ path: `/clans/${encodeURIComponent(c.slug)}`, changefreq: 'weekly', priority: '0.5', lastmod: c.lastmod })),
+    // The Grand Exchange pages (about 4,500 items, well under the 50,000 a sitemap file may list).
+    ...items.slugs.map((slug) => ({ path: `/items/${slug}`, changefreq: 'daily', priority: '0.4', lastmod: items.updatedAt ? items.updatedAt.slice(0, 10) : undefined })),
     { path: '/about', changefreq: 'monthly', priority: '0.3' },
     { path: '/contact', changefreq: 'monthly', priority: '0.3' },
     { path: '/privacy', changefreq: 'yearly', priority: '0.2' },
@@ -406,6 +420,7 @@ if (distExists) {
     ['/planner', 'Account Planner'],
     ['/calculators', 'Skill calculators'],
     ['/clans', 'Clans'],
+    ['/items', 'Grand Exchange prices'],
     ['/compare', 'Compare players'],
     ['/osrs-xp-table', 'OSRS XP table'],
     ['/plans', 'Plan guides'],
@@ -762,6 +777,61 @@ if (distExists) {
     )
   })
 
+  // Grand Exchange prices. The list page is indexable; each item has its own page with the live price in its title and description.
+  const gp = (v) => (v == null ? 'no price yet' : `${Number(v).toLocaleString('en-US')} gp`)
+  const signed = (v) => (v == null ? null : `${v > 0 ? '+' : ''}${v}%`)
+  app.get('/items', async (req, res, next) => {
+    try {
+      const description = 'Live Old School RuneScape Grand Exchange prices for every tradeable item, with price history, trends, buy limits and flipping margins after tax.'
+      let list = ''
+      try {
+        const { items } = await getItemIndex()
+        list = `<ul>${pickMovers(items, 'traded', { limit: 100 }).map((i) => `<li><a href="/items/${i.slug}">${escapeHtml(i.name)}</a>: ${gp(i.price)}</li>`).join('')}</ul>`
+      } catch {
+        /* the page still works without the list */
+      }
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: 'OSRS Grand Exchange Prices and Trends | TickGains',
+          description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}/items`,
+          bodyHtml: `<main><h1>OSRS Grand Exchange prices</h1><p>${escapeHtml(description)}</p>${list}</main>`,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+  app.get('/items/:slug', async (req, res, next) => {
+    try {
+      const wanted = String(req.params.slug)
+      const item = /^[A-Za-z0-9-]{1,120}$/.test(wanted) ? await getItemBySlug(wanted.toLowerCase()) : null
+      // An address with no item still gets the app (it shows "no such item"), but as a 404 so search engines drop it.
+      if (!item) return res.status(404).sendFile(path.join(distPath, 'index.html'))
+      // One address per item: a capitalised copy of it goes to the lower-case one.
+      if (wanted !== item.slug) return res.redirect(301, `/items/${item.slug}`)
+      const pageUrl = `${SITE_URL}/items/${item.slug}`
+      const bits = [`${item.name} Grand Exchange price: ${gp(item.price)}${item.high != null && item.low != null ? ` (buy ${gp(item.high)}, sell ${gp(item.low)})` : ''}.`]
+      if (item.limit) bits.push(`Buy limit ${item.limit.toLocaleString('en-US')}.`)
+      if (item.change7 != null) bits.push(`${signed(item.change7)} in 7 days.`)
+      bits.push('Live OSRS price, history and flipping margin after tax.')
+      const description = bits.join(' ')
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: `${item.name} Price (OSRS GE): ${item.price != null ? Number(item.price).toLocaleString('en-US') : 'n/a'} gp | TickGains`,
+          description,
+          imageUrl: `${SITE_URL}/og-default.png`,
+          pageUrl,
+          jsonLd: { '@context': 'https://schema.org', '@type': 'WebPage', name: `${item.name} price on the OSRS Grand Exchange`, url: pageUrl, description, about: { '@type': 'Thing', name: item.name, description: item.examine || undefined } },
+          bodyHtml: pageBody(`${item.name} Grand Exchange price`, [description, item.examine].filter(Boolean), '/items'),
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
   app.get('/clans/:slug', async (req, res, next) => {
     try {
       // /clans/mine and /clans/new are app pages, not clans.
@@ -949,6 +1019,7 @@ startCompetitionJob()
 startEventsPurgeJob()
 startClaimReminderJob()
 startClaimNudgeJob()
+startGePricesJob()
 // Warm the cached homepage/Discover data so the first visitor doesn't pay for it.
 getHome().catch(() => {})
 // Reconstruct achievements/milestones for players tracked before they existed (idempotent).

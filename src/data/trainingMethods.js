@@ -11,23 +11,33 @@
 //
 // Shape: { id, skill, name, description, minLevel, maxLevel|null,
 //          xpPerHour, gpPerHour|null, intensity, requirements }
+import { gpPerHourFor } from '@/utils/methodPricing'
+
 // intensity: 'AFK' | 'Low' | 'Medium' | 'High'
 // A method only contributes xp between xpForLevel(minLevel) and
 // xpForLevel(maxLevel + 1), see planner.js's planGoal().
 
-const m = (skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false) => ({
-  id: `${skill.toLowerCase()}-${id}`,
-  skill,
-  name,
-  description,
-  minLevel,
-  maxLevel,
-  xpPerHour,
-  gpPerHour,
-  intensity,
-  requirements,
-  fastest,
-})
+const m = (skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false) => {
+  const fullId = `${skill.toLowerCase()}-${id}`
+  return {
+    id: fullId,
+    skill,
+    name,
+    description,
+    minLevel,
+    maxLevel,
+    xpPerHour,
+    // The figure typed in above is the saved one. A method with a recipe in data/methodEconomy.js is worked out from live Grand Exchange
+    // prices instead whenever there are prices, so everything that reads gpPerHour (the planner, calculators and guides) follows them.
+    get gpPerHour() {
+      return gpPerHourFor(fullId, xpPerHour, gpPerHour)
+    },
+    savedGpPerHour: gpPerHour,
+    intensity,
+    requirements,
+    fastest,
+  }
+}
 
 // Melee methods train Attack, Strength or Defence depending on your combat style, so each is listed for all three.
 const melee = (id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false) =>

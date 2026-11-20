@@ -31,7 +31,7 @@
       <span class="planner-step-meta">
         {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h</template>
       </span>
-      <span class="planner-step-gp" :class="gpClass(seg.netGp)"><GpTip :method="seg.method && seg.method.gpPerHour !== undefined && seg.method.id ? seg.method : null" :hours="seg.hours">{{ seg.netGp == null ? 'Unpriced' : formatGp(seg.netGp) }}</GpTip></span>
+      <span class="planner-step-gp" :class="gpClass(seg.netGp)"><i v-if="seg.method && seg.method.id && isLive(seg.method.id, seg.method.xpPerHour)" class="live-dot" title="Worked out from live Grand Exchange prices" aria-hidden="true" /><GpTip :method="seg.method && seg.method.gpPerHour !== undefined && seg.method.id ? seg.method : null" :hours="seg.hours">{{ seg.netGp == null ? 'Unpriced' : formatGp(seg.netGp) }}</GpTip></span>
       <span class="planner-step-hours">{{ seg.hours == null ? '-' : formatHours(seg.hours) }}</span>
       <svg v-if="skill" class="planner-step-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
     </li>
@@ -79,6 +79,7 @@ import { plannerRequirementContext } from '@/composables/plannerRequirementConte
 import { methodsForSkill } from '@/data/trainingMethods'
 import { methodIconSrc } from '@/data/methodIcons'
 import { formatNum, formatHours, formatGp } from '@/utils/planner'
+import { isLive } from '@/utils/methodPricing'
 
 // With a skill, every step can be changed: the player picks the method for that set of levels and the parent stores it.
 const props = defineProps({

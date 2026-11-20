@@ -61,6 +61,11 @@
     <li v-for="n in 14" :key="n" aria-hidden="true"><a><span class="disc-rank sk">{{ n }}</span><span class="disc-board-main"><span class="disc-board-name sk sk-w160">Player name</span><span class="disc-bar"><span class="sk" :style="{ width: `${100 - n * 6}%` }" /></span></span><span class="lb-meta sk sk-w60">2,277</span><span class="disc-board-xp sk sk-w60">+0.0M</span></a></li>
   </ol>
 
+  <!-- Items: the price table -->
+  <div v-else-if="kind === 'items'" class="gx-sk dash-sk" aria-busy="true" aria-label="Loading the prices">
+    <div v-for="n in 12" :key="n" class="gx-sk-row" aria-hidden="true"><span class="sk gx-sk-icon" /><span class="sk sk-w160">Item name</span><span class="sk sk-w60 gx-sk-price">3,727</span></div>
+  </div>
+
   <!-- Clans: the directory -->
   <template v-else-if="kind === 'clans'">
     <section class="card clan-card dash-sk" aria-busy="true" aria-label="Loading the clans">
@@ -186,7 +191,7 @@ import { h } from 'vue'
 import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 
 defineProps({
-  // list | records-grid | home-example | home-community | discover | leaderboard | clans | my-clans | clan | competition | profile | rows | compare | plan
+  // list | records-grid | home-example | home-community | discover | leaderboard | items | clans | my-clans | clan | competition | profile | rows | compare | plan
   kind: { type: String, required: true },
   // For kind "rows": the heading and how many placeholder rows.
   label: { type: String, default: 'Loading' },

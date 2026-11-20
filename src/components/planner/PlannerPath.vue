@@ -66,6 +66,7 @@
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
           <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" />
+          <PlannerPathDetails :plan="plans[i]" :goal="g" @edit="emit('edit', g.skill)" />
         </template>
       </li>
     </ol>
@@ -88,6 +89,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
+import PlannerPathDetails from '@/components/planner/PlannerPathDetails.vue'
 import ShareIcon from '@/components/ShareIcon.vue'
 import ShareRouteModal from '@/components/planner/ShareRouteModal.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
@@ -148,7 +150,7 @@ onBeforeUnmount(() => {
 })
 
 // --- Drag a skill card to change the order it is trained in --------------------------------------------------------------
-// Press on a card (anywhere that is not a button, link or the editor) and drag. While you drag, every card folds down to its title
+// Press on the top of a card (its title row or progress bar, not a button or link) and drag. While you drag, every card folds down to its title
 // row so the whole order is in view, the others slide aside to make room, and letting go drops the card there. A touch screen
 // needs a short press first, so scrolling still works.
 const GAP = 14
@@ -164,6 +166,8 @@ const canDrag = (i) => props.goals.length > 1 && props.editSkill !== props.goals
 
 function onDown(e, i) {
   if (st || (e.pointerType === 'mouse' && e.button !== 0) || !canDrag(i)) return
+  // Only the top of the card picks it up: the title row and the progress bar above the route. The route rows and the details underneath are left alone.
+  if (!e.target.closest('.path-head, .path-prog')) return
   if (e.target.closest('button, a, input, select, textarea, label, .se, .planner-route')) return
   st = { id: e.pointerId, type: e.pointerType, x: e.clientX, y: e.clientY, from: i, active: false, timer: 0 }
   // Touch and pen: hold for a moment first, so a swipe is still a scroll.

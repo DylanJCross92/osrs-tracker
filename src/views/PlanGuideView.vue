@@ -65,6 +65,10 @@ import { track } from '@/utils/analytics'
 import { GUIDE_DEFS, buildPlanGuide, guideDef } from '@/data/planGuides'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatNum } from '@/utils/planner'
+import { useLivePrices } from '@/composables/useLivePrices'
+
+// The Grand Exchange prices behind every gp figure on this page.
+useLivePrices()
 
 const route = useRoute()
 const router = useRouter()

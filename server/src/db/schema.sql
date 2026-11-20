@@ -524,3 +524,51 @@ BEGIN
     ALTER TABLE profile_claims ADD CONSTRAINT profile_claims_status_check CHECK (status IN ('pending', 'verified', 'rejected', 'cancelled', 'revoked', 'expired'));
   END IF;
 END $$;
+
+-- Grand Exchange prices from the OSRS Wiki real-time price API (see services/ge.service.js and utils/ge.js). Items change rarely (refreshed
+-- daily); ge_prices holds only the latest price of each item (refreshed every 5 minutes); ge_daily adds up each day's trades hour by hour so
+-- price changes can be worked out (kept for the same time as events). Prices are BIGINT in case a price ever passes 2.1 billion.
+CREATE TABLE IF NOT EXISTS ge_items (
+  item_id INT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  examine TEXT NOT NULL DEFAULT '',
+  members BOOLEAN NOT NULL DEFAULT false,
+  buy_limit INT,
+  value BIGINT,
+  high_alch BIGINT,
+  low_alch BIGINT,
+  icon TEXT NOT NULL DEFAULT '',
+  history_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ge_items_slug_idx ON ge_items (slug);
+
+CREATE TABLE IF NOT EXISTS ge_prices (
+  item_id INT PRIMARY KEY REFERENCES ge_items(item_id) ON DELETE CASCADE,
+  high BIGINT,
+  high_at TIMESTAMPTZ,
+  low BIGINT,
+  low_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- One row per item per UTC day: sums of (average price x volume) and the volumes, added to every hour, so an average is sum / volume.
+-- last_bucket is the newest hour added, so running an hour twice never counts it twice.
+CREATE TABLE IF NOT EXISTS ge_daily (
+  item_id INT NOT NULL REFERENCES ge_items(item_id) ON DELETE CASCADE,
+  day DATE NOT NULL,
+  high_sum BIGINT NOT NULL DEFAULT 0,
+  high_vol BIGINT NOT NULL DEFAULT 0,
+  low_sum BIGINT NOT NULL DEFAULT 0,
+  low_vol BIGINT NOT NULL DEFAULT 0,
+  last_bucket TIMESTAMPTZ NOT NULL DEFAULT 'epoch',
+  PRIMARY KEY (item_id, day)
+);
+CREATE INDEX IF NOT EXISTS ge_daily_day_idx ON ge_daily (day);
+
+-- When the latest prices were last confirmed by the wiki (a refresh where nothing changed writes no price rows).
+CREATE TABLE IF NOT EXISTS ge_status (
+  id SMALLINT PRIMARY KEY DEFAULT 1,
+  latest_at TIMESTAMPTZ
+);

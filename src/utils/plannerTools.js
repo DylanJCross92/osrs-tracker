@@ -5,6 +5,8 @@
 import { getMethod } from '@/data/trainingMethods'
 import { getQuest } from '@/data/quests'
 import { MATERIALS } from '@/data/methodMaterials'
+import { ECONOMY } from '@/data/methodEconomy'
+import { itemsStatus } from '@/utils/methodItems'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { startOfGameDay } from '@/utils/gameDay'
 import {
@@ -692,27 +694,48 @@ export function validatePlan(raw) {
 export function materialsForPlan(plan) {
   const rows = []
   const totals = new Map()
+  const untracked = new Set()
+  const supplies = new Set()
   let actions = 0
-  for (const seg of plan.segments || []) {
-    const list = seg.method && MATERIALS[seg.method.id]
-    if (!list) continue
-    for (let lvl = levelAtXp(seg.fromXp, true); lvl < levelAtXp(seg.toXp - 1, true) + 1; lvl++) {
-      const from = Math.max(xpAtLevel(lvl), seg.fromXp)
-      const to = Math.min(xpAtLevel(lvl + 1), seg.toXp)
-      const need = to - from
-      if (need <= 0) continue
-      const usable = list.filter((it) => it.level <= lvl)
-      if (!usable.length) continue
-      const best = usable.reduce((a, b) => (b.xp > a.xp ? b : a))
-      const count = need / best.xp
-      actions += count
-      const items = [{ name: best.name, qty: Math.ceil(count * best.qty) }]
-      for (const e of best.extra) items.push({ name: e.name, qty: Math.ceil(count * e.qty) })
-      rows.push({ level: lvl + 1, method: seg.method.name, items })
-      for (const it of items) totals.set(it.name, (totals.get(it.name) || 0) + it.qty)
+  const guessed = new Set()
+  const add = (items, level, method) => {
+    rows.push({ level, method, items })
+    for (const it of items) {
+      totals.set(it.name, (totals.get(it.name) || 0) + it.qty)
+      if (it.approx) guessed.add(it.name)
     }
   }
-  return { rows, totals: [...totals].map(([name, qty]) => ({ name, qty })), actions: Math.ceil(actions) }
+  for (const seg of plan.segments || []) {
+    const status = itemsStatus(seg.method)
+    if (status === 'untracked') untracked.add(seg.method.name)
+    else if (status === 'supplies') supplies.add(seg.method.name)
+    const list = seg.method && MATERIALS[seg.method.id]
+    if (list) {
+      for (let lvl = levelAtXp(seg.fromXp, true); lvl < levelAtXp(seg.toXp - 1, true) + 1; lvl++) {
+        const from = Math.max(xpAtLevel(lvl), seg.fromXp)
+        const to = Math.min(xpAtLevel(lvl + 1), seg.toXp)
+        const need = to - from
+        if (need <= 0) continue
+        const usable = list.filter((it) => it.level <= lvl)
+        if (!usable.length) continue
+        const best = usable.reduce((a, b) => (b.xp > a.xp ? b : a))
+        const count = need / best.xp
+        actions += count
+        const items = [{ name: best.name, qty: Math.ceil(count * best.qty), ...(best.approx ? { approx: true } : {}) }]
+        for (const e of best.extra) items.push({ name: e.name, qty: Math.ceil(count * e.qty), ...(best.approx ? { approx: true } : {}) })
+        add(items, lvl + 1, seg.method.name)
+      }
+      continue
+    }
+    // A method with a recipe uses what its recipe says for every action the stretch of xp takes.
+    const recipe = seg.method && ECONOMY[seg.method.id]
+    if (recipe?.inputs?.length && seg.toXp > seg.fromXp) {
+      const count = (seg.toXp - seg.fromXp) / recipe.xpPerAction
+      actions += count
+      add(recipe.inputs.map(([name, qty]) => ({ name, qty: Math.ceil(count * qty) })), seg.endLevel ?? levelAtXp(seg.toXp - 1, true) + 1, seg.method.name)
+    }
+  }
+  return { rows, totals: [...totals].map(([name, qty]) => ({ name, qty, ...(guessed.has(name) ? { approx: true } : {}) })), actions: Math.ceil(actions), untracked: [...untracked], supplies: [...supplies] }
 }
 
 /** Combine several plans' materials into one shopping list. */

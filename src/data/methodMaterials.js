@@ -12,6 +12,8 @@
 
 const item = (name, level, xp, qty = 1, extra = []) => ({ name, level, xp, qty, extra })
 const x = (name, qty = 1) => ({ name, qty })
+// An entry whose amounts are an estimate; the list shows a ~ beside them.
+const approx = (entry) => ({ ...entry, approx: true })
 
 const LOGS = [
   item('Logs', 1, 40),
@@ -147,6 +149,16 @@ export const MATERIALS = {
   ],
   'runecraft-nature': [item('Pure essence', 44, 9)],
   'runecraft-nature-double': [item('Pure essence', 91, 9)],
+  // Rune altars that take pure essence: the xp is for each essence turned into runes (the double-rune methods only change how many runes
+  // come out, not how many essence go in).
+  'runecraft-nature-cape': [item('Pure essence', 91, 9)],
+  'runecraft-cosmic-double': [item('Pure essence', 59, 8)],
+  'runecraft-astral-double': [item('Pure essence', 82, 8.7)],
+  'runecraft-law-double': [item('Pure essence', 95, 9.5)],
+  'runecraft-wrath': [item('Pure essence', 95, 8)],
+  // Estimates (marked with ~ in the list): the xp for each essence depends on which runes come out, so the amounts are approximate.
+  'runecraft-ourania': [approx(item('Pure essence', 1, 30))],
+  'runecraft-lava': [approx(item('Pure essence', 23, 10.5, 1, [x('Earth rune')]))],
 }
 
 /** Wiki icon URL for an item name. */

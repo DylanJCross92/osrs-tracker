@@ -12,7 +12,7 @@
       </span>
       <span class="prs-stats">
         <span class="prs-hours">{{ step.seg.hours == null ? '-' : formatHours(step.seg.hours) }}</span>
-        <span class="prs-gp" :class="step.seg.netGp == null ? '' : step.seg.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ step.seg.netGp == null ? 'Unpriced' : formatGp(step.seg.netGp) }}</span>
+        <span class="prs-gp" :class="step.seg.netGp == null ? '' : step.seg.netGp >= 0 ? 'planner-gain' : 'planner-cost'"><i v-if="step.seg.method && step.seg.method.id && isLive(step.seg.method.id, step.seg.method.xpPerHour)" class="live-dot" title="Worked out from live Grand Exchange prices" aria-hidden="true" />{{ step.seg.netGp == null ? 'Unpriced' : formatGp(step.seg.netGp) }}</span>
       </span>
       <svg class="prs-chev" :class="{ open }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
     </button>
@@ -47,6 +47,7 @@
 <script setup>
 import { computed, inject } from 'vue'
 import GpTip from '@/components/planner/GpTip.vue'
+import { isLive } from '@/utils/methodPricing'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { methodAvailability, unmetText } from '@/utils/requirements'

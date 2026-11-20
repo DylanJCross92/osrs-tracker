@@ -179,6 +179,7 @@ export function areaOf(path) {
   if (/^\/(planner|plan|plans)(\/|$)/.test(p)) return 'Planner'
   if (/^\/(calculators|osrs-xp-table)(\/|$)/.test(p)) return 'Calculators'
   if (/^\/(clans|join|competitions)(\/|$)/.test(p)) return 'Clans'
+  if (/^\/items(\/|$)/.test(p)) return 'Items'
   if (/^\/compare(\/|$)/.test(p)) return 'Compare'
   if (/^\/(login|signup|forgot-password|reset-password|verify-email|account)(\/|$)/.test(p)) return 'Account'
   return 'Other'

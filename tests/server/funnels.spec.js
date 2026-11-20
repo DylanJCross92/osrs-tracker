@@ -27,6 +27,7 @@ describe('helpers', () => {
     expect(areaOf('/clans/mine')).toBe('Clans')
     expect(areaOf('/leaderboard')).toBe('Discover')
     expect(areaOf('/signup')).toBe('Account')
+    expect(areaOf('/items/dragon-bones')).toBe('Items')
     expect(areaOf('/nope')).toBe('Other')
   })
 })
