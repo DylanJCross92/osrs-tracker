@@ -38,7 +38,7 @@
             <tr v-for="r in shown" :key="r.id">
               <td>
                 <RouterLink class="gx-item" :to="{ name: 'item', params: { slug: r.slug } }" @click="track('items_item_click', { source: 'browse' })">
-                  <img :src="itemImage('', r.name)" alt="" width="24" height="24" loading="lazy" @error="hideImage" />
+                  <img :src="itemImage(r.icon, r.name)" alt="" width="24" height="24" loading="lazy" @error="hideImage" />
                   <span>{{ r.name }}<small v-if="r.members" class="gx-badge" title="Members only">M</small></span>
                 </RouterLink>
               </td>

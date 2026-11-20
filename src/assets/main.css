@@ -6164,18 +6164,33 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .gx-back { display: inline-block; margin-bottom: 2px; color: var(--muted); font-size: 0.8rem; text-decoration: none; }
 .gx-back:hover { color: var(--gold-bright); }
 .gx-updated { color: var(--muted); font-size: 0.8rem; }
-/* The price details as one slim strip, each value under a small label. */
-.gx-stats { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); margin: 0 0 14px; padding: 0; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--panel); overflow: hidden; }
-.gx-stats > div { padding: 10px 12px; border-left: 1px solid var(--border); min-width: 0; }
-.gx-stats > div:first-child { border-left: 0; }
-.gx-stats dt { color: var(--muted); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-.gx-stats dd { margin: 2px 0 0; font-size: 1.02rem; font-weight: 700; font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 760px) {
-  .gx-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .gx-stats > div { border-left: 0; border-top: 1px solid var(--border); padding: 8px 10px; }
-  .gx-stats > div:nth-child(-n + 4) { border-top: 0; }
-  .gx-stats > div:not(:nth-child(4n + 1)) { border-left: 1px solid var(--border); }
-  .gx-price { align-items: flex-start; text-align: left; }
+/* The price details: big buy, sell and flip figures, quieter limit and traded, and the changes as soft pills. No boxes, just a hairline below. */
+.gxf { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 40px; padding: 4px 4px 20px; }
+.gxf::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 45%, transparent) 20%, color-mix(in srgb, var(--gold) 45%, transparent) 80%, transparent); }
+.gxf-group { display: flex; gap: 14px 34px; margin: 0; }
+.gxf-group > div { min-width: 0; }
+.gxf dt { color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxf dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.gxf-prices dd { font-size: 1.85rem; line-height: 1.1; letter-spacing: -0.01em; }
+.gxf-meta { padding-left: 34px; border-left: 1px solid var(--border); }
+.gxf-meta dd { color: #d8cdb0; font-size: 1.2rem; }
+.gxf-changes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+.gxf-changes li { display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); font-variant-numeric: tabular-nums; }
+.gxf-changes span { color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.gxf-changes b { font-size: 1rem; color: var(--muted); }
+.gxf-changes li.up { background: rgba(124, 184, 105, 0.14); }
+.gxf-changes li.up b { color: #9fd48a; }
+.gxf-changes li.down { background: rgba(224, 122, 99, 0.14); }
+.gxf-changes li.down b { color: #f0987f; }
+@media (max-width: 900px) { .gxf-changes { margin-left: 0; } }
+@media (max-width: 640px) {
+  .gxf { gap: 14px 24px; padding-bottom: 16px; }
+  .gxf-prices { width: 100%; justify-content: space-between; }
+  .gxf-prices dd { font-size: 1.45rem; }
+  .gxf-meta { padding-left: 0; border-left: 0; gap: 14px 28px; }
+  .gxf-meta dd { font-size: 1.05rem; }
+  .gxf-changes { width: 100%; }
+  .gxf-changes li { flex: 1 1 0; justify-content: space-between; padding: 7px 12px; }
 }
 .gx-chart h2, .gx-alch h2, .gx-methods h2 { margin: 0; font-size: 1.05rem; }
 .gx-chart-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
@@ -6329,9 +6344,6 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .gxi-price b small { color: var(--muted); font-size: 0.9rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
 .gxi-card { padding: 16px 18px; border: 1px solid var(--border-strong); border-radius: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 8%, var(--panel)), var(--panel) 42%); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gold) 34%, transparent); }
 .gxi-card h2 { margin: 0; font-size: 1.1rem; }
-.gx-stats.gxi-card { padding: 0; overflow: hidden; }
-.gx-stats > div { padding: 12px 14px; }
-.gx-stats dd { font-size: 1.1rem; }
 .gxb-board { padding: 16px 18px; margin: 0; }
 .gxb-field { flex: 1 1 280px; max-width: 520px; }
 .gxb-field .gxs-box { height: 52px; }
@@ -6343,8 +6355,6 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
   .gxi-price { justify-items: start; margin-left: 0; text-align: left; }
   .gxi-icon { width: 56px; height: 56px; border-radius: 16px; }
   .gxi-card { padding: 14px; }
-  .gx-stats > div { padding: 8px 9px; }
-  .gx-stats dd { font-size: 0.95rem; }
 }
 
 /* Live Grand Exchange prices: the badge, the dot beside a live gp figure, the priced materials table and the card's details */

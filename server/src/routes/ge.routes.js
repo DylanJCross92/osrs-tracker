@@ -14,7 +14,7 @@ const SLUG = /^[a-z0-9-]{1,120}$/
 const fail = (err, res, next) => (err instanceof GeUnavailableError ? res.status(503).json({ error: err.message }) : next(err))
 
 // Every item with its price, volume and changes, as short rows for the Items page to search and sort in the browser:
-// [id, name, slug, members (1 or 0), high, low, volume, buy limit, change 1d, 7d and 30d in percent, margin after tax].
+// [id, name, slug, members (1 or 0), high, low, volume, buy limit, change 1d, 7d and 30d in percent, margin after tax, icon file or null].
 geRouter.get('/ge/items', readLimiter, async (req, res, next) => {
   try {
     const { updatedAt, stale, items } = await getItemIndex()
@@ -22,7 +22,7 @@ geRouter.get('/ge/items', readLimiter, async (req, res, next) => {
     res.json({
       updatedAt,
       stale,
-      items: items.filter((i) => i.price != null).map((i) => [i.id, i.name, i.slug, i.members ? 1 : 0, i.high, i.low, i.volume, i.limit, i.change1, i.change7, i.change30, i.margin]),
+      items: items.filter((i) => i.price != null).map((i) => [i.id, i.name, i.slug, i.members ? 1 : 0, i.high, i.low, i.volume, i.limit, i.change1, i.change7, i.change30, i.margin, i.icon]),
     })
   } catch (err) {
     fail(err, res, next)
@@ -30,7 +30,7 @@ geRouter.get('/ge/items', readLimiter, async (req, res, next) => {
 })
 
 // The prices of some items by name, for the planners and calculators: ?names=Dragon bones|Law rune|... gives
-// { updatedAt, stale, prices: { "dragon bones": [high, low, slug] } }. Up to MAX_PRICE_NAMES names.
+// { updatedAt, stale, prices: { "dragon bones": [high, low, slug, icon file or null] } }. Up to MAX_PRICE_NAMES names.
 geRouter.get('/ge/prices', readLimiter, async (req, res, next) => {
   try {
     const names = String(req.query.names || '').split('|').map((x) => x.trim()).filter((x) => x && x.length <= 80)

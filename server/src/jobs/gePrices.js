@@ -3,44 +3,58 @@ import { pool } from '../db.js'
 import { backfillHistory, isEmpty, refreshHourly, refreshLatest, refreshMapping } from '../services/ge.service.js'
 
 // Keeps the Grand Exchange data up to date (see services/ge.service.js): latest prices every 5 minutes, the last hour of trades every hour,
-// the item list and some earlier history once a day. Set GE_DISABLED=1 to turn it off. One run at a time, even across instances.
-const LOCK_KEY = 872_431_002
-let running = false
+// the item list once a day, and some earlier history for the busiest items. Set GE_DISABLED=1 to turn it off.
+// Every kind of run has its own lock, so one at a time of each kind, even across instances, and the history fill (which takes
+// a while, as it asks the wiki politely for one item after another) never holds up the price refresh.
+const LOCKS = { latest: 872_431_002, hourly: 872_431_003, daily: 872_431_004, history: 872_431_005 }
+const running = new Set()
 
-async function withLock(label, fn) {
-  // A run still going (the daily history fill can take several minutes) means this tick is skipped; say so rather than staying silent.
-  if (running) return console.log(`[ge] ${label} skipped: the previous run is still going`)
-  running = true
-  const client = await pool.connect()
-  try {
-    const { rows } = await client.query('SELECT pg_try_advisory_lock($1) AS ok', [LOCK_KEY])
-    if (!rows[0].ok) return console.log(`[ge] ${label} skipped: another instance holds the lock`)
+function withLock(kind, label, fn) {
+  return (async () => {
+    // A run of this kind still going means this tick is skipped; say so rather than staying silent.
+    if (running.has(kind)) return console.log(`[ge] ${label} skipped: the previous run is still going`)
+    running.add(kind)
+    let client = null
     try {
-      const summary = await fn()
-      console.log(`[ge] ${label}: ${JSON.stringify(summary)}`)
+      client = await pool.connect()
+      const { rows } = await client.query('SELECT pg_try_advisory_lock($1) AS ok', [LOCKS[kind]])
+      if (!rows[0].ok) return console.log(`[ge] ${label} skipped: another instance holds the lock`)
+      try {
+        console.log(`[ge] ${label}: ${JSON.stringify(await fn())}`)
+      } finally {
+        await client.query('SELECT pg_advisory_unlock($1)', [LOCKS[kind]])
+      }
+    } catch (err) {
+      console.error(`[ge] ${label} failed: ${err.message}`)
     } finally {
-      await client.query('SELECT pg_advisory_unlock($1)', [LOCK_KEY])
+      client?.release()
+      running.delete(kind)
     }
-  } catch (err) {
-    console.error(`[ge] ${label} failed: ${err.message}`)
-  } finally {
-    client.release()
-    running = false
-  }
+  })()
 }
 
-const everything = async () => ({ mapping: await refreshMapping(), latest: await refreshLatest(), hourly: await refreshHourly(), history: await backfillHistory() })
+const latest = () => withLock('latest', 'latest prices', refreshLatest)
+const hourly = () => withLock('hourly', 'hourly trades', refreshHourly)
+const mapping = () => withLock('daily', 'item list', refreshMapping)
+const history = () => withLock('history', 'history fill', backfillHistory)
 
 export function startGePricesJob() {
   if (process.env.GE_DISABLED === '1') return console.log('[ge] price updates are turned off')
-  cron.schedule('*/5 * * * *', () => withLock('latest prices', refreshLatest))
-  cron.schedule('5 * * * *', () => withLock('hourly trades', refreshHourly))
-  cron.schedule('10 4 * * *', () => withLock('daily refresh', everything))
+  cron.schedule('*/5 * * * *', latest)
+  cron.schedule('5 * * * *', hourly)
+  cron.schedule('10 4 * * *', mapping)
+  // The history fill is tried every hour: it skips items it has already tried, so most runs have nothing to do.
+  cron.schedule('20 * * * *', history)
   console.log('[ge] price updates scheduled (every 5 minutes)')
-  // First run: fetch everything shortly after boot, and fill in earlier days for the busiest items when the data is new.
-  setTimeout(() => {
-    isEmpty()
-      .then((empty) => (empty ? withLock('first fill', everything) : withLock('catch-up', async () => ({ latest: await refreshLatest(), hourly: await refreshHourly(), history: await backfillHistory() }))))
-      .catch((err) => console.error('[ge] first run failed:', err.message))
+  // After a start: the item list when there is none, then the newest prices and trades, and the history fill on its own so it never delays them.
+  setTimeout(async () => {
+    try {
+      if (await isEmpty()) await mapping()
+      await latest()
+      await hourly()
+    } catch (err) {
+      console.error('[ge] first run failed:', err.message)
+    }
+    history()
   }, 5000)
 }

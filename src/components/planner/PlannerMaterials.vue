@@ -14,7 +14,7 @@
           <tr v-for="t in totals" :key="t.name">
             <td>
               <component :is="t.slug ? 'RouterLink' : 'span'" class="mat-item" :to="t.slug ? { name: 'item', params: { slug: t.slug } } : undefined" :title="t.slug ? `${t.name}: see its Grand Exchange price and history` : undefined" @click.capture="t.slug && onItemLinkClick($event, t.slug, 'materials')">
-                <img :src="itemIconUrl(t.name)" alt="" width="26" height="26" loading="lazy" @error="hide" /><span>{{ t.name }}<small v-if="t.each != null" class="mat-sub">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }} × {{ gpText(t.each) }} gp</small></span>
+                <img :src="iconSrc(t.name)" alt="" width="26" height="26" loading="lazy" @error="hide" /><span>{{ t.name }}<small v-if="t.each != null" class="mat-sub">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }} × {{ gpText(t.each) }} gp</small></span>
               </component>
             </td>
             <td class="num">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }}</td>
@@ -40,7 +40,7 @@
               <td>Level {{ r.level }}</td>
               <td>
                 <span v-for="it in r.items" :key="it.name" class="mat-inline">
-                  <img :src="itemIconUrl(it.name)" :alt="it.name" width="22" height="22" loading="lazy" @error="hide" />{{ formatNum(it.qty) }} {{ it.name }}
+                  <img :src="iconSrc(it.name)" :alt="it.name" width="22" height="22" loading="lazy" @error="hide" />{{ formatNum(it.qty) }} {{ it.name }}
                 </span>
               </td>
               <td class="num">{{ rowCost(r) == null ? '-' : `${gpText(rowCost(r))} gp` }}</td>
@@ -58,11 +58,10 @@
 
 <script setup>
 import { computed } from 'vue'
-import { itemIconUrl } from '@/data/methodMaterials'
 import { materialsForPlan } from '@/utils/plannerTools'
 import { formatNum } from '@/utils/planner'
-import { midOf, slugOf } from '@/utils/priceBook'
-import { gpText } from '@/utils/geFormat'
+import { iconOf, midOf, slugOf } from '@/utils/priceBook'
+import { gpText, itemImage } from '@/utils/geFormat'
 import GePriceBadge from '@/components/GePriceBadge.vue'
 import { onItemLinkClick } from '@/composables/useItemModal'
 
@@ -110,5 +109,7 @@ const totals = computed(() =>
     // The items that cost the most first.
     .sort((a, b) => (b.cost ?? -1) - (a.cost ?? -1)),
 )
+// The item's real picture once its price is known, otherwise the one its name suggests.
+const iconSrc = (name) => itemImage(iconOf(name), name)
 const hide = (e) => (e.target.style.visibility = 'hidden')
 </script>

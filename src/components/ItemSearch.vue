@@ -23,7 +23,7 @@
     </div>
     <ul v-if="showList" id="gxs-list" class="gxs-list" role="listbox" aria-label="Matching items">
       <li v-for="(r, i) in results" :id="`gxs-opt-${i}`" :key="r.id" role="option" :aria-selected="i === active" :class="{ on: i === active }" @mouseenter="active = i" @mousedown.prevent="pick(r)">
-        <img :src="itemImage('', r.name)" alt="" width="28" height="28" @error="hideImage" />
+        <img :src="itemImage(r.icon, r.name)" alt="" width="28" height="28" @error="hideImage" />
         <span class="gxs-name"><b>{{ r.name }}</b><small v-if="r.members">Members</small></span>
         <span class="gxs-price">{{ gpText(r.price) }} <small>gp</small></span>
         <span class="gxs-change" :class="changeClass(r.change7)">{{ pctText(r.change7) }}</span>

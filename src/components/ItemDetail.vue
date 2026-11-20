@@ -19,16 +19,20 @@
 
       <p v-if="item.stale" class="gx-stale" role="status">Prices are a little behind right now. They update every few minutes.</p>
 
-      <dl class="gx-stats gxi-card" aria-label="Price details">
-        <div title="The latest price paid by someone buying instantly"><dt>Buy</dt><dd>{{ gpText(item.high) }}</dd></div>
-        <div title="The latest price received by someone selling instantly"><dt>Sell</dt><dd>{{ gpText(item.low) }}</dd></div>
-        <div :title="item.flip ? `${item.flip.roi}% of the sell price, after the 2% Grand Exchange tax` : 'Needs both prices'"><dt>Flip</dt><dd :class="changeClass(item.flip?.margin)">{{ item.flip ? signedGp(item.flip.margin) : '-' }}</dd></div>
-        <div title="How many you can buy every 4 hours"><dt>Limit</dt><dd>{{ item.limit ? (item.limit >= 1e5 ? gpAxis(item.limit) : gpText(item.limit)) : '-' }}</dd></div>
-        <div :title="item.volume ? `${item.volume.toLocaleString('en-US')} bought and sold yesterday` : 'How many were bought and sold yesterday'"><dt>Traded</dt><dd>{{ item.volume ? (item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume)) : '-' }}</dd></div>
-        <div title="Against the average price yesterday"><dt>1d</dt><dd :class="changeClass(item.change1)">{{ pctText(item.change1) }}</dd></div>
-        <div title="Against the average price 7 days ago"><dt>7d</dt><dd :class="changeClass(item.change7)">{{ pctText(item.change7) }}</dd></div>
-        <div title="Against the average price 30 days ago"><dt>30d</dt><dd :class="changeClass(item.change30)">{{ pctText(item.change30) }}</dd></div>
-      </dl>
+      <div class="gxf" aria-label="Price details">
+        <dl class="gxf-group gxf-prices">
+          <div title="The latest price paid by someone buying instantly"><dt>Buy</dt><dd>{{ gpText(item.high) }}</dd></div>
+          <div title="The latest price received by someone selling instantly"><dt>Sell</dt><dd>{{ gpText(item.low) }}</dd></div>
+          <div :title="item.flip ? `${item.flip.roi}% of the sell price, after the 2% Grand Exchange tax` : 'Needs both prices'"><dt>Flip</dt><dd :class="changeClass(item.flip?.margin)">{{ item.flip ? signedGp(item.flip.margin) : '-' }}</dd></div>
+        </dl>
+        <dl class="gxf-group gxf-meta">
+          <div title="How many you can buy every 4 hours"><dt>Limit</dt><dd>{{ item.limit ? (item.limit >= 1e5 ? gpAxis(item.limit) : gpText(item.limit)) : '-' }}</dd></div>
+          <div :title="item.volume ? `${item.volume.toLocaleString('en-US')} bought and sold yesterday` : 'How many were bought and sold yesterday'"><dt>Traded</dt><dd>{{ item.volume ? (item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume)) : '-' }}</dd></div>
+        </dl>
+        <ul class="gxf-changes" aria-label="Price change">
+          <li v-for="c in changes" :key="c.label" :class="c.tone" :title="c.tip"><span>{{ c.label }}</span><b>{{ pctText(c.value) }}</b></li>
+        </ul>
+      </div>
 
       <section class="gxi-card gxi-chart">
         <div class="gx-chart-head">
@@ -98,6 +102,17 @@ const history = ref(null)
 const historyError = ref('')
 // Only worth a section when the alchemy value is close to what the item sells for.
 const showAlch = computed(() => item.value?.highAlch != null && item.value.price != null && item.value.highAlch >= item.value.price * 0.4)
+// The three changes as pills: a rise is green, a fall red, nothing (or no history yet) plain.
+const changes = computed(() => {
+  const i = item.value
+  if (!i) return []
+  const tone = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : 'flat')
+  return [
+    { label: '1d', value: i.change1, tip: 'Against the average price yesterday' },
+    { label: '7d', value: i.change7, tip: 'Against the average price 7 days ago' },
+    { label: '30d', value: i.change30, tip: 'Against the average price 30 days ago' },
+  ].map((c) => ({ ...c, tone: tone(c.value) }))
+})
 const methods = computed(() => (item.value ? methodsUsingItem(item.value.name) : []))
 let itemTicket = 0
 let historyTicket = 0

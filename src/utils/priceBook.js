@@ -3,7 +3,7 @@ import { geApi } from '@/api/ge'
 
 // The Grand Exchange prices the planners and calculators use, kept in one place. Prices are fetched by item name (only the items the
 // site's methods and materials use), and reading one inside a Vue computed makes it recompute when new prices arrive.
-const book = new Map() // lower case name -> { high, low, slug }
+const book = new Map() // lower case name -> { high, low, slug, icon }
 
 /** Counts up every time prices are loaded or cleared. Read it to depend on the prices. */
 export const priceVersion = ref(0)
@@ -29,9 +29,15 @@ export function midOf(name) {
 /** Replaces the prices with `prices` ({ name: [high, low, slug] }), as the server sends them. */
 export function setPrices(prices, info = {}) {
   book.clear()
-  for (const [name, [high, low, slug]] of Object.entries(prices || {})) book.set(key(name), { high, low, slug })
+  for (const [name, [high, low, slug, icon]] of Object.entries(prices || {})) book.set(key(name), { high, low, slug, icon: icon || '' })
   priceStatus.value = { loaded: true, updatedAt: info.updatedAt || null, stale: !!info.stale }
   priceVersion.value++
+}
+
+/** The wiki picture file of an item when it is not just "<name>.png" (the price book knows it once prices are loaded), or ''. */
+export const iconOf = (name) => {
+  void priceVersion.value
+  return book.get(key(name))?.icon || ''
 }
 
 /** The item address for a name (for a link), or null. */

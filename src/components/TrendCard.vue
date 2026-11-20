@@ -15,7 +15,7 @@
       <li v-for="(r, i) in rows" :key="`${period}-${r.id}`" :style="{ '--i': i }">
         <RouterLink :to="{ name: 'item', params: { slug: r.slug } }" :class="{ 'is-top': i === 0 }" @click="$emit('open', r)">
           <span class="gxt-rank">{{ i + 1 }}</span>
-          <img :src="itemImage('', r.name)" alt="" :width="i === 0 ? 36 : 28" :height="i === 0 ? 36 : 28" loading="lazy" @error="hideImage" />
+          <img :src="itemImage(r.icon, r.name)" alt="" :width="i === 0 ? 36 : 28" :height="i === 0 ? 36 : 28" loading="lazy" @error="hideImage" />
           <span class="gxt-name"><b>{{ r.name }}</b><small>{{ gpText(r.price) }} gp</small></span>
           <span class="gxt-pill" :class="metric(r).tone">{{ metric(r).text }}</span>
         </RouterLink>

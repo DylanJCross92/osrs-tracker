@@ -27,8 +27,8 @@ export const changeClass = (p) => (p > 0 ? 'planner-gain' : p < 0 ? 'planner-cos
 
 /** The index rows from the server as objects. */
 export function rowsFromIndex(list) {
-  return (list || []).map(([id, name, slug, members, high, low, volume, limit, change1, change7, change30, margin]) => ({
-    id, name, slug, members: members === 1, high, low, price: high != null && low != null ? Math.round((high + low) / 2) : high ?? low, volume, limit, change1, change7, change30, margin,
+  return (list || []).map(([id, name, slug, members, high, low, volume, limit, change1, change7, change30, margin, icon]) => ({
+    id, name, slug, icon: icon || '', members: members === 1, high, low, price: high != null && low != null ? Math.round((high + low) / 2) : high ?? low, volume, limit, change1, change7, change30, margin,
   }))
 }
 

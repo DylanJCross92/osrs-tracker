@@ -12,12 +12,19 @@ beforeEach(() => resetPrices())
 describe('price book', () => {
   it('looks prices up by name whatever the case, and clears them', () => {
     setPrices({ 'dragon bones': [3736, 3679, 'dragon-bones'] }, { updatedAt: '2026-11-20T00:00:00Z' })
-    expect(priceOf('Dragon Bones')).toEqual({ high: 3736, low: 3679, slug: 'dragon-bones' })
+    expect(priceOf('Dragon Bones')).toEqual({ high: 3736, low: 3679, slug: 'dragon-bones', icon: '' })
     expect(midOf('dragon bones')).toBe(3708)
     expect(slugOf('Dragon bones')).toBe('dragon-bones')
     expect(priceOf('Unknown thing')).toBeNull()
     setPrices({})
     expect(priceOf('Dragon bones')).toBeNull()
+  })
+  it('keeps the picture file of an item whose picture is not its name', async () => {
+    const { iconOf } = await import('@/utils/priceBook')
+    setPrices({ 'revenant ether': [175, 174, 'revenant-ether', 'Revenant ether 5.png'], 'dragon bones': [3736, 3679, 'dragon-bones', null] })
+    expect(iconOf('Revenant ether')).toBe('Revenant ether 5.png')
+    expect(iconOf('Dragon bones')).toBe('')
+    expect(iconOf('Unknown')).toBe('')
   })
   it('uses the one price there is', () => {
     setPrices({ thing: [null, 90, 'thing'] })

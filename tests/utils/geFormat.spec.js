@@ -29,8 +29,10 @@ describe('geFormat', () => {
   })
   it('turns the server rows into items with a middle price', () => {
     const [a, b] = rowsFromIndex([[536, 'Dragon bones', 'dragon-bones', 1, 3783, 3666, 98459, 7500, 1.5, -4, 17.5, 38], [7, 'Odd', 'odd', 0, null, 12, 0, null, null, null, null, null]])
-    expect(a).toMatchObject({ id: 536, members: true, price: 3725, margin: 38, change7: -4 })
+    expect(a).toMatchObject({ id: 536, members: true, price: 3725, margin: 38, change7: -4, icon: '' })
     expect(b).toMatchObject({ members: false, price: 12 })
+    // Stackable items have a picture file that is not just their name.
+    expect(rowsFromIndex([[561, 'Nature rune', 'nature-rune', 0, 170, 169, 1, 25000, 0, 0, 0, 1, 'Nature rune 5.png']])[0].icon).toBe('Nature rune 5.png')
   })
   it('builds an image address from the icon or the name', () => {
     expect(itemImage('Dragon bones.png', 'x')).toBe('https://oldschool.runescape.wiki/images/Dragon_bones.png')

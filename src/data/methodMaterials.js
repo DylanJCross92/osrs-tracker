@@ -160,6 +160,3 @@ export const MATERIALS = {
   'runecraft-ourania': [approx(item('Pure essence', 1, 30))],
   'runecraft-lava': [approx(item('Pure essence', 23, 10.5, 1, [x('Earth rune')]))],
 }
-
-/** Wiki icon URL for an item name. */
-export const itemIconUrl = (name) => `https://oldschool.runescape.wiki/images/${encodeURI(name.replace(/ /g, '_'))}.png`

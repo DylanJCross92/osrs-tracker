@@ -15,6 +15,9 @@ const NATURE_RUNE_ID = 561
 export const MAX_PRICE_NAMES = 400
 const STALE_AFTER_MS = 30 * 60_000
 
+// Most items' picture is "<name>.png"; some (stackable ones such as runes and logs) use another file, so that one is sent along.
+const iconIfDifferent = (icon, name) => (icon && icon !== `${name}.png` ? icon : null)
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 const n = (v) => (v == null ? null : Number(v))
 
@@ -195,7 +198,7 @@ const TODAY = `(now() AT TIME ZONE 'utc')::date`
 
 async function buildIndex() {
   const { rows } = await pool.query(
-    `SELECT i.item_id AS id, i.name, i.slug, i.members, i.buy_limit, p.high, p.low,
+    `SELECT i.item_id AS id, i.name, i.slug, i.members, i.buy_limit, i.icon, p.high, p.low,
             COALESCE(y.high_vol + y.low_vol, t.high_vol + t.low_vol) AS vol,
             ${MID('y')} AS mid1, ${MID('d7')} AS mid7, ${MID('d30')} AS mid30
      FROM ge_items i
@@ -212,7 +215,7 @@ async function buildIndex() {
     const low = n(r.low)
     const price = midPrice(high, low)
     return {
-      id: r.id, name: r.name, slug: r.slug, members: r.members, limit: r.buy_limit, high, low, price, volume: n(r.vol) || 0,
+      id: r.id, name: r.name, slug: r.slug, members: r.members, limit: r.buy_limit, icon: iconIfDifferent(r.icon, r.name), high, low, price, volume: n(r.vol) || 0,
       change1: percentChange(price, r.mid1), change7: percentChange(price, r.mid7), change30: percentChange(price, r.mid30),
       // What buying at the sell price and selling at the buy price makes, after tax.
       margin: flipMargin(high, low, r.name)?.margin ?? null,
@@ -225,14 +228,14 @@ async function buildIndex() {
 export const getItemIndex = () => cached(caches.index, 5 * 60_000, buildIndex)
 
 /**
- * The prices of the items with these names, for the planners and calculators: { updatedAt, stale, prices: { "lower case name": [high, low, slug] } }.
+ * The prices of the items with these names, for the planners and calculators: { updatedAt, stale, prices: { "lower case name": [high, low, slug, icon file or null] } }.
  * Names with no price are left out. Where two items share a name the one with the lowest id is used.
  */
 export async function getPricesByName(names) {
   const wanted = [...new Set(names.map((n) => String(n).trim().toLowerCase()).filter(Boolean))].slice(0, MAX_PRICE_NAMES)
   const [{ rows }, updatedAt] = await Promise.all([
     pool.query(
-      `SELECT DISTINCT ON (lower(i.name)) lower(i.name) AS name, p.high, p.low, i.slug
+      `SELECT DISTINCT ON (lower(i.name)) lower(i.name) AS name, i.name AS real_name, p.high, p.low, i.slug, i.icon
        FROM ge_items i JOIN ge_prices p ON p.item_id = i.item_id
        WHERE lower(i.name) = ANY($1::text[]) AND (p.high IS NOT NULL OR p.low IS NOT NULL)
        ORDER BY lower(i.name), i.item_id`,
@@ -241,7 +244,7 @@ export async function getPricesByName(names) {
     latestAt(),
   ])
   const prices = {}
-  for (const r of rows) prices[r.name] = [n(r.high), n(r.low), r.slug]
+  for (const r of rows) prices[r.name] = [n(r.high), n(r.low), r.slug, iconIfDifferent(r.icon, r.real_name)]
   return { updatedAt: updatedAt ? new Date(updatedAt).toISOString() : null, stale: isStale(updatedAt), prices }
 }
 
