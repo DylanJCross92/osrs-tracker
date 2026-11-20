@@ -205,6 +205,8 @@ import {
   decodePlan,
   suggestedQuests,
 } from '@/utils/planner'
+import { goalsCode } from '@/utils/goalsCode'
+import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
 import {
   STRATEGY_LABELS,
@@ -1288,7 +1290,8 @@ async function restoreFromQuery() {
     template.value = { slug: '', name: 'Shared plan', rsn: '' }
     templatePending.value = true
     scratch.value = true
-    track('planner_share_link_opened', { goals: goals.value.length })
+    // Where the click came from, and a code for the plan, so the owner can tell whose saved plan the link most likely was.
+    track('planner_share_link_opened', { goals: goals.value.length, source: referrerSource(document.referrer, window.location.hostname), plan: goalsCode(restored.goals) })
   }
   if (username.value) await loadPlayer()
 }

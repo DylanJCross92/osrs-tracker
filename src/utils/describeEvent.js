@@ -3,6 +3,15 @@
 
 const SKIP = new Set(['page_title', 'route_name', 'page_path'])
 
+// A shared planner link: where the click came from, and (added by the server) whose saved plan it matches. The plan code is not for reading.
+function describeShareLinkOpened(props) {
+  const parts = []
+  if (props.goals != null) parts.push(`goals: ${props.goals}`)
+  if (props.source) parts.push(props.source === 'direct' ? 'from: no referrer (a chat app or typed in)' : `from: ${props.source}`)
+  if (props.same_plan_as) parts.push(`same plan as: ${props.same_plan_as}`)
+  return parts.join(' · ')
+}
+
 const humanize = (name) => {
   const text = String(name).replace(/_/g, ' ')
   return text.charAt(0).toUpperCase() + text.slice(1)
@@ -13,6 +22,7 @@ export function describeEvent(name, props = {}) {
   if (name === 'spa_page_view') return { kind: 'page', text: 'Viewed', detail: String(props.page_path || '/') }
   if (name === 'login') return { kind: 'action', text: 'Signed in', detail: props.method ? String(props.method).replace(/_/g, ' ') : '' }
   if (name === 'session_resumed') return { kind: 'action', text: 'Came back (still signed in)', detail: '' }
+  if (name === 'planner_share_link_opened') return { kind: 'action', text: humanize(name), detail: describeShareLinkOpened(props) }
   // A search shows who was searched for, so the name's length (kept for older records) adds nothing.
   const named = typeof props.player === 'string' && props.player !== ''
   const detail = Object.entries(props)

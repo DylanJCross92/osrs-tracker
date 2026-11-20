@@ -3,6 +3,7 @@ import { RETENTION_DAYS, askedNotToTrack, summarizeBreakdown, summarizeEvents } 
 import { fillDailyActive } from '../utils/dailyActive.js'
 import { buildJourney, parsePersonKey } from '../utils/journeys.js'
 import { hasRole } from '../utils/roles.js'
+import { describeOwners, findPlanOwners } from '../utils/planMatch.js'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const WINDOW = `day > (now() AT TIME ZONE 'utc')::date - $1::int`
@@ -96,6 +97,23 @@ export async function visitors(days) {
   }
 }
 
+/**
+ * A shared planner link someone opened carries a code for the plan in it (see utils/planMatch.js). For each such event, adds
+ * `same_plan_as`: the people who have saved a plan with the same code, so the owner can see who the link probably came from.
+ */
+async function addPlanOwners(rows, viewedKey) {
+  const opened = rows.filter((r) => r.name === 'planner_share_link_opened' && typeof r.props?.plan === 'string' && r.props.plan)
+  if (!opened.length) return
+  const [{ rows: accounts }, { rows: visitorRows }] = await Promise.all([
+    pool.query(`SELECT id, email, data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`),
+    pool.query('SELECT visitor_id AS id, plans, planner FROM visitor_data'),
+  ])
+  for (const r of opened) {
+    const owners = findPlanOwners(r.props.plan, accounts, visitorRows, viewedKey)
+    if (owners.length) r.props = { ...r.props, same_plan_as: describeOwners(owners) }
+  }
+}
+
 /** One person's journey over the last `days` days (see utils/journeys.js), or null for a key that is not one. */
 export async function journeyOf(key, days) {
   const person = parsePersonKey(key)
@@ -115,6 +133,7 @@ export async function journeyOf(key, days) {
         )
       : Promise.resolve({ rows: [] }),
   ])
+  await addPlanOwners(rows, key)
   const a = info[0]
   return {
     key,

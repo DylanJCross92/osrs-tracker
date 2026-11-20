@@ -5181,8 +5181,11 @@ html.modal-open { padding-right: var(--scrollbar-gap, 0px); }
 .disc-spot-tenure small { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* Admin statistics: tabs, tiles, charts, growth and activity */
-.st-tabs { display: flex; gap: 4px; margin: 0 0 16px; padding: 0 0 0; border-bottom: 1px solid var(--border-strong); overflow-x: auto; }
-.st-tab { appearance: none; padding: 10px 16px; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: var(--muted); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; }
+/* The rule under the tabs is an inset shadow, not a border with a negative-margin tab on top: that 1px of overflow made the bar scroll vertically on a phone. */
+.st-tabs { display: flex; gap: 4px; margin: 0 0 16px; padding: 0; box-shadow: inset 0 -1px 0 var(--border-strong); overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.st-tabs::-webkit-scrollbar { display: none; }
+.st-tab { appearance: none; padding: 10px 16px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--muted); font: inherit; font-weight: 600; white-space: nowrap; cursor: pointer; flex: none; }
+@media (max-width: 560px) { .st-tabs { gap: 0; } .st-tab { padding: 10px 8px; font-size: 0.88rem; } }
 .st-tab:hover { color: var(--text); }
 .st-tab.on { color: var(--gold-bright); border-bottom-color: var(--gold); }
 .st-tab:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; border-radius: 6px; }

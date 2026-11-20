@@ -52,4 +52,14 @@ describe('describeEvent', () => {
     // Older records have no name, so the length stays.
     expect(describeEvent('player_search', { source: 'planner', username_length: 8 }).detail).toBe('source: planner · username length: 8')
   })
+  it('reads an opened share link with where it came from and whose plan it matches, without the plan code', () => {
+    expect(describeEvent('planner_share_link_opened', { goals: 24, source: 'discord', plan: 'a1b2c3d4', same_plan_as: 'Visitor ab12cd' })).toEqual({
+      kind: 'action',
+      text: 'Planner share link opened',
+      detail: 'goals: 24 · from: discord · same plan as: Visitor ab12cd',
+    })
+    expect(describeEvent('planner_share_link_opened', { goals: 2, source: 'direct', plan: 'a1b2c3d4' }).detail).toBe('goals: 2 · from: no referrer (a chat app or typed in)')
+    // Older records have only the goal count.
+    expect(describeEvent('planner_share_link_opened', { goals: 24 }).detail).toBe('goals: 24')
+  })
 })
