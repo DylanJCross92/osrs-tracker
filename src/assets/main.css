@@ -5836,7 +5836,9 @@ b.path-name { font-size: 1.12rem; }
 .vz-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.3; }
 .vz-who b { font-size: 0.88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vz-who small { color: var(--muted); font-size: 0.76rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vz-grid > *, .vz-detail > * { min-width: 0; max-width: 100%; }
 .vz-detail { min-width: 0; }
+.vz-detail .st-card, .vz-sub, .vz-who { overflow-wrap: anywhere; }
 .vz-sub { margin: 2px 0 0; color: var(--muted); font-size: 0.85rem; }
 .vz-kind { padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
 .vz-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
@@ -5845,7 +5847,7 @@ b.path-name { font-size: 1.12rem; }
 .vz-tiles b { color: var(--gold-bright); font-size: 1.4rem; font-variant-numeric: tabular-nums; }
 .vz-tiles b.is-small { font-size: 0.92rem; color: var(--text); }
 .vz-sessions { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.vz-session { border: 1px solid var(--border); border-radius: 12px; background: var(--bg); overflow: hidden; }
+.vz-session { min-width: 0; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); overflow: hidden; }
 .vz-session-head { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; border: 0; background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .vz-session-head b { color: var(--gold-bright); }
 .vz-session-head span { flex: 1; color: var(--muted); font-size: 0.85rem; }
@@ -5862,11 +5864,17 @@ b.path-name { font-size: 1.12rem; }
 .vz-what { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-width: 0; font-size: 0.88rem; }
 .vz-what b { font-weight: 600; }
 .vz-steps li.page .vz-what b { color: var(--muted); font-weight: 500; }
-.vz-what code { padding: 1px 6px; border-radius: 6px; background: var(--panel); color: var(--text); font-size: 0.8rem; overflow-wrap: anywhere; }
-.vz-what small { color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
+.vz-what code { min-width: 0; max-width: 100%; padding: 1px 6px; border-radius: 6px; background: var(--panel); color: var(--text); font-size: 0.8rem; overflow-wrap: anywhere; word-break: break-all; white-space: normal; }
+.vz-what small { min-width: 0; color: var(--muted); font-size: 0.78rem; overflow-wrap: anywhere; }
 @media (max-width: 900px) {
-  .vz-grid { grid-template-columns: 1fr; }
-  .vz-list { position: static; max-height: 360px; }
+  .vz-grid { grid-template-columns: minmax(0, 1fr); }
+  .vz-list { position: static; max-height: 360px; min-width: 0; }
+}
+@media (max-width: 520px) {
+  .vz-steps { padding: 4px 10px 10px; }
+  .vz-steps li { grid-template-columns: 64px 14px minmax(0, 1fr); gap: 6px; }
+  .vz-steps li::before { left: 76px; }
+  .vz-session-head { gap: 8px; padding: 10px; flex-wrap: wrap; }
 }
 .ap-visitor { padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.03em; text-decoration: none; }
 .ap-visitor:hover, .ap-visitor:focus-visible { color: var(--gold-bright); border-color: var(--gold); text-decoration: none; outline: none; }

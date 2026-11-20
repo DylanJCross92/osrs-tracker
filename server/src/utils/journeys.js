@@ -21,7 +21,7 @@ const dayOf = (d) => new Date(d).toISOString().slice(0, 10)
 /**
  * rows: [{ at, name, props }]. days/today: the window shown in the per-day chart (UTC days, ending today).
  * Returns { count, pages, first, last, daily: [{ day, n }], sessions: [{ start, end, events: [{ at, name, props }] }] } with
- * the newest visit first and each visit's events in the order they happened. A new visit starts after a quiet gap.
+ * the newest visit first and each visit's events newest first too. A new visit starts after a quiet gap.
  */
 export function buildJourney(rows, days, today, gapMinutes = SESSION_GAP_MINUTES) {
   const events = [...rows].filter((r) => r.at && !Number.isNaN(new Date(r.at).getTime())).sort((a, b) => new Date(a.at) - new Date(b.at))
@@ -47,6 +47,6 @@ export function buildJourney(rows, days, today, gapMinutes = SESSION_GAP_MINUTES
     first: events.length ? new Date(events[0].at).toISOString() : null,
     last: events.length ? new Date(events[events.length - 1].at).toISOString() : null,
     daily: [...daily].map(([day, n]) => ({ day, n })),
-    sessions: sessions.reverse(),
+    sessions: sessions.reverse().map((s) => ({ ...s, events: s.events.reverse() })),
   }
 }

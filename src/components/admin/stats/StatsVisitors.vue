@@ -55,7 +55,7 @@
             </section>
 
             <section class="st-card" aria-labelledby="vz-steps">
-              <div class="st-card-head"><h2 id="vz-steps">What they did, in order</h2></div>
+              <div class="st-card-head"><h2 id="vz-steps">What they did, newest first</h2></div>
               <p v-if="journey.kind === 'anon'" class="st-note">These steps come from browsers that asked not to be tracked, blocked the visitor id or cannot keep one, so they cannot be told apart. Neighbouring steps may be different people.</p>
               <p v-if="journey.count >= 1500" class="st-note">Showing the most recent part of a long history.</p>
               <ol class="vz-sessions">

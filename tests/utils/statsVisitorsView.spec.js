@@ -26,9 +26,9 @@ vi.mock('@/api/stats', () => ({
           start: '2026-11-18T10:00:00Z',
           end: '2026-11-18T10:05:00Z',
           events: [
-            { at: '2026-11-18T10:00:00Z', name: 'spa_page_view', props: { page_path: '/' } },
-            { at: '2026-11-18T10:02:00Z', name: 'search_started', props: {} },
             { at: '2026-11-18T10:05:00Z', name: 'plan_share', props: { method: 'copy_link' } },
+            { at: '2026-11-18T10:02:00Z', name: 'search_started', props: {} },
+            { at: '2026-11-18T10:00:00Z', name: 'spa_page_view', props: { page_path: '/' } },
           ],
         },
       ],
@@ -51,11 +51,10 @@ describe('Visitors tab', () => {
     expect(rows[0].classes()).toContain('on')
     const steps = w.findAll('.vz-steps li').map((li) => li.text())
     expect(steps).toHaveLength(3)
-    expect(steps[0]).toContain('Viewed')
-    expect(steps[0]).toContain('/')
+    expect(steps[0]).toContain('Plan share')
+    expect(steps[0]).toContain('method: copy_link')
     expect(steps[1]).toContain('Search started')
-    expect(steps[2]).toContain('Plan share')
-    expect(steps[2]).toContain('method: copy_link')
+    expect(steps[2]).toContain('Viewed')
     expect(w.text()).toContain('Signed-in account')
   })
 

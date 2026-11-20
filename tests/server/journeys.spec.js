@@ -24,9 +24,9 @@ describe('buildJourney', () => {
   ]
   const j = buildJourney(rows, 3, '2026-11-18')
 
-  it('puts events in the order they happened inside a visit, newest visit first', () => {
+  it('puts the newest visit first and the newest step first inside a visit', () => {
     expect(j.sessions).toHaveLength(2)
-    expect(j.sessions[0].events.map((e) => e.name)).toEqual(['spa_page_view', 'search_started', 'spa_page_view'])
+    expect(j.sessions[0].events.map((e) => e.at)).toEqual(['2026-11-18T14:20:00.000Z', '2026-11-18T14:05:00.000Z', '2026-11-18T14:00:00.000Z'])
     expect(j.sessions[1].events.map((e) => e.props.page_path)).toEqual(['/planner'])
   })
   it('counts steps and page views, skipping rows with no usable time', () => {
