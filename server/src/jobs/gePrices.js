@@ -6,7 +6,9 @@ import { backfillHistory, isEmpty, refreshHourly, refreshLatest, refreshMapping 
 // the item list once a day, and some earlier history for the busiest items. Set GE_DISABLED=1 to turn it off.
 // Every kind of run has its own lock, so one at a time of each kind, even across instances, and the history fill (which takes
 // a while, as it asks the wiki politely for one item after another) never holds up the price refresh.
-const LOCKS = { latest: 872_431_002, hourly: 872_431_003, daily: 872_431_004, history: 872_431_005 }
+// The keys are their own: 872_431_001 is the hiscores sync (jobs/sync.js) and 872_431_002 the competitions job (services/competitions.service.js,
+// which runs every minute). Sharing one of those made a price refresh lose the lock at every 5-minute tick.
+const LOCKS = { latest: 872_431_102, hourly: 872_431_103, daily: 872_431_104, history: 872_431_105 }
 const running = new Set()
 
 function withLock(kind, label, fn) {
