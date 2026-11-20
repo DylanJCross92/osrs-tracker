@@ -14,10 +14,11 @@
           <ul v-else class="vz-people">
             <li v-for="v in shown" :key="v.key">
               <button type="button" class="vz-person" :class="{ on: v.key === selected }" :aria-pressed="v.key === selected" @click="pick(v.key)">
-                <span class="vz-av" :class="v.kind" aria-hidden="true">{{ v.kind === 'account' ? v.label.charAt(0).toUpperCase() : '?' }}</span>
+                <span class="vz-av" :class="v.kind" aria-hidden="true">{{ v.kind === 'account' ? v.label.charAt(0).toUpperCase() : v.kind === 'anon' ? '≈' : '?' }}</span>
                 <span class="vz-who">
                   <b>{{ v.label }}</b>
                   <small v-if="v.players">{{ v.players }}</small>
+                  <small v-else-if="v.note">{{ v.note }}</small>
                   <small>{{ count(v.events, 'step') }} · {{ ago(v.last) }}</small>
                 </span>
               </button>
@@ -36,7 +37,7 @@
                   <h2 id="vz-head">{{ journey.label }}</h2>
                   <p v-if="journey.players" class="vz-sub">{{ journey.players }}</p>
                 </div>
-                <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : 'Not signed in' }}</span>
+                <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : journey.kind === 'anon' ? 'Several people, not told apart' : 'Not signed in' }}</span>
               </div>
               <div class="vz-tiles">
                 <div><span>Steps</span><b>{{ fmt(journey.count) }}</b></div>
@@ -55,6 +56,7 @@
 
             <section class="st-card" aria-labelledby="vz-steps">
               <div class="st-card-head"><h2 id="vz-steps">What they did, in order</h2></div>
+              <p v-if="journey.kind === 'anon'" class="st-note">These steps come from browsers that asked not to be tracked, blocked the visitor id or cannot keep one, so they cannot be told apart. Neighbouring steps may be different people.</p>
               <p v-if="journey.count >= 1500" class="st-note">Showing the most recent part of a long history.</p>
               <ol class="vz-sessions">
                 <li v-for="(s, i) in journey.sessions" :key="s.start" class="vz-session">

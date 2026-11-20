@@ -4,8 +4,12 @@
 export const SESSION_GAP_MINUTES = 30
 
 /** 'a:12' (an account) or 'v:<32 hex>' (a browser) -> { kind, id }, or null. */
+export const ANON_KEY = 'n:anon'
+
 export function parsePersonKey(key) {
   const k = String(key || '')
+  // Everyone who cannot be told apart (Do Not Track, a blocked request, no storage): one entry, several people mixed together.
+  if (k === ANON_KEY) return { kind: 'anon', id: null }
   let m = /^a:(\d{1,9})$/.exec(k)
   if (m) return { kind: 'account', id: Number(m[1]) }
   m = /^v:([a-f0-9]{32})$/.exec(k)

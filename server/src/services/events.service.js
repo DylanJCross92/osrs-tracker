@@ -1,7 +1,7 @@
 import { pool } from '../db.js'
 import { RETENTION_DAYS, askedNotToTrack, summarizeBreakdown, summarizeEvents } from '../utils/events.js'
 import { fillDailyActive } from '../utils/dailyActive.js'
-import { buildJourney, parsePersonKey } from '../utils/journeys.js'
+import { ANON_KEY, buildJourney, parsePersonKey } from '../utils/journeys.js'
 import { hasRole } from '../utils/roles.js'
 import { describeOwners, findPlanOwners } from '../utils/planMatch.js'
 
@@ -79,9 +79,17 @@ export async function visitors(days) {
     )
     for (const a of accounts) who.set(a.id, a)
   }
+  const { rows: anon } = await pool.query(
+    `SELECT count(*)::int AS events, count(*) FILTER (WHERE name = 'spa_page_view')::int AS pages, min(at) AS first, max(at) AS last
+     FROM events WHERE at > now() - $1::int * interval '1 day' AND visitor_id IS NULL AND account_id IS NULL`,
+    [days],
+  )
+  const unfollowed = anon[0]?.events
+    ? [{ key: ANON_KEY, kind: 'anon', label: 'Not followed', players: '', note: 'Do Not Track, a blocked request or no storage: several people mixed together', events: anon[0].events, pages: anon[0].pages, first: new Date(anon[0].first).toISOString(), last: new Date(anon[0].last).toISOString() }]
+    : []
   return {
     days,
-    visitors: rows.map((r) => {
+    visitors: [...unfollowed, ...rows.map((r) => {
       const a = r.account_id ? who.get(r.account_id) : null
       return {
         key: r.key,
@@ -93,7 +101,7 @@ export async function visitors(days) {
         first: new Date(r.first).toISOString(),
         last: new Date(r.last).toISOString(),
       }
-    }),
+    })].sort((a, b) => new Date(b.last) - new Date(a.last)),
   }
 }
 
@@ -118,12 +126,12 @@ async function addPlanOwners(rows, viewedKey) {
 export async function journeyOf(key, days) {
   const person = parsePersonKey(key)
   if (!person) return null
-  const where = person.kind === 'account' ? `${PERSON} = $2::int` : `e.visitor_id = $2::text AND ${PERSON} IS NULL`
+  const where = person.kind === 'anon' ? 'e.visitor_id IS NULL AND e.account_id IS NULL' : person.kind === 'account' ? `${PERSON} = $2::int` : `e.visitor_id = $2::text AND ${PERSON} IS NULL`
   const [{ rows }, { rows: info }] = await Promise.all([
     pool.query(
       `SELECT e.at, e.name, e.props FROM events e LEFT JOIN visitor_links l ON l.visitor_id = e.visitor_id
        WHERE e.at > now() - $1::int * interval '1 day' AND ${where} ORDER BY e.at, e.id LIMIT 1500`,
-      [days, person.id],
+      person.kind === 'anon' ? [days] : [days, person.id],
     ),
     person.kind === 'account'
       ? pool.query(
@@ -138,7 +146,7 @@ export async function journeyOf(key, days) {
   return {
     key,
     kind: person.kind,
-    label: a ? a.email : `Visitor ${String(person.id).slice(0, 6)}`,
+    label: person.kind === 'anon' ? 'Not followed' : a ? a.email : `Visitor ${String(person.id).slice(0, 6)}`,
     players: a?.players || '',
     days,
     ...buildJourney(rows, days, today()),

@@ -293,7 +293,7 @@ async function ensureTracked(name) {
     if (!store.loaded) await store.loadPlayers()
     if (findPlayer(name)) return ''
     await store.addPlayer(name)
-    track('player_added', { source: 'compare', is_new_player: true, player_name: name })
+    track('player_added', { source: 'compare', is_new_player: true, player: name, player_name: name })
     showToast(`Now tracking ${name}, history is importing in the background.`)
   } catch (err) {
     // Someone else added them a moment ago: fine, carry on as if it worked.

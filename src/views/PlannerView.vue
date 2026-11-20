@@ -362,7 +362,7 @@ async function loadPlayer({ typed = false } = {}) {
     const wasNew = !find()
     if (wasNew) {
       await store.addPlayer(name)
-      track('player_added', { source: 'planner', is_new_player: true, player_name: name })
+      track('player_added', { source: 'planner', is_new_player: true, player: name, player_name: name })
     }
     const found = find()
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })

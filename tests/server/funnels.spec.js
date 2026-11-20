@@ -157,3 +157,12 @@ describe('insights', () => {
     expect(out[0].kind).toBe('warning')
   })
 })
+
+describe('people who cannot be followed', () => {
+  it('has a key of its own for the entry that mixes them', async () => {
+    const { parsePersonKey, ANON_KEY } = await import('../../server/src/utils/journeys.js')
+    expect(parsePersonKey(ANON_KEY)).toEqual({ kind: 'anon', id: null })
+    expect(parsePersonKey('a:7')).toEqual({ kind: 'account', id: 7 })
+    expect(parsePersonKey('n:other')).toBeNull()
+  })
+})

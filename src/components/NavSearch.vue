@@ -153,7 +153,7 @@ async function trackNew() {
     if (!store.loaded) await store.loadPlayers()
     await store.addPlayer(name)
     const found = store.players.find((p) => p.username.toLowerCase() === name.toLowerCase())
-    track('player_added', { source, is_new_player: true, player_name: name })
+    track('player_added', { source, is_new_player: true, player: name, player_name: name })
     showToast(`Now tracking ${found?.displayName || name}, checking Wise Old Man for history in the background.`)
     pick({ username: found?.username || name, displayName: found?.displayName || name })
   } catch (err) {
