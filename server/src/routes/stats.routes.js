@@ -6,7 +6,8 @@ import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
-import { funnelOverview } from '../services/funnel.service.js'
+import { funnelsOverview } from '../services/funnels.service.js'
+import { SEGMENTS } from '../utils/funnels.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
 import { hasRole } from '../utils/roles.js'
@@ -112,11 +113,14 @@ statsRouter.get('/admin/stats/visitors', ...adminOnly, async (req, res, next) =>
     next(err)
   }
 })
-// For the site owner: the conversion funnel (visit, add or view a player, sign up, claim) and the user journey behind it.
-statsRouter.get('/admin/stats/funnel', ...adminOnly, async (req, res, next) => {
+// For the site owner: the conversion funnels, the paths people take and what they show. `days` is 7, 30, 90 or "all" (everyone ever
+// recorded, the default); `segment` is one of the groups of people in utils/funnels.js.
+statsRouter.get('/admin/stats/funnels', ...adminOnly, async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store')
-    res.json(await funnelOverview(askedDays(req)))
+    const days = DAY_CHOICES.includes(Number(req.query.days)) ? Number(req.query.days) : null
+    const segment = SEGMENTS.some((s) => s.key === req.query.segment) ? req.query.segment : 'all'
+    res.json(await funnelsOverview({ days, segment }))
   } catch (err) {
     next(err)
   }

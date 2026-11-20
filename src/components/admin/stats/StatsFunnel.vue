@@ -1,91 +1,90 @@
 <template>
-  <div class="st-pair fn">
-    <!-- Conversion funnel: visit, add or view a player, sign up, claim -->
-    <section class="st-card" aria-labelledby="fn-funnel">
-      <div class="st-card-head"><h2 id="fn-funnel">Conversion funnel</h2><span class="st-hint">New people, last {{ days }} days</span></div>
-      <p v-if="error" class="st-empty">{{ error }}</p>
-      <p v-else-if="!data" class="st-empty">Loading…</p>
-      <p v-else-if="!funnel.steps[0].value" class="st-empty">Nobody has been recorded in this time yet.</p>
-      <template v-else>
-        <ol class="fn-steps">
-          <li v-for="(s, i) in funnel.steps" :key="s.key" class="fn-step">
-            <p v-if="i" class="fn-drop">
-              <span aria-hidden="true">↓</span>
-              <template v-if="funnel.steps[i - 1].value">{{ pctText(s.ofPrevious) }} carried on · {{ fmt(funnel.steps[i - 1].value - s.value) }} did not</template>
-              <template v-else>nobody reached the step before</template>
-            </p>
-            <div class="fn-row">
-              <span class="fn-label">{{ s.label }}</span>
-              <b class="fn-num">{{ fmt(s.value) }}</b>
-              <span class="fn-pct" :title="i ? 'Share of everyone who visited' : ''">{{ i ? pctText(s.ofFirst) : '100%' }}</span>
-            </div>
-            <span class="fn-track" role="img" :aria-label="`${s.label}: ${fmt(s.value)}`"><i :style="{ width: `${barWidth(s.value)}%`, opacity: 1 - i * 0.18 }" /></span>
-            <small v-if="s.detail && s.key === 'player'" class="fn-sub">{{ fmt(s.detail.added) }} added one · {{ fmt(s.detail.viewed) }} viewed one<template v-if="s.detail.both"> · {{ fmt(s.detail.both) }} did both</template></small>
-            <small v-else-if="s.detail && s.key === 'signedUp'" class="fn-sub">{{ fmt(s.detail.confirmed) }} confirmed their email</small>
-          </li>
-        </ol>
-        <p class="st-note">
-          Each step counts only people who got through the steps before it. Someone who already had an account before this period is left out.
-          <template v-if="funnel.skipped.signedUp">{{ count(funnel.skipped.signedUp, 'more person', 'more people') }} signed up without adding or viewing a player first<template v-if="funnel.skipped.claimed"> ({{ fmt(funnel.skipped.claimed) }} went on to claim one)</template>, so they are not in the bars.</template>
-          <template v-if="data.capped"> Only the first 50,000 people are counted.</template>
-        </p>
-      </template>
-    </section>
+  <div class="fn">
+    <!-- What to look at: which funnel, how far back, and which people -->
+    <div class="fn-controls">
+      <div class="fn-tabs" role="tablist" aria-label="Funnel">
+        <button v-for="f in FUNNEL_TABS" :id="`fn-tab-${f.key}`" :key="f.key" type="button" role="tab" class="fn-tab" :class="{ on: funnelKey === f.key }" :aria-selected="funnelKey === f.key" aria-controls="fn-panel" @click="funnelKey = f.key">{{ f.label }}</button>
+      </div>
+      <div class="fn-filters">
+        <div class="st-range" role="group" aria-label="Date range">
+          <button v-for="r in RANGES" :key="r.days" type="button" class="st-range-btn" :class="{ on: range === r.days }" :aria-pressed="range === r.days" @click="setRange(r.days)">{{ r.label }}</button>
+        </div>
+        <label class="fn-segment">
+          <span>People</span>
+          <select v-model="segment" aria-label="Group of people">
+            <option v-for="s in segmentOptions" :key="s.key" :value="s.key">{{ s.label }}{{ s.people != null ? ` (${fmt(s.people)})` : '' }}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+    <p class="st-note fn-scope">{{ scopeText }}</p>
 
-    <!-- User journey: the milestones, how long each takes, and the paths people take -->
-    <section class="st-card" aria-labelledby="fn-journey">
-      <div class="st-card-head"><h2 id="fn-journey">User journey</h2><span class="st-hint">Typical time = the median</span></div>
-      <p v-if="error" class="st-empty">{{ error }}</p>
-      <p v-else-if="!data" class="st-empty">Loading…</p>
-      <p v-else-if="!journey.milestones[0].value" class="st-empty">Nobody has been recorded in this time yet.</p>
-      <template v-else>
-        <ol class="fn-line">
-          <li v-for="m in journey.milestones" :key="m.key" :class="{ 'is-empty': !m.value }">
-            <span class="fn-dot" aria-hidden="true" />
-            <div class="fn-line-main">
-              <span class="fn-line-name">{{ m.label }}</span>
-              <small v-if="m.value && m.typicalLabel">typically {{ m.typicalLabel }}</small>
-              <small v-else-if="!m.value">nobody yet</small>
-            </div>
-            <div class="fn-line-num">
-              <b>{{ fmt(m.value) }}</b>
-              <small v-if="m.ofBase != null">{{ pctText(m.ofBase) }} {{ m.baseLabel }}</small>
-            </div>
-          </li>
-        </ol>
-        <h3 class="so-sub">Most common paths</h3>
-        <ul class="fn-paths">
-          <li v-for="p in journey.paths" :key="p.key || 'none'">
-            <span class="fn-path">
-              <template v-for="(name, i) in p.label.split(' → ')" :key="i">
-                <span v-if="i" class="fn-arrow" aria-hidden="true">→</span>
-                <span class="fn-chip" :class="{ 'is-end': i === p.label.split(' → ').length - 1 && i > 0 }">{{ name }}</span>
-              </template>
-            </span>
-            <span class="fn-path-num"><b>{{ fmt(p.n) }}</b> <small>{{ pctText(p.pct) }}</small></span>
-          </li>
-        </ul>
-        <p v-if="journey.otherPaths" class="st-note">{{ count(journey.otherPaths, 'person', 'people') }} took a less common path. Open anyone on the Visitors tab to see what they did, in order.</p>
-        <p v-else class="st-note">Open anyone on the Visitors tab to see what they did, in order.</p>
-      </template>
-    </section>
+    <p v-if="error" class="st-empty">{{ error }}</p>
+    <p v-else-if="!data" class="st-empty">Loading…</p>
+    <template v-else>
+      <div class="fn-main">
+        <section id="fn-panel" class="st-card" role="tabpanel" :aria-labelledby="`fn-tab-${funnelKey}`">
+          <div class="st-card-head"><h2>{{ funnel.label }} funnel</h2><span class="st-hint">{{ funnel.blurb }}</span></div>
+          <FunnelBars :funnel="funnel" />
+          <p v-if="data.capped" class="st-note">Only the first 400,000 events are read, so the oldest people may be missing.</p>
+        </section>
+        <FunnelInsights :insights="data.insights" :funnel-key="funnelKey" :cohort="data.cohort" />
+      </div>
+
+      <JourneyFlow :flow="data.flow" :total-people="data.cohort" @open="(key) => $emit('go', 'visitors', key)" />
+    </template>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { statsApi } from '@/api/stats'
+import FunnelBars from './FunnelBars.vue'
+import FunnelInsights from './FunnelInsights.vue'
+import JourneyFlow from './JourneyFlow.vue'
 import { fmt } from './statsFormat'
+import { useStatsLoad } from './useStatsLoad'
 
-const props = defineProps({
-  data: { type: Object, default: null },
-  error: { type: String, default: '' },
-  days: { type: Number, required: true },
+defineEmits(['go'])
+
+const FUNNEL_TABS = [
+  { key: 'registration', label: 'Registration' },
+  { key: 'tracking', label: 'Tracking' },
+  { key: 'planner', label: 'Planner' },
+  { key: 'clans', label: 'Clans' },
+]
+const RANGES = [
+  { days: 7, label: '7 days' },
+  { days: 30, label: '30 days' },
+  { days: 90, label: '90 days' },
+  { days: 0, label: 'All time' },
+]
+const DEFAULT_SEGMENTS = [
+  { key: 'all', label: 'Everyone' },
+  { key: 'signedup', label: 'Signed up' },
+  { key: 'visitor', label: 'Not signed up' },
+  { key: 'returning', label: 'Came back another day' },
+  { key: 'shared', label: 'Opened a shared plan or invite' },
+]
+
+const funnelKey = ref('registration')
+const range = ref(0)
+const segment = ref('all')
+const load = useStatsLoad((days, seg) => statsApi.funnels(days, seg), 'Could not load the funnels.')
+const data = load.data
+const error = load.error
+
+function setRange(days) {
+  range.value = days
+}
+// A change of range or group asks again; the old numbers stay up until the new ones arrive.
+watch([range, segment], () => load.load(range.value, segment.value), { immediate: true })
+
+const funnel = computed(() => data.value.funnels.find((f) => f.key === funnelKey.value) || data.value.funnels[0])
+const segmentOptions = computed(() => data.value?.segments || DEFAULT_SEGMENTS)
+const scopeText = computed(() => {
+  const when = range.value ? `People first seen in the last ${range.value} days` : 'Everyone recorded, all time'
+  const seg = segment.value === 'all' ? '' : ` · ${segmentOptions.value.find((s) => s.key === segment.value)?.label || ''}`
+  return `${when}${seg}. Everything below uses these same people.`
 })
-
-const funnel = computed(() => props.data?.funnel)
-const journey = computed(() => props.data?.journey)
-const top = computed(() => Math.max(1, funnel.value?.steps[0]?.value || 1))
-const barWidth = (v) => (v ? Math.max(2, (v / top.value) * 100) : 0)
-const pctText = (p) => (p == null ? '-' : `${Number.isInteger(p) ? p : p.toFixed(1)}%`)
-const count = (n, one, many) => `${fmt(n)} ${n === 1 ? one : many}`
 </script>

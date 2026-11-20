@@ -20,9 +20,6 @@
       </div>
     </section>
 
-    <!-- How visitors turn into accounts and claimed players, and the path they take there -->
-    <StatsFunnel :data="funnelData.data.value" :error="funnelData.error.value" :days="days" />
-
     <!-- People per day, with who the signed-in ones were -->
     <section class="st-card" aria-labelledby="st-people">
       <div class="st-card-head"><h2 id="st-people">People per day</h2><span class="st-hint">Last {{ days }} days</span></div>
@@ -174,7 +171,6 @@ import { statsApi } from '@/api/stats'
 import { eventGroup, groupTotals } from '@/utils/eventGroups'
 import StatBars from './StatBars.vue'
 import StatChart from './StatChart.vue'
-import StatsFunnel from './StatsFunnel.vue'
 import StatSpark from './StatSpark.vue'
 import { conversion, funnelRows, peopleSummary, sharingSummary, trend, trendLabel } from './overviewData'
 import { ago, compact, count, dayLong, fmt, lastDays } from './statsFormat'
@@ -206,7 +202,6 @@ const activeData = useStatsLoad((d) => statsApi.dailyActive(d), 'Could not load 
 const xpData = useStatsLoad((d) => statsApi.dailyXp(d), 'Could not load the XP.')
 const eventsData = useStatsLoad((d) => statsApi.events(d), 'Could not load the events.')
 const people = useStatsLoad((d) => statsApi.visitors(d), 'Could not load the visitors.')
-const funnelData = useStatsLoad((d) => statsApi.funnel(d), 'Could not load the funnel.')
 const overview = overviewData.data
 const active = computed(() => activeData.data.value?.days || null)
 const xp = computed(() => xpData.data.value?.days || null)
@@ -219,7 +214,6 @@ function loadAll() {
   xpData.load(props.days)
   eventsData.load(props.days)
   people.load(props.days)
-  funnelData.load(props.days)
   who.value = null
   whoCache.clear()
 }

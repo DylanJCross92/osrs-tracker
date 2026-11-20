@@ -1,6 +1,7 @@
 import { START_LOCATION, createRouter, createWebHistory } from 'vue-router'
 import { nextTick } from 'vue'
 import { isInternalTraffic, track } from '@/utils/analytics'
+import { logEvent } from '@/utils/eventLog'
 import { statsApi } from '@/api/stats'
 import { claimVisit, referrerSource, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
@@ -145,6 +146,9 @@ export function createAppRouter() {
   router.afterEach((to, from, failure) => {
     if (failure || from !== START_LOCATION || isInternalTraffic()) return
     try {
+      // The page a visit starts on, for the site's own record only (the analytics container reports its own first page view). Without
+      // it the first page of every visit would be missing from the paths people take.
+      logEvent('spa_page_view', { page_path: to.fullPath, page_title: document.title, route_name: String(to.name || ''), landing: true })
       const source = referrerSource(document.referrer, window.location.hostname)
       const asked = to.redirectedFrom || to
       const kind = sharedLinkKind(asked.path, asked.query)

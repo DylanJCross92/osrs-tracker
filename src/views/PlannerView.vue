@@ -1236,7 +1236,9 @@ function cardProgress(p) {
   const original = p.goals.map((g) => planGoal(prep(g)))
   const now = live.map((g) => planGoal(prep(g)))
   const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline)
-  return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length }
+  // What is still to train, worked out the way the plan page does: the card also shows it beside the plan's whole time.
+  const left = planTotals(now, p.hoursPerDay)
+  return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length, hoursLeft: left.totalHours, daysLeft: left.days }
 }
 // Time and gp for each card, from the plan's own start, skipping methods the player cannot use (as the plan page does).
 const overviewSummaries = computed(() => {

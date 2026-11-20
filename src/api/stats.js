@@ -24,8 +24,8 @@ export const statsApi = {
   activeAccounts: (day) => api.get(`/admin/stats/daily-active/${day}`),
   // Site owner only: the people (accounts and browsers) active lately, and one person's journey in order.
   visitors: (days = 30) => api.get(`/admin/stats/visitors?days=${days}`),
-  // Site owner only: { days, capped, funnel: { steps, skipped, totals }, journey: { milestones, paths, otherPaths } }.
-  funnel: (days = 30) => api.get(`/admin/stats/funnel?days=${days}`),
+  // Site owner only: the funnels, the paths people take and the insights. days is 7, 30, 90 or 0 for all time.
+  funnels: (days = 0, segment = 'all') => api.get(`/admin/stats/funnels?days=${days || 'all'}&segment=${segment}`),
   // Site owner only: { days, total, accounts: [{ id, email, createdAt, verifiedAt, lastSeen, players, pending, steps, activeDays, team }] }.
   accounts: (days = 30) => api.get(`/admin/stats/accounts?days=${days}`),
   // Site owner only: email one account the claim reminder (confirmed, no claimed player). { ok, email, sentAt }.

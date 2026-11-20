@@ -5,7 +5,7 @@
         <h1>Statistics</h1>
         <p>What is going on across TickGains: who visits, who signs up, what people use and what gets shared.</p>
       </div>
-      <div class="st-range" role="group" aria-label="Time range">
+      <div v-if="tab !== 'conversion'" class="st-range" role="group" aria-label="Time range">
         <button v-for="d in RANGES" :key="d" type="button" class="st-range-btn" :class="{ on: days === d }" :aria-pressed="days === d" @click="days = d">{{ d }} days</button>
       </div>
     </header>
@@ -16,6 +16,7 @@
 
     <div id="st-panel" role="tabpanel" :aria-labelledby="`st-tab-${tab}`">
       <StatsOverview v-if="tab === 'overview'" :days="days" @go="goTo" />
+      <StatsFunnel v-else-if="tab === 'conversion'" @go="goTo" />
       <StatsFeatures v-else-if="tab === 'features'" :days="days" />
       <StatsVisitors v-else-if="tab === 'visitors'" :days="days" :select="pick" />
       <StatsSharing v-else :days="days" />
@@ -26,6 +27,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import StatsFunnel from '@/components/admin/stats/StatsFunnel.vue'
 import StatsFeatures from '@/components/admin/stats/StatsFeatures.vue'
 import StatsOverview from '@/components/admin/stats/StatsOverview.vue'
 import StatsSharing from '@/components/admin/stats/StatsSharing.vue'
@@ -37,6 +39,7 @@ setPageMeta({ title: 'Statistics', description: 'Site statistics.', path: '/admi
 const RANGES = [7, 30, 90]
 const TABS = [
   { key: 'overview', label: 'Overview' },
+  { key: 'conversion', label: 'Funnels' },
   { key: 'features', label: 'What people do' },
   { key: 'visitors', label: 'Visitors' },
   { key: 'sharing', label: 'Sharing' },
