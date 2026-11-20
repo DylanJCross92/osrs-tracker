@@ -239,7 +239,8 @@ if (distExists) {
 
       res.send(
         injectCardMeta(indexHtmlTemplate, {
-          title: latest ? `${player.displayName}, Level ${latest.overallLevel.toLocaleString('en-US')} | OSRS Player Profile | TickGains` : `${player.displayName} | OSRS Player Profile | TickGains`,
+          // No level or other changing number in the title: analytics groups page views by title, so one profile must always have the same one.
+          title: `${player.displayName} | OSRS Player Profile | TickGains`,
           description,
           imageUrl,
           pageUrl,
