@@ -1,7 +1,7 @@
 <template>
   <div class="planner">
     <!-- /planner with plans: your plans, each linking to its own address -->
-    <PlannerOverview v-if="showOverview" :plans="savedPlans" :progress="overviewProgress" :progress-loading="progressLoading" @duplicate="duplicateSaved" @delete="deleteSaved" />
+    <PlannerOverview v-if="showOverview" :plans="savedPlans" :progress="overviewProgress" :summaries="overviewSummaries" :progress-loading="progressLoading" @duplicate="duplicateSaved" @delete="deleteSaved" />
 
     <!-- No plan yet: the player, then a recommended plan or a skill to start from -->
     <template v-else-if="showStart">
@@ -211,6 +211,7 @@ import {
   resolveGoal,
   buildTimeline,
   buildProgress,
+  summarizePlan,
   projectFinish,
   paceSeries,
   gainedToday,
@@ -1213,23 +1214,42 @@ async function loadOverviewPlayers() {
   }
 }
 watch(showOverview, (on) => on && loadOverviewPlayers(), { immediate: true })
-function cardProgress(p) {
+// The player behind a saved plan (if tracked) and the methods the planner skips for them, worked out the way the plan page does it,
+// so a card and the plan it opens agree.
+function cardContext(p) {
   const rsn = p.player?.rsn
   const found = rsn ? store.players.find((x) => sameName(x.username, rsn) || sameName(x.displayName, rsn)) : null
   const skills = found?.latest?.skills
+  const levels = {}
+  if (skills) for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
+  const ctx = { levels: skills ? levels : null, planned: Object.fromEntries((p.goals || []).map((g) => [g.skill, levelAtXp(g.targetXp, true)])), plannedQuests: plannedQuestReqIds(p.goals || []), confirmations: confirmations.value }
+  const blocked = respect.value ? blockedMethodIds(TRAINING_METHODS, ctx) : []
+  return { skills, blocked, prep: (g) => ({ ...resolveGoal(g, p.globalStrategy, p.gpValue), blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value }) }
+}
+function cardProgress(p) {
+  const { skills, prep } = cardContext(p)
   const baseline = p.statsAt || p.createdAt || p.updatedAt
   if (!skills || !baseline || !p.goals?.length) return null
-  const levels = {}
-  for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
-  const ctx = { levels, planned: Object.fromEntries(p.goals.map((g) => [g.skill, levelAtXp(g.targetXp, true)])), plannedQuests: plannedQuestReqIds(p.goals), confirmations: confirmations.value }
-  const blocked = respect.value ? blockedMethodIds(TRAINING_METHODS, ctx) : []
-  const prep = (g) => ({ ...resolveGoal(g, p.globalStrategy, p.gpValue), blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value })
   const live = p.goals.map((g) => liveGoalFor(g, skills[g.skill]?.xp))
   const original = p.goals.map((g) => planGoal(prep(g)))
   const now = live.map((g) => planGoal(prep(g)))
   const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline)
   return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length }
 }
+// Time and gp for each card, from the plan's own start, skipping methods the player cannot use (as the plan page does).
+const overviewSummaries = computed(() => {
+  if (!showOverview.value) return {}
+  const out = {}
+  for (const p of savedPlans.value) {
+    try {
+      const { blocked } = cardContext(p)
+      out[p.id] = summarizePlan({ ...p, goals: (p.goals || []).map((g) => ({ ...g, blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value })) })
+    } catch {
+      /* the card falls back to its own totals */
+    }
+  }
+  return out
+})
 const overviewProgress = computed(() => {
   if (!showOverview.value) return {}
   const out = {}

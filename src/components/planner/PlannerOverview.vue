@@ -81,6 +81,8 @@ const props = defineProps({
   // { [planId]: { pct (0 to 1), done, total } } for the plans whose player is tracked.
   progress: { type: Object, default: () => ({}) },
   progressLoading: { type: Boolean, default: false },
+  // { [planId]: totals } worked out the way the plan page does (methods the player cannot use are skipped); a card without one works out its own.
+  summaries: { type: Object, default: () => ({}) },
 })
 const emit = defineEmits(['duplicate', 'delete'])
 
@@ -154,7 +156,7 @@ const rows = computed(() =>
       icons: skills.slice(0, MAX_ICONS),
       more: Math.max(skills.length - MAX_ICONS, 0),
       hours: p.hoursPerDay,
-      summary: summarizePlan(p),
+      summary: props.summaries[p.id] || summarizePlan(p),
       updated: fmtDate(p.updatedAt),
     }
   }),
