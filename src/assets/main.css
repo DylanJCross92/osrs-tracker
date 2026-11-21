@@ -6485,7 +6485,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 /* One open column: the key prices across the top, chips for the small facts, then sections divided by hairlines. */
 .gxi { gap: 22px; }
 .gxi-head .wb { margin-left: auto; align-self: flex-start; }
-.gxv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 6px 0 0; }
+.gxv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 24px; margin: 6px 0 0; }
 .gxv dt { color: var(--muted); font-size: 0.92rem; }
 .gxv dd { margin: 4px 0 0; font-size: clamp(1.7rem, 3.4vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .gxv dd.is-main { color: var(--gold-bright); }
@@ -6522,7 +6522,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gxi .pc-key { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 .gxi .pc .xp-chart-grid line { stroke-dasharray: 2 5; }
 @media (max-width: 760px) {
-  .gxv { gap: 10px 12px; }
+  .gxv { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .gxv dd { font-size: 1.5rem; }
   .gxn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
   .gxn-grid dd { font-size: 1.25rem; }

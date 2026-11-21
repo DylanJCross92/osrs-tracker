@@ -10,7 +10,7 @@
           <component :is="variant === 'page' ? 'h1' : 'h2'" class="gxi-h">{{ item.name }}<small v-if="item.members" class="gx-badge" title="Members only">Members</small></component>
           <p v-if="item.examine">{{ item.examine }}</p>
           <ul class="gxc" aria-label="About this item">
-            <li v-if="pricey && item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
+            <li v-if="item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
             <li v-if="item.limit" title="How many you can buy every 4 hours">{{ item.limit.toLocaleString('en-US') }} / 4h limit</li>
             <li v-if="item.volume" :title="`${item.volume.toLocaleString('en-US')} bought and sold yesterday`">{{ item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume) }} traded yesterday</li>
             <li v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</li>
@@ -25,6 +25,7 @@
         <div title="The middle of the latest buy and sell price"><dt>GE price</dt><dd class="is-main">{{ gpText(item.price) }}<small> gp</small></dd></div>
         <div title="What you pay to buy right away"><dt>Instant buy</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
         <div title="What you get selling right away"><dt>Instant sell</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
+        <div v-if="item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}<small> gp</small></dd></div>
       </dl>
 
       <section class="gxi-sec gxi-chart">
@@ -104,7 +105,7 @@ const notFound = ref(false)
 const error = ref('')
 const history = ref(null)
 const historyError = ref('')
-// Percentages on a 2 gp item (1 gp to 2 gp is "up 100%") and flip profits of a coin or two mean nothing, so they only show for items that cost something.
+// A move from 1 gp to 2 gp reads as "up 100%", so the note about where the price sits against its average only shows for items that cost something.
 const pricey = computed(() => (item.value?.price ?? 0) >= MIN_PRICE)
 const tone = (v) => (v > 0 ? 'up' : v < 0 ? 'down' : 'flat')
 // Alchemy is only worth a card when it makes money or is close to it.
@@ -138,8 +139,7 @@ const insights = computed(() => {
     if (sm.change != null) out.push({ label: `${short} change`, value: pctText(sm.change), tone: tone(sm.change), tip: `From the first price to the last over the ${rangeLabel.value}` })
   }
   const i = item.value
-  if (i && pricey.value) {
-    if (i.flip) out.push({ label: 'Flip profit', value: `${signedGp(i.flip.margin)} gp`, tone: tone(i.flip.margin), tip: `Buy and sell again, after the 2% tax (${pctText(i.flip.roi)})` })
+  if (i) {
     for (const c of trend.value) out.push({ label: c.label === 'Yesterday' ? 'Change since yesterday' : `${c.label} change`, value: pctText(c.value), tone: c.tone, tip: c.tip })
   }
   return out
