@@ -6483,27 +6483,34 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 
 /* ---------- Grand Exchange: the item page ---------- */
 .gxi-head .wb { margin-left: auto; align-self: flex-start; }
-.gxi { gap: 30px; }
-.gxp { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 52px; padding: 2px 0 20px; border-bottom: 1px solid var(--border); }
-.gxp-main { display: grid; gap: 6px; justify-items: start; }
-.gxp-price { font-size: clamp(2.6rem, 5.2vw, 3.6rem); line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.gxp-price small { color: var(--muted); font-size: 1rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
-.gxp-today { font-size: 0.9rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.gxi { gap: 22px; }
+/* The price and the chart on the left, the trade details in one quiet panel on the right. */
+.gxi-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: 'price side' 'chart side' 'uses side'; gap: 22px 40px; align-items: start; }
+.gxi-grid .gxp { grid-area: price; }
+.gxi-grid .gxi-chart { grid-area: chart; }
+.gxi-grid .gxi-uses { grid-area: uses; }
+.gxi-grid .gxd { grid-area: side; }
+.gxp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
+.gxp-price { font-size: clamp(2.8rem, 5.4vw, 3.9rem); line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gxp-price small { color: var(--muted); font-size: 1.05rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
+.gxp-today { font-size: 1rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .gxp-today.up { color: #9fd48a; }
 .gxp-today.down { color: #f0987f; }
-.gxp-grid { display: flex; flex-wrap: wrap; gap: 14px 40px; margin: 0; }
-.gxp-grid > div { display: grid; gap: 3px; min-width: 0; }
-.gxp-grid dt, .gxr span { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.gxp-grid dd { margin: 0; font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.gxp-trend { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0 0 4px auto; padding: 0; list-style: none; }
-.gxp-trend li { display: inline-flex; align-items: baseline; gap: 7px; font-size: 0.88rem; }
-.gxp-trend span { color: var(--muted); }
-.gxp-trend b { font-variant-numeric: tabular-nums; color: var(--muted); }
-.gxp-trend b.up, .gxr b.up { color: #9fd48a; }
-.gxp-trend b.down, .gxr b.down { color: #f0987f; }
-.gxp-meta { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 4px 0 0; color: var(--muted); font-size: 0.84rem; }
-.gxp-meta b { color: var(--text); font-variant-numeric: tabular-nums; font-weight: 600; }
-/* On this page the sections are open: no boxes, just space and one hairline under the price. */
+.gxp-upd { flex: 1 0 100%; color: var(--muted); font-size: 0.82rem; }
+.gxd { padding: 6px 18px 12px; border: 1px solid var(--border); border-radius: 16px; background: rgba(14, 12, 9, 0.35); }
+.gxd-h { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxd-list { margin: 0; }
+.gxd-list > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; }
+.gxd-list > div + div { border-top: 1px solid var(--border); }
+.gxd-h + .gxd-list > div:first-child { padding-top: 8px; }
+.gxd-list dt { color: var(--muted); font-size: 0.9rem; }
+.gxd-list dd { margin: 0; font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.gxd-list dd small { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
+.gxd-list dd.up { color: #9fd48a; }
+.gxd-list dd.down { color: #f0987f; }
+.gxr b.up { color: #9fd48a; }
+.gxr b.down { color: #f0987f; }
+/* On this page the sections are open: no boxes, just space. */
 .gxi .gxi-card, .gxi.is-modal .gxi-card { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .gxr { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 12px 0 0; padding: 0; list-style: none; }
 .gxr li { display: grid; gap: 1px; }
@@ -6520,11 +6527,11 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gx-alch-big { margin: 8px 0 2px; font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .gx-alch-big small { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
 .gx-alch-note { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; max-width: none; line-height: 1.45; }
+@media (max-width: 860px) {
+  .gxi-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'price' 'chart' 'side' 'uses'; gap: 20px; }
+  .gxd { padding: 2px 14px 8px; }
+}
 @media (max-width: 760px) {
-  .gxp { gap: 14px 24px; }
-  .gxp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; flex: 1 0 100%; }
-  .gxp-grid dd { font-size: 1.3rem; }
-  .gxp-trend { margin-left: 0; }
   .gxr { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px 8px; }
   .gxr b { font-size: 1rem; }
   .gxi-head { flex-wrap: nowrap; gap: 12px; align-items: flex-start; }

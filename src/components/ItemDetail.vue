@@ -15,25 +15,28 @@
 
       <p v-if="item.stale" class="gx-stale" role="status">Prices are a little behind right now. They update every few minutes.</p>
 
+      <div class="gxi-grid">
       <section class="gxp" aria-label="Price now">
-        <div class="gxp-main">
-          <b class="gxp-price">{{ gpText(item.price) }}<small> gp</small></b>
-          <span v-if="pricey && item.change1 != null" class="gxp-today" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
-        </div>
-        <dl class="gxp-grid">
-          <div title="What you pay to buy right away"><dt>Buy</dt><dd>{{ gpText(item.high) }}</dd></div>
-          <div title="What you get selling right away"><dt>Sell</dt><dd>{{ gpText(item.low) }}</dd></div>
-          <div v-if="pricey && item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}</dd></div>
-        </dl>
-        <ul v-if="pricey && trend.length" class="gxp-trend" aria-label="Price change">
-          <li v-for="c in trend" :key="c.label" :title="c.tip"><span>{{ c.label }}</span><b :class="c.tone">{{ pctText(c.value) }}</b></li>
-        </ul>
-        <p class="gxp-meta">
-          <span v-if="item.limit" title="How many you can buy every 4 hours">Buy limit <b>{{ item.limit.toLocaleString('en-US') }}</b> per 4 hours</span>
-          <span v-if="item.volume" title="Bought and sold yesterday"><b>{{ item.volume.toLocaleString('en-US') }}</b> traded yesterday</span>
-          <span v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</span>
-        </p>
+        <b class="gxp-price">{{ gpText(item.price) }}<small> gp</small></b>
+        <span v-if="pricey && item.change1 != null" class="gxp-today" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
+        <span v-if="item.updatedAt" class="gxp-upd">Updated {{ ago(item.updatedAt) }}</span>
       </section>
+
+      <aside class="gxd" aria-label="Trade details">
+        <dl class="gxd-list">
+          <div title="What you pay to buy right away"><dt>Buy now</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
+          <div title="What you get selling right away"><dt>Sell now</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
+          <div v-if="pricey && item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip profit</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}<small> gp</small></dd></div>
+          <div v-if="item.limit" title="How many you can buy every 4 hours"><dt>Buy limit</dt><dd>{{ item.limit.toLocaleString('en-US') }}<small> / 4h</small></dd></div>
+          <div v-if="item.volume" title="Bought and sold yesterday"><dt>Traded yesterday</dt><dd>{{ item.volume.toLocaleString('en-US') }}</dd></div>
+        </dl>
+        <template v-if="pricey && trend.length">
+          <h2 class="gxd-h">Price change</h2>
+          <dl class="gxd-list">
+            <div v-for="c in trend" :key="c.label" :title="c.tip"><dt>{{ c.label }}</dt><dd :class="c.tone">{{ pctText(c.value) }}</dd></div>
+          </dl>
+        </template>
+      </aside>
 
       <section class="gxi-card gxi-chart">
         <div class="gx-chart-head">
@@ -70,6 +73,8 @@
             <li v-for="m in methods" :key="m.id"><RouterLink :to="m.path" class="gxh-chip">{{ m.name }} <small>{{ m.skill }}</small></RouterLink></li>
           </ul>
         </section>
+      </div>
+
       </div>
 
       <p class="st-note gx-note">Prices from the <a href="https://oldschool.runescape.wiki/w/RuneScape:Real-time_Prices" target="_blank" rel="noopener">OSRS Wiki real-time prices</a>. A fan project, not affiliated with Jagex.</p>
