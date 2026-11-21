@@ -16,7 +16,7 @@
       <g class="xp-chart-grid">
         <line v-for="t in yTicks" :key="`grid-${t}`" :x1="padL" :x2="W - padR" :y1="yScale(t)" :y2="yScale(t)" />
       </g>
-      <text v-for="t in yTicks" :key="`ytick-${t}`" :x="padL - 8" :y="yScale(t)" text-anchor="end" dominant-baseline="middle" class="xp-chart-ylabel">{{ gpAxis(t) }}</text>
+      <text v-for="t in yLabelTicks" :key="`ytick-${t}`" :x="padL" :y="yScale(t) - 5" text-anchor="start" class="xp-chart-ylabel">{{ gpAxis(t) }}</text>
 
       <g v-if="hasVolume" class="pc-vols">
         <rect v-for="(b, i) in volumeBars" :key="i" :x="b.x" :y="b.y" :width="b.w" :height="b.h" class="pc-vol" />
@@ -65,10 +65,10 @@ const props = defineProps({
 })
 
 const W = ref(760)
-const H = 320
-const padL = 52
+const H = 300
+const padL = 2
 const padT = 16
-const padR = 14
+const padR = 2
 const padB = 24
 const VOL_H = 58
 
@@ -120,6 +120,9 @@ const yTicks = computed(() => {
   for (let v = Math.ceil(minY.value / step) * step; v <= maxY.value; v += step) ticks.push(Math.round(v))
   return ticks.length ? ticks : [Math.round(minY.value), Math.round(maxY.value)]
 })
+
+// The labels sit above their grid lines, so the lowest one (down among the trade bars) is left out.
+const yLabelTicks = computed(() => yTicks.value.slice(1))
 
 // A line that stops where a price is missing and starts again after it.
 function pathFor(field) {

@@ -6483,7 +6483,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 
 /* ---------- Grand Exchange: the item page ---------- */
 /* One open column: the key prices across the top, chips for the small facts, then sections divided by hairlines. */
-.gxi { gap: 22px; max-width: 980px; margin-inline: auto; width: 100%; }
+.gxi { gap: 22px; }
 .gxi-head .wb { margin-left: auto; align-self: flex-start; }
 .gxv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 6px 0 0; }
 .gxv dt { color: var(--muted); font-size: 0.92rem; }
