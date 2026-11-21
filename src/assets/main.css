@@ -6188,34 +6188,6 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .gx-back { display: inline-block; margin-bottom: 2px; color: var(--muted); font-size: 0.8rem; text-decoration: none; }
 .gx-back:hover { color: var(--gold-bright); }
 .gx-updated { color: var(--muted); font-size: 0.8rem; }
-/* The price details: big buy, sell and flip figures, quieter limit and traded, and the changes as soft pills. No boxes, just a hairline below. */
-.gxf { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 40px; padding: 4px 4px 20px; }
-.gxf::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 45%, transparent) 20%, color-mix(in srgb, var(--gold) 45%, transparent) 80%, transparent); }
-.gxf-group { display: flex; gap: 14px 34px; margin: 0; }
-.gxf-group > div { min-width: 0; }
-.gxf dt { color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.gxf dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
-.gxf-prices dd { font-size: 1.85rem; line-height: 1.1; letter-spacing: -0.01em; }
-.gxf-meta { padding-left: 34px; border-left: 1px solid var(--border); }
-.gxf-meta dd { color: #d8cdb0; font-size: 1.2rem; }
-.gxf-changes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 0 auto; padding: 0; list-style: none; }
-.gxf-changes li { display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); font-variant-numeric: tabular-nums; }
-.gxf-changes span { color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.gxf-changes b { font-size: 1rem; color: var(--muted); }
-.gxf-changes li.up { background: rgba(124, 184, 105, 0.14); }
-.gxf-changes li.up b { color: #9fd48a; }
-.gxf-changes li.down { background: rgba(224, 122, 99, 0.14); }
-.gxf-changes li.down b { color: #f0987f; }
-@media (max-width: 900px) { .gxf-changes { margin-left: 0; } }
-@media (max-width: 640px) {
-  .gxf { gap: 14px 24px; padding-bottom: 16px; }
-  .gxf-prices { width: 100%; justify-content: space-between; }
-  .gxf-prices dd { font-size: 1.45rem; }
-  .gxf-meta { padding-left: 0; border-left: 0; gap: 14px 28px; }
-  .gxf-meta dd { font-size: 1.05rem; }
-  .gxf-changes { width: 100%; }
-  .gxf-changes li { flex: 1 1 0; justify-content: space-between; padding: 7px 12px; }
-}
 .gx-chart h2, .gx-alch h2, .gx-methods h2 { margin: 0; font-size: 1.05rem; }
 .gx-chart-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; }
 
@@ -6363,9 +6335,6 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .gxi-icon img { image-rendering: pixelated; object-fit: contain; }
 .gxi-title { flex: 1; min-width: 200px; }
 .gxi-title p { margin: 2px 0 0; color: var(--muted); font-size: 1rem; max-width: none; }
-.gxi-price { display: grid; justify-items: end; gap: 4px; margin-left: auto; text-align: right; }
-.gxi-price b { font-size: clamp(2.1rem, 4.2vw, 3.1rem); line-height: 1.1; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.gxi-price b small { color: var(--muted); font-size: 0.9rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
 .gxi-card { padding: 16px 18px; border: 1px solid var(--border-strong); border-radius: 20px; background: linear-gradient(180deg, color-mix(in srgb, var(--gold) 8%, var(--panel)), var(--panel) 42%); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gold) 34%, transparent); }
 .gxi-card h2 { margin: 0; font-size: 1.1rem; }
 .gxb-board { padding: 16px 18px; margin: 0; }
@@ -6507,4 +6476,52 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .wl-x:hover, .wl-x:focus-visible { color: #f0987f; outline: none; }
 .wl-note { margin: 10px 2px 0; color: var(--muted); font-size: 0.78rem; }
 .gxh-watch { margin: 0 0 18px; }
-.gxi-head .wb { align-self: flex-start; }
+
+/* ---------- Grand Exchange: the item page ---------- */
+.gxi-head .wb { margin-left: auto; align-self: flex-start; }
+.gxp { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 16px 36px; align-items: center; padding: 20px 24px 16px; border: 1px solid var(--border-strong); border-radius: 20px; background: linear-gradient(180deg, rgba(217, 175, 82, 0.08), var(--panel) 55%); }
+.gxp-main { display: grid; gap: 4px; justify-items: start; }
+.gxp-label { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxp-price { font-size: clamp(2.4rem, 5vw, 3.4rem); line-height: 1.05; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gxp-price small { color: var(--muted); font-size: 0.95rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
+.gxp-grid { display: flex; flex-wrap: wrap; gap: 14px 40px; margin: 0; padding-left: 36px; border-left: 1px solid var(--border); }
+.gxp-grid > div { display: grid; gap: 2px; min-width: 0; }
+.gxp-grid dt { color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxp-grid dd { margin: 0; font-size: 1.7rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.gxp-grid small { color: var(--muted); font-size: 0.76rem; max-width: 19ch; line-height: 1.3; }
+.gxp-trend { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 26px; margin: 0; padding: 12px 0 0; border-top: 1px solid var(--border); list-style: none; }
+.gxp-trend li { display: inline-flex; align-items: baseline; gap: 8px; font-size: 0.86rem; }
+.gxp-trend span { color: var(--muted); }
+.gxp-trend b { font-variant-numeric: tabular-nums; color: var(--muted); }
+.gxp-trend b.up, .gxs b.up { color: #9fd48a; }
+.gxp-trend b.down, .gxs b.down { color: #f0987f; }
+.gxp-meta { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 0; color: var(--muted); font-size: 0.82rem; }
+.gxp-meta b { color: var(--text); font-variant-numeric: tabular-nums; }
+.gxs { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 12px 0 0; padding: 0; list-style: none; }
+.gxs li { display: grid; gap: 1px; }
+.gxs span { color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxs b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.gxs-verdict { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 4px 12px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.84rem; font-weight: 600; }
+.gxs-verdict i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.gxs-verdict.good { background: rgba(124, 184, 105, 0.14); }
+.gxs-verdict.good i { background: #7cb869; }
+.gxs-verdict.bad { background: rgba(224, 122, 99, 0.14); }
+.gxs-verdict.bad i { background: #e07a63; }
+.gxi-chart .xp-chart { margin-top: 8px; }
+.gxi-uses { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.gx-alch-big { margin: 8px 0 2px; font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.gx-alch-big small { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.gx-alch-note { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; max-width: none; line-height: 1.45; }
+@media (max-width: 760px) {
+  .gxp { grid-template-columns: minmax(0, 1fr); padding: 16px 16px 14px; }
+  .gxp-grid { padding: 14px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+  .gxp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .gxp-grid dd { font-size: 1.3rem; }
+  .gxp-grid small { display: none; }
+  .gxs { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px 8px; }
+  .gxs b { font-size: 1rem; }
+  .gxi-head { flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
+  .gxi-icon { width: 52px; height: 52px; }
+  .gxi-title { min-width: 0; }
+  .gxi-head .wb { padding: 5px 11px; font-size: 0.8rem; }
+}
