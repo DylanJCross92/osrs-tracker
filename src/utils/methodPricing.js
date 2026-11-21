@@ -1,9 +1,9 @@
 import { ECONOMY } from '@/data/methodEconomy'
-import { midOf, priceOf, priceVersion } from '@/utils/priceBook'
+import { buyOf, priceOf, priceVersion, sellOf } from '@/utils/priceBook'
 import { afterTax } from '@/utils/geTax'
 
-// A method's gp an hour from live Grand Exchange prices (see data/methodEconomy.js): what it makes sold at the middle price after tax,
-// minus what it uses up at the middle price, for every action in an hour. null when the method has no recipe or an item has no price,
+// A method's gp an hour from live Grand Exchange prices (see data/methodEconomy.js): what it makes sold after tax, minus what it uses up,
+// for every action in an hour, plus any fixed cost per hour. Prices are the middle price, or instant buy and sell (see priceBook.js). null when the method has no recipe or an item has no price,
 // so the figure typed in trainingMethods.js is used instead.
 
 /**
@@ -17,17 +17,22 @@ export function economyFor(id, xpPerHour) {
   const lines = []
   let gp = 0
   for (const [name, qty] of e.outputs || []) {
-    const mid = midOf(name)
-    if (mid == null) return null
-    const each = afterTax(mid, name)
+    const sell = sellOf(name)
+    if (sell == null) return null
+    const each = afterTax(sell, name)
     lines.push({ name, qty: qty * actions, each, total: Math.round(qty * actions * each), kind: 'out' })
     gp += qty * actions * each
   }
   for (const [name, qty] of e.inputs || []) {
-    const mid = midOf(name)
-    if (mid == null) return null
-    lines.push({ name, qty: qty * actions, each: mid, total: -Math.round(qty * actions * mid), kind: 'in' })
-    gp -= qty * actions * mid
+    const buy = buyOf(name)
+    if (buy == null) return null
+    lines.push({ name, qty: qty * actions, each: buy, total: -Math.round(qty * actions * buy), kind: 'in' })
+    gp -= qty * actions * buy
+  }
+  // A fixed cost for every hour (a fee the method always pays), not tied to an item price.
+  if (e.hourlyFee) {
+    lines.push({ name: e.hourlyFee.label, qty: 1, each: e.hourlyFee.gp, total: -e.hourlyFee.gp, kind: 'fee' })
+    gp -= e.hourlyFee.gp
   }
   return { gpPerHour: Math.round(gp), actionsPerHour: actions, lines, note: e.note || '' }
 }

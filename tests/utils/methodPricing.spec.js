@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ECONOMY, ECONOMY_ITEMS } from '@/data/methodEconomy'
 import { TRAINING_METHODS, getMethod } from '@/data/trainingMethods'
 import { afterTax, geTax } from '@/utils/geTax'
@@ -114,14 +114,65 @@ describe('what a plan needs to buy', () => {
   })
   it('does not call a method with unknown materials item-free', async () => {
     const { materialsForPlan } = await import('@/utils/plannerTools')
-    const out = materialsForPlan({ segments: [seg('runecraft-gotr', 1_000_000, 2_000_000), seg('magic-tan-leather', 1_000_000, 2_000_000)] })
+    const out = materialsForPlan({ segments: [seg('runecraft-gotr', 1_000_000, 2_000_000), seg('magic-bake-pie', 1_000_000, 2_000_000)] })
     expect(out.rows).toEqual([])
-    expect(out.untracked).toEqual(['Tan Leather (Lunar)'])
+    expect(out.untracked).toEqual(['Bake Pie (Lunar)'])
   })
   it('builds a list from a recipe and flags combat supplies', async () => {
     const { materialsForPlan } = await import('@/utils/plannerTools')
     const out = materialsForPlan({ segments: [seg('cooking-sharks', 1_986_068, 1_988_168), seg('attack-crabs', 0, 1000)] })
     expect(out.totals).toEqual([{ name: 'Raw shark', qty: 10 }])
     expect(out.supplies.length).toBe(1)
+  })
+})
+
+describe('price basis', () => {
+  const back = async () => (await import('@/utils/priceBook')).setPriceBasis('mid')
+  beforeEach(back)
+  afterEach(back)
+  it('prices buys and sells at the middle by default, and at instant prices when asked', async () => {
+    const { buyOf, sellOf, setPriceBasis, priceBasis } = await import('@/utils/priceBook')
+    setPrices({ thing: [120, 100, 'thing'], 'one sided': [null, 90, 'one-sided'] })
+    expect(priceBasis.value).toBe('mid')
+    expect(buyOf('thing')).toBe(110)
+    expect(sellOf('thing')).toBe(110)
+    setPriceBasis('instant')
+    expect(buyOf('thing')).toBe(120)
+    expect(sellOf('thing')).toBe(100)
+    expect(buyOf('one sided')).toBe(90)
+    expect(buyOf('missing')).toBeNull()
+    setPriceBasis('nonsense')
+    expect(priceBasis.value).toBe('mid')
+  })
+  it('changes the gp an hour of a recipe, and recomputes the cached figure', async () => {
+    const { setPriceBasis } = await import('@/utils/priceBook')
+    setPrices({ 'raw shark': [400, 380, 'raw-shark'], shark: [700, 680, 'shark'] })
+    const mid = gpPerHourFor('cooking-sharks', 140000, 0)
+    setPriceBasis('instant')
+    const actions = 140000 / 210
+    expect(economyFor('cooking-sharks', 140000).gpPerHour).toBe(Math.round(actions * (afterTax(680, 'Shark') - 400)))
+    expect(gpPerHourFor('cooking-sharks', 140000, 0)).toBeLessThan(mid)
+  })
+})
+
+describe('fixed hourly costs', () => {
+  it('subtracts the Blast Furnace coffer fee and lists it', () => {
+    setPrices({ 'iron ore': [100, 90, 'iron-ore'], 'iron bar': [200, 190, 'iron-bar'] })
+    const live = economyFor('smithing-blast-iron', 75000)
+    const bars = 75000 / 12.5
+    expect(live.gpPerHour).toBe(Math.round(bars * (afterTax(195, 'Iron bar') - 95) - 72000))
+    expect(live.lines.find((l) => l.kind === 'fee')).toMatchObject({ name: 'Blast Furnace coffer fee', total: -72000 })
+  })
+})
+
+describe('every recipe', () => {
+  it('belongs to a real method with a positive xp per action, and names only real item names', () => {
+    const ids = new Set(TRAINING_METHODS.map((m) => m.id))
+    for (const [id, e] of Object.entries(ECONOMY)) {
+      expect(ids.has(id), id).toBe(true)
+      expect(e.xpPerAction, id).toBeGreaterThan(0)
+      expect((e.inputs || []).length + (e.outputs || []).length, id).toBeGreaterThan(0)
+    }
+    expect(ECONOMY_ITEMS.length).toBeGreaterThan(80)
   })
 })

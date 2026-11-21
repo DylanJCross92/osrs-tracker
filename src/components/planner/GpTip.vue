@@ -6,9 +6,11 @@
       <span>{{ text }}</span>
       <small>{{ rateText }}</small>
       <template v-if="live">
-        <small class="gp-tip-live">Live Grand Exchange prices, after the 2% tax:</small>
+        <small class="gp-tip-live">Live Grand Exchange prices ({{ priceBasis === 'instant' ? 'instant buy and sell' : 'middle price' }}), after the 2% tax:</small>
         <small v-for="l in live.lines" :key="l.kind + l.name" class="gp-tip-line">
-          {{ l.kind === 'out' ? 'Sell' : 'Buy' }} {{ formatNum(l.qty) }} {{ l.name }} at {{ gpText(l.each) }} = <span :class="l.total >= 0 ? 'planner-gain' : 'planner-cost'">{{ signedGp(l.total) }}</span>
+          <template v-if="l.kind === 'fee'">{{ l.name }} = </template>
+          <template v-else>{{ l.kind === 'out' ? 'Sell' : 'Buy' }} {{ formatNum(l.qty) }} {{ l.name }} at {{ gpText(l.each) }} = </template>
+          <span :class="l.total >= 0 ? 'planner-gain' : 'planner-cost'">{{ signedGp(l.total) }}</span>
         </small>
       </template>
       <small v-else-if="hasRecipe" class="gp-tip-live">Saved estimate (live prices are not loaded).</small>
@@ -24,6 +26,7 @@ import { formatGp, formatHours, formatNum } from '@/utils/planner'
 import { ECONOMY } from '@/data/methodEconomy'
 import { economyFor } from '@/utils/methodPricing'
 import { gpText, signedGp } from '@/utils/geFormat'
+import { priceBasis } from '@/utils/priceBook'
 
 const props = defineProps({
   method: { type: Object, default: null },

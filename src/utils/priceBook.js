@@ -12,6 +12,31 @@ export const priceStatus = ref({ loaded: false, updatedAt: null, stale: false })
 
 const key = (name) => String(name).trim().toLowerCase()
 
+// Which price the planners use. 'mid' is the middle of the latest buy and sell price (steady, and what most people trade near);
+// 'instant' prices what you pay to buy at once and what you get selling at once, so it is the cost of doing it right now.
+const BASIS_KEY = 'tg_price_basis'
+function loadBasis() {
+  try {
+    return localStorage.getItem(BASIS_KEY) === 'instant' ? 'instant' : 'mid'
+  } catch {
+    return 'mid'
+  }
+}
+export const priceBasis = ref(loadBasis())
+
+/** Switches between the middle price and instant buy and sell prices; everything that depends on the prices recomputes. */
+export function setPriceBasis(basis) {
+  const next = basis === 'instant' ? 'instant' : 'mid'
+  if (next === priceBasis.value) return
+  priceBasis.value = next
+  try {
+    localStorage.setItem(BASIS_KEY, next)
+  } catch {
+    /* the choice just is not remembered */
+  }
+  priceVersion.value++
+}
+
 /** { high, low, slug } for an item, or null when there is no price. Depends on the price version. */
 export function priceOf(name) {
   void priceVersion.value
@@ -24,6 +49,22 @@ export function midOf(name) {
   if (!p) return null
   if (p.high != null && p.low != null) return Math.round((p.high + p.low) / 2)
   return p.high ?? p.low ?? null
+}
+
+/** What it costs to buy one now: the middle price, or on the instant basis what you pay buying at once. null when there is no price. */
+export function buyOf(name) {
+  const p = priceOf(name)
+  if (!p) return null
+  if (priceBasis.value === 'instant') return p.high ?? p.low ?? null
+  return midOf(name)
+}
+
+/** What one sells for now (before tax): the middle price, or on the instant basis what you get selling at once. null when there is no price. */
+export function sellOf(name) {
+  const p = priceOf(name)
+  if (!p) return null
+  if (priceBasis.value === 'instant') return p.low ?? p.high ?? null
+  return midOf(name)
 }
 
 /** Replaces the prices with `prices` ({ name: [high, low, slug] }), as the server sends them. */

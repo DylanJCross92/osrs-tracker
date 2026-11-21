@@ -6370,6 +6370,11 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .gpb:hover { border-color: var(--gold); text-decoration: none; }
 .gpb b { font-weight: 700; }
 .gpb small { color: var(--muted); font-size: 0.78rem; }
+.mat-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pbt { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(14, 12, 9, 0.5); }
+.pbt-btn { padding: 3px 11px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+.pbt-btn:hover { color: var(--text); }
+.pbt-btn.on { background: rgba(217, 175, 82, 0.2); color: var(--gold-bright); }
 .gpb-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .gpb.is-live { border-color: rgba(124, 184, 105, 0.5); }
 .gpb.is-live .gpb-dot, .pd-chip.is-live .gpb-dot { background: #7cb869; box-shadow: 0 0 0 0 rgba(124, 184, 105, 0.6); animation: gpbPulse 2s infinite; }

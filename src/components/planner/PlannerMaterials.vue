@@ -2,7 +2,10 @@
   <div v-if="data.rows.length || notes.length || itemFree" class="planner-materials">
     <div class="mat-head">
       <h4 class="goal-section-title">{{ title }}</h4>
-      <GePriceBadge />
+      <div v-if="data.rows.length" class="mat-badges">
+        <GePriceBadge />
+        <PriceBasisToggle />
+      </div>
     </div>
     <p v-if="itemFree" class="planner-hint">This route uses no items you have to bring, so there is nothing to buy.</p>
     <div v-if="data.rows.length" class="mat-scroll-x">
@@ -52,7 +55,7 @@
     </details>
     <p v-for="n in notes" :key="n" class="planner-hint mat-note">{{ n }}</p>
     <p v-if="totals.some((t) => t.approx)" class="planner-hint">~ marks amounts that are estimates, because the xp for each item depends on what you make.</p>
-    <p v-if="data.rows.length" class="planner-hint">Prices are the middle of the latest Grand Exchange buy and sell price, from the OSRS Wiki. Quantities assume no burns, failures or lost items, and tools and gear are not listed. Item icons come from the OSRS Wiki.</p>
+    <p v-if="data.rows.length" class="planner-hint">{{ priceBasis === 'instant' ? 'Prices are what you pay buying at once, from the latest Grand Exchange trades on the OSRS Wiki.' : 'Prices are the middle of the latest Grand Exchange buy and sell price, from the OSRS Wiki.' }} Quantities assume no burns, failures or lost items, and tools and gear are not listed. Item icons come from the OSRS Wiki.</p>
   </div>
 </template>
 
@@ -60,9 +63,10 @@
 import { computed } from 'vue'
 import { materialsForPlan } from '@/utils/plannerTools'
 import { formatNum } from '@/utils/planner'
-import { iconOf, midOf, slugOf } from '@/utils/priceBook'
+import { buyOf, iconOf, priceBasis, slugOf } from '@/utils/priceBook'
 import { gpText, itemImage } from '@/utils/geFormat'
 import GePriceBadge from '@/components/GePriceBadge.vue'
+import PriceBasisToggle from '@/components/PriceBasisToggle.vue'
 import { onItemLinkClick } from '@/composables/useItemModal'
 
 const props = defineProps({ plan: { type: Object, required: true }, title: { type: String, default: 'Materials needed' } })
@@ -80,20 +84,20 @@ const joinNames = (list) => (list.length <= 2 ? list.join(' and ') : `${list.sli
 const rowCost = (r) => {
   let total = 0
   for (const it of r.items) {
-    const each = midOf(it.name)
+    const each = buyOf(it.name)
     if (each == null) return null
     total += each * it.qty
   }
   return Math.round(total)
 }
-// The shopping list at today's prices (the middle of the buy and sell price), with what could not be priced counted apart.
+// The shopping list at today's prices (the middle of the buy and sell price, or instant buy prices), with what could not be priced counted apart.
 const priced = computed(() => {
   let total = 0
   let missing = 0
   let any = false
   const costs = new Map()
   for (const t of data.value.totals) {
-    const each = midOf(t.name)
+    const each = buyOf(t.name)
     if (each == null) missing++
     else {
       any = true
@@ -105,7 +109,7 @@ const priced = computed(() => {
 })
 const totals = computed(() =>
   data.value.totals
-    .map((t) => ({ ...t, each: midOf(t.name), slug: slugOf(t.name), cost: priced.value.costs.has(t.name) ? Math.round(priced.value.costs.get(t.name)) : null }))
+    .map((t) => ({ ...t, each: buyOf(t.name), slug: slugOf(t.name), cost: priced.value.costs.has(t.name) ? Math.round(priced.value.costs.get(t.name)) : null }))
     // The items that cost the most first.
     .sort((a, b) => (b.cost ?? -1) - (a.cost ?? -1)),
 )

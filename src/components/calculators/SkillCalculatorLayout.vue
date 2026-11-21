@@ -144,6 +144,7 @@
           <template v-if="priceStatus.loaded">Methods that use or make items with a Grand Exchange price are worked out from live prices<template v-if="priceStatus.updatedAt"> (updated {{ ago(priceStatus.updatedAt) }})</template>, after the 2% tax; the others use saved estimates.</template>
           <template v-else>Prices come from the planner's catalog.</template>
         </p>
+        <p v-if="priceStatus.loaded" class="planner-hint"><PriceBasisToggle /></p>
       </template>
       <p v-else class="empty-hint">{{ inputError ? 'Fix the goal above to see your results.' : 'You have already reached this target. Pick a higher goal.' }}</p>
     </section>
@@ -256,6 +257,7 @@ import {
 import { STRATEGY_LABELS, listSavedPlans, materialsForPlan, savePlan } from '@/utils/plannerTools'
 import { agilityLaps, METHOD_PRESETS } from '@/utils/calculatorExtras'
 import { useLivePrices } from '@/composables/useLivePrices'
+import PriceBasisToggle from '@/components/PriceBasisToggle.vue'
 import { ago } from '@/components/admin/stats/statsFormat'
 
 // The Grand Exchange prices behind every gp figure on this page.

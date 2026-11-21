@@ -57,7 +57,7 @@ import RequirementList from '@/components/planner/RequirementList.vue'
 import { useRouteRequirements } from '@/composables/useRouteRequirements'
 import { materialsForPlan } from '@/utils/plannerTools'
 import { formatHours, formatNum } from '@/utils/planner'
-import { midOf } from '@/utils/priceBook'
+import { buyOf } from '@/utils/priceBook'
 import { gpText } from '@/utils/geFormat'
 
 // Everything a skill's route needs, read-only: what to buy (at live Grand Exchange prices), which quests it does first, and what each method
@@ -77,7 +77,7 @@ const cost = computed(() => {
   let total = 0
   let any = false
   for (const t of mats.value.totals) {
-    const each = midOf(t.name)
+    const each = buyOf(t.name)
     if (each != null) {
       total += each * t.qty
       any = true
