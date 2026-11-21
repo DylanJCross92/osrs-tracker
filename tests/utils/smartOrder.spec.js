@@ -31,12 +31,12 @@ describe('the suggested training order', () => {
   it('puts what earns gp before the skills that cost the most, once the plan has real costs', () => {
     const r = run(goal('Construction', 50, 90, 80, -900_000), goal('Mining', 60, 90, 80, 250_000))
     expect(r.order).toEqual(['Mining', 'Construction'])
-    expect(r.reasons.Mining.join(' ')).toContain('to pay for Construction')
-    expect(r.reasons.Construction.join(' ')).toContain('so after the earners')
+    expect(r.reasons.Mining.join(' ')).toContain('Earns gp to fund Construction')
+    expect(r.reasons.Construction.join(' ')).toContain('Costs gp, so after the earners')
   })
   it('ignores gp when nothing in the plan costs much', () => {
     const r = run(goal('Smithing', 50, 70, 40, -10_000), goal('Woodcutting', 50, 60, 10, 20_000))
-    expect(r.reasons.Woodcutting.join(' ')).not.toContain('helps pay')
+    expect(r.reasons.Woodcutting.join(' ')).not.toContain('fund')
   })
   it('lets Prayer to 70 come before melee and Construction to 75 before Prayer', () => {
     const melee = run(goal('Strength', 70, 99, 100), goal('Prayer', 40, 77, 100))
@@ -72,5 +72,16 @@ describe('the suggested training order', () => {
     const again = smartOrderGoals(out.goals, { globalStrategy: 'auto-fast', gpValue: 2_000_000 })
     expect(again.changed).toBe(false)
     expect(again.goals[0]).toBe(out.goals[0])
+  })
+
+  it('returns the gp behind each skill and a summary of what it found', () => {
+    const r = run(goal('Construction', 50, 90, 80, -900_000), goal('Mining', 60, 90, 80, 250_000), goal('Smithing', 40, 80, 30, 10_000))
+    expect(r.stats.Mining).toEqual({ hours: 80, netGp: 20_000_000, gph: 250_000 })
+    expect(r.stats.Construction.netGp).toBe(-72_000_000)
+    expect(r.summary.skills).toBe(3)
+    expect(r.summary.earners).toBe(1)
+    expect(r.summary.spenders).toBe(1)
+    expect(r.summary.links).toBe(1) // Mining before Smithing
+    expect(r.summary.netGp).toBe(-72_000_000 + 20_000_000 + 300_000)
   })
 })

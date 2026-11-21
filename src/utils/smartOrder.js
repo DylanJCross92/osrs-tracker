@@ -11,7 +11,6 @@ const EARNER_GPH = 50_000 // gp an hour from which a skill counts as earning
 const SPENDER_GPH = -150_000 // gp an hour at which a skill counts as an expense
 const QUICK_WEIGHT = 0.6 // how much a short skill moves up (a tie-break next to the synergies)
 
-const money = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace(/\.0$/, '')}M` : `${Math.round(n / 1e3)}K`)
 const joinNames = (list) => (list.length <= 2 ? list.join(' and ') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`)
 
 /**
@@ -85,8 +84,8 @@ export function smartOrder(goals, plans) {
     for (const e of helps) groups.set(e.why, [...(groups.get(e.why) || []), e.to])
     for (const [why, targets] of groups) list.push(`Before ${joinNames(targets)}: ${why}`)
     const spenders = open.filter((y) => fundScore(y) < 0 && position.get(y.skill) > position.get(x.skill)).map((y) => y.skill)
-    if (fundScore(x) > 0 && spenders.length) list.push(`Earns ${money(x.gph)} gp/h to pay for ${joinNames(spenders.slice(0, 2))}`)
-    else if (fundScore(x) < 0 && open.some((y) => fundScore(y) > 0 && position.get(y.skill) < position.get(x.skill))) list.push(`Costs ${money(-x.gph)} gp/h, so after the earners`)
+    if (fundScore(x) > 0 && spenders.length) list.push(`Earns gp to fund ${joinNames(spenders.slice(0, 2))}`)
+    else if (fundScore(x) < 0 && open.some((y) => fundScore(y) > 0 && position.get(y.skill) < position.get(x.skill))) list.push('Costs gp, so after the earners')
     if (!list.length && open.length > 2) {
       const longest = Math.max(...open.map((y) => y.hours))
       if (x.skill === placed[placed.length - 1].skill && x.hours >= longest) list.push('Longest grind, so last')
@@ -96,7 +95,18 @@ export function smartOrder(goals, plans) {
   }
   for (const x of done) reasons[x.skill] = ['Done']
 
-  return { order, reasons, changed: order.some((s, i) => s !== goals[i].skill) }
+  // The gp behind each skill (its whole goal, and an hour of it), for showing next to the reasons, and a short summary of what was found.
+  const stats = {}
+  for (const x of items) stats[x.skill] = { hours: x.hours, netGp: plans[x.index]?.netGp ?? null, gph: x.gph }
+  const summary = {
+    skills: open.length,
+    links: edges.filter((e) => position.get(e.from) < position.get(e.to)).length,
+    earners: funding ? open.filter((x) => fundScore(x) > 0).length : 0,
+    spenders: funding ? open.filter((x) => fundScore(x) < 0).length : 0,
+    netGp: open.some((x) => plans[x.index]?.netGp != null) ? open.reduce((sum, x) => sum + (plans[x.index]?.netGp || 0), 0) : null,
+  }
+
+  return { order, reasons, stats, summary, changed: order.some((s, i) => s !== goals[i].skill) }
 }
 
 /**
