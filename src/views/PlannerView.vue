@@ -127,6 +127,7 @@
         </PlannerPath></div>
     </template>
 
+    <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
     <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
@@ -157,6 +158,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PlannerSkillEditor from '@/components/planner/PlannerSkillEditor.vue'
 import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
+import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -639,11 +641,15 @@ function removeSkill(i) {
   }
 }
 // "Delete from plan" in a skill card's menu: asks first, since the plan saves as soon as the skill goes.
+const skillToDelete = ref('')
 function removeSkillFromMenu(skill) {
+  if (goals.value.some((g) => g.skill === skill)) skillToDelete.value = skill
+}
+function confirmRemoveSkill() {
+  const skill = skillToDelete.value
+  skillToDelete.value = ''
   const i = goals.value.findIndex((g) => g.skill === skill)
-  if (i < 0) return
-  if (!window.confirm(`Delete ${skill} from this plan?`)) return
-  removeSkill(i)
+  if (i >= 0) removeSkill(i)
 }
 // The first skill that uses a method with something missing, opened on its requirements.
 function reviewRequirements() {
