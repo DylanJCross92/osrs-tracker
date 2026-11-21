@@ -44,13 +44,13 @@
           </div>
         </div>
         <template v-if="summary">
-          <ul class="gxs" :aria-label="`Over the ${rangeLabel}`">
+          <ul class="gxr" :aria-label="`Over the ${rangeLabel}`">
             <li><span>Lowest</span><b>{{ gpText(summary.low) }}</b></li>
             <li><span>Highest</span><b>{{ gpText(summary.high) }}</b></li>
             <li><span>Average</span><b>{{ gpText(summary.avg) }}</b></li>
             <li v-if="summary.change != null"><span>Change</span><b :class="tone(summary.change)">{{ pctText(summary.change) }}</b></li>
           </ul>
-          <p v-if="verdict" class="gxs-verdict" :class="verdict.tone"><i aria-hidden="true" />{{ verdict.text }}</p>
+          <p v-if="verdict" class="gxr-verdict" :class="verdict.tone"><i aria-hidden="true" />{{ verdict.text }}</p>
         </template>
         <p v-if="historyError" class="empty-hint">{{ historyError }}</p>
         <div v-else-if="!history" class="gx-chart-sk sk" aria-busy="true" aria-label="Loading the chart" />
