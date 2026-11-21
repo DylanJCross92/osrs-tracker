@@ -40,9 +40,11 @@
           </div>
           <ol class="smo-list">
             <li v-for="(skill, i) in suggestion.order" :key="skill" :style="{ '--i': i }">
-              <span class="smo-n" :title="moved(skill, i) ? `Was number ${was.get(skill) + 1} in your order` : undefined">
+              <span class="smo-n">
                 <span aria-hidden="true">{{ i + 1 }}</span>
-                <small v-if="moved(skill, i)" class="smo-mv" :class="was.get(skill) > i ? 'up' : 'down'"><span aria-hidden="true">{{ was.get(skill) > i ? '↑' : '↓' }}</span> was {{ was.get(skill) + 1 }}</small>
+                <span v-if="moved(skill, i)" class="smo-mv" :class="was.get(skill) > i ? 'up' : 'down'" :title="`${was.get(skill) > i ? 'Up' : 'Down'} from number ${was.get(skill) + 1} in your order`" role="img" :aria-label="`Moved ${was.get(skill) > i ? 'up' : 'down'} from number ${was.get(skill) + 1}`">
+                  <svg viewBox="0 0 12 12" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="was.get(skill) > i ? 'M6 10V2M2.5 5.5L6 2l3.5 3.5' : 'M6 2v8M2.5 6.5L6 10l3.5-3.5'" /></svg>{{ Math.abs(was.get(skill) - i) }}
+                </span>
               </span>
               <img :src="skillIconSrc(skill)" alt="" width="28" height="28" />
               <div class="smo-main">
