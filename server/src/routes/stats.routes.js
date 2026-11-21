@@ -3,11 +3,10 @@ import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview } from '../services/stats.service.js'
 import { askedNotToTrack, cleanEvents, cleanVisitorId, isCrawler } from '../utils/events.js'
-import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
+import { activeAccounts, dailyActive, deleteVisitor, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
 import { funnelsOverview } from '../services/funnels.service.js'
-import { deleteCrawlerBursts, findCrawlerBursts } from '../services/crawlerCleanup.service.js'
 import { SEGMENTS } from '../utils/funnels.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
@@ -83,25 +82,6 @@ statsRouter.post('/stats/visitor-plans', plansLimiter, attachUser, async (req, r
     if (!vid || req.user || askedNotToTrack(req.headers) || isCrawler(req.headers['user-agent'])) return res.status(204).end()
     const ok = await saveVisitorPlans(vid, req.body?.plans, req.body?.planner)
     res.status(ok ? 204 : 413).end()
-  } catch (err) {
-    next(err)
-  }
-})
-
-// TEMPORARY, for the site owner: the visitor records a crawler left behind before crawlers were ignored (a burst of one-page item
-// visitors in the same minute). GET reports what would be removed, POST removes it. Remove this and the Visitors tab card once cleaned.
-statsRouter.get('/admin/stats/crawler-bursts', attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 20 }), async (req, res, next) => {
-  try {
-    res.set('Cache-Control', 'no-store')
-    const { ids, ...report } = await findCrawlerBursts(req.query)
-    res.json(report)
-  } catch (err) {
-    next(err)
-  }
-})
-statsRouter.post('/admin/stats/crawler-bursts/delete', attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 5 }), async (req, res, next) => {
-  try {
-    res.json(await deleteCrawlerBursts(req.body))
   } catch (err) {
     next(err)
   }
@@ -195,6 +175,17 @@ statsRouter.get('/admin/stats/events/:name', ...adminOnly, async (req, res, next
     if (!/^[a-z][a-z0-9_]{1,63}$/.test(name)) return res.status(404).end()
     res.set('Cache-Control', 'no-store')
     res.json(await eventDetail(name, askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: remove one browser visitor's records (their steps, and the plans copied from their browser). Not for accounts.
+statsRouter.post('/admin/stats/visitors/:key/delete', attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 120 }), async (req, res, next) => {
+  try {
+    const out = await deleteVisitor(req.params.key)
+    if (!out) return res.status(404).json({ error: 'That visitor cannot be deleted here. Accounts are deleted from the accounts list.' })
+    res.json(out)
   } catch (err) {
     next(err)
   }

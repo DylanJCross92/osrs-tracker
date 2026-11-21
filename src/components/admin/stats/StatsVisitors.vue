@@ -1,6 +1,6 @@
 <template>
   <div class="vz">
-    <StatsCrawlerCleanup />
+    <ConfirmDelete :open="asking" title="Delete this visitor?" :name="journey?.label || ''" :text="`and their ${fmt(journey?.count || 0)} steps will be deleted for good. This cannot be undone.`" cancel-label="Keep visitor" confirm-label="Delete visitor" @cancel="asking = false" @confirm="removeVisitor" />
     <p v-if="listError" class="cl-banner is-error" role="alert">{{ listError }}</p>
     <p v-else-if="!list" class="st-empty">Loading…</p>
     <template v-else>
@@ -38,8 +38,12 @@
                   <h2 id="vz-head">{{ journey.label }}</h2>
                   <p v-if="journey.players" class="vz-sub">{{ journey.players }}</p>
                 </div>
-                <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : journey.kind === 'anon' ? 'Several people, not told apart' : 'Not signed in' }}</span>
+                <div class="vz-head-side">
+                  <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : journey.kind === 'anon' ? 'Several people, not told apart' : 'Not signed in' }}</span>
+                  <button v-if="journey.kind === 'visitor'" class="btn-text vz-delete" type="button" @click="asking = true">Delete visitor</button>
+                </div>
               </div>
+              <p v-if="deleteError" class="cl-banner is-error" role="alert">{{ deleteError }}</p>
               <div class="vz-tiles">
                 <div><span>Steps</span><b>{{ fmt(journey.count) }}</b></div>
                 <div><span>Pages viewed</span><b>{{ fmt(journey.pages) }}</b></div>
@@ -88,8 +92,9 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { statsApi } from '@/api/stats'
+import { ApiError } from '@/api/client'
 import StatChart from './StatChart.vue'
-import StatsCrawlerCleanup from './StatsCrawlerCleanup.vue'
+import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import { ago, count, fmt } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
 import { describeEvent } from '@/utils/describeEvent'
@@ -107,6 +112,21 @@ const journey = one.data
 const journeyError = one.error
 
 const filter = ref('')
+// Deleting one browser visitor (their steps and the plans copied from their browser), from the detail's header.
+const asking = ref(false)
+const deleteError = ref('')
+async function removeVisitor() {
+  asking.value = false
+  deleteError.value = ''
+  const key = selected.value
+  try {
+    await statsApi.deleteVisitor(key)
+    selected.value = ''
+    await people.load(props.days)
+  } catch (err) {
+    deleteError.value = err instanceof ApiError ? err.message : 'Could not delete this visitor. Try again.'
+  }
+}
 const selected = ref('')
 const detail = ref(null)
 const openSessions = reactive(new Set([0]))

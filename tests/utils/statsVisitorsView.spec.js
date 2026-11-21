@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
+const deleteVisitor = vi.hoisted(() => vi.fn(async () => ({ events: 3 })))
 vi.mock('@/api/stats', () => ({
   statsApi: {
+    deleteVisitor,
     visitors: vi.fn(async () => ({
       days: 30,
       visitors: [
@@ -12,7 +14,7 @@ vi.mock('@/api/stats', () => ({
     })),
     journey: vi.fn(async (key) => ({
       key,
-      kind: 'account',
+      kind: key.startsWith('v:') ? 'visitor' : 'account',
       label: 'me@example.com',
       players: 'Zezima',
       days: 30,
@@ -69,5 +71,21 @@ describe('Visitors tab', () => {
     await flushPromises()
     await w.find('input[type=search]').setValue('zezima')
     expect(w.findAll('.vz-person')).toHaveLength(1)
+  })
+
+  it('deletes one browser visitor after asking, and never offers it for an account', async () => {
+    const w = mount(StatsVisitors, { props: { days: 30 }, global: { stubs: { StatChart: true } }, attachTo: document.body })
+    await flushPromises()
+    // The first (signed-in account) has no delete button.
+    expect(w.find('.vz-delete').exists()).toBe(false)
+    await w.findAll('.vz-person')[1].trigger('click')
+    await flushPromises()
+    await w.find('.vz-delete').trigger('click')
+    expect(deleteVisitor).not.toHaveBeenCalled()
+    expect(document.body.querySelector('.modal-card').textContent).toContain('Delete this visitor?')
+    document.body.querySelector('.modal-card .po-delete').click()
+    await flushPromises()
+    expect(deleteVisitor).toHaveBeenCalledWith(`v:${'ab'.repeat(16)}`)
+    w.unmount()
   })
 })

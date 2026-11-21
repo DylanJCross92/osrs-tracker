@@ -123,6 +123,21 @@ async function addPlanOwners(rows, viewedKey) {
 }
 
 /** One person's journey over the last `days` days (see utils/journeys.js), or null for a key that is not one. */
+/**
+ * Deletes one browser visitor's records: their events and the plans copied from their browser. Only a visitor who never signed in
+ * can be removed this way (an account is deleted from the accounts list). Returns { events } removed, or null for a key that is not a
+ * browser visitor or a visitor who belongs to an account.
+ */
+export async function deleteVisitor(key) {
+  const person = parsePersonKey(key)
+  if (!person || person.kind !== 'visitor') return null
+  const { rows } = await pool.query('SELECT 1 FROM visitor_links WHERE visitor_id = $1', [person.id])
+  if (rows.length) return null
+  const del = await pool.query('DELETE FROM events WHERE visitor_id = $1 AND account_id IS NULL', [person.id])
+  await pool.query('DELETE FROM visitor_data WHERE visitor_id = $1', [person.id])
+  return { events: del.rowCount }
+}
+
 export async function journeyOf(key, days) {
   const person = parsePersonKey(key)
   if (!person) return null

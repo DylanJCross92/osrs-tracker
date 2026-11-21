@@ -32,9 +32,8 @@ export const statsApi = {
   sendClaimEmail: (id) => api.post(`/admin/users/${id}/claim-email`, {}),
   // Site owner only: delete an account (not a team account, not your own). { ok, email }.
   deleteAccount: (id) => api.post(`/admin/users/${id}/delete`, {}),
-  // TEMPORARY, site owner only: the crawler burst records that could be removed ({ since, min, prefix, visitors, events, minutes }), and removing them.
-  crawlerBursts: (min) => api.get(`/admin/stats/crawler-bursts${min ? `?min=${encodeURIComponent(min)}` : ''}`),
-  deleteCrawlerBursts: (since, min) => api.post('/admin/stats/crawler-bursts/delete', { since, min }),
+  // Site owner only: delete one browser visitor's records (not an account). { events }.
+  deleteVisitor: (key) => api.post(`/admin/stats/visitors/${encodeURIComponent(key)}/delete`, {}),
   journey: (key, days = 30) => api.get(`/admin/stats/visitors/${encodeURIComponent(key)}?days=${days}`),
   // A visitor who is not signed in: the plans saved in their browser, under their random visitor number.
   visitorPlans: (vid, plans, planner) => api.post('/stats/visitor-plans', { vid, plans, planner }),
