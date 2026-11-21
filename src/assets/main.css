@@ -6630,8 +6630,12 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .so-fig { width: 104px; }
 @media (max-width: 520px) { .so-fig { width: 84px; min-width: 84px; } .so-fig b { font-size: 1rem; } }
 
-/* In the Smart order window: a plan with no player yet is told the order is more accurate with a name. */
-.so-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid #c9b6ff; }
-.so-name p { flex: 1 1 260px; margin: 0; color: var(--muted); font-size: 0.86rem; max-width: none; line-height: 1.4; }
+/* In the Smart order window: a plan with no player yet is told the order is more accurate with a name, with the name field right there. */
+.so-name { margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid #c9b6ff; }
+.so-name p { margin: 0 0 8px; color: var(--muted); font-size: 0.86rem; max-width: none; line-height: 1.4; }
 .so-name p b { color: var(--text); }
-.so-name-btn { flex: none; padding: 6px 14px; font-size: 0.86rem; }
+.so-name-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.so-name-input { flex: 1 1 220px; min-width: 0; padding: 9px 14px; border: 1px solid var(--border-strong); border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 0.95rem; }
+.so-name-input:focus { outline: none; border-color: #c9b6ff; box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.18); }
+.so-name-btn { flex: none; padding: 8px 18px; font-size: 0.88rem; }
+.so-name p.so-name-error { margin: 8px 0 0; color: #f0987f; font-weight: 600; }

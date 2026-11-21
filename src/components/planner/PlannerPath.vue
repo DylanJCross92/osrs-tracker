@@ -89,7 +89,7 @@
       :label="`${strategyLabel} route`"
       @close="sharing = -1"
     />
-    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" @close="suggestion = null" @apply="applySuggestion" @add-name="addName" />
+    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" :player-label="playerLabel" :looking-up="lookingUp" :lookup-error="lookupError" @close="suggestionOpen = false" @apply="applySuggestion" @lookup-name="(name) => emit('lookup-name', name)" />
   </section>
 </template>
 
@@ -120,25 +120,26 @@ const props = defineProps({
   editSkill: { type: String, default: '' },
   // Whether the plan is worked out from a player's real stats (without one, every skill starts at level 1).
   hasPlayer: { type: Boolean, default: true },
+  playerLabel: { type: String, default: '' },
+  // A name typed into the Smart order window is being looked up, and how that went.
+  lookingUp: { type: Boolean, default: false },
+  lookupError: { type: String, default: '' },
 })
-const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all', 'add-name'])
+const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all', 'lookup-name'])
 
 // --- The suggested order (utils/smartOrder.js): a window with the reasons, and a button to use it --------------------------------------
-const suggestion = ref(null)
+const suggestionOpen = ref(false)
+// Worked out again whenever the goals change, so the window updates when a name is added and the plan is rebuilt from the real levels.
+const suggestion = computed(() => (suggestionOpen.value ? smartOrder(props.goals, props.plans) : null))
 // Whether the plan is already in the suggested order, so the button can explain it instead of offering a change.
 const fits = computed(() => canSuggest.value && !smartOrder(props.goals, props.plans).changed)
 const canSuggest = computed(() => props.goals.length >= 2 && props.goals.filter((_, i) => !isDone(i)).length >= 2)
 function openSuggestion() {
-  suggestion.value = smartOrder(props.goals, props.plans)
-  track('planner_smart_order_opened', { skills: props.goals.length, changed: suggestion.value.changed })
-}
-function addName() {
-  suggestion.value = null
-  track('planner_smart_order_add_name')
-  emit('add-name')
+  suggestionOpen.value = true
+  track('planner_smart_order_opened', { skills: props.goals.length, changed: !fits.value })
 }
 function applySuggestion(order) {
-  suggestion.value = null
+  suggestionOpen.value = false
   track('planner_smart_order_used', { skills: order.length })
   emit('reorder-all', order)
 }

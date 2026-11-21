@@ -17,14 +17,32 @@ const mountIt = (props = {}) => {
 }
 
 describe('the Smart order window', () => {
-  it('asks for a name, as a way to be more accurate, when the plan has no player', async () => {
+  it('asks for a name, as a way to be more accurate, with the field right there', async () => {
     const w = mountIt({ hasPlayer: false })
     await flushPromises()
-    const note = document.body.querySelector('.so-name')
-    expect(note.textContent).toContain('More accurate with your name')
-    expect(note.textContent).toContain('level 1')
-    note.querySelector('button').click()
-    expect(w.emitted('add-name')).toHaveLength(1)
+    const form = document.body.querySelector('.so-name')
+    expect(form.textContent).toContain('More accurate with your name')
+    expect(form.textContent).toContain('level 1')
+    expect(form.querySelector('input')).not.toBeNull()
+    // Nothing to look up until something is typed.
+    expect(form.querySelector('button').disabled).toBe(true)
+    w.unmount()
+  })
+  it('sends the typed name to be looked up, and shows how it went', async () => {
+    const w = mountIt({ hasPlayer: false })
+    await flushPromises()
+    const input = document.body.querySelector('.so-name-input')
+    input.value = '  Zezima '
+    input.dispatchEvent(new Event('input'))
+    await flushPromises()
+    document.body.querySelector('.so-name').dispatchEvent(new Event('submit'))
+    await flushPromises()
+    expect(w.emitted('lookup-name')).toEqual([['Zezima']])
+    await w.setProps({ lookupError: 'No stats found for that player yet.' })
+    expect(document.body.querySelector('.so-name-error').textContent).toContain('No stats found')
+    await w.setProps({ hasPlayer: true, playerLabel: 'Zezima', lookupError: '' })
+    expect(document.body.querySelector('.so-name')).toBeNull()
+    expect(document.body.textContent).toContain("Now using Zezima's levels")
     w.unmount()
   })
   it('does not ask when the plan already uses a player', async () => {
