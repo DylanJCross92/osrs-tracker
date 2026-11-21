@@ -87,7 +87,7 @@
       :label="`${strategyLabel} route`"
       @close="sharing = -1"
     />
-    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" @close="suggestion = null" @apply="applySuggestion" />
+    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" @close="suggestion = null" @apply="applySuggestion" @add-name="addName" />
   </section>
 </template>
 
@@ -116,8 +116,10 @@ const props = defineProps({
   highlight: { type: String, default: '' },
   // The skill whose editor is open.
   editSkill: { type: String, default: '' },
+  // Whether the plan is worked out from a player's real stats (without one, every skill starts at level 1).
+  hasPlayer: { type: Boolean, default: true },
 })
-const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all'])
+const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all', 'add-name'])
 
 // --- The suggested order (utils/smartOrder.js): a window with the reasons, and a button to use it --------------------------------------
 const suggestion = ref(null)
@@ -127,6 +129,11 @@ const canSuggest = computed(() => props.goals.length >= 2 && props.goals.filter(
 function openSuggestion() {
   suggestion.value = smartOrder(props.goals, props.plans)
   track('planner_smart_order_opened', { skills: props.goals.length, changed: suggestion.value.changed })
+}
+function addName() {
+  suggestion.value = null
+  track('planner_smart_order_add_name')
+  emit('add-name')
 }
 function applySuggestion(order) {
   suggestion.value = null

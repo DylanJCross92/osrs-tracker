@@ -25,6 +25,11 @@
             <li v-if="suggestion.summary.spenders"><b>{{ suggestion.summary.spenders }}</b> big spend later</li>
             <li v-if="suggestion.summary.netGp != null" :class="suggestion.summary.netGp >= 0 ? 'gain' : 'cost'">Plan {{ gp(suggestion.summary.netGp) }}</li>
           </ul>
+          <!-- No player yet: the order is only as good as the levels it was worked out from -->
+          <div v-if="!hasPlayer" class="so-name" role="note">
+            <p><b>More accurate with your name.</b> Right now every skill starts at level 1. Add your RuneScape name and the order uses your real levels.</p>
+            <button class="btn btn-ghost so-name-btn" type="button" @click="$emit('add-name')">Add my RuneScape name</button>
+          </div>
           <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
           <ol class="so-list">
             <li v-for="(skill, i) in suggestion.order" :key="skill" :style="{ '--i': i }">
@@ -59,8 +64,8 @@ import { formatGp, levelAtXp } from '@/utils/planner'
 
 // The suggestion from utils/smartOrder.js: the order with a short reason for each skill, what each skill's goal earns or costs in gp (the
 // figure on the right, with a bar for how big it is next to the others), and a button to use it.
-const props = defineProps({ suggestion: { type: Object, required: true }, goals: { type: Array, required: true } })
-const emit = defineEmits(['close', 'apply'])
+const props = defineProps({ suggestion: { type: Object, required: true }, goals: { type: Array, required: true }, hasPlayer: { type: Boolean, default: true } })
+const emit = defineEmits(['close', 'apply', 'add-name'])
 const useBtn = ref(null)
 // A short pause before the answer, so it reads as worked out. Skipped for anyone who asked for less motion.
 const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches

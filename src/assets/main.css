@@ -6614,3 +6614,9 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .so-fig.cost i { background: linear-gradient(90deg, rgba(224, 122, 99, 0.3), #e07a63); }
 .so-fig { width: 104px; }
 @media (max-width: 520px) { .so-fig { width: 84px; min-width: 84px; } .so-fig b { font-size: 1rem; } }
+
+/* In the Smart order window: a plan with no player yet is told the order is more accurate with a name. */
+.so-name { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 12px; padding: 2px 0 2px 12px; border-left: 2px solid #c9b6ff; }
+.so-name p { flex: 1 1 260px; margin: 0; color: var(--muted); font-size: 0.86rem; max-width: none; line-height: 1.4; }
+.so-name p b { color: var(--text); }
+.so-name-btn { flex: none; padding: 6px 14px; font-size: 0.86rem; }

@@ -110,7 +110,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder" :has-player="!!player?.latest" @add-name="openSettings(true)">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -939,17 +939,21 @@ function personalizeTemplate() {
   // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
   if (template.value?.recommendedId) {
     const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
-    if (rec) goals.value = rec.goals.map(withSuggestedQuests)
+    if (rec) goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), { globalStrategy: globalStrategy.value, gpValue: gpValue.value }).goals
     else goals.value = []
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
     track('planner_recommended_personalized', { goals: goals.value.length })
     return
   }
+  const orderOpts = { globalStrategy: globalStrategy.value, gpValue: gpValue.value }
+  const wasSmart = goals.value.length > 1 && !smartOrderGoals(goals.value, orderOpts).changed
   for (const g of goals.value) {
     const xp = playerXp(g.skill) ?? 0
     g.currentXp = Math.min(xp, g.targetXp)
   }
+  // A plan that was in the suggested order is put in it again, now that the real levels are known.
+  if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
   statsAt.value = player.value.latest.capturedAt
   templatePending.value = false
   track('planner_template_personalized', { goals: goals.value.length })
