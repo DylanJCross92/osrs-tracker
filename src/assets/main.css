@@ -6377,6 +6377,8 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 /* The prices are gold, so the gp figures stand out from the item names and amounts. */
 .mat-table td.mat-each, .mat-table td.mat-cost, .planner-table td.mat-cost { color: var(--gold-bright); }
 .mat-table td.mat-cost b { font-weight: 700; }
+/* The × and = between the columns show how the cost is worked out (needed × price each = cost). */
+.mat-table .mat-op { width: 1%; padding-left: 2px; padding-right: 2px; text-align: center; color: rgba(236, 228, 211, 0.38); font-weight: 400; user-select: none; }
 .mat-table th.num { text-align: right; }
 .mat-table tfoot td { padding-top: 10px; border-bottom: 0; font-weight: 600; }
 .mat-table tfoot b { color: var(--gold-bright); font-size: 1.05rem; }
@@ -6424,7 +6426,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gpb span { min-width: 0; }
 .mat-sub { display: none; }
 @media (max-width: 640px) {
-  .mat-each { display: none; }
+  .mat-each, .mat-op { display: none; }
   .mat-sub { display: block; margin-top: 1px; color: var(--muted); font-size: 0.76rem; font-weight: 500; }
   .mat-table td, .mat-table th { padding-left: 6px; padding-right: 6px; }
   .mat-item { align-items: flex-start; }

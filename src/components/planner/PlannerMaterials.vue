@@ -11,7 +11,7 @@
     <div v-if="data.rows.length" class="mat-scroll-x">
       <table class="mat-table">
         <thead>
-          <tr><th>Item</th><th class="num">Needed</th><th class="num mat-each">Price each</th><th class="num">Cost</th></tr>
+          <tr><th>Item</th><th class="num">Needed</th><th class="mat-op" aria-hidden="true" /><th class="num mat-each">Price each</th><th class="mat-op" aria-hidden="true" /><th class="num">Cost</th></tr>
         </thead>
         <tbody>
           <tr v-for="t in totals" :key="t.name">
@@ -21,13 +21,16 @@
               </component>
             </td>
             <td class="num">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }}</td>
+            <td class="mat-op" aria-hidden="true">{{ t.each == null ? '' : '×' }}</td>
             <td class="num mat-each">{{ t.each == null ? '-' : `${gpText(t.each)} gp` }}</td>
+            <td class="mat-op" aria-hidden="true">{{ t.each == null ? '' : '=' }}</td>
             <td class="num mat-cost"><b v-if="t.cost != null">{{ gpText(t.cost) }} gp</b><span v-else class="mat-none" title="This item has no Grand Exchange price right now">no price</span></td>
           </tr>
         </tbody>
         <tfoot v-if="priced.total != null">
           <tr>
             <td colspan="2" class="mat-total-label">Total to buy<small v-if="priced.missing"> ({{ priced.missing }} {{ priced.missing === 1 ? 'item has' : 'items have' }} no price and {{ priced.missing === 1 ? 'is' : 'are' }} not counted)</small></td>
+            <td class="mat-op" /><td class="mat-each" /><td class="mat-op" />
             <td class="num"><b>{{ gpText(priced.total) }} gp</b></td>
           </tr>
         </tfoot>
