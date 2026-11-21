@@ -6476,7 +6476,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .wl-x:hover, .wl-x:focus-visible { color: #f0987f; outline: none; }
 .wl:not(.card) .wl-head { justify-content: center; }
 .wl:not(.card) .wl-list { display: flex; flex-wrap: wrap; justify-content: center; }
-.wl:not(.card) .wl-list li { flex: 0 1 280px; }
+.wl:not(.card) .wl-list li { flex: 0 1 330px; }
 .wl:not(.card) .wl-note { text-align: center; }
 .wl-note { margin: 10px 2px 0; color: var(--muted); font-size: 0.78rem; }
 .gxh-watch { margin: 0 0 18px; }
@@ -6558,3 +6558,9 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .cc-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 10px; }
 .cc-minutes { margin: 0; padding: 0; list-style: none; columns: 2 260px; font-size: 0.86rem; color: var(--muted); }
 .cc-minutes b { color: var(--text); }
+
+/* The small price line on a watchlist card. */
+.psk { display: block; flex: none; width: 72px; height: 26px; color: var(--muted); overflow: visible; }
+.psk.up { color: #9fd48a; }
+.psk.down { color: #f0987f; }
+.wl-spark { margin-right: 6px; }

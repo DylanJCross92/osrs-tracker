@@ -3,8 +3,9 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 
 const watchApi = vi.fn()
+const sparkApi = vi.fn()
 const showToast = vi.fn()
-vi.mock('@/api/ge', () => ({ geApi: { watch: (...a) => watchApi(...a) } }))
+vi.mock('@/api/ge', () => ({ geApi: { watch: (...a) => watchApi(...a), spark: (...a) => sparkApi(...a) } }))
 vi.mock('@/utils/analytics', () => ({ track: vi.fn() }))
 vi.mock('@/composables/useAuth', () => ({ useAuth: () => ({ loggedIn: ref(false) }) }))
 vi.mock('@/composables/useToast', () => ({ useToast: () => ({ showToast }) }))
@@ -22,6 +23,7 @@ beforeEach(() => {
   localStorage.clear()
   reloadWatchlist()
   watchApi.mockReset()
+  sparkApi.mockReset().mockResolvedValue({ spark: {} })
   showToast.mockReset()
 })
 
@@ -78,6 +80,8 @@ describe('the dashboard card', () => {
     const names = w.findAll('.wl-name b').map((b) => b.text())
     expect(names).toEqual(['Dragon bones', 'Law rune'])
     expect(w.text()).toContain('3,695')
+    // One request for every watched item's small graph, drawn only for the ones that came back with a history.
+    expect(sparkApi).toHaveBeenCalledWith(['dragon-bones', 'law-rune'])
     await w.find('.wl-x').trigger('click')
     expect(stored()).toEqual(['law-rune'])
   })

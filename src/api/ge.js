@@ -7,6 +7,8 @@ export const geApi = {
   // { updatedAt, stale, prices: { "lower case name": [high, low, slug, icon|null] } } for the item names given.
   // The same rows as index for just the items with these addresses (the ones someone watches).
   watch: (slugs) => api.get(`/ge/watch?slugs=${encodeURIComponent(slugs.join(','))}`),
+  // { days, spark: { slug: [daily average price, ...oldest first] } } for the small graphs on the watchlist.
+  spark: (slugs) => api.get(`/ge/spark?slugs=${encodeURIComponent(slugs.join(','))}`),
   prices: (names) => api.get(`/ge/prices?names=${encodeURIComponent(names.join('|'))}`),
   item: (slug) => api.get(`/ge/items/${encodeURIComponent(slug)}`),
   // { range, points: [{ t, high, low, vol }] } for 1d, 1w, 1m, 3m or 1y.

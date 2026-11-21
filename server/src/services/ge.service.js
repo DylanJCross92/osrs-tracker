@@ -307,6 +307,27 @@ export async function listItemsForSitemap() {
 }
 
 /** The id of the item with this address, or null. */
+/**
+ * The daily average price of each item over the last `days` days, oldest first, for the small graphs on the watchlist:
+ * { "dragon-bones": [3700, 3650, ...] }. Days with no trades are left out; an item with no history has no entry.
+ */
+export async function getSparklines(slugs, days = 30) {
+  if (!slugs.length) return {}
+  const { rows } = await pool.query(
+    `SELECT i.slug, d.day, d.high_sum, d.high_vol, d.low_sum, d.low_vol
+     FROM ge_items i JOIN ge_daily d ON d.item_id = i.item_id
+     WHERE i.slug = ANY($1::text[]) AND d.day >= (now() AT TIME ZONE 'utc')::date - $2::int
+     ORDER BY i.slug, d.day`,
+    [slugs, days],
+  )
+  const out = {}
+  for (const r of rows) {
+    const mid = dailyMid(r)
+    if (mid != null) (out[r.slug] ||= []).push(mid)
+  }
+  return out
+}
+
 export async function getItemIdBySlug(slug) {
   const { rows } = await pool.query('SELECT item_id FROM ge_items WHERE slug = $1', [slug])
   return rows[0]?.item_id ?? null

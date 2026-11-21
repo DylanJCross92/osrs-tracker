@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { HISTORY_RANGES } from '../utils/ge.js'
-import { GeUnavailableError, getHistory, getItemBySlug, getItemIdBySlug, getItemIndex, getPricesByName, MAX_PRICE_NAMES } from '../services/ge.service.js'
+import { GeUnavailableError, getHistory, getItemBySlug, getItemIdBySlug, getItemIndex, getPricesByName, getSparklines, MAX_PRICE_NAMES } from '../services/ge.service.js'
 
 // Public Grand Exchange data: nothing here is about a person. The price data comes from a database that a job keeps up to date, so these
 // reads are cheap; history is fetched from the wiki on demand and kept for a while (see services/ge.service.js).
@@ -43,6 +43,19 @@ geRouter.get('/ge/watch', readLimiter, async (req, res, next) => {
       stale,
       items: wanted.map((s) => bySlug.get(s)).filter(Boolean).map((i) => [i.id, i.name, i.slug, i.members ? 1 : 0, i.high, i.low, i.volume, i.limit, i.change1, i.change7, i.change30, i.margin, i.icon]),
     })
+  } catch (err) {
+    fail(err, res, next)
+  }
+})
+
+// The last 30 days of daily average prices for the items someone watches, for their small graphs: ?slugs=dragon-bones,law-rune gives
+// { "dragon-bones": [3700, 3650, ...] } with the oldest day first. Up to 100 items.
+geRouter.get('/ge/spark', readLimiter, async (req, res, next) => {
+  try {
+    const wanted = [...new Set(String(req.query.slugs || '').split(',').map((x) => x.trim()).filter((x) => SLUG.test(x)))].slice(0, 100)
+    if (!wanted.length) return res.status(400).json({ error: 'Give the item addresses to look up, separated by commas.' })
+    res.set('Cache-Control', 'public, max-age=600')
+    res.json({ days: 30, spark: await getSparklines(wanted, 30) })
   } catch (err) {
     fail(err, res, next)
   }

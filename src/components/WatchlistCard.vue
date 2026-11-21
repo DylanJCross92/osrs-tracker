@@ -9,10 +9,8 @@
         <RouterLink class="wl-item" :to="{ name: 'item', params: { slug: r.slug } }" @click="onItemLinkClick($event, r.slug, 'watchlist')">
           <img :src="itemImage(r.icon, r.name)" alt="" width="28" height="28" loading="lazy" @error="hideImage" />
           <span class="wl-name"><b>{{ r.name }}</b><small>{{ r.price == null ? 'no price yet' : `${gpText(r.price)} gp` }}</small></span>
-          <span class="wl-chg">
-            <span v-if="r.price >= MIN_PRICE && r.change1 != null" class="gxt-pill" :class="r.change1 > 0 ? 'up' : r.change1 < 0 ? 'down' : 'flat'">{{ pctText(r.change1) }}</span>
-            <small v-if="r.price >= MIN_PRICE && r.change7 != null" :class="changeClass(r.change7)">7d {{ pctText(r.change7) }}</small>
-          </span>
+          <PriceSpark class="wl-spark" :values="sparks[r.slug]" :label="`${r.name} price over the last 30 days`" />
+          <span v-if="r.price >= MIN_PRICE && r.change1 != null" class="wl-chg"><span class="gxt-pill" :class="r.change1 > 0 ? 'up' : r.change1 < 0 ? 'down' : 'flat'">{{ pctText(r.change1) }}</span></span>
         </RouterLink>
         <button type="button" class="wl-x" :aria-label="`Stop watching ${r.name}`" title="Stop watching" @click="remove(r.slug, variant)">×</button>
       </li>
@@ -22,16 +20,37 @@
 </template>
 
 <script setup>
-import { changeClass, gpText, itemImage, pctText } from '@/utils/geFormat'
+import { gpText, itemImage, pctText } from '@/utils/geFormat'
+import PriceSpark from '@/components/PriceSpark.vue'
+import { geApi } from '@/api/ge'
 import { MIN_PRICE } from '@/utils/geTrending'
+import { computed, ref, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { onItemLinkClick } from '@/composables/useItemModal'
 import { useWatchlist } from '@/composables/useWatchlist'
 
 // The items someone watches with their price and change. `rows` are item rows (see utils/geFormat.js rowsFromIndex), newest watched first.
-defineProps({ rows: { type: Array, required: true }, variant: { type: String, default: 'ge' } })
+const props = defineProps({ rows: { type: Array, required: true }, variant: { type: String, default: 'ge' } })
 const { remove } = useWatchlist()
 const { loggedIn } = useAuth()
+// The small 30-day graphs: one request for all the watched items, asked for again only when the set of items changes.
+const sparks = ref({})
+const slugKey = computed(() => props.rows.map((r) => r.slug).join(','))
+let ticket = 0
+watch(
+  slugKey,
+  async (key) => {
+    if (!key) return
+    const mine = ++ticket
+    try {
+      const res = await geApi.spark(key.split(','))
+      if (mine === ticket) sparks.value = res.spark || {}
+    } catch {
+      /* the cards just show without the graph */
+    }
+  },
+  { immediate: true },
+)
 const hideImage = (e) => {
   e.target.style.visibility = 'hidden'
 }
