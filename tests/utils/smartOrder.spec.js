@@ -85,3 +85,15 @@ describe('the suggested training order', () => {
     expect(r.summary.netGp).toBe(-72_000_000 + 20_000_000 + 300_000)
   })
 })
+
+describe('the order it gives is the order it keeps', () => {
+  it('gives the same order whatever order the skills came in, and keeps it when asked again', () => {
+    const skills = ['Woodcutting', 'Mining', 'Fishing', 'Farming', 'Magic', 'Hunter', 'Thieving', 'Cooking', 'Smithing', 'Crafting', 'Fletching', 'Herblore']
+    const make = (list) => list.map((skill) => ({ skill, currentXp: xpAtLevel(1), targetXp: xpAtLevel(99) }))
+    const first = smartOrderGoals(make(skills), {}).goals.map((g) => g.skill)
+    for (const shuffled of [[...skills].reverse(), [...skills.slice(5), ...skills.slice(0, 5)], [...first].reverse()]) {
+      expect(smartOrderGoals(make(shuffled), {}).goals.map((g) => g.skill)).toEqual(first)
+    }
+    expect(smartOrderGoals(make(first), {}).changed).toBe(false)
+  })
+})

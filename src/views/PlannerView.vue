@@ -181,7 +181,7 @@ import PlannerSkillEditor from '@/components/planner/PlannerSkillEditor.vue'
 import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import ConfirmDelete from '@/components/ConfirmDelete.vue'
-import { smartOrderGoals } from '@/utils/smartOrder'
+import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -477,6 +477,8 @@ const reqCtx = computed(() => {
 provide(plannerRequirementContext, reqCtx)
 const blockedIds = computed(() => (respect.value ? blockedMethodIds(TRAINING_METHODS, reqCtx.value) : []))
 const withBlocked = (g) => ({ ...g, blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value })
+// What the suggested order is worked out with: the planner's own settings and adjustments, so it matches the plans on screen.
+const smartOpts = () => ({ globalStrategy: globalStrategy.value, gpValue: gpValue.value, extra: { blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value } })
 // A new goal starts with the short XP quests that pay off for it (or that a method on its route needs anyway).
 const withSuggestedQuests = (g) => ({ ...g, quests: suggestedQuests(withBlocked(resolveGoal({ ...g, quests: [] }, globalStrategy.value, gpValue.value))) })
 const resolved = computed(() => liveGoals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
@@ -492,6 +494,16 @@ function memo(cache, key, fn) {
 }
 const goalKey = (g, withMethod) => JSON.stringify([g.skill, g.currentXp, g.targetXp, withMethod ? g.methodId : '', withMethod ? g.customXpPerHour : '', g.quests, g.gpValuePerHour, g.overrides || null, g.allowedMethodIds || null, g.blockedMethodIds || null, g.doneQuestIds || null, priceVersion.value])
 const plans = computed(() => resolved.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
+// A recommended plan stays in the suggested order until the player arranges it themselves: prices and the player's stats keep arriving
+// just after it is made, and the best order follows them.
+const keepSmart = ref(false)
+watch(plans, (list) => {
+  if (!keepSmart.value || !template.value?.recommendedId || goals.value.length < 2 || list.length !== goals.value.length) return
+  const { order, changed } = smartOrder(goals.value, list)
+  if (!changed) return
+  const rank = new Map(order.map((skill, i) => [skill, i]))
+  goals.value = [...goals.value].sort((a, b) => rank.get(a.skill) - rank.get(b.skill))
+})
 const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 // A plan that is just being explored (not saved to anything) is not tracked: progress only starts once it is saved.
 const scratch = ref(false)
@@ -755,7 +767,7 @@ function addGoal(goal) {
   const first = !goals.value.length
   if (first) tab.value = 'overview'
   // A plan still in the suggested order stays in it when a skill is added; one the player has arranged is left alone.
-  const orderOpts = { globalStrategy: globalStrategy.value, gpValue: gpValue.value }
+  const orderOpts = smartOpts()
   const wasSmart = !first && !smartOrderGoals(goals.value, orderOpts).changed
   goals.value.push(goal)
   if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
@@ -781,6 +793,7 @@ function reorderTo(from, to) {
   const [moved] = next.splice(from, 1)
   next.splice(to, 0, moved)
   goals.value = next
+  keepSmart.value = false
   track('planner_goal_reordered')
   saveIfChanged()
 }
@@ -980,14 +993,14 @@ function personalizeTemplate() {
   // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
   if (template.value?.recommendedId) {
     const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
-    if (rec) goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), { globalStrategy: globalStrategy.value, gpValue: gpValue.value }).goals
+    if (rec) goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals
     else goals.value = []
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
     track('planner_recommended_personalized', { goals: goals.value.length })
     return
   }
-  const orderOpts = { globalStrategy: globalStrategy.value, gpValue: gpValue.value }
+  const orderOpts = smartOpts()
   const wasSmart = goals.value.length > 1 && !smartOrderGoals(goals.value, orderOpts).changed
   for (const g of goals.value) {
     const xp = playerXp(g.skill) ?? 0
@@ -1030,11 +1043,12 @@ function useRecommended(rec) {
   tab.value = 'overview'
   goalFilter.value = 'all'
   // A new plan starts in the suggested order (see utils/smartOrder.js), tailored to the player's stats.
-  goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), { globalStrategy: globalStrategy.value, gpValue: gpValue.value }).goals
+  goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)
   template.value = { slug: '', name: rec.title, rsn: '', recommendedId: rec.id }
+  keepSmart.value = true
   templatePending.value = !player.value?.latest
   expanded.value = new Set() // goals stay collapsed; only a goal you add yourself opens
   track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest })

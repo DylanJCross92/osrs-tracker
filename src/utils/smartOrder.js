@@ -49,7 +49,8 @@ export function smartOrder(goals, plans) {
     return 0
   }
   // Short skills first, a little: the rank among the open skills by hours, 1 for the shortest down to 0.
-  const byHours = [...open].sort((a, b) => a.hours - b.hours || a.index - b.index)
+  const byName = (a, b) => (a.skill < b.skill ? -1 : a.skill > b.skill ? 1 : 0)
+  const byHours = [...open].sort((a, b) => a.hours - b.hours || byName(a, b))
   const quick = new Map(byHours.map((x, i) => [x.skill, open.length > 1 ? 1 - i / (open.length - 1) : 0]))
 
   // Greedy: the skill that helps the most others still to come (and needs the fewest) goes next.
@@ -58,7 +59,8 @@ export function smartOrder(goals, plans) {
   while (remaining.size) {
     let best = null
     let bestScore = -Infinity
-    for (const x of open) {
+    // Ties go by skill name, never by the order given, so the same plan always gets the same order (and the order it gives is the order it keeps).
+    for (const x of [...open].sort(byName)) {
       if (!remaining.has(x.skill)) continue
       const gives = edges.filter((e) => e.from === x.skill && remaining.has(e.to)).reduce((s, e) => s + e.w, 0)
       const needs = edges.filter((e) => e.to === x.skill && remaining.has(e.from)).reduce((s, e) => s + e.w, 0)
@@ -113,8 +115,9 @@ export function smartOrder(goals, plans) {
  * The goals in the suggested order, worked out with the planner's own settings (so a plan can be ordered before it is on screen).
  * Returns { goals, changed }.
  */
-export function smartOrderGoals(goals, { globalStrategy, gpValue } = {}) {
-  const plans = goals.map((g) => planGoal(resolveGoal(g, globalStrategy, gpValue)))
+export function smartOrderGoals(goals, { globalStrategy, gpValue, extra } = {}) {
+  // `extra` is what the planner adds to every goal before working it out (blocked methods, quests done), so the order is worked out from the same plans the planner shows.
+  const plans = goals.map((g) => planGoal({ ...resolveGoal(g, globalStrategy, gpValue), ...extra }))
   const { order, changed } = smartOrder(goals, plans)
   const rank = new Map(order.map((skill, i) => [skill, i]))
   return { goals: [...goals].sort((a, b) => rank.get(a.skill) - rank.get(b.skill)), changed }
