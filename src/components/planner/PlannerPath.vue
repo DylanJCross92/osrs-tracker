@@ -66,7 +66,7 @@
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
           <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" />
-          <PlannerPathDetails :plan="plans[i]" :goal="g" @edit="emit('edit', g.skill)" />
+          <PlannerPathDetails :plan="plans[i]" :goal="g" @edit="(tab) => emit('edit', g.skill, tab)" />
         </template>
       </li>
     </ol>
