@@ -31,7 +31,10 @@
           </div>
           <p v-else-if="openedWithoutPlayer" class="so-fits" role="status">Now using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. The order below is worked out from them.</p>
           <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
-          <p class="so-colhead" aria-hidden="true">Net cost</p>
+          <div class="so-colhead">
+            <span>Net cost</span>
+            <b v-if="suggestion.summary.netGp != null" :class="suggestion.summary.netGp >= 0 ? 'gain' : 'cost'" title="Earned or spent over the whole plan at today's prices">{{ gp(suggestion.summary.netGp) }}</b>
+          </div>
           <ol class="so-list">
             <li v-for="(skill, i) in suggestion.order" :key="skill" :style="{ '--i': i }">
               <span class="so-n" aria-hidden="true">{{ i + 1 }}</span>
