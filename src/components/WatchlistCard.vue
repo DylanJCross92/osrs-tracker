@@ -10,8 +10,8 @@
           <img :src="itemImage(r.icon, r.name)" alt="" width="28" height="28" loading="lazy" @error="hideImage" />
           <span class="wl-name"><b>{{ r.name }}</b><small>{{ r.price == null ? 'no price yet' : `${gpText(r.price)} gp` }}</small></span>
           <span class="wl-chg">
-            <span v-if="r.change1 != null" class="gxt-pill" :class="r.change1 > 0 ? 'up' : r.change1 < 0 ? 'down' : 'flat'">{{ pctText(r.change1) }}</span>
-            <small v-if="r.change7 != null" :class="changeClass(r.change7)">7d {{ pctText(r.change7) }}</small>
+            <span v-if="r.price >= MIN_PRICE && r.change1 != null" class="gxt-pill" :class="r.change1 > 0 ? 'up' : r.change1 < 0 ? 'down' : 'flat'">{{ pctText(r.change1) }}</span>
+            <small v-if="r.price >= MIN_PRICE && r.change7 != null" :class="changeClass(r.change7)">7d {{ pctText(r.change7) }}</small>
           </span>
         </RouterLink>
         <button type="button" class="wl-x" :aria-label="`Stop watching ${r.name}`" title="Stop watching" @click="remove(r.slug, variant)">×</button>
@@ -23,6 +23,7 @@
 
 <script setup>
 import { changeClass, gpText, itemImage, pctText } from '@/utils/geFormat'
+import { MIN_PRICE } from '@/utils/geTrending'
 import { useAuth } from '@/composables/useAuth'
 import { onItemLinkClick } from '@/composables/useItemModal'
 import { useWatchlist } from '@/composables/useWatchlist'
