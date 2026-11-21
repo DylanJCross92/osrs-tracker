@@ -22,7 +22,7 @@
             </td>
             <td class="num">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }}</td>
             <td class="num mat-each">{{ t.each == null ? '-' : `${gpText(t.each)} gp` }}</td>
-            <td class="num"><b v-if="t.cost != null">{{ gpText(t.cost) }} gp</b><span v-else class="mat-none" title="This item has no Grand Exchange price right now">no price</span></td>
+            <td class="num mat-cost"><b v-if="t.cost != null">{{ gpText(t.cost) }} gp</b><span v-else class="mat-none" title="This item has no Grand Exchange price right now">no price</span></td>
           </tr>
         </tbody>
         <tfoot v-if="priced.total != null">
@@ -46,7 +46,7 @@
                   <img :src="iconSrc(it.name)" :alt="it.name" width="22" height="22" loading="lazy" @error="hide" />{{ formatNum(it.qty) }} {{ it.name }}
                 </span>
               </td>
-              <td class="num">{{ rowCost(r) == null ? '-' : `${gpText(rowCost(r))} gp` }}</td>
+              <td class="num mat-cost">{{ rowCost(r) == null ? '-' : `${gpText(rowCost(r))} gp` }}</td>
               <td class="planner-table-note">{{ r.method }}</td>
             </tr>
           </tbody>

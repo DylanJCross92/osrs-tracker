@@ -6374,6 +6374,9 @@ a.su-link-flag:hover, a.su-link-flag:focus-visible { text-decoration: underline;
 .mat-table th { padding: 6px 10px; border-bottom: 1px solid var(--border-strong); color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; text-align: left; white-space: nowrap; }
 .mat-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
 .mat-table .num { text-align: right; white-space: nowrap; }
+/* The prices are gold, so the gp figures stand out from the item names and amounts. */
+.mat-table td.mat-each, .mat-table td.mat-cost, .planner-table td.mat-cost { color: var(--gold-bright); }
+.mat-table td.mat-cost b { font-weight: 700; }
 .mat-table th.num { text-align: right; }
 .mat-table tfoot td { padding-top: 10px; border-bottom: 0; font-weight: 600; }
 .mat-table tfoot b { color: var(--gold-bright); font-size: 1.05rem; }
