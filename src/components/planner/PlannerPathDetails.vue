@@ -1,14 +1,6 @@
 <template>
-  <!-- Nothing to prepare: one quiet line of ticks instead of an empty expandable card. -->
-  <div v-if="allClear" class="pd pd-clear">
-    <ul class="pd-checks" aria-label="Nothing to prepare for this route">
-      <li><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Nothing to buy</li>
-      <li><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>No quests needed</li>
-      <li><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Only the levels required</li>
-    </ul>
-    <button class="btn-text pd-clear-act" type="button" @click="$emit('edit')">Add quest shortcuts</button>
-  </div>
-  <div v-else class="pd">
+  <!-- Nothing to buy, no quests and no requirements: nothing is drawn at all. -->
+  <div v-if="!allClear" class="pd">
     <button class="pd-bar" type="button" :aria-expanded="open" :aria-controls="`pd-${id}`" @click="open = !open">
       <span class="pd-title">Materials, quests and requirements</span>
       <span class="pd-sum">
@@ -26,7 +18,6 @@
       <section v-if="matsListed" class="pd-sec">
         <PlannerMaterials :plan="plan" />
       </section>
-      <p v-else class="pd-none"><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Nothing to buy for this route.</p>
 
       <section v-if="plan.questList?.length" class="pd-sec">
         <h4 class="goal-section-title">Quests</h4>
@@ -39,7 +30,6 @@
         </ul>
         <p class="planner-hint">These quests are done first for free {{ goal.skill }} xp, which takes {{ formatHours(plan.questHours || 0) }} and skips part of the training below.</p>
       </section>
-      <p v-else class="pd-none"><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>No quest shortcuts in this plan. <button class="btn-text" type="button" @click="$emit('edit')">Choose quest shortcuts</button></p>
 
       <section v-if="routeMethods.length" class="pd-sec">
         <h4 class="goal-section-title">Requirements</h4>
@@ -51,7 +41,6 @@
           <RequirementList :items="a.items" :method-name="a.method.name" />
         </div>
       </section>
-      <p v-else class="pd-none"><svg class="pd-tick" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>This route needs nothing beyond the levels.</p>
     </div>
   </div>
 </template>
