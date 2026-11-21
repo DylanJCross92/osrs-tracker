@@ -17,21 +17,20 @@
 
       <section class="gxp" aria-label="Price now">
         <div class="gxp-main">
-          <span class="gxp-label">Price now</span>
           <b class="gxp-price">{{ gpText(item.price) }}<small> gp</small></b>
-          <span v-if="pricey && item.change1 != null" class="gxt-pill" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
+          <span v-if="pricey && item.change1 != null" class="gxp-today" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
         </div>
         <dl class="gxp-grid">
-          <div><dt>Buy now</dt><dd>{{ gpText(item.high) }}</dd><small>What you pay to buy right away</small></div>
-          <div><dt>Sell now</dt><dd>{{ gpText(item.low) }}</dd><small>What you get selling right away</small></div>
-          <div v-if="pricey && item.flip"><dt>Flip profit</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}</dd><small>Each, after the 2% tax ({{ pctText(item.flip.roi) }})</small></div>
+          <div title="What you pay to buy right away"><dt>Buy</dt><dd>{{ gpText(item.high) }}</dd></div>
+          <div title="What you get selling right away"><dt>Sell</dt><dd>{{ gpText(item.low) }}</dd></div>
+          <div v-if="pricey && item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}</dd></div>
         </dl>
         <ul v-if="pricey && trend.length" class="gxp-trend" aria-label="Price change">
           <li v-for="c in trend" :key="c.label" :title="c.tip"><span>{{ c.label }}</span><b :class="c.tone">{{ pctText(c.value) }}</b></li>
         </ul>
         <p class="gxp-meta">
           <span v-if="item.limit" title="How many you can buy every 4 hours">Buy limit <b>{{ item.limit.toLocaleString('en-US') }}</b> per 4 hours</span>
-          <span v-if="item.volume" title="Bought and sold yesterday">Traded yesterday <b>{{ item.volume.toLocaleString('en-US') }}</b></span>
+          <span v-if="item.volume" title="Bought and sold yesterday"><b>{{ item.volume.toLocaleString('en-US') }}</b> traded yesterday</span>
           <span v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</span>
         </p>
       </section>
