@@ -1,13 +1,15 @@
 <template>
   <section class="path" aria-labelledby="path-h">
     <header class="path-head-main">
-      <h2 id="path-h">Training path</h2>
+      <div class="path-head-row">
+        <h2 id="path-h">Training path</h2>
+        <button v-if="canSuggest" class="btn-text path-smart" type="button" @click="openSuggestion">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
+          {{ fits ? 'Why this order?' : 'Smart order' }}
+        </button>
+      </div>
       <p v-if="dragging" class="path-reorder-hint" role="status">Drop <b>{{ dragging }}</b> where it should be trained.</p>
       <p v-else>Your skills in the order the plan trains them, with every step.<template v-if="goals.length > 1">{{ fits ? ' Ordered to suit your levels.' : '' }}{{ ' ' }}Drag a skill to change the order.</template></p>
-      <button v-if="canSuggest" class="btn-text path-smart" type="button" @click="openSuggestion">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8L21.5 19.5l-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
-        {{ fits ? 'Why this order?' : 'Smart order' }}
-      </button>
     </header>
 
     <ol class="path-list" :class="{ reordering: !!dragging }">

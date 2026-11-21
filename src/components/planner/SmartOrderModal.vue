@@ -3,14 +3,19 @@
     <div class="modal-overlay" @click.self="$emit('close')">
       <div class="modal-card so" role="dialog" aria-modal="true" aria-labelledby="so-h" aria-describedby="so-d">
         <div class="so-head">
+          <svg class="so-star s1" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" /></svg>
+          <svg class="so-star s2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" /></svg>
+          <svg class="so-star s3" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" /></svg>
+          <svg class="so-star s4" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l2.2 8.8L23 12l-8.8 2.2L12 23l-2.2-8.8L1 12l8.8-2.2z" /></svg>
           <span class="so-spark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
           </span>
           <div class="so-title">
+            <span class="so-eyebrow">Tailored to your plan</span>
             <h2 id="so-h">Smart order</h2>
             <p id="so-d">{{ ready ? `Read ${suggestion.summary.skills} skills against your levels, costs and what each one unlocks.` : 'Reading your levels, costs and what each skill unlocks…' }}</p>
           </div>
-          <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
+          <button class="so-close" type="button" aria-label="Close" @click="$emit('close')">✕</button>
         </div>
 
         <!-- A short "thinking" beat before the answer shows -->
