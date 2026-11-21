@@ -164,6 +164,7 @@ import PlannerSkillEditor from '@/components/planner/PlannerSkillEditor.vue'
 import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import ConfirmDelete from '@/components/ConfirmDelete.vue'
+import { smartOrderGoals } from '@/utils/smartOrder'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -736,7 +737,11 @@ function addGoal(goal) {
   if (goals.value.some((g) => g.skill === goal.skill)) return
   const first = !goals.value.length
   if (first) tab.value = 'overview'
+  // A plan still in the suggested order stays in it when a skill is added; one the player has arranged is left alone.
+  const orderOpts = { globalStrategy: globalStrategy.value, gpValue: gpValue.value }
+  const wasSmart = !first && !smartOrderGoals(goals.value, orderOpts).changed
   goals.value.push(goal)
+  if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
   expanded.value = new Set([goal.skill])
   showAdd.value = false
   if (player.value && !statsAt.value) statsAt.value = player.value.latest.capturedAt
@@ -979,7 +984,8 @@ function useRecommended(rec) {
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
-  goals.value = rec.goals.map(withSuggestedQuests)
+  // A new plan starts in the suggested order (see utils/smartOrder.js), tailored to the player's stats.
+  goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), { globalStrategy: globalStrategy.value, gpValue: gpValue.value }).goals
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)

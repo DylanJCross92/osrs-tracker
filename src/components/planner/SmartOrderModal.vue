@@ -6,14 +6,14 @@
           <h2 id="so-h">Suggested training order</h2>
           <button class="btn-text" type="button" aria-label="Close" @click="$emit('close')">✕</button>
         </div>
-        <p id="so-d" class="so-intro">Worked out from your levels and what each skill does for the others. Every skill takes the same time as before; only the order changes.</p>
+        <p id="so-d" class="so-intro">Chosen for your levels and what each skill does for the others. Times stay the same; only the order changes.</p>
         <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
         <ol class="so-list">
           <li v-for="(skill, i) in suggestion.order" :key="skill">
             <span class="so-n" aria-hidden="true">{{ i + 1 }}</span>
             <img :src="skillIconSrc(skill)" alt="" width="26" height="26" />
             <div class="so-main">
-              <b>{{ skill }}<em v-if="levels[skill]">{{ levels[skill] }}</em><small v-if="moved(skill)" :class="moved(skill) > 0 ? 'up' : 'down'">{{ moved(skill) > 0 ? `up ${moved(skill)}` : `down ${-moved(skill)}` }}</small></b>
+              <b>{{ skill }}<em v-if="levels[skill]">{{ levels[skill] }}</em></b>
               <span v-for="r in suggestion.reasons[skill] || []" :key="r">{{ r }}</span>
             </div>
           </li>
@@ -32,14 +32,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { levelAtXp } from '@/utils/planner'
 
-// The suggestion from utils/smartOrder.js: the order with a reason for each skill, and a button to use it. `goals` is the order now, so
-// each skill can show how far it moves.
+// The suggestion from utils/smartOrder.js: the order with a short reason for each skill, and a button to use it.
 const props = defineProps({ suggestion: { type: Object, required: true }, goals: { type: Array, required: true } })
 const emit = defineEmits(['close', 'apply'])
 const useBtn = ref(null)
 
 const levels = computed(() => Object.fromEntries(props.goals.map((g) => [g.skill, `${levelAtXp(g.currentXp, true)} → ${levelAtXp(g.targetXp, true)}`])))
-const moved = (skill) => props.goals.findIndex((g) => g.skill === skill) - props.suggestion.order.indexOf(skill)
 
 const onKey = (e) => {
   if (e.key === 'Escape') emit('close')

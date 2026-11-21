@@ -6577,14 +6577,11 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .so-intro { margin: 0 0 14px; color: var(--muted); font-size: 0.9rem; max-width: none; }
 .so-fits { margin: 0 0 12px; color: #9fd48a; font-size: 0.9rem; font-weight: 600; }
 .so-list { margin: 0 0 16px; padding: 0; list-style: none; max-height: min(52vh, 460px); overflow-y: auto; }
-.so-list li { display: flex; align-items: flex-start; gap: 12px; padding: 11px 2px; }
+.so-list li { display: flex; align-items: flex-start; gap: 12px; padding: 8px 2px; }
 .so-list li + li { border-top: 1px solid var(--border); }
 .so-n { flex: none; width: 22px; padding-top: 3px; color: var(--muted); font-size: 0.85rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
 .so-list img { flex: none; margin-top: 1px; }
-.so-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.so-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .so-main b { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
 .so-main em { color: var(--muted); font-size: 0.82rem; font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; }
-.so-main small { font-size: 0.74rem; font-weight: 700; color: var(--muted); }
-.so-main small.up { color: #9fd48a; }
-.so-main small.down { color: #f0987f; }
-.so-main span { color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
+.so-main span { color: var(--muted); font-size: 0.82rem; line-height: 1.3; }

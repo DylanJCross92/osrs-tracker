@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { smartOrder } from '@/utils/smartOrder'
+import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
 import { xpAtLevel } from '@/utils/planner'
 
 // A goal from level `from` to level `to`, and the planner's result for it (hours, and gp earned or spent in total).
@@ -15,7 +15,7 @@ describe('the suggested training order', () => {
     expect(r.order).toEqual(['Fishing', 'Cooking'])
     expect(r.changed).toBe(true)
     expect(r.reasons.Fishing[0]).toContain('Before Cooking')
-    expect(r.reasons.Fishing[0]).toContain('raw fish cost nothing')
+    expect(r.reasons.Fishing[0]).toBe('Before Cooking: free raw fish')
   })
   it('drops a synergy the player no longer needs: with Fishing already high there is nothing to gain', () => {
     const r = run(goal('Cooking', 40, 90, 60), goal('Fishing', 80, 99, 100))
@@ -31,8 +31,8 @@ describe('the suggested training order', () => {
   it('puts what earns gp before the skills that cost the most, once the plan has real costs', () => {
     const r = run(goal('Construction', 50, 90, 80, -900_000), goal('Mining', 60, 90, 80, 250_000))
     expect(r.order).toEqual(['Mining', 'Construction'])
-    expect(r.reasons.Mining.join(' ')).toContain('helps pay for Construction')
-    expect(r.reasons.Construction.join(' ')).toContain('comes after what earns gp')
+    expect(r.reasons.Mining.join(' ')).toContain('to pay for Construction')
+    expect(r.reasons.Construction.join(' ')).toContain('so after the earners')
   })
   it('ignores gp when nothing in the plan costs much', () => {
     const r = run(goal('Smithing', 50, 70, 40, -10_000), goal('Woodcutting', 50, 60, 10, 20_000))
@@ -41,7 +41,7 @@ describe('the suggested training order', () => {
   it('lets Prayer to 70 come before melee and Construction to 75 before Prayer', () => {
     const melee = run(goal('Strength', 70, 99, 100), goal('Prayer', 40, 77, 100))
     expect(melee.order).toEqual(['Prayer', 'Strength'])
-    expect(melee.reasons.Prayer[0]).toContain('Piety')
+    expect(melee.reasons.Prayer[0]).toBe('Before Strength: Piety at 70 Prayer boosts melee')
     const altar = run(goal('Prayer', 50, 80, 100), goal('Construction', 60, 80, 100))
     expect(altar.order.indexOf('Construction')).toBeLessThan(altar.order.indexOf('Prayer'))
   })
@@ -49,14 +49,28 @@ describe('the suggested training order', () => {
     const done = { g: { skill: 'Attack', currentXp: xpAtLevel(99), targetXp: xpAtLevel(99) }, p: { hours: 0, netGp: 0, remainingXp: 0 } }
     const r = run(goal('Fishing', 50, 90, 100), goal('Cooking', 40, 90, 100), done)
     expect(r.order[0]).toBe('Attack')
-    expect(r.reasons.Attack).toEqual(['Already done.'])
+    expect(r.reasons.Attack).toEqual(['Done'])
     const again = smartOrder(r.order.map((s) => [done, goal('Fishing', 50, 90, 100), goal('Cooking', 40, 90, 100)].find((x) => x.g.skill === s).g), r.order.map((s) => [done, goal('Fishing', 50, 90, 100), goal('Cooking', 40, 90, 100)].find((x) => x.g.skill === s).p))
     expect(again.changed).toBe(false)
   })
   it('puts the quickest skills early and the longest grind last when nothing else decides', () => {
     const r = run(goal('Hunter', 1, 99, 400), goal('Agility', 80, 99, 30), goal('Thieving', 70, 99, 120))
     expect(r.order).toEqual(['Agility', 'Thieving', 'Hunter'])
-    expect(r.reasons.Hunter[0]).toContain('longest grind')
-    expect(r.reasons.Agility[0]).toContain('Quick to finish')
+    expect(r.reasons.Hunter[0]).toBe('Longest grind, so last')
+    expect(r.reasons.Agility[0]).toBe('Quick win, so early')
+  })
+
+  it('orders a list of goals the way the planner would, for a new plan', () => {
+    const goals = [
+      { skill: 'Cooking', currentXp: xpAtLevel(40), targetXp: xpAtLevel(90), methodId: 'global' },
+      { skill: 'Fishing', currentXp: xpAtLevel(50), targetXp: xpAtLevel(90), methodId: 'global' },
+    ]
+    const out = smartOrderGoals(goals, { globalStrategy: 'auto-fast', gpValue: 2_000_000 })
+    expect(out.goals.map((g) => g.skill)).toEqual(['Fishing', 'Cooking'])
+    expect(out.changed).toBe(true)
+    // Already in that order: nothing changes, and the goals are the same objects.
+    const again = smartOrderGoals(out.goals, { globalStrategy: 'auto-fast', gpValue: 2_000_000 })
+    expect(again.changed).toBe(false)
+    expect(again.goals[0]).toBe(out.goals[0])
   })
 })

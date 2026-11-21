@@ -1,5 +1,6 @@
 import { SYNERGIES } from '@/data/skillSynergies'
-import { levelAtXp } from '@/utils/planner'
+import { levelAtXp, planGoal } from '@/utils/planner'
+import { resolveGoal } from '@/utils/plannerTools'
 
 // A suggested training order for the skills in a plan, tailored to the player: which skills to train first because they help others
 // (see data/skillSynergies.js), which earn the gp that pays for the expensive ones, and which are quick to finish. The planner works out each
@@ -82,18 +83,29 @@ export function smartOrder(goals, plans) {
     const helps = edges.filter((e) => e.from === x.skill && position.get(e.to) > position.get(x.skill))
     const groups = new Map()
     for (const e of helps) groups.set(e.why, [...(groups.get(e.why) || []), e.to])
-    for (const [why, targets] of groups) list.push(`Before ${joinNames(targets)}. ${why}`)
+    for (const [why, targets] of groups) list.push(`Before ${joinNames(targets)}: ${why}`)
     const spenders = open.filter((y) => fundScore(y) < 0 && position.get(y.skill) > position.get(x.skill)).map((y) => y.skill)
-    if (fundScore(x) > 0 && spenders.length) list.push(`Earns about ${money(x.gph)} gp an hour, which helps pay for ${joinNames(spenders.slice(0, 2))}.`)
-    else if (fundScore(x) < 0 && open.some((y) => fundScore(y) > 0 && position.get(y.skill) < position.get(x.skill))) list.push(`Costs about ${money(-x.gph)} gp an hour, so it comes after what earns gp.`)
+    if (fundScore(x) > 0 && spenders.length) list.push(`Earns ${money(x.gph)} gp/h to pay for ${joinNames(spenders.slice(0, 2))}`)
+    else if (fundScore(x) < 0 && open.some((y) => fundScore(y) > 0 && position.get(y.skill) < position.get(x.skill))) list.push(`Costs ${money(-x.gph)} gp/h, so after the earners`)
     if (!list.length && open.length > 2) {
       const longest = Math.max(...open.map((y) => y.hours))
-      if (x.skill === placed[placed.length - 1].skill && x.hours >= longest) list.push('The longest grind, so it goes last.')
-      else if (quick.get(x.skill) >= 0.75 && position.get(x.skill) < done.length + Math.ceil(open.length / 2)) list.push('Quick to finish, so you see progress early.')
+      if (x.skill === placed[placed.length - 1].skill && x.hours >= longest) list.push('Longest grind, so last')
+      else if (quick.get(x.skill) >= 0.75 && position.get(x.skill) < done.length + Math.ceil(open.length / 2)) list.push('Quick win, so early')
     }
     reasons[x.skill] = list.slice(0, 2)
   }
-  for (const x of done) reasons[x.skill] = ['Already done.']
+  for (const x of done) reasons[x.skill] = ['Done']
 
   return { order, reasons, changed: order.some((s, i) => s !== goals[i].skill) }
+}
+
+/**
+ * The goals in the suggested order, worked out with the planner's own settings (so a plan can be ordered before it is on screen).
+ * Returns { goals, changed }.
+ */
+export function smartOrderGoals(goals, { globalStrategy, gpValue } = {}) {
+  const plans = goals.map((g) => planGoal(resolveGoal(g, globalStrategy, gpValue)))
+  const { order, changed } = smartOrder(goals, plans)
+  const rank = new Map(order.map((skill, i) => [skill, i]))
+  return { goals: [...goals].sort((a, b) => rank.get(a.skill) - rank.get(b.skill)), changed }
 }

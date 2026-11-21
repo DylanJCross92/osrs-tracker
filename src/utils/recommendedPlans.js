@@ -83,7 +83,7 @@ export function recommendedPlans(skills) {
       id: `all-${level}`,
       kind: 'levels',
       title: level === MAX_LEVEL ? 'Max your account: all skills to 99' : `All skills to ${level}`,
-      description: level === MAX_LEVEL ? 'Every skill to 99. The long road, in order from the quickest wins to the longest grinds.' : `Bring every skill up to level ${level}, starting with the ones closest to it.`,
+      description: level === MAX_LEVEL ? 'Every skill to 99. The long road, in an order that helps each skill along.' : `Bring every skill up to level ${level}, in an order that helps each skill along.`,
       goals: levelPlan(states, level),
     })
   }
