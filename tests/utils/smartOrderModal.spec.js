@@ -10,37 +10,26 @@ const goals = [
 ]
 const plans = [{ hours: 100, netGp: 1_000_000, remainingXp: 1 }, { hours: 100, netGp: 2_000_000, remainingXp: 1 }]
 
-const mountIt = (props = {}) => {
+const mountIt = (props = {}, slots = {}) => {
   // Without a wait, the window shows its short "reading" beat first; skip it by asking for reduced motion.
   window.matchMedia = () => ({ matches: true })
-  return mount(SmartOrderModal, { props: { suggestion: smartOrder(goals, plans), goals, ...props }, attachTo: document.body })
+  return mount(SmartOrderModal, { props: { suggestion: smartOrder(goals, plans), goals, ...props }, slots, attachTo: document.body })
 }
 
 describe('the Smart order window', () => {
-  it('asks for a name, as a way to be more accurate, with the field right there', async () => {
-    const w = mountIt({ hasPlayer: false })
+  it('shows the slot (the planner\'s own player box) with a note that a name makes it more accurate, when the plan has no player', async () => {
+    const w = mountIt({ hasPlayer: false }, { 'name-box': '<div class="the-box">player box</div>' })
     await flushPromises()
-    const form = document.body.querySelector('.so-name')
-    expect(form.textContent).toContain('More accurate with your name')
-    expect(form.textContent).toContain('level 1')
-    expect(form.querySelector('input')).not.toBeNull()
-    // Nothing to look up until something is typed.
-    expect(form.querySelector('button').disabled).toBe(true)
+    const note = document.body.querySelector('.so-name')
+    expect(note.textContent).toContain('More accurate with your name')
+    expect(note.textContent).toContain('level 1')
+    expect(note.querySelector('.the-box')).not.toBeNull()
     w.unmount()
   })
-  it('sends the typed name to be looked up, and shows how it went', async () => {
-    const w = mountIt({ hasPlayer: false })
+  it('says the order now uses the player\'s levels once one is loaded', async () => {
+    const w = mountIt({ hasPlayer: false }, { 'name-box': '<div class="the-box" />' })
     await flushPromises()
-    const input = document.body.querySelector('.so-name-input')
-    input.value = '  Zezima '
-    input.dispatchEvent(new Event('input'))
-    await flushPromises()
-    document.body.querySelector('.so-name').dispatchEvent(new Event('submit'))
-    await flushPromises()
-    expect(w.emitted('lookup-name')).toEqual([['Zezima']])
-    await w.setProps({ lookupError: 'No stats found for that player yet.' })
-    expect(document.body.querySelector('.so-name-error').textContent).toContain('No stats found')
-    await w.setProps({ hasPlayer: true, playerLabel: 'Zezima', lookupError: '' })
+    await w.setProps({ hasPlayer: true, playerLabel: 'Zezima' })
     expect(document.body.querySelector('.so-name')).toBeNull()
     expect(document.body.textContent).toContain("Now using Zezima's levels")
     w.unmount()
@@ -49,6 +38,7 @@ describe('the Smart order window', () => {
     const w = mountIt({ hasPlayer: true })
     await flushPromises()
     expect(document.body.querySelector('.so-name')).toBeNull()
+    expect(document.body.textContent).not.toContain("Now using")
     w.unmount()
   })
 })

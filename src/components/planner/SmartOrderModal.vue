@@ -30,16 +30,12 @@
             <li v-if="suggestion.summary.spenders"><b>{{ suggestion.summary.spenders }}</b> big spend later</li>
             <li v-if="suggestion.summary.netGp != null" :class="suggestion.summary.netGp >= 0 ? 'gain' : 'cost'">Plan {{ gp(suggestion.summary.netGp) }}</li>
           </ul>
-          <!-- No player yet: the order is only as good as the levels it was worked out from. The name goes in right here. -->
-          <form v-if="!hasPlayer" class="so-name" @submit.prevent="submitName">
-            <p><b>More accurate with your name.</b> Right now every skill starts at level 1. Enter your RuneScape name and the order uses your real levels.</p>
-            <div class="so-name-row">
-              <input v-model="name" type="text" class="so-name-input" placeholder="Your RuneScape name" maxlength="12" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" aria-label="Your RuneScape name" :disabled="lookingUp" data-1p-ignore />
-              <button class="btn btn-primary so-name-btn" type="submit" :disabled="lookingUp || !name.trim()">{{ lookingUp ? 'Loading stats…' : 'Use my stats' }}</button>
-            </div>
-            <p v-if="tried && lookupError && !lookingUp" class="so-name-error" role="alert">{{ lookupError }}</p>
-          </form>
-          <p v-else-if="added" class="so-fits" role="status">Now using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. The order below is worked out from them.</p>
+          <!-- No player yet: the order is only as good as the levels it was worked out from. The name goes in right here, in the planner's own player box (with its recent players and suggestions). -->
+          <div v-if="!hasPlayer" class="so-name">
+            <p class="so-name-lead"><b>More accurate with your name.</b> Right now every skill starts at level 1. Enter your RuneScape name and the order uses your real levels.</p>
+            <slot name="name-box" />
+          </div>
+          <p v-else-if="openedWithoutPlayer" class="so-fits" role="status">Now using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. The order below is worked out from them.</p>
           <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
           <ol class="so-list">
             <li v-for="(skill, i) in suggestion.order" :key="skill" :style="{ '--i': i }">
@@ -79,21 +75,11 @@ const props = defineProps({
   goals: { type: Array, required: true },
   hasPlayer: { type: Boolean, default: true },
   playerLabel: { type: String, default: '' },
-  lookingUp: { type: Boolean, default: false },
-  lookupError: { type: String, default: '' },
 })
-const emit = defineEmits(['close', 'apply', 'lookup-name'])
-// The name typed here: looked up by the planner, which then rebuilds the plan from the player's stats (and this window updates with it).
-const name = ref('')
-const tried = ref(false)
-const added = ref(false)
-function submitName() {
-  if (!name.value.trim() || props.lookingUp) return
-  tried.value = true
-  added.value = true
-  emit('lookup-name', name.value.trim())
-}
+const emit = defineEmits(['close', 'apply'])
 const useBtn = ref(null)
+// Opened without a player: once one is loaded from the box above the list, say the order now uses their levels.
+const openedWithoutPlayer = !props.hasPlayer
 // A short pause before the answer, so it reads as worked out. Skipped for anyone who asked for less motion.
 const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 const ready = ref(!!reduced)

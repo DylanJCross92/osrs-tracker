@@ -110,7 +110,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder" :has-player="!!player?.latest" :player-label="player?.displayName || ''" :looking-up="lookingUp" :lookup-error="lookupError" @lookup-name="lookupFromSmartOrder">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder" :has-player="!!player?.latest" :player-label="player?.displayName || ''">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -128,6 +128,23 @@
               @done="closeSkillEditor"
               @cancel="cancelSkillEditor"
             />
+          </template>
+          <!-- The planner's own player box inside the Smart order window: recent players, suggestions, Enter to load -->
+          <template #name-box>
+            <PlannerPlayerBox
+              v-model:username="username"
+              :player="null"
+              :looking-up="lookingUp"
+              :lookup-error="lookupError"
+              :suggestions="suggestions"
+              :show-recent="searchFocused && !username.trim()"
+              @submit="smartOrderLookup"
+              @pick="smartOrderPick"
+              @focus="searchFocused = true"
+              @blur="onSearchBlur"
+            >
+              <template #hint><p class="pt-hint">{{ lookingUp ? 'Loading stats…' : 'Press Enter to load your stats' }}</p></template>
+            </PlannerPlayerBox>
           </template>
         </PlannerPath></div>
     </template>
@@ -767,17 +784,29 @@ function reorderTo(from, to) {
   track('planner_goal_reordered')
   saveIfChanged()
 }
-// A name typed into the Smart order window: looked up like one typed at the top of the planner, and the plan follows the player.
-async function lookupFromSmartOrder(name) {
-  const hadPlayer = !!player.value?.latest
-  username.value = name
-  track('planner_smart_order_name', {})
-  await loadPlayer({ typed: true })
-  // Goals made before there was a player start at level 1; the real levels replace that (a recommended plan is already rebuilt by loadPlayer).
+// A name entered in the Smart order window (typed, or picked from the dropdown): looked up like one at the top of the planner, and the plan
+// follows the player. Goals made before there was a player start at level 1; the real levels replace that (a recommended plan is already
+// rebuilt by loadPlayer).
+function applyNewPlayerToGoals(hadPlayer) {
   if (!hadPlayer && player.value?.latest && goals.value.length && !template.value?.recommendedId) {
     personalizeTemplate()
     saveIfChanged()
   }
+}
+async function smartOrderLookup() {
+  const hadPlayer = !!player.value?.latest
+  track('planner_smart_order_name', {})
+  await loadPlayer({ typed: true })
+  applyNewPlayerToGoals(hadPlayer)
+}
+async function smartOrderPick(sg) {
+  const hadPlayer = !!player.value?.latest
+  track('search_suggestion_selected', { source: 'planner' })
+  suggestions.value = []
+  username.value = sg.displayName
+  track('planner_smart_order_name', {})
+  await loadPlayer({ typed: true })
+  applyNewPlayerToGoals(hadPlayer)
 }
 // "Use this order" in the suggested order window: the skills go in that order (a skill not named stays at the end) and the plan is saved.
 function applyOrder(order) {

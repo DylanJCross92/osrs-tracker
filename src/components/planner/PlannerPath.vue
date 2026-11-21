@@ -89,7 +89,9 @@
       :label="`${strategyLabel} route`"
       @close="sharing = -1"
     />
-    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" :player-label="playerLabel" :looking-up="lookingUp" :lookup-error="lookupError" @close="suggestionOpen = false" @apply="applySuggestion" @lookup-name="(name) => emit('lookup-name', name)" />
+    <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" :player-label="playerLabel" @close="suggestionOpen = false" @apply="applySuggestion">
+      <template #name-box><slot name="name-box" /></template>
+    </SmartOrderModal>
   </section>
 </template>
 
@@ -121,11 +123,8 @@ const props = defineProps({
   // Whether the plan is worked out from a player's real stats (without one, every skill starts at level 1).
   hasPlayer: { type: Boolean, default: true },
   playerLabel: { type: String, default: '' },
-  // A name typed into the Smart order window is being looked up, and how that went.
-  lookingUp: { type: Boolean, default: false },
-  lookupError: { type: String, default: '' },
 })
-const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all', 'lookup-name'])
+const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all'])
 
 // --- The suggested order (utils/smartOrder.js): a window with the reasons, and a button to use it --------------------------------------
 const suggestionOpen = ref(false)
