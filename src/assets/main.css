@@ -6474,6 +6474,10 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .wl-chg small { font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .wl-x { flex: none; width: 30px; align-self: stretch; border: 0; background: none; color: var(--muted); font-size: 1.15rem; line-height: 1; cursor: pointer; }
 .wl-x:hover, .wl-x:focus-visible { color: #f0987f; outline: none; }
+.wl:not(.card) .wl-head { justify-content: center; }
+.wl:not(.card) .wl-list { display: flex; flex-wrap: wrap; justify-content: center; }
+.wl:not(.card) .wl-list li { flex: 0 1 280px; }
+.wl:not(.card) .wl-note { text-align: center; }
 .wl-note { margin: 10px 2px 0; color: var(--muted); font-size: 0.78rem; }
 .gxh-watch { margin: 0 0 18px; }
 
