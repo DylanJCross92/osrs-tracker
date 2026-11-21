@@ -16,6 +16,16 @@ const PERSONAL_KEY = /^(name|username|rsn|email|password|token|query|q|text|mess
 // Counted by the server itself (see services/events.service.js), so a browser cannot send them and sign-ins are not counted twice.
 export const SERVER_ONLY_EVENTS = new Set(['login', 'session_resumed'])
 
+// Crawlers and scripts that run the site's JavaScript (Google renders pages this way) would each count as a new visitor, because a
+// crawler keeps no browser storage between pages. They identify themselves in the User-Agent, so those requests are not counted.
+const CRAWLER = /\bbot\b|[a-z]bot\/|crawl|spider|slurp|headless|lighthouse|pagespeed|inspectiontool|googleother|facebookexternalhit|bingpreview|embedly|pingdom|uptimerobot|statuscake|python-requests|python-urllib|go-http-client|curl\/|wget\/|libwww|httpclient|okhttp|scrapy|puppeteer|playwright|phantomjs/i
+
+/** True when the User-Agent belongs to a crawler or script (a missing one counts too: browsers always send one). */
+export function isCrawler(userAgent) {
+  const ua = String(userAgent || '').trim()
+  return !ua || CRAWLER.test(ua)
+}
+
 /** True when the request carries Do Not Track or Global Privacy Control. */
 export const askedNotToTrack = (headers = {}) => headers.dnt === '1' || headers['sec-gpc'] === '1'
 

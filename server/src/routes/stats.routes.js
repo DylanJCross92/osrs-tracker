@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
 import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview } from '../services/stats.service.js'
-import { askedNotToTrack, cleanEvents, cleanVisitorId } from '../utils/events.js'
+import { askedNotToTrack, cleanEvents, cleanVisitorId, isCrawler } from '../utils/events.js'
 import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
@@ -33,6 +33,7 @@ statsRouter.post('/stats/share', countLimiter, async (req, res, next) => {
 // Someone arrived through a shared link (or, with kind 'site', opened the site for the first time that day).
 statsRouter.post('/stats/visit', countLimiter, async (req, res, next) => {
   try {
+    if (isCrawler(req.headers['user-agent'])) return res.status(204).end()
     const visit = cleanVisit(req.body)
     if (!visit) return res.status(400).json({ error: 'Unknown visit.' })
     await recordVisit(visit)
@@ -60,6 +61,8 @@ statsRouter.get('/admin/stats/shares', attachUser, requireRole('admin', 'owner')
 const eventsLimiter = rateLimit({ windowMs: 60_000, max: 40, message: 'Too many events.' })
 statsRouter.post('/stats/events', eventsLimiter, attachUser, async (req, res, next) => {
   try {
+    // Crawlers get the normal answer and nothing is recorded (see isCrawler).
+    if (isCrawler(req.headers['user-agent'])) return res.status(204).end()
     const { events, anon, vid } = cleanEvents(req.body)
     if (events.length && !(req.user && hasRole(req.user.roles, 'admin', 'owner'))) {
       await recordEvents(events, anon || !req.user ? null : req.user.id, vid)
@@ -76,7 +79,7 @@ const plansLimiter = rateLimit({ windowMs: 60_000, max: 12, message: 'Too many r
 statsRouter.post('/stats/visitor-plans', plansLimiter, attachUser, async (req, res, next) => {
   try {
     const vid = cleanVisitorId(req.body?.vid)
-    if (!vid || req.user || askedNotToTrack(req.headers)) return res.status(204).end()
+    if (!vid || req.user || askedNotToTrack(req.headers) || isCrawler(req.headers['user-agent'])) return res.status(204).end()
     const ok = await saveVisitorPlans(vid, req.body?.plans, req.body?.planner)
     res.status(ok ? 204 : 413).end()
   } catch (err) {
