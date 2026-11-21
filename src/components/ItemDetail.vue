@@ -9,24 +9,31 @@
         <div class="gxi-title">
           <component :is="variant === 'page' ? 'h1' : 'h2'" class="gxi-h">{{ item.name }}<small v-if="item.members" class="gx-badge" title="Members only">Members</small></component>
           <p v-if="item.examine">{{ item.examine }}</p>
-          <ul class="gxc" aria-label="About this item">
-            <li v-if="item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
-            <li v-if="item.limit" title="How many you can buy every 4 hours">{{ item.limit.toLocaleString('en-US') }} / 4h limit</li>
-            <li v-if="item.volume" :title="`${item.volume.toLocaleString('en-US')} bought and sold yesterday`">{{ item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume) }} traded yesterday</li>
-            <li v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</li>
-          </ul>
         </div>
-        <WatchButton :slug="slug" :name="item.name" :source="variant" />
+        <div class="gxi-price">
+          <b>{{ gpText(item.price) }}<small> gp</small></b>
+          <span v-if="item.change1 != null" class="gxt-pill" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
+          <span v-if="item.updatedAt" class="gx-updated">updated {{ ago(item.updatedAt) }}</span>
+          <WatchButton :slug="slug" :name="item.name" :source="variant" />
+        </div>
       </header>
 
       <p v-if="item.stale" class="gx-stale" role="status">Prices are a little behind right now. They update every few minutes.</p>
 
-      <dl class="gxv" aria-label="Price now">
-        <div title="The middle of the latest buy and sell price"><dt>GE price</dt><dd class="is-main">{{ gpText(item.price) }}<small> gp</small></dd></div>
-        <div title="What you pay to buy right away"><dt>Instant buy</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
-        <div title="What you get selling right away"><dt>Instant sell</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
-        <div v-if="item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}<small> gp</small></dd></div>
-      </dl>
+      <div class="gxf" aria-label="Price details">
+        <dl class="gxf-group gxf-prices">
+          <div title="What you pay to buy right away"><dt>Buy</dt><dd>{{ gpText(item.high) }}</dd></div>
+          <div title="What you get selling right away"><dt>Sell</dt><dd>{{ gpText(item.low) }}</dd></div>
+          <div :title="item.flip ? `${item.flip.roi}% of the sell price, after the 2% Grand Exchange tax` : 'Needs both prices'"><dt>Flip</dt><dd :class="changeClass(item.flip?.margin)">{{ item.flip ? signedGp(item.flip.margin) : '-' }}</dd></div>
+        </dl>
+        <dl class="gxf-group gxf-meta">
+          <div title="How many you can buy every 4 hours"><dt>Limit</dt><dd>{{ item.limit ? (item.limit >= 1e5 ? gpAxis(item.limit) : gpText(item.limit)) : '-' }}</dd></div>
+          <div :title="item.volume ? `${item.volume.toLocaleString('en-US')} bought and sold yesterday` : 'How many were bought and sold yesterday'"><dt>Traded</dt><dd>{{ item.volume ? (item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume)) : '-' }}</dd></div>
+        </dl>
+        <ul class="gxf-changes" aria-label="Price change">
+          <li v-for="c in trend" :key="c.label" :class="c.tone" :title="c.tip"><span>{{ c.short }}</span><b>{{ pctText(c.value) }}</b></li>
+        </ul>
+      </div>
 
       <section class="gxi-sec gxi-chart">
         <div class="gx-chart-head">
@@ -118,16 +125,16 @@ const trend = computed(() => {
   const i = item.value
   if (!i) return []
   return [
-    { label: 'Yesterday', value: i.change1, tip: 'Against the average price yesterday' },
-    { label: '7 days', value: i.change7, tip: 'Against the average price 7 days ago' },
-    { label: '30 days', value: i.change30, tip: 'Against the average price 30 days ago' },
+    { label: 'Yesterday', short: '1d', value: i.change1, tip: 'Against the average price yesterday' },
+    { label: '7 days', short: '7d', value: i.change7, tip: 'Against the average price 7 days ago' },
+    { label: '30 days', short: '30d', value: i.change30, tip: 'Against the average price 30 days ago' },
   ]
     .filter((c) => c.value != null)
     .map((c) => ({ ...c, tone: tone(c.value) }))
 })
 // The range's lowest, highest and average price, and where the price is now against that average.
 const summary = computed(() => (history.value?.points ? summarizeHistory(history.value.points, item.value?.price) : null))
-// The numbers under "Market insights": the range's low, high, average and change, then (for items that cost something) the flip and the changes against earlier days.
+// The numbers under "Market insights": the range's low, high, average and change.
 const insights = computed(() => {
   const out = []
   const sm = summary.value
@@ -137,10 +144,6 @@ const insights = computed(() => {
     out.push({ label: `${short} high`, value: `${gpText(sm.high)} gp`, tip: `The highest price in the last ${rangeLabel.value}` })
     out.push({ label: `${short} average`, value: `${gpText(sm.avg)} gp`, tip: `The average price over the last ${rangeLabel.value}` })
     if (sm.change != null) out.push({ label: `${short} change`, value: pctText(sm.change), tone: tone(sm.change), tip: `From the first price to the last over the ${rangeLabel.value}` })
-  }
-  const i = item.value
-  if (i) {
-    for (const c of trend.value) out.push({ label: c.label === 'Yesterday' ? 'Change since yesterday' : `${c.label} change`, value: pctText(c.value), tone: c.tone, tip: c.tip })
   }
   return out
 })

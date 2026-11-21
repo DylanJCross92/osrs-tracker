@@ -6482,22 +6482,42 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gxh-watch { margin: 0 0 18px; }
 
 /* ---------- Grand Exchange: the item page ---------- */
+/* The price details row: big buy, sell and flip, quieter limit and traded, and the changes as soft pills, over a gold hairline. */
+.gxf { position: relative; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 18px 40px; padding: 4px 4px 20px; }
+.gxf::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--gold) 45%, transparent) 20%, color-mix(in srgb, var(--gold) 45%, transparent) 80%, transparent); }
+.gxf-group { display: flex; gap: 14px 34px; margin: 0; }
+.gxf-group > div { min-width: 0; }
+.gxf dt { color: var(--muted); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.gxf dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.gxf-prices dd { font-size: 1.85rem; line-height: 1.1; letter-spacing: -0.01em; }
+.gxf-meta { padding-left: 34px; border-left: 1px solid var(--border); }
+.gxf-meta dd { color: #d8cdb0; font-size: 1.2rem; }
+.gxf-changes { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+.gxf-changes li { display: inline-flex; align-items: baseline; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(255, 255, 255, 0.05); font-variant-numeric: tabular-nums; }
+.gxf-changes span { color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.gxf-changes b { font-size: 1rem; color: var(--muted); }
+.gxf-changes li.up { background: rgba(124, 184, 105, 0.14); }
+.gxf-changes li.up b { color: #9fd48a; }
+.gxf-changes li.down { background: rgba(224, 122, 99, 0.14); }
+.gxf-changes li.down b { color: #f0987f; }
+.gxi-price { display: grid; justify-items: end; gap: 4px; margin-left: auto; text-align: right; }
+.gxi-price b { font-size: clamp(2.1rem, 4.2vw, 3.1rem); line-height: 1.1; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.gxi-price b small { color: var(--muted); font-size: 0.9rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
+@media (max-width: 900px) { .gxf-changes { margin-left: 0; } }
+@media (max-width: 640px) {
+  .gxf { gap: 14px 24px; padding-bottom: 16px; }
+  .gxf-prices { width: 100%; justify-content: space-between; }
+  .gxf-prices dd { font-size: 1.45rem; }
+  .gxf-meta { padding-left: 0; border-left: 0; gap: 14px 28px; }
+  .gxf-meta dd { font-size: 1.05rem; }
+  .gxf-changes { width: 100%; }
+  .gxf-changes li { flex: 1 1 0; justify-content: space-between; padding: 7px 12px; }
+}
 /* One open column: the key prices across the top, chips for the small facts, then sections divided by hairlines. */
 .gxi { gap: 22px; }
-.gxi-head .wb { margin-left: auto; align-self: flex-start; }
-.gxv { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 24px; margin: 6px 0 0; }
-.gxv dt { color: var(--muted); font-size: 0.92rem; }
-.gxv dd { margin: 4px 0 0; font-size: clamp(1.7rem, 3.4vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.gxv dd.is-main { color: var(--gold-bright); }
-.gxv dd small { color: var(--muted); font-size: 0.55em; font-weight: 700; }
-.gxi .gxi-h { font-size: clamp(1.45rem, 2.6vw, 1.9rem); }
-.gxi-title .gxc { margin-top: 12px; }
-.gxc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.gxc li { padding: 5px 13px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
-.gxc li.up { color: #9fd48a; }
-.gxc li.down { color: #f0987f; }
 .gxi-sec { padding-top: 26px; border-top: 1px solid var(--border); }
 .gxi-sec h2 { margin: 0; font-size: 1.35rem; }
+.gxi-sec.gxi-chart { padding-top: 6px; border-top: 0; }
 .gxi .gxi-chart .xp-chart { margin-top: 10px; }
 .gxn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px 28px; margin: 18px 0 0; }
 .gxn-grid dt { color: var(--muted); font-size: 0.9rem; }
@@ -6522,14 +6542,9 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gxi .pc-key { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
 .gxi .pc .xp-chart-grid line { stroke-dasharray: 2 5; }
 @media (max-width: 760px) {
-  .gxv { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .gxv dd { font-size: 1.5rem; }
   .gxn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
   .gxn-grid dd { font-size: 1.25rem; }
-  .gxc { gap: 6px; }
-  .gxc li { padding: 4px 10px; font-size: 0.76rem; white-space: nowrap; }
   .gxi-head { flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
   .gxi-icon { width: 52px; height: 52px; }
   .gxi-title { min-width: 0; }
-  .gxi-head .wb { padding: 5px 11px; font-size: 0.8rem; }
 }
