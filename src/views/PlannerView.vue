@@ -9,8 +9,9 @@
         <div class="pt-head">
           <div class="pt-title">
             <span class="pt-badge">Account Planner</span>
-            <h1>Your next OSRS goal starts here.</h1>
-            <p>Enter your RuneScape name to see how long your next goal will take, what it could cost, and the fastest way to get there.</p>
+            <h1>How long until 99, and what will it cost?</h1>
+            <p>Enter your RuneScape name: the fastest route, the time it takes and the cost, from your real stats and live Grand Exchange prices.</p>
+            <GePriceBadge class="pt-live" />
           </div>
         </div>
         <PlannerPlayerBox
@@ -81,6 +82,10 @@
           <span>Using <b>{{ template.name }}</b><template v-if="template.rsn"> by {{ template.rsn }}</template>. Every goal now starts from your current stats. Nothing of the original player's progress was copied.</span>
           <button class="btn-text" type="button" @click="template = null">Dismiss</button>
         </div>
+        <!-- Once the plan is saved (in this browser) and there is no name prompt to answer: where an account would keep it -->
+        <p v-if="!loggedIn && currentPlanId && !(template && templatePending)" class="ps-account" role="status">
+          Saved in this browser. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create a free account</RouterLink> to keep it on every device and track your progress.
+        </p>
         <p v-if="routeIssues.blocked" class="gb-alert" role="status">
           <span>⚠ {{ routeIssues.blocked }} skill{{ routeIssues.blocked === 1 ? '' : 's' }} use a method you may be missing a requirement for.</span>
           <button class="btn-text" type="button" @click="reviewRequirements">Review requirements</button>
@@ -230,6 +235,7 @@ import {
   validatePlan,
 } from '@/utils/plannerTools'
 import { useLivePrices } from '@/composables/useLivePrices'
+import GePriceBadge from '@/components/GePriceBadge.vue'
 import { priceVersion } from '@/utils/priceBook'
 
 

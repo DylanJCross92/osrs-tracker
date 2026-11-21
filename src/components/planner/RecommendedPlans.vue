@@ -11,10 +11,14 @@
           <img v-for="g in r.goals.slice(0, MAX_ICONS)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="20" height="20" :title="g.skill" />
           <span v-if="r.goals.length > MAX_ICONS" class="rp-more">+{{ r.goals.length - MAX_ICONS }}</span>
         </div>
-        <dl class="rp-meta">
+        <dl class="rp-meta" :class="{ gp: summaries[r.id].netGp != null }">
           <div><dt>Goals</dt><dd>{{ r.skillCount }} skill{{ r.skillCount === 1 ? '' : 's' }}</dd></div>
           <div><dt>Time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
           <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : formatHours(summaries[r.id].totalHours) }}</dd></div>
+          <div v-if="summaries[r.id].netGp != null" :title="live ? 'Worked out from live Grand Exchange prices, after the 2% tax' : 'An estimate from saved prices'">
+            <dt>{{ summaries[r.id].netGp >= 0 ? 'Profit' : 'GP cost' }}</dt>
+            <dd :class="summaries[r.id].netGp >= 0 ? 'planner-gain' : 'planner-cost'"><i v-if="live" class="rp-live" aria-hidden="true" />{{ formatGp(summaries[r.id].netGp).replace(/ gp$/, '') }}</dd>
+          </div>
         </dl>
         <button class="btn btn-primary rp-use" type="button" @click="$emit('use', r)">Use this plan</button>
       </li>
@@ -25,7 +29,8 @@
 <script setup>
 import { computed } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours } from '@/utils/planner'
+import { formatGp, formatHours } from '@/utils/planner'
+import { priceStatus } from '@/utils/priceBook'
 import { summarizePlan } from '@/utils/plannerTools'
 import { featuredPlans, recommendedPlans, suggestedPlans } from '@/utils/recommendedPlans'
 
@@ -48,6 +53,8 @@ const props = defineProps({
 })
 defineEmits(['use'])
 
+// True once the Grand Exchange prices have loaded, so the gp figure on each card is the live one.
+const live = computed(() => priceStatus.value.loaded && !priceStatus.value.stale)
 const MAX_ICONS = 8
 const KIND_LABELS = { levels: 'All skills', combat: 'Combat', total: 'Total level' }
 
