@@ -110,7 +110,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -760,6 +760,12 @@ function reorderTo(from, to) {
   next.splice(to, 0, moved)
   goals.value = next
   track('planner_goal_reordered')
+  saveIfChanged()
+}
+// "Use this order" in the suggested order window: the skills go in that order (a skill not named stays at the end) and the plan is saved.
+function applyOrder(order) {
+  const rank = new Map(order.map((skill, i) => [skill, i]))
+  goals.value = [...goals.value].sort((a, b) => (rank.get(a.skill) ?? 1e6) - (rank.get(b.skill) ?? 1e6))
   saveIfChanged()
 }
 // A change made from the details under a skill's route (ticking a quest): applied and saved straight away, like closing the editor.
