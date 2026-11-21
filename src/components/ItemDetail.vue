@@ -15,67 +15,54 @@
 
       <p v-if="item.stale" class="gx-stale" role="status">Prices are a little behind right now. They update every few minutes.</p>
 
-      <div class="gxi-grid">
-      <section class="gxp" aria-label="Price now">
-        <b class="gxp-price">{{ gpText(item.price) }}<small> gp</small></b>
-        <span v-if="pricey && item.change1 != null" class="gxp-today" :class="tone(item.change1)">{{ pctText(item.change1) }} today</span>
-        <span v-if="item.updatedAt" class="gxp-upd">Updated {{ ago(item.updatedAt) }}</span>
-      </section>
+      <dl class="gxv" aria-label="Price now">
+        <div title="The middle of the latest buy and sell price"><dt>GE price</dt><dd class="is-main">{{ gpText(item.price) }}<small> gp</small></dd></div>
+        <div title="What you pay to buy right away"><dt>Instant buy</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
+        <div title="What you get selling right away"><dt>Instant sell</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
+      </dl>
 
-      <aside class="gxd" aria-label="Trade details">
-        <dl class="gxd-list">
-          <div title="What you pay to buy right away"><dt>Buy now</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
-          <div title="What you get selling right away"><dt>Sell now</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
-          <div v-if="pricey && item.flip" :title="`Buy and sell again, after the 2% tax (${pctText(item.flip.roi)})`"><dt>Flip profit</dt><dd :class="changeClass(item.flip.margin)">{{ signedGp(item.flip.margin) }}<small> gp</small></dd></div>
-          <div v-if="item.limit" title="How many you can buy every 4 hours"><dt>Buy limit</dt><dd>{{ item.limit.toLocaleString('en-US') }}<small> / 4h</small></dd></div>
-          <div v-if="item.volume" title="Bought and sold yesterday"><dt>Traded yesterday</dt><dd>{{ item.volume.toLocaleString('en-US') }}</dd></div>
-        </dl>
-        <template v-if="pricey && trend.length">
-          <h2 class="gxd-h">Price change</h2>
-          <dl class="gxd-list">
-            <div v-for="c in trend" :key="c.label" :title="c.tip"><dt>{{ c.label }}</dt><dd :class="c.tone">{{ pctText(c.value) }}</dd></div>
-          </dl>
-        </template>
-      </aside>
+      <ul class="gxc" aria-label="About this item">
+        <li v-if="pricey && item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
+        <li v-if="item.limit" title="How many you can buy every 4 hours">{{ item.limit.toLocaleString('en-US') }} / 4h limit</li>
+        <li v-if="item.volume" :title="`${item.volume.toLocaleString('en-US')} bought and sold yesterday`">{{ item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume) }} traded yesterday</li>
+        <li v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</li>
+      </ul>
 
-      <section class="gxi-card gxi-chart">
+      <section class="gxi-sec gxi-chart">
         <div class="gx-chart-head">
           <h2>Price history</h2>
           <div class="gx-seg" role="group" aria-label="Range">
             <button v-for="r in ranges" :key="r.key" type="button" :class="{ on: range === r.key }" :aria-pressed="range === r.key" @click="range = r.key">{{ r.label }}</button>
           </div>
         </div>
-        <template v-if="summary">
-          <ul class="gxr" :aria-label="`Over the ${rangeLabel}`">
-            <li><span>Lowest</span><b>{{ gpText(summary.low) }}</b></li>
-            <li><span>Highest</span><b>{{ gpText(summary.high) }}</b></li>
-            <li><span>Average</span><b>{{ gpText(summary.avg) }}</b></li>
-            <li v-if="summary.change != null"><span>Change</span><b :class="tone(summary.change)">{{ pctText(summary.change) }}</b></li>
-          </ul>
-          <p v-if="verdict" class="gxr-verdict" :class="verdict.tone"><i aria-hidden="true" />{{ verdict.text }}</p>
-        </template>
         <p v-if="historyError" class="empty-hint">{{ historyError }}</p>
         <div v-else-if="!history" class="gx-chart-sk sk" aria-busy="true" aria-label="Loading the chart" />
         <PriceLineChart v-else :points="history.points" :show-time="range === '1d' || range === '1w'" :aria-label="`${item.name} price over the ${rangeLabel}`" />
       </section>
 
-      <div v-if="showAlch || methods.length" class="gxi-uses">
-        <section v-if="showAlch" class="gxi-card gx-alch">
-          <h2>High alchemy</h2>
-          <p v-if="item.alchProfit != null" class="gx-alch-big" :class="changeClass(item.alchProfit)">{{ signedGp(item.alchProfit) }} gp <small>each</small></p>
-          <p class="gx-alch-note">Casting it gives {{ gpText(item.highAlch) }} gp. Buying one costs {{ gpText(item.high) }} gp, plus a nature rune.</p>
-        </section>
+      <section v-if="insights.length" class="gxi-sec gxn">
+        <h2>Market insights</h2>
+        <dl class="gxn-grid">
+          <div v-for="i in insights" :key="i.label" :title="i.tip"><dt>{{ i.label }}</dt><dd :class="i.tone">{{ i.value }}</dd></div>
+        </dl>
+        <p v-if="verdict" class="gxn-verdict" :class="verdict.tone">{{ verdict.text }}</p>
+      </section>
 
-        <section v-if="methods.length" class="gxi-card gx-methods">
-          <h2>Used in training</h2>
-          <p class="gx-alch-note">These methods use {{ item.name }} up, so its price is part of what they cost.</p>
+      <section v-if="showAlch || methods.length" class="gxi-sec gxu">
+        <h2>Ways to use it</h2>
+        <div v-if="showAlch" class="gxu-row">
+          <h3>High alchemy</h3>
+          <p v-if="item.alchProfit != null" class="gxu-big" :class="changeClass(item.alchProfit)">{{ signedGp(item.alchProfit) }} gp <small>each</small></p>
+          <p class="gxu-note">Casting it gives {{ gpText(item.highAlch) }} gp. Buying one costs {{ gpText(item.high) }} gp, plus a nature rune.</p>
+        </div>
+        <div v-if="methods.length" class="gxu-row">
+          <h3>Used in training</h3>
+          <p class="gxu-note">These methods use {{ item.name }} up, so its price is part of what they cost.</p>
           <ul class="gx-method-list">
             <li v-for="m in methods" :key="m.id"><RouterLink :to="m.path" class="gxh-chip">{{ m.name }} <small>{{ m.skill }}</small></RouterLink></li>
           </ul>
-        </section>
-      </div>
-
-      </div>
+        </div>
+      </section>
 
       <p class="st-note gx-note">Prices from the <a href="https://oldschool.runescape.wiki/w/RuneScape:Real-time_Prices" target="_blank" rel="noopener">OSRS Wiki real-time prices</a>. A fan project, not affiliated with Jagex.</p>
     </template>
@@ -91,7 +78,7 @@ import { geApi } from '@/api/ge'
 import { ApiError } from '@/api/client'
 import { track } from '@/utils/analytics'
 import { ago } from '@/components/admin/stats/statsFormat'
-import { changeClass, gpText, itemImage, pctText, signedGp } from '@/utils/geFormat'
+import { changeClass, gpAxis, gpText, itemImage, pctText, signedGp } from '@/utils/geFormat'
 import { MIN_PRICE } from '@/utils/geTrending'
 import { summarizeHistory } from '@/utils/geSummary'
 import { methodsUsingItem } from '@/utils/itemMethods'
@@ -140,6 +127,24 @@ const trend = computed(() => {
 })
 // The range's lowest, highest and average price, and where the price is now against that average.
 const summary = computed(() => (history.value?.points ? summarizeHistory(history.value.points, item.value?.price) : null))
+// The numbers under "Market insights": the range's low, high, average and change, then (for items that cost something) the flip and the changes against earlier days.
+const insights = computed(() => {
+  const out = []
+  const sm = summary.value
+  const short = ranges.find((r) => r.key === range.value)?.label || ''
+  if (sm) {
+    out.push({ label: `${short} low`, value: `${gpText(sm.low)} gp`, tip: `The lowest price in the last ${rangeLabel.value}` })
+    out.push({ label: `${short} high`, value: `${gpText(sm.high)} gp`, tip: `The highest price in the last ${rangeLabel.value}` })
+    out.push({ label: `${short} average`, value: `${gpText(sm.avg)} gp`, tip: `The average price over the last ${rangeLabel.value}` })
+    if (sm.change != null) out.push({ label: `${short} change`, value: pctText(sm.change), tone: tone(sm.change), tip: `From the first price to the last over the ${rangeLabel.value}` })
+  }
+  const i = item.value
+  if (i && pricey.value) {
+    if (i.flip) out.push({ label: 'Flip profit', value: `${signedGp(i.flip.margin)} gp`, tone: tone(i.flip.margin), tip: `Buy and sell again, after the 2% tax (${pctText(i.flip.roi)})` })
+    for (const c of trend.value) out.push({ label: c.label === 'Yesterday' ? 'Change since yesterday' : `${c.label} change`, value: pctText(c.value), tone: c.tone, tip: c.tip })
+  }
+  return out
+})
 const verdict = computed(() => {
   const v = summary.value?.vsAvg
   if (v == null || !pricey.value || Math.abs(v) < 3) return null

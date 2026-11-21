@@ -1,10 +1,5 @@
 <template>
   <div class="xp-chart pc" ref="containerRef">
-    <div class="pc-legend" aria-hidden="true">
-      <span><i class="pc-key pc-key-high" /> Buy price (high)</span>
-      <span><i class="pc-key pc-key-low" /> Sell price (low)</span>
-      <span v-if="hasVolume"><i class="pc-key pc-key-vol" /> Traded</span>
-    </div>
     <svg
       ref="svgRef"
       :viewBox="`0 0 ${W} ${H}`"
@@ -45,6 +40,12 @@
       <div class="xp-chart-tooltip-value"><i class="pc-key pc-key-high" /> Buy <strong>{{ gpText(hoverPoint.high) }}</strong></div>
       <div class="xp-chart-tooltip-value"><i class="pc-key pc-key-low" /> Sell <strong>{{ gpText(hoverPoint.low) }}</strong></div>
       <div v-if="hoverPoint.vol" class="xp-chart-tooltip-value pc-tip-vol">{{ hoverPoint.vol.toLocaleString('en-US') }} traded</div>
+    </div>
+
+    <div class="pc-legend" aria-hidden="true">
+      <span><i class="pc-key pc-key-high" /> Buy price</span>
+      <span><i class="pc-key pc-key-low" /> Sell price</span>
+      <span v-if="hasVolume"><i class="pc-key pc-key-vol" /> Traded</span>
     </div>
 
     <p v-if="!points.length" class="empty-hint">No trades recorded for this range yet.</p>

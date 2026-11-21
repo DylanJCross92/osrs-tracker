@@ -6482,58 +6482,48 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gxh-watch { margin: 0 0 18px; }
 
 /* ---------- Grand Exchange: the item page ---------- */
+/* One open column: the key prices across the top, chips for the small facts, then sections divided by hairlines. */
+.gxi { gap: 22px; max-width: 980px; margin-inline: auto; width: 100%; }
 .gxi-head .wb { margin-left: auto; align-self: flex-start; }
-.gxi { gap: 22px; }
-/* The price and the chart on the left, the trade details in one quiet panel on the right. */
-.gxi-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-areas: 'price side' 'chart side' 'uses side'; gap: 22px 40px; align-items: start; }
-.gxi-grid .gxp { grid-area: price; }
-.gxi-grid .gxi-chart { grid-area: chart; }
-.gxi-grid .gxi-uses { grid-area: uses; }
-.gxi-grid .gxd { grid-area: side; }
-.gxp { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 18px; }
-.gxp-price { font-size: clamp(2.8rem, 5.4vw, 3.9rem); line-height: 1; font-variant-numeric: tabular-nums; background: linear-gradient(180deg, #f9e3a8, var(--gold)); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.gxp-price small { color: var(--muted); font-size: 1.05rem; font-weight: 700; -webkit-text-fill-color: var(--muted); }
-.gxp-today { font-size: 1rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
-.gxp-today.up { color: #9fd48a; }
-.gxp-today.down { color: #f0987f; }
-.gxp-upd { flex: 1 0 100%; color: var(--muted); font-size: 0.82rem; }
-.gxd { padding: 6px 18px 12px; border: 1px solid var(--border); border-radius: 16px; background: rgba(14, 12, 9, 0.35); }
-.gxd-h { margin: 14px 0 0; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.gxd-list { margin: 0; }
-.gxd-list > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; }
-.gxd-list > div + div { border-top: 1px solid var(--border); }
-.gxd-h + .gxd-list > div:first-child { padding-top: 8px; }
-.gxd-list dt { color: var(--muted); font-size: 0.9rem; }
-.gxd-list dd { margin: 0; font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
-.gxd-list dd small { color: var(--muted); font-size: 0.78rem; font-weight: 600; }
-.gxd-list dd.up { color: #9fd48a; }
-.gxd-list dd.down { color: #f0987f; }
-.gxr b.up { color: #9fd48a; }
-.gxr b.down { color: #f0987f; }
-/* On this page the sections are open: no boxes, just space. */
-.gxi .gxi-card, .gxi.is-modal .gxi-card { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
-.gxr { display: flex; flex-wrap: wrap; gap: 10px 34px; margin: 12px 0 0; padding: 0; list-style: none; }
-.gxr li { display: grid; gap: 1px; }
-.gxr span { color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.gxr b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
-.gxr-verdict { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; padding: 4px 12px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.84rem; font-weight: 600; }
-.gxr-verdict i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
-.gxr-verdict.good { background: rgba(124, 184, 105, 0.14); }
-.gxr-verdict.good i { background: #7cb869; }
-.gxr-verdict.bad { background: rgba(224, 122, 99, 0.14); }
-.gxr-verdict.bad i { background: #e07a63; }
-.gxi-chart .xp-chart { margin-top: 8px; }
-.gxi-uses { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
-.gx-alch-big { margin: 8px 0 2px; font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
-.gx-alch-big small { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
-.gx-alch-note { margin: 6px 0 0; color: var(--muted); font-size: 0.88rem; max-width: none; line-height: 1.45; }
-@media (max-width: 860px) {
-  .gxi-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'price' 'chart' 'side' 'uses'; gap: 20px; }
-  .gxd { padding: 2px 14px 8px; }
-}
+.gxv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 24px; margin: 6px 0 0; }
+.gxv dt { color: var(--muted); font-size: 0.92rem; }
+.gxv dd { margin: 4px 0 0; font-size: clamp(1.7rem, 3.4vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.gxv dd.is-main { color: var(--gold-bright); }
+.gxv dd small { color: var(--muted); font-size: 0.55em; font-weight: 700; }
+.gxc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.gxc li { padding: 6px 14px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.86rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gxc li.up { color: #9fd48a; }
+.gxc li.down { color: #f0987f; }
+.gxi-sec { padding-top: 26px; border-top: 1px solid var(--border); }
+.gxi-sec h2 { margin: 0; font-size: 1.35rem; }
+.gxi .gxi-chart .xp-chart { margin-top: 10px; }
+.gxn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 20px 28px; margin: 18px 0 0; }
+.gxn-grid dt { color: var(--muted); font-size: 0.9rem; }
+.gxn-grid dd { margin: 4px 0 0; font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.gxn-grid dd.up { color: #9fd48a; }
+.gxn-grid dd.down { color: #f0987f; }
+.gxn-verdict { margin: 20px 0 0; font-size: 0.95rem; color: var(--muted); }
+.gxn-verdict::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 50%; background: var(--muted); }
+.gxn-verdict.good { color: #9fd48a; }
+.gxn-verdict.good::before { background: #7cb869; }
+.gxn-verdict.bad { color: #f0987f; }
+.gxn-verdict.bad::before { background: #e07a63; }
+.gxu-row { margin-top: 18px; }
+.gxu-row + .gxu-row { margin-top: 26px; }
+.gxu-row h3 { margin: 0; font-size: 1.05rem; }
+.gxu-big { margin: 6px 0 2px; font-size: 1.9rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.gxu-big small { color: var(--muted); font-size: 0.9rem; font-weight: 600; }
+.gxu-note { margin: 6px 0 0; color: var(--muted); font-size: 0.92rem; max-width: none; line-height: 1.5; }
+.gxi .gxi-sec.gxu .gx-method-list { margin-top: 12px; }
+/* The chart's legend sits under it, centred, with dots. Grid lines are dashed. */
+.gxi .pc-legend { justify-content: center; gap: 4px 22px; margin: 6px 0 0; font-size: 0.88rem; }
+.gxi .pc-key { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+.gxi .pc .xp-chart-grid line { stroke-dasharray: 2 5; }
 @media (max-width: 760px) {
-  .gxr { display: grid; grid-template-columns: repeat(4, auto); justify-content: space-between; gap: 10px 8px; }
-  .gxr b { font-size: 1rem; }
+  .gxv { gap: 10px 12px; }
+  .gxv dd { font-size: 1.5rem; }
+  .gxn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+  .gxn-grid dd { font-size: 1.25rem; }
   .gxi-head { flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
   .gxi-icon { width: 52px; height: 52px; }
   .gxi-title { min-width: 0; }
