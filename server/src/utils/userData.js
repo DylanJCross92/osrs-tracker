@@ -6,6 +6,7 @@ export const MAX_PLAN_BYTES = 20_000
 export const MAX_PLANNER_BYTES = 60_000
 export const MAX_RECENTS = 10
 export const MAX_SET = 200
+export const MAX_WATCH = 100
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
 const ID_RE = /^[\w-]{1,40}$/
 
@@ -58,6 +59,12 @@ function cleanSet(list) {
   return [...new Set(list.filter((v) => typeof v === 'string' && v.length > 0 && v.length <= 80))].slice(-MAX_SET)
 }
 
+// The Grand Exchange items someone watches, as item addresses ("dragon-bones"), in the order they were added.
+function cleanWatch(list) {
+  if (!Array.isArray(list)) return null
+  return [...new Set(list.filter((v) => typeof v === 'string' && /^[a-z0-9-]{1,120}$/.test(v)))].slice(0, MAX_WATCH)
+}
+
 /** Keeps the known keys with valid values. A key that is missing or invalid is left out (so a partial save never wipes the rest). */
 export function sanitizeUserData(input) {
   const out = {}
@@ -74,5 +81,6 @@ export function sanitizeUserData(input) {
   take('cheered', cleanSet)
   take('dismissed', cleanSet)
   take('requirements', cleanRequirements)
+  take('watch', cleanWatch)
   return out
 }

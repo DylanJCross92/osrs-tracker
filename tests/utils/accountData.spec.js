@@ -54,6 +54,18 @@ describe('linkAccountData', () => {
     expect(api.saveData).toHaveBeenCalled()
   })
 
+  it('joins watched items from both sides the first time, then the newer list wins so removals carry over', async () => {
+    put('watch', ['law-rune', 'shark'])
+    api.getData.mockResolvedValue({ data: { watch: { value: ['dragon-bones', 'law-rune'], updatedAt: OLD } } })
+    await linkAccountData()
+    expect(get('watch').sort()).toEqual(['dragon-bones', 'law-rune', 'shark'])
+    expect(api.saveData.mock.calls[0][0].watch.value.sort()).toEqual(['dragon-bones', 'law-rune', 'shark'])
+    // Later, the account has a newer list with an item taken off.
+    api.getData.mockResolvedValue({ data: { watch: { value: ['law-rune'], updatedAt: '2099-01-01T00:00:00.000Z' } } })
+    await linkAccountData()
+    expect(get('watch')).toEqual(['law-rune'])
+  })
+
   it('joins congratulation sets', async () => {
     put('cheered', ['a:1'])
     api.getData.mockResolvedValue({ data: { cheered: { value: ['b:2'], updatedAt: OLD } } })

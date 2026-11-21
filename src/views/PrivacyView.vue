@@ -20,7 +20,7 @@
       You can create an account with an email address and a password. We store the email, a salted one-way hash of the password
       (never the password itself), when the account was made, and a few settings you choose to sync: your OSRS name, your rivals and
       your preferred gain period. Signed-in browsers keep a cookie so you stay logged in for 30 days. When you are signed in we also keep, with your account, the browser data that
-      makes the site follow you between devices: saved planner plans and goals, recent searches, the players you follow and which
+      makes the site follow you between devices: saved planner plans and goals, recent searches, the players you follow, the Grand Exchange items you watch and which
       congratulations you have sent or hidden, plus a list of notifications about things like claims and the players you follow. The site owner can see the plans an account has saved, listed by the player each plan is for and without the account's email, to understand how the planner is used.
       An account does not give anyone else access to or control over any OSRS profile. You can change your password on the account page,
       and you can ask us to delete your account and its saved settings from the contact page. Password reset emails are sent through Resend. If you confirm your email but never claim a player, we send you one reminder email about a day later that explains what claiming gives you. It has an unsubscribe link, and we remember that you unsubscribed so it is not sent again. If you open a claim on a player and do not finish it, we email you a day later to say the claim closes 48 hours after that email.

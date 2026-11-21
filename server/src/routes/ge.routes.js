@@ -29,6 +29,25 @@ geRouter.get('/ge/items', readLimiter, async (req, res, next) => {
   }
 })
 
+// The items someone watches, by address: ?slugs=dragon-bones,law-rune gives the same short rows as /ge/items for just those (an item with
+// no price yet is included, with empty prices). Up to 100.
+geRouter.get('/ge/watch', readLimiter, async (req, res, next) => {
+  try {
+    const wanted = [...new Set(String(req.query.slugs || '').split(',').map((x) => x.trim()).filter((x) => SLUG.test(x)))].slice(0, 100)
+    if (!wanted.length) return res.status(400).json({ error: 'Give the item addresses to look up, separated by commas.' })
+    const { updatedAt, stale, items } = await getItemIndex()
+    const bySlug = new Map(items.map((i) => [i.slug, i]))
+    res.set('Cache-Control', 'public, max-age=60')
+    res.json({
+      updatedAt,
+      stale,
+      items: wanted.map((s) => bySlug.get(s)).filter(Boolean).map((i) => [i.id, i.name, i.slug, i.members ? 1 : 0, i.high, i.low, i.volume, i.limit, i.change1, i.change7, i.change30, i.margin, i.icon]),
+    })
+  } catch (err) {
+    fail(err, res, next)
+  }
+})
+
 // The prices of some items by name, for the planners and calculators: ?names=Dragon bones|Law rune|... gives
 // { updatedAt, stale, prices: { "dragon bones": [high, low, slug, icon file or null] } }. Up to MAX_PRICE_NAMES names.
 geRouter.get('/ge/prices', readLimiter, async (req, res, next) => {

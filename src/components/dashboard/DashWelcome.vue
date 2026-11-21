@@ -58,6 +58,7 @@
 
       <aside class="dash-side">
         <FollowingStrip v-if="following.length" />
+        <DashWatchlist />
       </aside>
     </div>
 
@@ -68,6 +69,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
+import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
 import { ApiError } from '@/api/client'

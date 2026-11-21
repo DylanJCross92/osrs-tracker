@@ -18,6 +18,8 @@
       </p>
     </section>
 
+    <WatchlistCard v-if="watched.length" class="gxh-watch" :rows="watched" variant="ge" />
+
     <div class="gx-seg gxh-seg" role="group" aria-label="Time range">
       <button type="button" :class="{ on: period === 'day' }" :aria-pressed="period === 'day'" @click="setPeriod('day')">Today</button>
       <button type="button" :class="{ on: period === 'week' }" :aria-pressed="period === 'week'" @click="setPeriod('week')">This week</button>
@@ -44,6 +46,8 @@ import ItemsBrowse from '@/components/ItemsBrowse.vue'
 import ItemSearch from '@/components/ItemSearch.vue'
 import ItemTicker from '@/components/ItemTicker.vue'
 import TrendCard from '@/components/TrendCard.vue'
+import WatchlistCard from '@/components/WatchlistCard.vue'
+import { useWatchlist } from '@/composables/useWatchlist'
 import { geApi } from '@/api/ge'
 import { ApiError } from '@/api/client'
 import { track } from '@/utils/analytics'
@@ -74,6 +78,12 @@ const browsing = computed(() => ['browse', 'q', 'show', 'sort', 'dir'].some((k) 
 const trends = computed(() => trending(rows.value, period.value, 8))
 const tickerRows = computed(() => trending(rows.value, 'day', 24).traded)
 const popular = computed(() => trending(rows.value, 'day', 6).traded)
+// The items you watch, newest first, with the same prices as the rest of the page.
+const { slugs: watchedSlugs } = useWatchlist()
+const watched = computed(() => {
+  const bySlug = new Map(rows.value.map((r) => [r.slug, r]))
+  return [...watchedSlugs.value].reverse().map((s) => bySlug.get(s)).filter(Boolean)
+})
 
 const changeMetric = (r) => {
   const p = period.value === 'week' ? r.change7 : r.change1

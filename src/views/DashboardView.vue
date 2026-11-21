@@ -116,6 +116,7 @@
             <p class="dash-empty">Follow players to see their gains and milestones here. Open any profile and press Follow.</p>
             <RouterLink class="btn btn-ghost" :to="{ name: 'discover' }">Find players</RouterLink>
           </section>
+          <DashWatchlist />
           <DashSkeleton v-if="current && firstLoad" kind="milestones" />
           <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
@@ -158,6 +159,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
+import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashWelcome from '@/components/dashboard/DashWelcome.vue'
 import DashMilestones from '@/components/dashboard/DashMilestones.vue'

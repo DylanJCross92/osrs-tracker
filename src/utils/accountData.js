@@ -15,6 +15,7 @@ export const KEYS = {
   cheered: 'tickgains-congrats-cheered',
   dismissed: 'tickgains-congrats-dismissed',
   requirements: 'tickgains-planner-requirements-v1',
+  watch: 'tickgains-ge-watch-v1',
 }
 const NAMES = Object.keys(KEYS)
 const BY_STORAGE_KEY = Object.fromEntries(NAMES.map((n) => [KEYS[n], n]))
@@ -185,6 +186,10 @@ export async function linkAccountData() {
       pushIt = JSON.stringify(merged) !== JSON.stringify(remoteMap)
     } else if (name === 'recents') {
       merged = mergeRecents(local, remoteValue)
+      pushIt = JSON.stringify(merged) !== JSON.stringify(remoteValue || [])
+    } else if (name === 'watch' && !linked) {
+      // The first time this browser meets the account, the items watched here and there are both kept.
+      merged = [...new Set([...(Array.isArray(remoteValue) ? remoteValue : []), ...(Array.isArray(local) ? local : [])])].slice(0, 100)
       pushIt = JSON.stringify(merged) !== JSON.stringify(remoteValue || [])
     } else if (name === 'plans' && !linked) {
       // First time this browser meets the account: keep plans from both sides.

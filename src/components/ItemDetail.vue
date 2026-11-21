@@ -14,6 +14,7 @@
           <b>{{ gpText(item.price) }}<small> gp</small></b>
           <span v-if="item.change1 != null" class="gxt-pill" :class="item.change1 > 0 ? 'up' : item.change1 < 0 ? 'down' : 'flat'">{{ pctText(item.change1) }} today</span>
           <span v-if="item.updatedAt" class="gx-updated">updated {{ ago(item.updatedAt) }}</span>
+          <WatchButton :slug="slug" :name="item.name" :source="variant" />
         </div>
       </header>
 
@@ -68,6 +69,7 @@
 </template>
 
 <script setup>
+import WatchButton from '@/components/WatchButton.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import PriceLineChart from '@/components/PriceLineChart.vue'

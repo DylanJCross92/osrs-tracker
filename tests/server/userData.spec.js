@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sanitizeUserData, MAX_PLANS, MAX_SET } from '../../server/src/utils/userData.js'
+import { sanitizeUserData, MAX_PLANS, MAX_SET, MAX_WATCH } from '../../server/src/utils/userData.js'
 
 const T = '2026-11-10T12:00:00.000Z'
 
@@ -42,5 +42,17 @@ describe('sanitizeUserData', () => {
     })
     expect(out.requirements.value).toEqual({ 'quest:monkey-madness-ii': 'have', 'equipment:toxic-blowpipe': 'missing', 'unlock:ancient-magicks': 'unknown' })
     expect(sanitizeUserData({ requirements: { value: ['x'], updatedAt: T } })).toEqual({})
+  })
+})
+
+describe('watched items', () => {
+  it('keeps item addresses in order without repeats, and drops anything else', () => {
+    const out = sanitizeUserData({ watch: { value: ['dragon-bones', 'law-rune', 'dragon-bones', 'Bad Name', '', 5, 'ring-of-dueling-8'], updatedAt: T } })
+    expect(out.watch.value).toEqual(['dragon-bones', 'law-rune', 'ring-of-dueling-8'])
+  })
+  it('caps the list and ignores a value that is not a list', () => {
+    const many = Array.from({ length: MAX_WATCH + 20 }, (_, i) => `item-${i}`)
+    expect(sanitizeUserData({ watch: { value: many, updatedAt: T } }).watch.value).toHaveLength(MAX_WATCH)
+    expect(sanitizeUserData({ watch: { value: 'dragon-bones', updatedAt: T } }).watch).toBeUndefined()
   })
 })
