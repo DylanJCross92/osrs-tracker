@@ -6428,12 +6428,19 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .pd-quests { margin: 0 0 6px; padding: 0; list-style: none; display: grid; gap: 4px; }
 .pd-quests li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
 .pd-sub { margin: 0 0 6px; color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
-.pd-quests.is-options li { background: transparent; border-style: dashed; }
+.pd-quests.is-pick li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0; background: transparent; border-style: dashed; }
+.pd-quests.is-pick li.is-on { background: var(--bg); border-style: solid; border-color: rgba(124, 184, 105, 0.45); }
+.pd-q { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; padding: 9px 12px; cursor: pointer; }
+.pd-quests li.is-locked .pd-q { cursor: not-allowed; opacity: 0.7; }
+.pd-q input { flex: none; width: 17px; height: 17px; accent-color: var(--gold); }
+.pd-q-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; min-width: 0; }
+.pd-q-done { flex: none; margin-right: 10px; padding: 3px 10px; border: 1px solid var(--border-strong); border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 0.76rem; cursor: pointer; }
+.pd-q-done:hover, .pd-q-done:focus-visible { color: var(--text); border-color: var(--gold); outline: none; }
 .pd-quests li.is-locked b { color: var(--muted); }
 .pd-done { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; }
 .pd-done-label { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
 .pd-done-label .pd-tick { color: #7cb869; }
-.pd-done-chip { padding: 2px 10px; border: 1px solid rgba(124, 184, 105, 0.35); border-radius: 999px; background: rgba(124, 184, 105, 0.07); font-size: 0.78rem; }
+.pd-done-chip { padding: 2px 10px; color: var(--text); font: inherit; cursor: pointer; border: 1px solid rgba(124, 184, 105, 0.35); border-radius: 999px; background: rgba(124, 184, 105, 0.07); font-size: 0.78rem; }
 .pd-quest-act { display: inline-block; margin-top: 8px; font-size: 0.88rem; }
 .pd-tick { flex: none; }
 .pd-quests small { color: var(--muted); }

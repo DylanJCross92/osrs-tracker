@@ -66,7 +66,7 @@
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
           <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" />
-          <PlannerPathDetails :plan="plans[i]" :goal="g" @edit="(tab) => emit('edit', g.skill, tab)" />
+          <PlannerPathDetails :plan="plans[i]" :goal="g" @patch="(patch) => emit('patch', g.skill, patch)" />
         </template>
       </li>
     </ol>
@@ -109,7 +109,7 @@ const props = defineProps({
   // The skill whose editor is open.
   editSkill: { type: String, default: '' },
 })
-const emit = defineEmits(['edit', 'add', 'reorder', 'remove'])
+const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch'])
 
 const isDone = (i) => props.plans[i]?.remainingXp === 0 || !!props.progress?.per?.[i]?.done
 // The first skill with something left to train.

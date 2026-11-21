@@ -22,34 +22,27 @@
 
       <section v-if="hasQuestInfo" class="pd-sec">
         <h4 class="goal-section-title">Quests</h4>
-        <template v-if="plan.questList?.length">
-          <p class="pd-sub">In this plan</p>
-          <ul class="pd-quests">
-            <li v-for="q in plan.questList" :key="q.id">
-              <b>{{ q.name }}</b>
-              <span class="stat-gain">+{{ formatNum(q.xp) }} xp</span>
-              <small v-if="q.minutes">about {{ q.minutes }} min</small>
-            </li>
-          </ul>
-          <p class="planner-hint">These quests are done first for free {{ goal.skill }} xp, which takes {{ formatHours(plan.questHours || 0) }} and skips part of the training below.</p>
-        </template>
-        <template v-if="quests.options.length">
-          <p class="pd-sub">{{ plan.questList?.length ? 'Could also be added' : 'Could be done for free xp' }}</p>
-          <ul class="pd-quests is-options">
-            <li v-for="o in quests.options" :key="o.quest.id" :class="{ 'is-locked': o.locked }">
-              <b>{{ o.quest.name }}</b>
-              <span class="stat-gain">+{{ formatNum(o.xp) }} xp</span>
-              <small v-if="o.locked">needs {{ o.need }} {{ goal.skill }}</small>
-              <small v-else-if="o.quest.needs">needs {{ o.quest.needs }}</small>
-              <small v-else-if="o.quest.minutes">about {{ o.quest.minutes }} min</small>
-            </li>
-          </ul>
-        </template>
+        <p class="pd-sub">Tick a quest to do it first for free {{ goal.skill }} xp</p>
+        <ul class="pd-quests is-pick">
+          <li v-for="r in quests.rows" :key="r.id" :class="{ 'is-on': r.on, 'is-locked': r.locked }">
+            <label class="pd-q">
+              <input type="checkbox" :checked="r.on" :disabled="r.locked && !r.on" :aria-label="`Do ${r.name} first`" @change="toggleQuest(r.id)" />
+              <span class="pd-q-main">
+                <b>{{ r.name }}</b>
+                <span class="stat-gain">+{{ formatNum(r.xp) }} xp</span>
+                <small v-if="r.locked">needs {{ r.need }} {{ goal.skill }}</small>
+                <small v-else-if="r.needs">needs {{ r.needs }}</small>
+                <small v-else-if="r.minutes">about {{ r.minutes }} min</small>
+              </span>
+            </label>
+            <button v-if="!r.on" class="pd-q-done" type="button" title="Mark this quest as finished. It is saved and skipped everywhere in the planner." @click="markDone(r)">Already done</button>
+          </li>
+        </ul>
+        <p v-if="plan.questList?.length" class="planner-hint">These quests are done first, which takes {{ formatHours(plan.questHours || 0) }} and skips part of the training below.</p>
         <p v-if="quests.done.length" class="pd-done">
           <span class="pd-done-label"><svg class="pd-tick" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Already finished</span>
-          <span v-for="q in quests.done" :key="q.id" class="pd-done-chip">{{ q.name }}</span>
+          <button v-for="q in quests.done" :key="q.id" class="pd-done-chip" type="button" title="Not finished after all? Click to count it again." @click="setQuestDone(q.name, false)">{{ q.name }} ×</button>
         </p>
-        <button v-if="quests.options.length || plan.questList?.length" class="btn-text pd-quest-act" type="button" @click="$emit('edit', 'quests')">{{ plan.questList?.length ? 'Change quest shortcuts' : 'Choose quest shortcuts' }}</button>
       </section>
 
       <section v-if="routeMethods.length" class="pd-sec">
@@ -72,7 +65,8 @@ import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { useRouteRequirements } from '@/composables/useRouteRequirements'
 import { materialsForPlan } from '@/utils/plannerTools'
-import { questsForSkill } from '@/data/quests'
+import { getQuest, questsForSkill, withPrerequisites, withoutQuest } from '@/data/quests'
+import { track } from '@/utils/analytics'
 import { useRequirements } from '@/composables/useRequirements'
 import { formatHours, formatNum, levelAtXp } from '@/utils/planner'
 import { buyOf } from '@/utils/priceBook'
@@ -84,7 +78,7 @@ const props = defineProps({
   plan: { type: Object, required: true },
   goal: { type: Object, required: true },
 })
-defineEmits(['edit'])  // 'edit' carries the editor tab to open on ('quests')
+const emit = defineEmits(['patch'])
 
 const STATE_TEXT = { blocked: 'Requirement missing', unconfirmed: 'Needs confirming', planned: 'Your plan covers it', available: 'Requirements met' }
 const open = ref(false)
@@ -94,23 +88,40 @@ const mats = computed(() => materialsForPlan(props.plan))
 const matsListed = computed(() => !!(mats.value.rows.length || mats.value.untracked.length || mats.value.supplies.length))
 // A route with nothing to buy, no quests and no requirements has nothing to open.
 // The quests that give free xp in this skill: what is in the plan, what could be added, and what is already finished.
-const { doneQuestIds } = useRequirements()
+const { doneQuestIds, setQuestDone } = useRequirements()
 const quests = computed(() => {
   const skill = props.goal.skill
   const all = questsForSkill(skill)
   const done = new Set(doneQuestIds.value)
-  const planned = new Set((props.plan.questList || []).map((q) => q.id))
+  const plannedList = props.plan.questList || []
+  const planned = new Set(plannedList.map((q) => q.id))
   const remaining = Math.max((props.plan.targetXp || 0) - (props.plan.currentXp || 0), 0)
   const level = levelAtXp(props.plan.currentXp || 0, true)
-  const options = remaining
-    ? all
-        .filter((q) => !done.has(q.id) && !planned.has(q.id) && q.rewards[skill] <= remaining)
-        .slice(0, 4)
-        .map((quest) => ({ quest, xp: quest.rewards[skill], need: quest.reqs[skill], locked: quest.reqs[skill] != null && level < quest.reqs[skill] }))
-    : []
-  return { options, done: all.filter((q) => done.has(q.id)) }
+  // The quests already in the plan (ticked), then a few more that could be added.
+  const rows = plannedList.map((q) => {
+    const full = getQuest(q.id)
+    return { id: q.id, name: q.name, xp: q.xp, needs: full?.needs || '', minutes: q.minutes || full?.minutes || 0, on: true, locked: false }
+  })
+  if (remaining) {
+    for (const quest of all.filter((x) => !done.has(x.id) && !planned.has(x.id) && x.rewards[skill] <= remaining).slice(0, 4)) {
+      const need = quest.reqs[skill]
+      rows.push({ id: quest.id, name: quest.name, xp: quest.rewards[skill], need, needs: quest.needs, minutes: quest.minutes, on: false, locked: need != null && level < need })
+    }
+  }
+  return { rows, options: rows.filter((r) => !r.on), done: all.filter((q) => done.has(q.id)) }
 })
-const hasQuestInfo = computed(() => !!(props.plan.questList?.length || quests.value.options.length || quests.value.done.length))
+// Ticking a quest ticks what it needs first; unticking one unticks whatever needs it. The plan changes as you click.
+function toggleQuest(id) {
+  const current = props.goal.quests || []
+  const on = !current.includes(id)
+  track('planner_quest_toggled', { quest: id, skill: props.goal.skill, enabled: on, source: 'details' })
+  emit('patch', { quests: on ? withPrerequisites([...current, id]) : withoutQuest(current, id) })
+}
+function markDone(row) {
+  track('planner_quest_marked_done', { quest: row.id, skill: props.goal.skill, source: 'details' })
+  setQuestDone(row.name, true)
+}
+const hasQuestInfo = computed(() => !!(quests.value.rows.length || quests.value.done.length))
 const allClear = computed(() => !matsListed.value && !hasQuestInfo.value && !routeMethods.value.length)
 // What the materials cost to buy now, or null when none of them has a price yet.
 const cost = computed(() => {

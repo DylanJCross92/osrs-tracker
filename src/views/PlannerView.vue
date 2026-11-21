@@ -105,7 +105,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill, tab) => openSkillEditor(skill, tab)" @add="openAdd()" @reorder="reorderTo">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -749,6 +749,13 @@ function reorderTo(from, to) {
   goals.value = next
   track('planner_goal_reordered')
   saveIfChanged()
+}
+// A change made from the details under a skill's route (ticking a quest): applied and saved straight away, like closing the editor.
+function patchGoalBySkill(skill, patch) {
+  const i = goals.value.findIndex((g) => g.skill === skill)
+  if (i < 0) return
+  patchGoal(i, patch)
+  nextTick(saveIfChanged)
 }
 function patchGoal(i, patch) {
   Object.assign(goals.value[i], patch)
