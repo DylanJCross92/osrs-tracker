@@ -29,7 +29,8 @@
         </tbody>
         <tfoot v-if="priced.total != null">
           <tr>
-            <td colspan="2" class="mat-total-label">Total to buy<small v-if="priced.missing"> ({{ priced.missing }} {{ priced.missing === 1 ? 'item has' : 'items have' }} no price and {{ priced.missing === 1 ? 'is' : 'are' }} not counted)</small></td>
+            <td class="mat-total-label">Total<small v-if="priced.missing"> ({{ priced.missing }} {{ priced.missing === 1 ? 'item has' : 'items have' }} no price and {{ priced.missing === 1 ? 'is' : 'are' }} not counted)</small></td>
+            <td class="num mat-total-qty">{{ totalItems.approx ? "~" : "" }}{{ formatNum(totalItems.qty) }}</td>
             <td class="mat-op" /><td class="mat-each" /><td class="mat-op" />
             <td class="num"><b>{{ gpText(priced.total) }} gp</b></td>
           </tr>
@@ -110,6 +111,8 @@ const priced = computed(() => {
   }
   return { total: any ? Math.round(total) : null, missing, costs }
 })
+// How many items the whole list needs, for the total line (marked as an estimate when any amount is).
+const totalItems = computed(() => ({ qty: data.value.totals.reduce((sum, t) => sum + t.qty, 0), approx: data.value.totals.some((t) => t.approx) }))
 const totals = computed(() =>
   data.value.totals
     .map((t) => ({ ...t, each: buyOf(t.name), slug: slugOf(t.name), cost: priced.value.costs.has(t.name) ? Math.round(priced.value.costs.get(t.name)) : null }))
