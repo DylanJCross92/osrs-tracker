@@ -1,5 +1,6 @@
 <template>
   <div class="vz">
+    <StatsCrawlerCleanup />
     <p v-if="listError" class="cl-banner is-error" role="alert">{{ listError }}</p>
     <p v-else-if="!list" class="st-empty">Loading…</p>
     <template v-else>
@@ -88,6 +89,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { statsApi } from '@/api/stats'
 import StatChart from './StatChart.vue'
+import StatsCrawlerCleanup from './StatsCrawlerCleanup.vue'
 import { ago, count, fmt } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
 import { describeEvent } from '@/utils/describeEvent'

@@ -7,6 +7,7 @@ import { activeAccounts, dailyActive, eventDetail, eventsOverview, journeyOf, re
 import { siteOverview } from '../services/siteOverview.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
 import { funnelsOverview } from '../services/funnels.service.js'
+import { deleteCrawlerBursts, findCrawlerBursts } from '../services/crawlerCleanup.service.js'
 import { SEGMENTS } from '../utils/funnels.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
@@ -82,6 +83,25 @@ statsRouter.post('/stats/visitor-plans', plansLimiter, attachUser, async (req, r
     if (!vid || req.user || askedNotToTrack(req.headers) || isCrawler(req.headers['user-agent'])) return res.status(204).end()
     const ok = await saveVisitorPlans(vid, req.body?.plans, req.body?.planner)
     res.status(ok ? 204 : 413).end()
+  } catch (err) {
+    next(err)
+  }
+})
+
+// TEMPORARY, for the site owner: the visitor records a crawler left behind before crawlers were ignored (a burst of one-page item
+// visitors in the same minute). GET reports what would be removed, POST removes it. Remove this and the Visitors tab card once cleaned.
+statsRouter.get('/admin/stats/crawler-bursts', attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 20 }), async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    const { ids, ...report } = await findCrawlerBursts(req.query)
+    res.json(report)
+  } catch (err) {
+    next(err)
+  }
+})
+statsRouter.post('/admin/stats/crawler-bursts/delete', attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 5 }), async (req, res, next) => {
+  try {
+    res.json(await deleteCrawlerBursts(req.body))
   } catch (err) {
     next(err)
   }
