@@ -24,12 +24,6 @@
         </div>
 
         <template v-else>
-          <ul class="so-chips" aria-label="What it found">
-            <li v-if="suggestion.summary.links"><b>{{ suggestion.summary.links }}</b> {{ suggestion.summary.links === 1 ? 'skill helps another' : 'skill links used' }}</li>
-            <li v-if="suggestion.summary.earners"><b>{{ suggestion.summary.earners }}</b> earn gp first</li>
-            <li v-if="suggestion.summary.spenders"><b>{{ suggestion.summary.spenders }}</b> big spend later</li>
-            <li v-if="suggestion.summary.netGp != null" :class="suggestion.summary.netGp >= 0 ? 'gain' : 'cost'">Plan {{ gp(suggestion.summary.netGp) }}</li>
-          </ul>
           <!-- No player yet: the order is only as good as the levels it was worked out from. The name goes in right here, in the planner's own player box (with its recent players and suggestions). -->
           <div v-if="!hasPlayer" class="so-name">
             <p class="so-name-lead"><b>More accurate with your name.</b> Right now every skill starts at level 1. Enter your RuneScape name and the order uses your real levels.</p>
@@ -37,6 +31,7 @@
           </div>
           <p v-else-if="openedWithoutPlayer" class="so-fits" role="status">Now using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. The order below is worked out from them.</p>
           <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
+          <p class="so-colhead" aria-hidden="true">Net cost</p>
           <ol class="so-list">
             <li v-for="(skill, i) in suggestion.order" :key="skill" :style="{ '--i': i }">
               <span class="so-n" aria-hidden="true">{{ i + 1 }}</span>
