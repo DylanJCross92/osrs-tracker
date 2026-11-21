@@ -6490,8 +6490,10 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .gxv dd { margin: 4px 0 0; font-size: clamp(1.7rem, 3.4vw, 2.2rem); font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .gxv dd.is-main { color: var(--gold-bright); }
 .gxv dd small { color: var(--muted); font-size: 0.55em; font-weight: 700; }
+.gxi .gxi-h { font-size: clamp(1.45rem, 2.6vw, 1.9rem); }
+.gxi-title .gxc { margin-top: 12px; }
 .gxc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.gxc li { padding: 6px 14px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.86rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gxc li { padding: 5px 13px; border-radius: 999px; background: var(--panel-alt); color: var(--text); font-size: 0.82rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .gxc li.up { color: #9fd48a; }
 .gxc li.down { color: #f0987f; }
 .gxi-sec { padding-top: 26px; border-top: 1px solid var(--border); }
@@ -6524,6 +6526,8 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
   .gxv dd { font-size: 1.5rem; }
   .gxn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
   .gxn-grid dd { font-size: 1.25rem; }
+  .gxc { gap: 6px; }
+  .gxc li { padding: 4px 10px; font-size: 0.76rem; white-space: nowrap; }
   .gxi-head { flex-wrap: nowrap; gap: 12px; align-items: flex-start; }
   .gxi-icon { width: 52px; height: 52px; }
   .gxi-title { min-width: 0; }

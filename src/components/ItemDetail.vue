@@ -9,6 +9,12 @@
         <div class="gxi-title">
           <component :is="variant === 'page' ? 'h1' : 'h2'" class="gxi-h">{{ item.name }}<small v-if="item.members" class="gx-badge" title="Members only">Members</small></component>
           <p v-if="item.examine">{{ item.examine }}</p>
+          <ul class="gxc" aria-label="About this item">
+            <li v-if="pricey && item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
+            <li v-if="item.limit" title="How many you can buy every 4 hours">{{ item.limit.toLocaleString('en-US') }} / 4h limit</li>
+            <li v-if="item.volume" :title="`${item.volume.toLocaleString('en-US')} bought and sold yesterday`">{{ item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume) }} traded yesterday</li>
+            <li v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</li>
+          </ul>
         </div>
         <WatchButton :slug="slug" :name="item.name" :source="variant" />
       </header>
@@ -20,13 +26,6 @@
         <div title="What you pay to buy right away"><dt>Instant buy</dt><dd>{{ gpText(item.high) }}<small> gp</small></dd></div>
         <div title="What you get selling right away"><dt>Instant sell</dt><dd>{{ gpText(item.low) }}<small> gp</small></dd></div>
       </dl>
-
-      <ul class="gxc" aria-label="About this item">
-        <li v-if="pricey && item.change1 != null" :class="tone(item.change1)">{{ pctText(item.change1) }} today</li>
-        <li v-if="item.limit" title="How many you can buy every 4 hours">{{ item.limit.toLocaleString('en-US') }} / 4h limit</li>
-        <li v-if="item.volume" :title="`${item.volume.toLocaleString('en-US')} bought and sold yesterday`">{{ item.volume >= 1e6 ? gpAxis(item.volume) : gpText(item.volume) }} traded yesterday</li>
-        <li v-if="item.updatedAt">Updated {{ ago(item.updatedAt) }}</li>
-      </ul>
 
       <section class="gxi-sec gxi-chart">
         <div class="gx-chart-head">
