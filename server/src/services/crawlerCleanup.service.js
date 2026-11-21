@@ -25,27 +25,36 @@ const TINY = `
      AND max(at) - min(at) < interval '5 seconds'
      AND bool_and(account_id IS NULL)
      AND bool_and(name IN ('item_view', 'spa_page_view'))
-     AND bool_and(name <> 'spa_page_view' OR props->>'page_path' LIKE $3)
-     AND bool_or(name = 'item_view' OR props->>'page_path' LIKE $3)
+     AND bool_and(name <> 'spa_page_view' OR props->>'page_path' LIKE $2)
+     AND bool_or(name = 'item_view' OR props->>'page_path' LIKE $2)
 `
-const FOUND = `
-  WITH tiny AS (${TINY}),
-  bursts AS (SELECT date_trunc('minute', first_at) AS minute, count(*) AS visitors FROM tiny GROUP BY 1 HAVING count(*) >= $2)
-  SELECT t.visitor_id, b.minute FROM tiny t JOIN bursts b ON date_trunc('minute', t.first_at) = b.minute
-`
-
-/** What is there to remove: { since, min, prefix, visitors, events, minutes: [{ minute (ISO), visitors }], ids }. Deletes nothing. */
+/**
+ * What is there to remove: { since, min, prefix, visitors, events, minutes: [{ minute (ISO), visitors }], matching, peak, ids }. Deletes
+ * nothing. `matching` is every visitor that looks like one (a couple of steps in the same second, only on `prefix` pages) and `peak` the
+ * busiest minute of them, so a report with nothing to remove still shows how close it came; only the visitors in minutes with at least
+ * `min` of them are removed.
+ */
 export async function findCrawlerBursts(raw) {
   const opts = cleanBurstOptions(raw)
-  const found = await pool.query(FOUND, [opts.since, opts.min, `${opts.prefix}%`])
+  const found = await pool.query(`${TINY} ORDER BY first_at`, [opts.since, `${opts.prefix}%`])
   const byMinute = new Map()
   for (const r of found.rows) {
-    const key = r.minute.toISOString()
-    byMinute.set(key, (byMinute.get(key) || 0) + 1)
+    const key = new Date(Math.floor(new Date(r.first_at).getTime() / 60_000) * 60_000).toISOString()
+    ;(byMinute.get(key) || byMinute.set(key, []).get(key)).push(r.visitor_id)
   }
-  const ids = found.rows.map((r) => r.visitor_id)
+  const bursts = [...byMinute].filter(([, ids]) => ids.length >= opts.min).sort()
+  const ids = bursts.flatMap(([, list]) => list)
+  const peak = [...byMinute].reduce((best, [minute, list]) => (!best || list.length > best.visitors ? { minute, visitors: list.length } : best), null)
   const events = ids.length ? (await pool.query('SELECT count(*)::int AS n FROM events WHERE visitor_id = ANY($1::text[])', [ids])).rows[0].n : 0
-  return { ...opts, visitors: ids.length, events, minutes: [...byMinute].sort().map(([minute, visitors]) => ({ minute, visitors })), ids }
+  return {
+    ...opts,
+    visitors: ids.length,
+    events,
+    minutes: bursts.map(([minute, list]) => ({ minute, visitors: list.length })),
+    matching: found.rowCount,
+    peak,
+    ids,
+  }
 }
 
 /** Removes the events of the visitors findCrawlerBursts finds. Returns { visitors, events } removed. */

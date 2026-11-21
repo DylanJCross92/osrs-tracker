@@ -3,13 +3,18 @@
     <h2 id="cc-h">Crawler cleanup <small>temporary</small></h2>
     <p class="cc-text">A crawler once opened every item page, and each page counted as a new visitor. Check what is left of that, and remove it. Nothing is deleted until you confirm.</p>
     <div class="cc-actions">
+      <label class="cc-min">Busy minute is at least <input v-model.number="min" type="number" min="20" step="10" inputmode="numeric" /> visitors</label>
       <button class="btn btn-ghost" type="button" :disabled="busy" @click="check">{{ busy && !report ? 'Checking…' : report ? 'Check again' : 'Check' }}</button>
       <button v-if="report && report.visitors" class="btn po-delete" type="button" :disabled="busy" @click="asking = true">Delete {{ report.visitors.toLocaleString('en-US') }} visitors</button>
     </div>
     <p v-if="error" class="cl-banner is-error" role="alert">{{ error }}</p>
     <p v-if="done" class="cc-result" role="status">Deleted {{ done.visitors.toLocaleString('en-US') }} visitors and {{ done.events.toLocaleString('en-US') }} events.</p>
     <template v-if="report">
-      <p v-if="!report.visitors" class="cc-result">Nothing to clean since {{ report.since }}.</p>
+      <p v-if="!report.visitors" class="cc-result">
+        Nothing to clean since {{ report.since }}.
+        <template v-if="report.matching">{{ report.matching.toLocaleString('en-US') }} visitors looked like it (a couple of steps in one second, only on {{ report.prefix }} pages), but the busiest minute had {{ report.peak.visitors.toLocaleString('en-US') }}, under the {{ report.min }} you set. Lower the number to include them.</template>
+        <template v-else>No visitor looked like it: none had just a couple of steps in one second on {{ report.prefix }} pages.</template>
+      </p>
       <template v-else>
         <p class="cc-result">Found {{ report.visitors.toLocaleString('en-US') }} visitors ({{ report.events.toLocaleString('en-US') }} events) in {{ report.minutes.length }} busy {{ report.minutes.length === 1 ? 'minute' : 'minutes' }} since {{ report.since }}: each had a couple of steps in the same second, all on {{ report.prefix }} pages.</p>
         <ul class="cc-minutes">
@@ -33,6 +38,7 @@ const report = ref(null)
 const done = ref(null)
 const error = ref('')
 const busy = ref(false)
+const min = ref(150)
 const asking = ref(false)
 
 const when = (iso) => new Date(iso).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -42,7 +48,7 @@ async function check() {
   busy.value = true
   error.value = ''
   try {
-    report.value = await statsApi.crawlerBursts()
+    report.value = await statsApi.crawlerBursts(min.value)
   } catch (err) {
     error.value = message(err)
   } finally {
@@ -55,7 +61,7 @@ async function remove() {
   error.value = ''
   try {
     done.value = await statsApi.deleteCrawlerBursts(report.value?.since, report.value?.min)
-    report.value = await statsApi.crawlerBursts()
+    report.value = await statsApi.crawlerBursts(min.value)
   } catch (err) {
     error.value = message(err)
   } finally {

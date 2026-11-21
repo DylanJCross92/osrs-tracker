@@ -17,6 +17,7 @@ try {
   console.log(`Since ${found.since}: ${found.visitors} visitors in ${found.minutes.length} burst minute(s) of at least ${found.min}.`)
   for (const m of found.minutes) console.log(`  ${m.minute}  ${m.visitors} visitors`)
   if (found.visitors) console.log(`Their events: ${found.events}.`)
+  else if (found.matching) console.log(`${found.matching} visitors looked like it, but the busiest minute had ${found.peak.visitors}, under ${found.min}. Try a lower --min.`)
   if (found.visitors && process.argv.includes('--delete')) {
     const done = await deleteCrawlerBursts(options)
     console.log(`Deleted ${done.events} events.`)
