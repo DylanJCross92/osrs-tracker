@@ -41,4 +41,22 @@ describe('the Smart order window', () => {
     expect(document.body.textContent).not.toContain("Now using")
     w.unmount()
   })
+
+  it('says so in the header when the order is already the best, with one button to close', async () => {
+    // Fishing before Cooking is the suggested order, so the plan is already in it.
+    const ordered = [goals[1], goals[0]]
+    const orderedPlans = [plans[1], plans[0]]
+    window.matchMedia = () => ({ matches: true })
+    const w = mount(SmartOrderModal, { props: { suggestion: smartOrder(ordered, orderedPlans), goals: ordered, hasPlayer: true }, attachTo: document.body })
+    await flushPromises()
+    const body = document.body.textContent
+    expect(body).toContain('Already the best order for your levels and costs')
+    expect(body).not.toContain('Nothing to change')
+    expect(body).not.toContain('Use this order')
+    const buttons = [...document.body.querySelectorAll('.save-plan-actions button')].map((b) => b.textContent)
+    expect(buttons).toEqual(['Looks good'])
+    document.body.querySelector('.save-plan-actions button').click()
+    expect(w.emitted('close')).toHaveLength(1)
+    w.unmount()
+  })
 })

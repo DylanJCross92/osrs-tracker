@@ -13,7 +13,11 @@
           <div class="so-title">
             <span class="so-eyebrow">Tailored to your plan</span>
             <h2 id="so-h">Smart order</h2>
-            <p id="so-d">{{ ready ? `Read ${suggestion.summary.skills} skills against your levels, costs and what each one unlocks.` : 'Reading your levels, costs and what each skill unlocks…' }}</p>
+            <p id="so-d" :class="{ 'so-ok': ready && !suggestion.changed }">
+              <template v-if="!ready">Reading your levels, costs and what each skill unlocks…</template>
+              <template v-else-if="suggestion.changed">Read {{ suggestion.summary.skills }} skills against your levels, costs and what each one unlocks.</template>
+              <template v-else><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>Already the best order for your levels and costs.</template>
+            </p>
           </div>
           <button class="so-close" type="button" aria-label="Close" @click="$emit('close')">✕</button>
         </div>
@@ -30,7 +34,6 @@
             <slot name="name-box" />
           </div>
           <p v-else-if="openedWithoutPlayer" class="so-fits" role="status">Now using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. The order below is worked out from them.</p>
-          <p v-if="!suggestion.changed" class="so-fits" role="status">Your order already fits. Nothing to change.</p>
           <div class="so-colhead">
             <span>Net cost</span>
             <b v-if="suggestion.summary.netGp != null" :class="suggestion.summary.netGp >= 0 ? 'gain' : 'cost'" title="Earned or spent over the whole plan at today's prices">{{ gp(suggestion.summary.netGp) }}</b>
@@ -53,8 +56,11 @@
         </template>
 
         <div class="save-plan-actions">
-          <button class="btn btn-ghost" type="button" @click="$emit('close')">Keep mine</button>
-          <button ref="useBtn" class="btn btn-primary" type="button" :disabled="!ready || !suggestion.changed" @click="$emit('apply', suggestion.order)">Use this order</button>
+          <template v-if="suggestion.changed">
+            <button class="btn btn-ghost" type="button" @click="$emit('close')">Keep mine</button>
+            <button ref="useBtn" class="btn btn-primary" type="button" :disabled="!ready" @click="$emit('apply', suggestion.order)">Use this order</button>
+          </template>
+          <button v-else ref="useBtn" class="btn btn-primary" type="button" @click="$emit('close')">Looks good</button>
         </div>
       </div>
     </div>

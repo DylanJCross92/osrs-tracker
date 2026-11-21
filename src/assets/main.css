@@ -6595,6 +6595,8 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .so-eyebrow { display: block; color: #d8c8ff; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
 .so-title h2 { margin: 2px 0 2px; font-size: 1.7rem; letter-spacing: -0.01em; background: linear-gradient(95deg, #fbe7ad 10%, #e6dcff 60%, #c9b6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .so-title p { margin: 0; color: rgba(236, 228, 214, 0.72); font-size: 0.9rem; max-width: none; }
+.so-title p.so-ok { display: flex; align-items: center; gap: 7px; color: #b9e3a6; font-weight: 600; }
+.so-title p.so-ok svg { flex: none; }
 .so-close { position: relative; flex: none; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 50%; background: rgba(0, 0, 0, 0.2); color: var(--muted); font: inherit; cursor: pointer; }
 .so-close:hover, .so-close:focus-visible { color: var(--gold-bright); border-color: var(--gold); outline: none; }
 .so-star { position: absolute; fill: #f9e3a8; opacity: 0.5; pointer-events: none; animation: so-twinkle 3.6s ease-in-out infinite; }
