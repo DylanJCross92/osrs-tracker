@@ -92,7 +92,7 @@
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
-  <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" @share="openShare" />
+  <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" :auto-play="isProfileOwner" @share="openShare" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />

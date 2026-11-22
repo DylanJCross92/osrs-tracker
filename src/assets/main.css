@@ -6646,3 +6646,16 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .smo-name p { max-width: none; }
 .smo-name-lead { margin: 0 0 10px; padding: 2px 0 2px 12px; border-left: 2px solid #c9b6ff; color: var(--muted); font-size: 0.86rem; line-height: 1.4; }
 .smo-name-lead b { color: var(--text); }
+
+/* ---------- The level 99 celebration (profile) ---------- */
+.congrats-medal { position: relative; flex: none; display: grid; place-items: center; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: pointer; background: radial-gradient(circle at 50% 28%, #fff4c9 0%, #f2cd78 46%, #cf9f3c 100%); box-shadow: 0 0 0 2px var(--gold), 0 0 0 3px rgba(26, 20, 8, 0.85), 0 0 12px rgba(228, 184, 79, 0.45); }
+.congrats-medal img { width: 22px; height: 22px; image-rendering: pixelated; }
+.congrats-medal span { position: absolute; top: -20%; bottom: -20%; left: -70%; width: 46%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.75), transparent); transform: skewX(-18deg); animation: congrats-shine 3.6s ease-in-out infinite; }
+.congrats-medal:hover { filter: brightness(1.08); }
+@keyframes congrats-shine { 0%, 55% { left: -70%; } 100% { left: 130%; } }
+@media (prefers-reduced-motion: reduce) { .congrats-medal span { display: none; } }
+.l99m { position: relative; width: min(460px, calc(100vw - 24px)); padding: 8px 16px 18px; overflow: hidden; }
+.modal-card.l99m button.l99m-close { position: absolute; top: 10px; right: 10px; z-index: 5; margin: 0; }
+.l99m-who { margin: 0 0 14px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+.l99m-who b { color: var(--text); }
+.l99m-actions { justify-content: center; }

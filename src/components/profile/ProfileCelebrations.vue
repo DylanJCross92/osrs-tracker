@@ -1,7 +1,11 @@
 <template>
   <div v-if="visible.length" class="congrats" role="status">
     <div v-for="c in visible" :key="c.key" class="congrats-row">
-      <img v-if="c.skill" :src="skillIconSrc(c.skill)" :alt="c.skill" width="22" height="22" />
+      <button v-if="is99(c)" class="congrats-medal" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = c">
+        <img :src="skillIconSrc(c.skill)" alt="" width="16" height="16" />
+        <span aria-hidden="true" />
+      </button>
+      <img v-else-if="c.skill" :src="skillIconSrc(c.skill)" :alt="c.skill" width="22" height="22" />
       <span class="congrats-text">
         <b>{{ name }}</b> reached <b class="congrats-gold">{{ c.title }}</b> <span class="congrats-time">{{ formatRelative(c.occurredAt) }} ago</span>
       </span>
@@ -13,6 +17,7 @@
         <button class="btn-text congrats-dismiss" type="button" aria-label="Hide this" @click="dismiss(c)">✕</button>
       </span>
     </div>
+    <Level99Modal v-if="playing" :skill="playing.skill" :name="name" @close="playing = null" @share="(skill) => { playing = null; $emit('share', skill) }" />
   </div>
 </template>
 
@@ -22,11 +27,14 @@ import { playersApi } from '@/api/players'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { track } from '@/utils/analytics'
+import Level99Modal from '@/components/profile/Level99Modal.vue'
 
 const props = defineProps({
   playerId: { type: Number, required: true },
   name: { type: String, required: true },
   celebrations: { type: Array, default: () => [] },
+  // The owner of this profile sees a fresh 99 play once by itself; everyone else can click the medal to watch it.
+  autoPlay: { type: Boolean, default: false },
 })
 defineEmits(['share'])
 
@@ -66,6 +74,24 @@ const visible = computed(() =>
   rows.value
     .filter((c) => !dismissed.value.has(c.key) && Date.now() - new Date(c.occurredAt).getTime() < SHOW_MS)
     .slice(0, 3),
+)
+
+const is99 = (c) => c.type === 'skill_level' && c.value === 99 && !!c.skill
+const playing = ref(null)
+const PLAYED_KEY = 'tickgains-congrats-played'
+const played = readSet(PLAYED_KEY)
+watch(
+  [visible, () => props.autoPlay],
+  ([list, auto]) => {
+    if (!auto || playing.value) return
+    const fresh = list.find((c) => is99(c) && !played.has(c.key))
+    if (!fresh) return
+    played.add(fresh.key)
+    writeSet(PLAYED_KEY, played)
+    playing.value = fresh
+    track('level_99_celebration', { skill: fresh.skill })
+  },
+  { immediate: true },
 )
 
 async function cheer(c) {
