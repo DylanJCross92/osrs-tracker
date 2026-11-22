@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import { createHash } from 'node:crypto'
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
-import { pixelIconNode, skillIconDataUri } from './skillIcons.service.js'
+import { pixelIconDataUri, skillIconDataUri } from './skillIcons.service.js'
 import { dayCount, formatRange } from '../utils/dates.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -400,10 +401,42 @@ async function buildWeeklyCardTree(data) {
   )
 }
 
-async function renderPng(tree) {
+// Drawing an image takes a lot of memory, so they are drawn one at a time (a burst waits in line), and an identical card is not drawn
+// again for five minutes (link previews ask for the same picture over and over).
+const PNG_CACHE_MS = 300_000
+const PNG_CACHE_MAX = 40
+const MAX_WAITING = 40
+const pngCache = new Map()
+let drawing = Promise.resolve()
+let waiting = 0
+
+async function drawPng(tree) {
   const svg = await satori(tree, { width: WIDTH, height: HEIGHT, fonts: FONTS })
-  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH } })
+  // satori has already drawn the text as shapes, so no fonts are needed here; loading the machine's fonts for every image used a lot of memory.
+  const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: WIDTH }, font: { loadSystemFonts: false } })
   return resvg.render().asPng()
+}
+
+async function renderPng(tree) {
+  const key = createHash('sha1').update(JSON.stringify(tree)).digest('hex')
+  const hit = pngCache.get(key)
+  if (hit && Date.now() - hit.at < PNG_CACHE_MS) return hit.png
+  if (waiting >= MAX_WAITING) {
+    const err = new Error('Too many pictures are being drawn right now. Try again in a moment.')
+    err.status = 503
+    throw err
+  }
+  waiting++
+  const run = drawing.then(() => drawPng(tree))
+  drawing = run.catch(() => {})
+  try {
+    const png = await run
+    pngCache.set(key, { png, at: Date.now() })
+    while (pngCache.size > PNG_CACHE_MAX) pngCache.delete(pngCache.keys().next().value)
+    return png
+  } finally {
+    waiting--
+  }
 }
 
 /** data: see cards.service.js getWeeklyCardData -> PNG Buffer. */
@@ -771,7 +804,8 @@ export async function renderGoalCardPng(data) {
 // --- Level 99 card ------------------------------------------------------------------------------------------------
 
 async function buildLevel99CardTree({ displayName, skill, xp, rank, reachedAt }) {
-  const icon = await pixelIconNode(skill, 200)
+  const iconUri = await pixelIconDataUri(skill, 200)
+  const icon = iconUri ? image(iconUri, 200, 200) : null
   const when = reachedAt ? new Date(reachedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null
   const facts = [`${Number(xp).toLocaleString('en-US')} XP`, rank ? `Rank ${Number(rank).toLocaleString('en-US')}` : null, when ? `Reached ${when}` : null].filter(Boolean).join('   ·   ')
 
@@ -786,7 +820,8 @@ async function buildLevel99CardTree({ displayName, skill, xp, rank, reachedAt })
       borderRadius: 70,
       backgroundImage: 'linear-gradient(160deg, #fff2c0 0%, #f2cd78 45%, #c99634 100%)',
       border: '8px solid #e4b84f',
-      boxShadow: '0 0 0 8px #1a1409, 0 0 0 12px #8a6416, 0 0 120px rgba(240, 201, 118, 0.55)',
+      // Rings only: a large blurred shadow here took over a second and most of a gigabyte to draw, so the glow is a gradient behind the tile instead.
+      boxShadow: '0 0 0 8px #1a1409, 0 0 0 12px #8a6416',
     },
     [icon || svgIcon(180, '#2a1d05', [ICON.star])],
   )
@@ -827,7 +862,9 @@ async function buildLevel99CardTree({ displayName, skill, xp, rank, reachedAt })
           node('div', { fontSize: 116, fontWeight: 800, color: '#fff0b8', lineHeight: 1.05, marginTop: 2 }, skill),
           node('div', { fontSize: 24, color: COLORS.muted, marginTop: 18 }, facts),
         ]),
-        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: 40 }, [tile, pill]),
+        node('div', { display: 'flex', alignItems: 'center', justifyContent: 'center', width: 520, height: 520, marginRight: -50, marginTop: -40, marginBottom: -40, backgroundImage: 'radial-gradient(circle, rgba(240, 201, 118, 0.5) 0%, rgba(240, 201, 118, 0.18) 38%, rgba(240, 201, 118, 0) 68%)' }, [
+          node('div', { display: 'flex', flexDirection: 'column', alignItems: 'center' }, [tile, pill]),
+        ]),
       ]),
 
       node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [

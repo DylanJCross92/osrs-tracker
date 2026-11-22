@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { rateLimit } from '../utils/rateLimit.js'
 import { getPlayerByUsername } from '../services/players.service.js'
 import { getWeeklyCardData, freezeWeeklyCard, getFrozenCard } from '../services/cards.service.js'
 import { renderWeeklyCardPng, renderChallengeCardPng, renderProfileCardPng, renderLevel99CardPng } from '../services/cardImage.service.js'
@@ -6,6 +7,9 @@ import { getLevel99Card } from '../services/level99.service.js'
 import { getProfileCardData } from '../services/profileCard.service.js'
 
 export const cardsRouter = Router()
+
+// Every picture costs real memory to draw, so one address cannot ask for more than a steady stream of them.
+const imageLimiter = rateLimit({ windowMs: 60_000, max: 90, message: 'Too many pictures requested, try again in a minute.' })
 
 async function resolvePlayer(req, res) {
   const player = await getPlayerByUsername(req.params.username)
@@ -31,7 +35,7 @@ cardsRouter.get('/players/:username/card/weekly/data', async (req, res, next) =>
 })
 
 // The picture a profile link unfurls into (Discord, X, iMessage): picture, level, XP, rank and this week's gain.
-cardsRouter.get('/players/:username/card/profile/image.png', async (req, res, next) => {
+cardsRouter.get('/players/:username/card/profile/image.png', imageLimiter, async (req, res, next) => {
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
@@ -48,7 +52,7 @@ cardsRouter.get('/players/:username/card/profile/image.png', async (req, res, ne
 })
 
 // The congratulations card for a skill the player has at 99 (?skill=). 404 for a skill they have not got to 99.
-cardsRouter.get('/players/:username/card/level99/image.png', async (req, res, next) => {
+cardsRouter.get('/players/:username/card/level99/image.png', imageLimiter, async (req, res, next) => {
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
@@ -64,7 +68,7 @@ cardsRouter.get('/players/:username/card/level99/image.png', async (req, res, ne
 })
 
 // The picture a challenge link unfurls into: this player's week, drawn from live numbers.
-cardsRouter.get('/players/:username/challenge/image.png', async (req, res, next) => {
+cardsRouter.get('/players/:username/challenge/image.png', imageLimiter, async (req, res, next) => {
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
@@ -79,7 +83,7 @@ cardsRouter.get('/players/:username/challenge/image.png', async (req, res, next)
   }
 })
 
-cardsRouter.get('/players/:username/card/weekly/image.png', async (req, res, next) => {
+cardsRouter.get('/players/:username/card/weekly/image.png', imageLimiter, async (req, res, next) => {
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
@@ -121,7 +125,7 @@ cardsRouter.get('/cards/:slug', async (req, res, next) => {
   }
 })
 
-cardsRouter.get('/cards/:slug/image.png', async (req, res, next) => {
+cardsRouter.get('/cards/:slug/image.png', imageLimiter, async (req, res, next) => {
   try {
     const card = await getFrozenCard(req.params.slug)
     if (!card) return res.status(404).end()

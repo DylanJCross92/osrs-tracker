@@ -14,5 +14,7 @@ COPY server/package.json server/package-lock.json ./server/
 RUN npm ci --prefix server --omit=dev
 COPY server/src ./server/src
 ENV NODE_ENV=production
+# Keeps the memory the picture drawing frees from piling up in several allocator pools (the instance has 512 MB).
+ENV MALLOC_ARENA_MAX=2
 EXPOSE 4000
 CMD ["sh", "-c", "node server/src/db/migrate.js && node server/src/index.js"]

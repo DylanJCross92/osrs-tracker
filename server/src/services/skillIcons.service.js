@@ -31,38 +31,28 @@ export function brandMarkDataUri() {
   return dataUriFor('_brand-mark.png')
 }
 
-// The skill's own 16x16 picture as crisp squares, so it can be drawn large on a card without going soft (an <img> would be smoothed).
-// Returns satori nodes (an <svg> of <rect>s) or null when the icon is missing.
-const pixelCache = new Map()
-export async function pixelIconNode(skillName, size) {
-  const key = String(skillName).toLowerCase()
-  if (!pixelCache.has(key)) {
-    try {
-      const uri = await dataUriFor(`${key}.png`)
-      if (!uri) throw new Error('missing')
-      const wrapper = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16"><image width="16" height="16" xlink:href="${uri}"/></svg>`
-      const rendered = new Resvg(wrapper).render()
-      const px = rendered.pixels
-      const rects = []
+// The skill's own 16x16 picture enlarged without going soft (square by square), as a PNG data URI at `size` pixels, drawn once per skill and
+// kept. (Drawing the squares inside the card itself took about 200 MB for every first render, so it is done here, separately.)
+const bigCache = new Map()
+export async function pixelIconDataUri(skillName, size = 200) {
+  const key = `${String(skillName).toLowerCase()}:${size}`
+  if (bigCache.has(key)) return bigCache.get(key)
+  let uri = null
+  try {
+    const small = await dataUriFor(`${String(skillName).toLowerCase()}.png`)
+    if (small) {
+      const px = new Resvg(`<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16"><image width="16" height="16" xlink:href="${small}"/></svg>`, { font: { loadSystemFonts: false } }).render().pixels
+      let rects = ''
       for (let i = 0; i < 256; i++) {
         const a = px[i * 4 + 3]
-        if (!a) continue
-        rects.push({ x: i % 16, y: Math.floor(i / 16), fill: `rgb(${px[i * 4]},${px[i * 4 + 1]},${px[i * 4 + 2]})`, opacity: a / 255 })
+        if (a) rects += `<rect x="${i % 16}" y="${Math.floor(i / 16)}" width="1.02" height="1.02" fill="rgb(${px[i * 4]},${px[i * 4 + 1]},${px[i * 4 + 2]})" fill-opacity="${(a / 255).toFixed(3)}"/>`
       }
-      pixelCache.set(key, rects)
-    } catch {
-      pixelCache.set(key, null)
+      const big = new Resvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="${size}" height="${size}" shape-rendering="crispEdges">${rects}</svg>`, { fitTo: { mode: 'width', value: size }, font: { loadSystemFonts: false } })
+      uri = `data:image/png;base64,${big.render().asPng().toString('base64')}`
     }
+  } catch {
+    uri = null
   }
-  const rects = pixelCache.get(key)
-  if (!rects) return null
-  return {
-    type: 'svg',
-    props: {
-      width: size,
-      height: size,
-      viewBox: '0 0 16 16',
-      children: rects.map((r) => ({ type: 'rect', props: { x: r.x, y: r.y, width: 1.02, height: 1.02, fill: r.fill, fillOpacity: r.opacity, shapeRendering: 'crispEdges' } })),
-    },
-  }
+  bigCache.set(key, uri)
+  return uri
 }
