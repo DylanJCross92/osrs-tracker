@@ -90,7 +90,7 @@
   <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" :achievements="profile?.achievements || []" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
-  <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" :preview="!!fakeNinetyNine" @close="share99Skill = ''" />
+  <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" :preview="fakeNinetyNine.length > 0" @close="share99Skill = ''" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" @share="openShare" @share99="(skill) => (share99Skill = skill)" />
@@ -529,12 +529,22 @@ watch(
   { immediate: true },
 )
 const isProfileOwner = computed(() => claim.value?.mine === 'owner')
-// Development only: ?fake99=Agility shows a fresh 99 in that skill on any profile (nothing is saved), to watch the celebration.
-const fakeNinetyNine = import.meta.env.DEV ? SKILL_NAMES.find((n) => n.toLowerCase() === String(route.query.fake99 || '').trim().toLowerCase()) || '' : ''
+// Development only: ?fake99=agility,firemaking,runecrafting shows a fresh 99 in each of those skills (up to three, in that order) on any profile
+// (nothing is saved), to watch the celebration. Names can be in any case; "runecrafting" works for Runecraft.
+const fakeNinetyNine = import.meta.env.DEV
+  ? String(route.query.fake99 || '')
+      .split(/[,\s]+/)
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean)
+      .map((x) => SKILL_NAMES.find((n) => n !== 'Overall' && n.toLowerCase() === x) || SKILL_NAMES.find((n) => n !== 'Overall' && x.startsWith(n.toLowerCase())) || '')
+      .filter((n, i, all) => n && all.indexOf(n) === i)
+      .slice(0, 3)
+  : []
 const shownCelebrations = computed(() => {
   const real = profile.value?.celebrations || []
-  if (!fakeNinetyNine) return real
-  return [{ type: 'skill_level', skill: fakeNinetyNine, value: 99, title: `99 ${fakeNinetyNine}`, occurredAt: new Date().toISOString(), cheers: 0, cheered: false }, ...real]
+  if (!fakeNinetyNine.length) return real
+  const fakes = fakeNinetyNine.map((skill, i) => ({ type: 'skill_level', skill, value: 99, title: `99 ${skill}`, occurredAt: new Date(Date.now() - i * 60_000).toISOString(), cheers: 0, cheered: false }))
+  return [...fakes, ...real]
 })
 const LINK_LABELS = { discord: 'Discord', twitch: 'Twitch', youtube: 'YouTube', twitter: 'X' }
 watch(

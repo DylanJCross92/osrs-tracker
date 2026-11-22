@@ -114,7 +114,7 @@ watch(
   ([list, known]) => {
     // Wait until it is known whether someone is signed in, so the right kind of "seen" is used.
     if (!known || playing.value || upNext.length) return
-    const fresh = list.filter(unseen).slice(0, forced ? 1 : 3)
+    const fresh = list.filter(unseen).slice(0, 3)
     if (!fresh.length) return
     forcedDone = true
     // All of them count as seen now, so leaving or reloading part-way does not start the same ones again.
