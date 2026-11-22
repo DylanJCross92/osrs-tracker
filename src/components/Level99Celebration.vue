@@ -1,5 +1,5 @@
 <template>
-  <div :key="run" class="l99" role="img" :aria-label="`${skill} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
+  <div :key="run" class="l99" role="img" :aria-label="`${name} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
     <div class="l99-glow" aria-hidden="true" />
     <div class="l99-rays" aria-hidden="true" />
     <span class="l99-ring r1" aria-hidden="true" />
@@ -11,29 +11,32 @@
 
     <div class="l99-badge">
       <div class="l99-tile">
-        <img :src="skillIconSrc(skill)" :alt="''" width="16" height="16" class="l99-icon" />
+        <img :src="skillIconSrc(name)" :alt="''" width="16" height="16" class="l99-icon" />
         <span class="l99-shine" aria-hidden="true" />
       </div>
       <span class="l99-level" aria-hidden="true">{{ level }}</span>
     </div>
 
-    <p class="l99-title">{{ skill }} mastered</p>
+    <p class="l99-title">{{ name }} mastered</p>
     <p class="l99-sub">Congratulations!</p>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { skillIconSrc } from '@/utils/osrsSkills'
+import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 
 // A short celebration for reaching a level: the skill's own icon pops in on a gold badge, a burst of pixel confetti, a shine across the
 // badge, rays and stars behind it. Pure CSS, plays once when it appears (bump `run` to play it again) and settles into a gentle glow.
 // With reduced motion it simply shows the finished badge.
-defineProps({
+const props = defineProps({
   skill: { type: String, default: 'Agility' },
   level: { type: [Number, String], default: 99 },
   run: { type: Number, default: 0 },
 })
+
+// The skill as the game writes it ("agility" -> "Agility"), so the icon and the title are right however it was passed in.
+const name = computed(() => SKILL_NAMES.find((n) => n.toLowerCase() === String(props.skill).trim().toLowerCase()) || props.skill)
 
 const TONES = ['gold', 'gold', 'white', 'green', 'gold', 'red']
 // Even and repeatable (no randomness), so the burst looks the same every time.

@@ -528,7 +528,7 @@ watch(
 )
 const isProfileOwner = computed(() => claim.value?.mine === 'owner')
 // Development only: ?fake99=Agility shows a fresh 99 in that skill on any profile (nothing is saved), to watch the celebration.
-const fakeNinetyNine = import.meta.env.DEV ? String(route.query.fake99 || '').trim() : ''
+const fakeNinetyNine = import.meta.env.DEV ? SKILL_NAMES.find((n) => n.toLowerCase() === String(route.query.fake99 || '').trim().toLowerCase()) || '' : ''
 const shownCelebrations = computed(() => {
   const real = profile.value?.celebrations || []
   if (!fakeNinetyNine) return real
