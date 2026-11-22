@@ -102,6 +102,11 @@ const routes = [
     path: '/player/:username/goals/:id',
     redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username }, query: { tab: 'goals', goal: to.params.id } }),
   },
+  // A shared level 99: the server gives it the congratulations card as its preview, then it lands on the profile.
+  {
+    path: '/player/:username/level-99/:skill',
+    redirect: (to) => ({ name: 'playerDetail', params: { username: to.params.username } }),
+  },
   {
     path: '/player/:username/card/weekly/:slug?',
     name: 'weeklyShareCard',

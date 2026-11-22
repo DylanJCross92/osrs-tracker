@@ -13,11 +13,11 @@
         <button class="congrats-btn" type="button" :class="{ done: c.cheered }" :disabled="c.cheered || c.busy" @click="cheer(c)">
           {{ c.cheered ? 'Congratulated' : 'Congratulate' }}<span v-if="c.cheers" class="congrats-count">{{ c.cheers.toLocaleString('en-US') }}</span>
         </button>
-        <button v-if="c.skill" class="btn-text congrats-share" type="button" @click="$emit('share', c.skill)">Share</button>
+        <button v-if="c.skill" class="btn-text congrats-share" type="button" @click="is99(c) ? $emit('share99', c.skill) : $emit('share', c.skill)">Share</button>
         <button class="btn-text congrats-dismiss" type="button" aria-label="Hide this" @click="dismiss(c)">✕</button>
       </span>
     </div>
-    <Level99Modal v-if="playing" :skill="playing.skill" :name="name" @close="playing = null" @share="(skill) => { playing = null; $emit('share', skill) }" />
+    <Level99Modal v-if="playing" :skill="playing.skill" :name="name" @close="playing = null" @share="(skill) => { playing = null; $emit('share99', skill) }" />
   </div>
 </template>
 
@@ -36,7 +36,7 @@ const props = defineProps({
   // The owner of this profile sees a fresh 99 play once by itself; everyone else can click the medal to watch it.
   autoPlay: { type: Boolean, default: false },
 })
-defineEmits(['share'])
+defineEmits(['share', 'share99'])
 
 // A fresh 99 shows for 72 hours (the stats-table badge lasts the full week). Hiding one is remembered in this browser.
 const SHOW_MS = 72 * 3_600_000

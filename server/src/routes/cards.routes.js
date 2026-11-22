@@ -1,7 +1,8 @@
 import { Router } from 'express'
 import { getPlayerByUsername } from '../services/players.service.js'
 import { getWeeklyCardData, freezeWeeklyCard, getFrozenCard } from '../services/cards.service.js'
-import { renderWeeklyCardPng, renderChallengeCardPng, renderProfileCardPng } from '../services/cardImage.service.js'
+import { renderWeeklyCardPng, renderChallengeCardPng, renderProfileCardPng, renderLevel99CardPng } from '../services/cardImage.service.js'
+import { getLevel99Card } from '../services/level99.service.js'
 import { getProfileCardData } from '../services/profileCard.service.js'
 
 export const cardsRouter = Router()
@@ -39,6 +40,22 @@ cardsRouter.get('/players/:username/card/profile/image.png', async (req, res, ne
     const png = await renderProfileCardPng(data)
     res.set('Content-Type', 'image/png')
     // The link carries a version (?v=) that changes with each new snapshot, so previews refresh but stay cached between.
+    res.set('Cache-Control', 'public, max-age=300')
+    res.send(png)
+  } catch (err) {
+    next(err)
+  }
+})
+
+// The congratulations card for a skill the player has at 99 (?skill=). 404 for a skill they have not got to 99.
+cardsRouter.get('/players/:username/card/level99/image.png', async (req, res, next) => {
+  try {
+    const player = await resolvePlayer(req, res)
+    if (!player) return
+    const data = await getLevel99Card(player, req.query.skill)
+    if (!data) return res.status(404).end()
+    const png = await renderLevel99CardPng(data)
+    res.set('Content-Type', 'image/png')
     res.set('Cache-Control', 'public, max-age=300')
     res.send(png)
   } catch (err) {

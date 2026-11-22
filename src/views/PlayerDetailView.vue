@@ -90,9 +90,10 @@
   <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" :achievements="profile?.achievements || []" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
+  <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" @close="share99Skill = ''" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
-  <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" :auto-play="isProfileOwner || !!fakeNinetyNine" @share="openShare" />
+  <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" :auto-play="isProfileOwner || !!fakeNinetyNine" @share="openShare" @share99="(skill) => (share99Skill = skill)" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />
@@ -306,6 +307,7 @@ import { useRivals } from '@/composables/useRivals'
 import { formatRelative, withYearIfNotCurrent } from '@/utils/time'
 import XpLineChart from '@/components/XpLineChart.vue'
 import ShareCardModal from '@/components/ShareCardModal.vue'
+import Level99ShareModal from '@/components/profile/Level99ShareModal.vue'
 import ChallengeModal from '@/components/profile/ChallengeModal.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
 import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vue'
@@ -576,6 +578,7 @@ function openChallenge(source) {
 }
 // The last 7 game days of XP, the same numbers the week strip shows.
 const weekGainXp = computed(() => weekDays.value.reduce((sum, d) => sum + d.xp, 0))
+const share99Skill = ref('')
 function openShare(skill) {
   shareSkill.value = skill || 'Overall'
   shareModalOpen.value = true

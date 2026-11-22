@@ -39,6 +39,7 @@ import { getPlayerRecords } from './services/records.service.js'
 import { getTopGainerStats } from './services/topGainers.service.js'
 import { topGainerHeadline } from './utils/topGainers.js'
 import { getGoal } from './services/goals.service.js'
+import { getLevel99Card } from './services/level99.service.js'
 import { getHome } from './services/home.service.js'
 import { backfillAllMilestones } from './services/milestones.service.js'
 import { formatXp } from './services/cardImage.service.js'
@@ -340,6 +341,27 @@ if (distExists) {
           description,
           imageUrl: goal ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/goals/${goal.id}/image.png` : `${SITE_URL}/og-default.png`,
           pageUrl: goal ? `${base}/goals/${goal.id}` : `${base}?tab=goals`,
+          noindex: true,
+        }),
+      )
+    } catch (err) {
+      next(err)
+    }
+  })
+
+  // A shared level 99. The SPA sends the visitor on to the profile; this gives the link its congratulations card.
+  app.get('/player/:username/level-99/:skill', async (req, res, next) => {
+    try {
+      const player = await getPlayerByUsername(req.params.username)
+      if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      const card = await getLevel99Card(player, req.params.skill)
+      const base = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      res.send(
+        injectCardMeta(indexHtmlTemplate, {
+          title: card ? `${player.displayName} reached level 99 ${card.skill} | TickGains` : `${player.displayName} | TickGains`,
+          description: card ? `${player.displayName} just reached level 99 ${card.skill} in Old School RuneScape. Follow their progress on TickGains.` : `${player.displayName}'s Old School RuneScape profile on TickGains.`,
+          imageUrl: card ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/level99/image.png?skill=${encodeURIComponent(card.skill)}` : `${SITE_URL}/og-default.png`,
+          pageUrl: card ? `${base}/level-99/${encodeURIComponent(card.skill)}` : base,
           noindex: true,
         }),
       )

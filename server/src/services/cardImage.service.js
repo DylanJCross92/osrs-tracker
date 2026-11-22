@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
-import { skillIconDataUri } from './skillIcons.service.js'
+import { pixelIconNode, skillIconDataUri } from './skillIcons.service.js'
 import { dayCount, formatRange } from '../utils/dates.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -766,6 +766,81 @@ async function buildGoalCardTree({ displayName, goal }) {
 /** { displayName, goal } (see goals.service.js) -> PNG Buffer. */
 export async function renderGoalCardPng(data) {
   return renderPng(await buildGoalCardTree(data))
+}
+
+// --- Level 99 card ------------------------------------------------------------------------------------------------
+
+async function buildLevel99CardTree({ displayName, skill, xp, rank, reachedAt }) {
+  const icon = await pixelIconNode(skill, 200)
+  const when = reachedAt ? new Date(reachedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : null
+  const facts = [`${Number(xp).toLocaleString('en-US')} XP`, rank ? `Rank ${Number(rank).toLocaleString('en-US')}` : null, when ? `Reached ${when}` : null].filter(Boolean).join('   ·   ')
+
+  const tile = node(
+    'div',
+    {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: 300,
+      height: 300,
+      borderRadius: 70,
+      backgroundImage: 'linear-gradient(160deg, #fff2c0 0%, #f2cd78 45%, #c99634 100%)',
+      border: '8px solid #e4b84f',
+      boxShadow: '0 0 0 8px #1a1409, 0 0 0 12px #8a6416, 0 0 120px rgba(240, 201, 118, 0.55)',
+    },
+    [icon || svgIcon(180, '#2a1d05', [ICON.star])],
+  )
+  const pill = node(
+    'div',
+    { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px 40px 6px', marginTop: -34, borderRadius: 999, backgroundImage: 'linear-gradient(180deg, #2c210d, #17110a)', border: '5px solid #e4b84f', fontSize: 66, fontWeight: 800, color: '#fff0b8', lineHeight: 1.1 },
+    '99',
+  )
+
+  return node(
+    'div',
+    {
+      width: WIDTH,
+      height: HEIGHT,
+      boxSizing: 'border-box',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      padding: '44px 56px',
+      backgroundColor: '#16130e',
+      backgroundImage: 'radial-gradient(circle at 80% 46%, #5a4414 0%, #2a2112 34%, #100d08 78%)',
+      fontFamily: 'Plus Jakarta Sans',
+      color: COLORS.cream,
+    },
+    [
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', alignItems: 'center', gap: 12 }, [
+          svgIcon(34, COLORS.gold, [ICON.star]),
+          node('div', { fontSize: 22, fontWeight: 800, color: COLORS.gold, letterSpacing: '0.14em', textTransform: 'uppercase' }, 'Level 99'),
+        ]),
+        brandBadge(),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', maxWidth: 700 }, [
+          node('div', { fontSize: 38, fontWeight: 800, color: COLORS.gold }, displayName),
+          node('div', { fontSize: 36, fontWeight: 700, color: COLORS.cream, marginTop: 4 }, 'reached level 99'),
+          node('div', { fontSize: 116, fontWeight: 800, color: '#fff0b8', lineHeight: 1.05, marginTop: 2 }, skill),
+          node('div', { fontSize: 24, color: COLORS.muted, marginTop: 18 }, facts),
+        ]),
+        node('div', { display: 'flex', flexDirection: 'column', alignItems: 'center', marginRight: 40 }, [tile, pill]),
+      ]),
+
+      node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }, [
+        node('div', { fontSize: 30, fontWeight: 800, color: COLORS.gold }, 'Congratulations!'),
+        node('div', { fontSize: 24, color: '#d8ccae', fontWeight: 700 }, 'tickgains.com'),
+      ]),
+    ],
+  )
+}
+
+/** { displayName, skill, xp, rank, reachedAt } (see level99.service.js) -> PNG Buffer. */
+export async function renderLevel99CardPng(data) {
+  return renderPng(await buildLevel99CardTree(data))
 }
 
 // --- Profile preview card (what a pasted profile link unfurls into) -------------------------------------------------

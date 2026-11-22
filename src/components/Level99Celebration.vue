@@ -1,5 +1,5 @@
 <template>
-  <div :key="run" class="l99" role="img" :aria-label="`${name} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
+  <div :key="run" class="l99" :class="{ free }" role="img" :aria-label="`${name} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
     <div class="l99-glow" aria-hidden="true" />
     <div class="l99-rays" aria-hidden="true" />
     <span class="l99-ring r1" aria-hidden="true" />
@@ -33,6 +33,8 @@ const props = defineProps({
   skill: { type: String, default: 'Agility' },
   level: { type: [Number, String], default: 99 },
   run: { type: Number, default: 0 },
+  // Without its own frame: the effects may reach past the box (the confetti, the rays), for playing straight over a page.
+  free: { type: Boolean, default: false },
 })
 
 // The skill as the game writes it ("agility" -> "Agility"), so the icon and the title are right however it was passed in.
@@ -85,6 +87,10 @@ const stars = computed(() =>
   isolation: isolate;
   text-align: center;
 }
+
+.l99.free { overflow: visible; }
+.l99.free .l99-title, .l99.free .l99-sub { filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85)); }
+.l99.free .l99-sub { margin-top: 8px; color: #d8ccae; }
 
 /* ---- Behind the badge: a warm glow and slowly turning rays ---- */
 .l99-glow {
