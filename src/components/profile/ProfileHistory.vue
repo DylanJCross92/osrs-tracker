@@ -1,5 +1,6 @@
 <template>
   <div class="card">
+    <ProfileHighlights v-if="!compact && profile" class="hl-top" :snapshots="snapshots" :events="hlEvents" :before="hlBefore" @share99="(skill) => $emit('share99', skill)" />
     <div class="chart-header">
       <h2>{{ compact ? 'Recent milestones' : 'Progression timeline' }}</h2>
       <button v-if="compact" class="btn-text" @click="$emit('view-history')">View full history →</button>
@@ -30,6 +31,7 @@
             <span v-else class="achievement-total-icon">★</span>
             <span class="history-row-title">{{ r.title }}</span>
             <span v-if="r.chip" class="history-chip">{{ r.chip }}</span>
+            <button v-if="r.share99 && !compact" class="btn-text history-share" type="button" @click="$emit('share99', r.share99)">Share</button>
           </li>
         </ul>
       </section>
@@ -51,6 +53,7 @@
             <span class="history-row-date" :class="{ 'is-range': r.gap }">{{ r.dateLabel }}</span>
             <span class="history-row-title">{{ r.title }}</span>
             <span v-if="r.chip" class="history-chip">{{ r.chip }}</span>
+            <button v-if="r.share99" class="btn-text history-share" type="button" @click="$emit('share99', r.share99)">Share</button>
           </li>
         </ul>
       </section>
@@ -73,6 +76,8 @@
 
 <script setup>
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import ProfileHighlights from '@/components/profile/ProfileHighlights.vue'
+import { skillHighlights } from '@/utils/historyHighlights'
 import { computed, ref, watch } from 'vue'
 import { skillIconSrc, SKILL_NAMES } from '@/utils/osrsSkills'
 import { gameDay, formatGameDay } from '@/utils/gameDay'
@@ -84,7 +89,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
   limit: { type: Number, default: 3 },
 })
-defineEmits(['view-history'])
+defineEmits(['view-history', 'share99'])
 const view = ref('day')
 const skill = ref('')
 const category = ref('')
@@ -137,6 +142,11 @@ const categories = computed(() => {
   for (const e of otherEvents.value) cats.add(e.category)
   return [...cats]
 })
+// The big moments (first 1M and 5M XP in a skill, halfway to 99, 99, 200M), from the saved snapshots. They fill the Highlights chart and add the
+// ones the server does not record (1M, 5M, halfway) to the list below.
+const hl = computed(() => skillHighlights(props.snapshots))
+const hlEvents = computed(() => hl.value.events.filter((e) => !skill.value || e.skill === skill.value))
+const hlBefore = computed(() => hl.value.before.filter((e) => !skill.value || e.skill === skill.value))
 const keep = (e) => (!skill.value || e.skill === skill.value) && (!category.value || e.category === category.value)
 
 const preTracking = computed(() =>
@@ -181,12 +191,16 @@ function runRow(r) {
 }
 
 const allRows = computed(() => {
-  const runs = levelRuns(levelEvents.value.dated.filter(keep)).map((r) => ({ ...r, ...runRow(r), kind: 'level' }))
+  const runs = levelRuns(levelEvents.value.dated.filter(keep)).map((r) => ({ ...r, ...runRow(r), kind: 'level', share99: r.to === 99 ? r.skill : '' }))
   const others = otherEvents.value.filter(keep).map((e) => {
     const pl = placement(e.at, e.after)
     return { ...pl, id: e.id, skill: e.skill, title: e.title, chip: 'milestone', at: e.at, kind: 'milestone', sort: 1e12 }
   })
-  return [...runs, ...others]
+  // Moments the server does not list (the first 1M and 5M XP, halfway to 99): added here from the snapshots.
+  const extra = hl.value.events
+    .filter((e) => ['xp1m', 'xp5m', 'half'].includes(e.kind) && keep({ skill: e.skill, category: 'Skill XP' }))
+    .map((e) => ({ ...placement(e.at, e.after), id: `hl:${e.id}`, skill: e.skill, title: e.title, chip: 'milestone', at: e.at, kind: 'milestone', sort: 1e12 - e.rank }))
+  return [...runs, ...others, ...extra]
 })
 
 const countLevels = (rows) => rows.filter((r) => r.kind === 'level').reduce((n, r) => n + (Number(r.chip.replace(/\D/g, '')) || 1), 0)

@@ -112,7 +112,7 @@
     <template v-else-if="tab === 'goals'">
       <ProfileGoalsPublic :username="player.username" :display-name="player.displayName" :goals="goals" :plan="goalPlan" :is-owner="isProfileOwner" :target-id="Number(route.query.goal) || null" @update="(g) => (goals = g)" @share="(g) => (shareGoal = g)" />
     </template>
-    <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" />
+    <ProfileHistory v-else-if="tab === 'history'" :profile="profile" :snapshots="snapshots" @share99="(skill) => (share99Skill = skill)" />
     <template v-else>
     <div class="stats-toolbar">
       <label class="period-select">
