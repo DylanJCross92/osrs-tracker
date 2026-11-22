@@ -94,3 +94,22 @@ describe('topGainerHeadline', () => {
     expect(topGainerHeadline({ days: 1, headline: tenureOf('hours', 3) })).toBe('3 hours as top gainer')
   })
 })
+
+describe('pickTopGainer by period', () => {
+  const players = [
+    { id: 1, gains: { day: { xp: 5_000, topSkill: 'Mining' }, h24: { xp: 50_000, topSkill: 'Fishing' } } },
+    { id: 2, gains: { day: { xp: 90_000, topSkill: 'Cooking' }, h24: { xp: 60_000, topSkill: 'Cooking' } } },
+    { id: 3, gains: { day: null, h24: null } },
+  ]
+  it('picks the leader of today (6 AM to 6 AM) by default and of the last 24 hours when asked', () => {
+    expect(pickTopGainer(players).player.id).toBe(2)
+    expect(pickTopGainer(players, 'h24')).toMatchObject({ player: { id: 2 }, xp: 60_000, topSkill: 'Cooking' })
+    const early = [{ id: 1, gains: { day: { xp: 100, topSkill: 'Mining' }, h24: { xp: 900_000, topSkill: 'Fishing' } } }, { id: 2, gains: { day: { xp: 400, topSkill: 'Cooking' }, h24: { xp: 3_000, topSkill: 'Cooking' } } }]
+    // just after 6 AM the game day has barely started, but the 24 hours still show who has been gaining
+    expect(pickTopGainer(early).player.id).toBe(2)
+    expect(pickTopGainer(early, 'h24').player.id).toBe(1)
+  })
+  it('is null when nobody has gained', () => {
+    expect(pickTopGainer([{ id: 1, gains: { h24: { xp: 0 } } }], 'h24')).toBeNull()
+  })
+})

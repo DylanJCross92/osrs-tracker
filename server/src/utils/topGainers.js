@@ -3,13 +3,16 @@
 // A day is the 6 AM to 6 AM Eastern game day used everywhere else on the site (see dates.js).
 import { diffDays } from './dates.js'
 
-/** The player who has gained the most XP so far today: { player, xp, topSkill }, or null while nobody has gained any. */
-export function pickTopGainer(players) {
+/**
+ * The player who has gained the most XP: { player, xp, topSkill }, or null while nobody has gained any. `period` is 'day' (so far today,
+ * 6 AM to 6 AM, which the daily tally uses) or 'h24' (the last 24 hours, which the Discover card shows).
+ */
+export function pickTopGainer(players, period = 'day') {
   let top = null
   for (const p of players) {
-    const xp = p.gains?.day?.xp
+    const xp = p.gains?.[period]?.xp
     // A tie keeps whoever is listed first (the list is already sorted by gain).
-    if (xp > 0 && (!top || xp > top.xp)) top = { player: p, xp, topSkill: p.gains.day.topSkill || null }
+    if (xp > 0 && (!top || xp > top.xp)) top = { player: p, xp, topSkill: p.gains[period].topSkill || null }
   }
   return top
 }

@@ -14,7 +14,7 @@
           </component>
           <button type="button" class="disc-stat-tile is-action" aria-label="Show the XP gained on the site over the last day, 7 days and 30 days" @click="xpOpen = true; track('discover_xp_total_open')">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
-            <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? 'today' : '· 7 days' }}</small></span>
+            <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? '· 24 hours' : '· 7 days' }}</small></span>
           </button>
           <div class="disc-stat-tile">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
@@ -55,7 +55,7 @@
       </div>
 
       <RouterLink v-if="spotlight" :to="profileTo(spotlight.p.username)" class="disc-spot">
-        <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'day' ? 'today' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
+        <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'h24' ? '· last 24 hours' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
         <span class="disc-spot-top">
           <span class="disc-spot-avatar" aria-hidden="true"><PlayerAvatar :name="spotlight.p.username" /></span>
           <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" :claimed="spotlight.p.claimed" /></span>
@@ -448,7 +448,8 @@ watch([period, skill], () => track('discover_leaderboard', { period: period.valu
 const { isAdmin } = useAuth()
 const recentOpen = ref(false)
 const xpOpen = ref(false)
-const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.day?.xp || 0, 0), 0))
+// The hero numbers are for the last 24 hours (a rolling window), so they do not start over at 6 AM.
+const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.h24?.xp || 0, 0), 0))
 const totalWeek = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.week?.xp || 0, 0), 0))
 const levelUps = computed(() => (data.value.activity || []).filter((e) => e.kind === 'levelup' || e.kind === 'max').reduce((n, e) => n + (e.to - e.from), 0))
 // Two spotlights: highest XP gain today and highest XP gain this week.
@@ -464,17 +465,17 @@ const spotlights = computed(() =>
     .filter(Boolean),
 )
 const spotlight = computed(() => {
-  for (const key of ['day', 'week', 'month']) {
+  for (const key of ['h24', 'week', 'month']) {
     const top = [...players.value].filter((p) => p.gains?.[key]?.xp > 0).sort((a, b) => b.gains[key].xp - a.gains[key].xp)[0]
     if (top) return { p: top, period: key, xp: top.gains[key].xp, topSkill: top.gains[key].topSkill, topSkillXp: top.gains[key].topSkillXp, topSkills: top.gains[key].topSkills || [] }
   }
   return null
 })
 
-// How long the player in the hero has been top gainer (only when the hero is today's leader).
+// The hero player's record as top gainer (days won, best day, and how long they have led today's board when they do).
 const tenure = computed(() => {
   const t = data.value.topGainer
-  return spotlight.value?.period === 'day' && t && t.username === spotlight.value.p.username ? t : null
+  return spotlight.value?.period === 'h24' && t && t.username === spotlight.value.p.username ? t : null
 })
 
 // --- search ---

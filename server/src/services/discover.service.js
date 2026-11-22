@@ -41,6 +41,7 @@ function compact(p) {
     capturedAt: l?.capturedAt ?? null,
     highest: highest ? { skill: highest[0], level: highest[1].level } : null,
     gains: {
+      h24: p.gains?.h24 ? { xp: p.gains.h24.xp, topSkill: p.gains.h24.topSkill, topSkillXp: p.gains.h24.topSkillXp, topSkills: p.gains.h24.topSkills } : null,
       day: p.gains?.day ? { xp: p.gains.day.xp, topSkill: p.gains.day.topSkill, topSkillXp: p.gains.day.topSkillXp, topSkills: p.gains.day.topSkills } : null,
       week: p.gains?.week ? { xp: p.gains.week.xp, topSkill: p.gains.week.topSkill, topSkillXp: p.gains.week.topSkillXp, topSkills: p.gains.week.topSkills } : null,
       month: p.gains?.month ? { xp: p.gains.month.xp, topSkill: p.gains.month.topSkill, topSkillXp: p.gains.month.topSkillXp, topSkills: p.gains.month.topSkills } : null,
@@ -197,12 +198,13 @@ async function buildDiscover() {
     .slice(0, 8)
     .map((r) => card(byId.get(r.player_id), { kind: 'milestone', skill: r.skill, text: `99 ${r.skill}`, at: r.occurred_at }))
 
-  // Keep the tally of "Top gainer today" days up to date, and note how long today's leader has been at the top
+  // Keep the tally of "Top gainer today" days up to date, and note the leader's record
   // (a failure here must never break the page).
   let topGainer = null
   try {
     await recordTopGainer(players)
-    const lead = pickTopGainer(players)
+    // The card on the page shows the leader of the last 24 hours (so it does not start over at 6 AM); the daily tally stays by game day.
+    const lead = pickTopGainer(players, 'h24')
     if (lead) {
       const stats = await getTopGainerStats(lead.player)
       if (stats.days) topGainer = { username: lead.player.username, ...stats }
