@@ -92,7 +92,7 @@
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
-  <ProfileCelebrations v-if="player && profile?.celebrations?.length" :player-id="player.id" :name="player.displayName" :celebrations="profile.celebrations" :auto-play="isProfileOwner" @share="openShare" />
+  <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" :auto-play="isProfileOwner || !!fakeNinetyNine" @share="openShare" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />
@@ -527,6 +527,13 @@ watch(
   { immediate: true },
 )
 const isProfileOwner = computed(() => claim.value?.mine === 'owner')
+// Development only: ?fake99=Agility shows a fresh 99 in that skill on any profile (nothing is saved), to watch the celebration.
+const fakeNinetyNine = import.meta.env.DEV ? String(route.query.fake99 || '').trim() : ''
+const shownCelebrations = computed(() => {
+  const real = profile.value?.celebrations || []
+  if (!fakeNinetyNine) return real
+  return [{ type: 'skill_level', skill: fakeNinetyNine, value: 99, title: `99 ${fakeNinetyNine}`, occurredAt: new Date().toISOString(), cheers: 0, cheered: false }, ...real]
+})
 const LINK_LABELS = { discord: 'Discord', twitch: 'Twitch', youtube: 'YouTube', twitter: 'X' }
 watch(
   () => player.value?.username,

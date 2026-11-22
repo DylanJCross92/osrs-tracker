@@ -80,12 +80,16 @@ const is99 = (c) => c.type === 'skill_level' && c.value === 99 && !!c.skill
 const playing = ref(null)
 const PLAYED_KEY = 'tickgains-congrats-played'
 const played = readSet(PLAYED_KEY)
+// Development: ?fake99 plays every time the page opens, so it can be watched again.
+const forced = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('fake99')
+let forcedDone = false
 watch(
   [visible, () => props.autoPlay],
   ([list, auto]) => {
     if (!auto || playing.value) return
-    const fresh = list.find((c) => is99(c) && !played.has(c.key))
+    const fresh = list.find((c) => is99(c) && (forced ? !forcedDone : !played.has(c.key)))
     if (!fresh) return
+    forcedDone = true
     played.add(fresh.key)
     writeSet(PLAYED_KEY, played)
     playing.value = fresh
