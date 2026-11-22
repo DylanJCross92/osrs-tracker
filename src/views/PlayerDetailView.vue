@@ -529,7 +529,7 @@ watch(
   { immediate: true },
 )
 const isProfileOwner = computed(() => claim.value?.mine === 'owner')
-// Development only: ?fake99=agility,firemaking,runecrafting shows a fresh 99 in each of those skills (up to three, in that order) on any profile
+// Development only: ?fake99=agility,firemaking,runecrafting shows a fresh 99 in each of those skills (up to six, in that order) on any profile
 // (nothing is saved), to watch the celebration. Names can be in any case; "runecrafting" works for Runecraft.
 const fakeNinetyNine = import.meta.env.DEV
   ? String(route.query.fake99 || '')
@@ -538,7 +538,7 @@ const fakeNinetyNine = import.meta.env.DEV
       .filter(Boolean)
       .map((x) => SKILL_NAMES.find((n) => n !== 'Overall' && n.toLowerCase() === x) || SKILL_NAMES.find((n) => n !== 'Overall' && x.startsWith(n.toLowerCase())) || '')
       .filter((n, i, all) => n && all.indexOf(n) === i)
-      .slice(0, 3)
+      .slice(0, 6)
   : []
 const shownCelebrations = computed(() => {
   const real = profile.value?.celebrations || []

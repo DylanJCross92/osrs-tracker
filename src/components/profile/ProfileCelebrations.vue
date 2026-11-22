@@ -39,6 +39,7 @@ defineEmits(['share', 'share99'])
 
 // A fresh 99 shows for 72 hours (the stats-table badge lasts the full week). Hiding one is remembered in this browser.
 const SHOW_MS = 72 * 3_600_000
+const MAX_SHOWN = 6 // rows in the banner, and badges in the celebration
 const DISMISS_KEY = 'tickgains-congrats-dismissed'
 const CHEERED_KEY = 'tickgains-congrats-cheered'
 const readSet = (key) => {
@@ -72,7 +73,7 @@ watch(
 const visible = computed(() =>
   rows.value
     .filter((c) => !dismissed.value.has(c.key) && Date.now() - new Date(c.occurredAt).getTime() < SHOW_MS)
-    .slice(0, 3),
+    .slice(0, MAX_SHOWN),
 )
 
 const is99 = (c) => c.type === 'skill_level' && c.value === 99 && !!c.skill
@@ -101,14 +102,14 @@ authReady().finally(() => (authKnown.value = true))
 // Development: ?fake99 plays every time the page opens, so it can be watched again.
 const forced = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('fake99')
 let forcedDone = false
-// Every new 99 plays together, side by side (the newest first, three at most), and each badge flies into its own row's medal.
+// Every new 99 plays together, side by side (the newest first, six at most), and each badge flies into its own row's medal.
 const unseen = (c) => is99(c) && (forced ? !forcedDone : loggedIn.value ? !c.seen : !sessionSeen.has(c.key))
 watch(
   [visible, authKnown],
   ([list, known]) => {
     // Wait until it is known whether someone is signed in, so the right kind of "seen" is used.
     if (!known || playing.value) return
-    const fresh = list.filter(unseen).slice(0, 3)
+    const fresh = list.filter(unseen).slice(0, MAX_SHOWN)
     if (!fresh.length) return
     forcedDone = true
     if (!forced) {
