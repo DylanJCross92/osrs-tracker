@@ -77,16 +77,35 @@ export function journeyPoints(snapshots, max = 260) {
 }
 
 /**
- * Where marks sit along a row so they never overlap: each mark goes in the first lane whose last mark is far enough to its left.
- * xs: pixel positions, in the order the marks should be placed. Returns the lane number of each, and how many lanes were used.
+ * Marks that would sit close together along the line become one: they are grouped into bins `bin` pixels wide.
+ * items: [{ x, rank, atMs, ... }]. Returns [{ bin, x, items }] left to right, `items` biggest first (then newest), `x` the middle of them.
  */
-export function assignLanes(xs, gap) {
-  const last = []
-  const lanes = xs.map((x) => {
-    let lane = last.findIndex((l) => x - l >= gap)
-    if (lane < 0) lane = last.length
-    last[lane] = x
-    return lane
-  })
-  return { lanes, count: last.length }
+export function clusterMarks(items, bin) {
+  const bins = new Map()
+  for (const it of items) {
+    const key = Math.floor(it.x / bin)
+    if (!bins.has(key)) bins.set(key, [])
+    bins.get(key).push(it)
+  }
+  return [...bins.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([key, list]) => ({ bin: key, x: list.reduce((s, i) => s + i.x, 0) / list.length, items: [...list].sort((a, b) => b.rank - a.rank || b.atMs - a.atMs) }))
+}
+
+/**
+ * Which kinds of moment to show to begin with: the biggest ones, adding the next kind down only while the chart stays readable.
+ * counts: { kindKey: n }. Returns a Set of kind keys (always including 99 when there is one).
+ */
+export function defaultKinds(counts, limit = 48) {
+  const order = ['l99', 'xp200m', 'half', 'xp5m', 'xp1m']
+  const on = new Set()
+  let total = 0
+  for (const key of order) {
+    const n = counts[key] || 0
+    if (!n) continue
+    if (on.size && total + n > limit) break
+    on.add(key)
+    total += n
+  }
+  return on
 }

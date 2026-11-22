@@ -25,7 +25,8 @@ const routes = [
     component: () => import('@/views/DiscoverView.vue'),
   },
   // Search landing pages: the XP table, and whole-account plan guides that open in the planner.
-  // Development only: a preview of the level 99 celebration.
+  // Development only: a preview of the level 99 celebration, and of the History highlights for a maxed account.
+  ...(import.meta.env.DEV ? [{ path: '/dev/history', name: 'historyPreview', component: () => import('@/views/HistoryPreview.vue') }] : []),
   ...(import.meta.env.DEV ? [{ path: '/dev/level-99', name: 'level99Preview', component: () => import('@/views/Level99Preview.vue') }] : []),
   { path: '/osrs-xp-table', name: 'xpTable', component: () => import('@/views/XpTableView.vue') },
   { path: '/plans', name: 'planGuides', component: () => import('@/views/PlanGuidesView.vue') },

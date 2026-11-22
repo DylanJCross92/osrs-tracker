@@ -9,14 +9,16 @@
 
     <HistoryJourney v-if="points.length > 1" ref="chart" :points="points" :events="shown" :selected="selected" @select="(id) => (selected = selected === id ? '' : id)" />
 
-    <!-- the mark you hover or pick -->
-    <p v-if="current" class="hl-now" aria-live="polite">
-      <img :src="skillIconSrc(current.skill)" alt="" width="20" height="20" />
-      <b>{{ current.title }}</b>
-      <span>{{ dateText(current) }}</span>
-      <button v-if="current.kind === 'l99'" class="btn-text hl-share" type="button" @click="$emit('share99', current.skill)">Share</button>
-    </p>
-    <p v-else-if="points.length > 1" class="hl-hint">Hover or tap a mark to see what it was. The larger gold ones are level 99s.</p>
+    <!-- what is in the mark you hover or pick -->
+    <ul v-if="current" class="hl-now" aria-live="polite">
+      <li v-for="e in currentItems" :key="e.id">
+        <img :src="skillIconSrc(e.skill)" alt="" width="20" height="20" />
+        <b>{{ e.title }}</b>
+        <span>{{ dateText(e) }}</span>
+        <button v-if="e.kind === 'l99'" class="btn-text hl-share" type="button" @click="$emit('share99', e.skill)">Share</button>
+      </li>
+    </ul>
+    <p v-else-if="points.length > 1" class="hl-hint">Hover or tap a mark to see what it was. Gold marks include a level 99, and a number means that many moments close together.</p>
 
     <!-- every 99, newest first, each one shareable -->
     <div v-if="all99.length" class="hl-99">
@@ -39,7 +41,7 @@
 import { computed, ref } from 'vue'
 import HistoryJourney from '@/components/profile/HistoryJourney.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { journeyPoints, HIGHLIGHT_KINDS } from '@/utils/historyHighlights'
+import { journeyPoints, defaultKinds, HIGHLIGHT_KINDS } from '@/utils/historyHighlights'
 import { gameDay, formatGameDay } from '@/utils/gameDay'
 
 // The big moments of a character's whole history: a chart of total XP with each marked, and every level 99 with a way to share it.
@@ -51,7 +53,6 @@ const props = defineProps({
 defineEmits(['share99'])
 
 const kinds = HIGHLIGHT_KINDS.filter((k) => k.key !== 'xp200m' || props.events.some((e) => e.kind === 'xp200m')).sort((a, b) => b.rank - a.rank)
-const on = ref(new Set(HIGHLIGHT_KINDS.map((k) => k.key)))
 const toggle = (key) => {
   const next = new Set(on.value)
   next.has(key) ? next.delete(key) : next.add(key)
@@ -62,13 +63,16 @@ const counts = computed(() => {
   for (const e of props.events) c[e.kind] = (c[e.kind] || 0) + 1
   return c
 })
+// Begin with the biggest moments, adding smaller ones only while the chart stays readable; the buttons above change it.
+const on = ref(defaultKinds(counts.value))
 const points = computed(() => journeyPoints(props.snapshots))
 const shown = computed(() => props.events.filter((e) => on.value.has(e.kind)))
 
 const selected = ref('')
 const chart = ref(null)
 // What the line below the chart describes: the mark under the pointer, else the picked one.
-const current = computed(() => chart.value?.active || props.events.find((e) => e.id === selected.value) || null)
+const current = computed(() => chart.value?.active || null)
+const currentItems = computed(() => [...(current.value?.items || [])].sort((a, b) => b.rank - a.rank || b.atMs - a.atMs).slice(0, 12))
 
 const all99 = computed(() => [...props.events.filter((e) => e.kind === 'l99'), ...props.before.filter((b) => b.kind === 'l99')])
 

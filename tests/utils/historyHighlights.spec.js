@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignLanes, journeyPoints, skillHighlights, XP_99, XP_HALF } from '@/utils/historyHighlights'
+import { clusterMarks, defaultKinds, journeyPoints, skillHighlights, XP_99, XP_HALF } from '@/utils/historyHighlights'
 
 const snap = (day, agilityXp, overallXp = agilityXp) => ({ capturedAt: `2026-01-${String(day).padStart(2, '0')}T12:00:00Z`, overallXp, skills: { Agility: { xp: agilityXp } } })
 
@@ -43,10 +43,25 @@ describe('journey line', () => {
   })
 })
 
-describe('lanes for marks', () => {
-  it('puts marks that would overlap in different lanes, and reuses a lane once there is room', () => {
-    const { lanes, count } = assignLanes([10, 14, 18, 60, 64], 20)
-    expect(lanes).toEqual([0, 1, 2, 0, 1])
-    expect(count).toBe(3)
+describe('marks along the line', () => {
+  it('groups marks that are close together into one, biggest first, and keeps far ones apart', () => {
+    const items = [
+      { x: 105, rank: 1, atMs: 1 },
+      { x: 110, rank: 4, atMs: 2 },
+      { x: 112, rank: 4, atMs: 3 },
+      { x: 300, rank: 2, atMs: 4 },
+    ]
+    const c = clusterMarks(items, 30)
+    expect(c).toHaveLength(2)
+    expect(c[0].items.map((i) => i.atMs)).toEqual([3, 2, 1])
+    expect(c[0].x).toBeCloseTo((105 + 110 + 112) / 3)
+    expect(c[1].items).toHaveLength(1)
+  })
+
+  it('starts with the biggest moments only when there are a lot of them', () => {
+    expect([...defaultKinds({ l99: 24, xp200m: 18, half: 24, xp5m: 24, xp1m: 24 })]).toEqual(['l99', 'xp200m'])
+    expect([...defaultKinds({ l99: 1, half: 1, xp5m: 1, xp1m: 9 })]).toEqual(['l99', 'half', 'xp5m', 'xp1m'])
+    expect([...defaultKinds({ l99: 80 })]).toEqual(['l99'])
+    expect([...defaultKinds({})]).toEqual([])
   })
 })

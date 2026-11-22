@@ -6684,12 +6684,17 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .jr-hit { fill: transparent; }
 .jr-mark { fill: #241d10; stroke: rgba(217, 175, 82, 0.55); stroke-width: 1.5; transition: stroke 0.12s, fill 0.12s; }
 .jr-icon { image-rendering: pixelated; pointer-events: none; }
+.jr-count { fill: var(--gold-bright); font-size: 11px; font-weight: 700; pointer-events: none; }
+.jr-node.is-many .jr-mark { fill: #2b2211; stroke: rgba(217, 175, 82, 0.7); }
+.jr-node.is-many.big .jr-mark { fill: #f2cd78; stroke: #fff0b8; stroke-width: 2; }
+.jr-node.is-many.big .jr-count { fill: #2a1d05; }
 .jr-node.k-l99 .jr-mark, .jr-node.k-xp200m .jr-mark { fill: #f2cd78; stroke: #fff0b8; stroke-width: 2; }
 .jr-node.k-half .jr-mark { stroke: #9fd48a; }
 .jr-node.k-l99 .jr-stem { stroke: rgba(240, 201, 118, 0.55); }
 .jr-node.on .jr-mark, .jr-node:focus-visible .jr-mark { stroke: #fff; stroke-width: 2.5; }
 .jr-node.on .jr-stem { stroke: rgba(255, 255, 255, 0.6); stroke-dasharray: none; }
-.hl-now { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin: 10px 0 0; min-height: 28px; font-size: 0.92rem; }
+.hl-now { list-style: none; margin: 10px 0 0; padding: 0; min-height: 28px; max-height: 260px; overflow-y: auto; font-size: 0.92rem; }
+.hl-now li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; }
 .hl-now span { color: var(--muted); }
 .hl-hint { margin: 10px 0 0; min-height: 28px; color: var(--muted); font-size: 0.85rem; }
 .hl-share { color: var(--gold-bright); font-size: 0.85rem; }
