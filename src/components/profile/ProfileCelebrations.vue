@@ -17,7 +17,7 @@
         <button class="btn-text congrats-dismiss" type="button" aria-label="Hide this" @click="dismiss(c)">✕</button>
       </span>
     </div>
-    <Level99Modal v-if="playing" :skill="playing.skill" @close="playing = null" />
+    <Level99Modal v-if="playing" :key="playing.key" :skill="playing.skill" :show-ms="sequence > 1 ? 2600 : 4000" :fly-ms="sequence > 1 ? 800 : 900" @close="onPlayed" />
   </div>
 </template>
 
@@ -101,22 +101,35 @@ authReady().finally(() => (authKnown.value = true))
 // Development: ?fake99 plays every time the page opens, so it can be watched again.
 const forced = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('fake99')
 let forcedDone = false
+// Several new 99s play one after another (the newest first, three at most), each a little shorter, each flying into its own medal.
+const sequence = ref(1)
+let upNext = []
+const unseen = (c) => is99(c) && (forced ? !forcedDone : loggedIn.value ? !c.seen : !sessionSeen.has(c.key))
+function onPlayed() {
+  playing.value = null
+  if (upNext.length) setTimeout(() => (playing.value = upNext.shift()), 250)
+}
 watch(
   [visible, authKnown],
   ([list, known]) => {
     // Wait until it is known whether someone is signed in, so the right kind of "seen" is used.
-    if (!known || playing.value) return
-    const fresh = list.find((c) => is99(c) && (forced ? !forcedDone : loggedIn.value ? !c.seen : !sessionSeen.has(c.key)))
-    if (!fresh) return
+    if (!known || playing.value || upNext.length) return
+    const fresh = list.filter(unseen).slice(0, forced ? 1 : 3)
+    if (!fresh.length) return
     forcedDone = true
+    // All of them count as seen now, so leaving or reloading part-way does not start the same ones again.
     if (!forced) {
-      if (loggedIn.value) {
-        fresh.seen = true
-        playersApi.celebrationSeen(props.playerId, { type: fresh.type, skill: fresh.skill, value: fresh.value }).catch(() => {})
-      } else rememberInSession(fresh.key)
+      for (const c of fresh) {
+        if (loggedIn.value) {
+          c.seen = true
+          playersApi.celebrationSeen(props.playerId, { type: c.type, skill: c.skill, value: c.value }).catch(() => {})
+        } else rememberInSession(c.key)
+      }
     }
-    playing.value = fresh
-    track('level_99_celebration', { skill: fresh.skill })
+    sequence.value = fresh.length
+    upNext = fresh.slice(1)
+    playing.value = fresh[0]
+    track('level_99_celebration', { skill: fresh[0].skill, count: fresh.length })
   },
   { immediate: true },
 )

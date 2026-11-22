@@ -19,7 +19,12 @@ import Level99Celebration from '@/components/Level99Celebration.vue'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 
 // The level 99 celebration over the profile: opened by a fresh 99, and by clicking the medal beside it to watch it again.
-const props = defineProps({ skill: { type: String, required: true } })
+const props = defineProps({
+  skill: { type: String, required: true },
+  // How long it plays before the badge starts to leave, and how long that trip into the banner takes (shorter when several play in a row).
+  showMs: { type: Number, default: 4000 },
+  flyMs: { type: Number, default: 900 },
+})
 const emit = defineEmits(['close'])
 const root = ref(null)
 const veil = ref(null)
@@ -31,8 +36,6 @@ const panel = Math.max(200, Math.round((typeof window === 'undefined' ? 720 : wi
 const k = Math.min(1, panel / 400)
 const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 
-const SHOW_MS = 4000 // how long it plays before it starts to leave
-const FLY_MS = 900 // the trip into the banner (so about five seconds in all)
 let showTimer = 0
 let endTimer = 0
 let leaving = false
@@ -75,20 +78,20 @@ function startFly() {
       { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 1, offset: 0.82 },
       { transform: `translate(${dx}px, ${dy}px) scale(${scale})`, opacity: 0 },
     ],
-    { duration: FLY_MS, easing: 'cubic-bezier(0.55, 0, 0.25, 1)', fill: 'forwards' },
+    { duration: props.flyMs, easing: 'cubic-bezier(0.55, 0, 0.25, 1)', fill: 'forwards' },
   )
-  veil.value?.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: FLY_MS, fill: 'forwards' })
+  veil.value?.animate?.([{ opacity: 1 }, { opacity: 0 }], { duration: props.flyMs, fill: 'forwards' })
   // A timer, not the animation's end, so the page is never left covered if the animation cannot run.
   endTimer = setTimeout(() => {
     pulse(medal)
     emit('close')
-  }, FLY_MS + 20)
+  }, props.flyMs + 20)
 }
 
 const onKey = (e) => e.key === 'Escape' && startFly()
 onMounted(() => {
   document.addEventListener('keydown', onKey)
-  showTimer = setTimeout(startFly, reduced ? 2500 : SHOW_MS)
+  showTimer = setTimeout(startFly, reduced ? Math.min(2500, props.showMs) : props.showMs)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey)
