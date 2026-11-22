@@ -1,5 +1,5 @@
 <template>
-  <div :key="run" class="l99" :class="{ free }" role="img" :aria-label="`${name} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
+  <div :key="run" class="l99" :class="{ free, bare: !text }" role="img" :aria-label="`${name} level ${level} achieved. Congratulations!`" :style="{ '--skill-delay': '0s' }">
     <div class="l99-glow" aria-hidden="true" />
     <div class="l99-rays" aria-hidden="true" />
     <span class="l99-ring r1" aria-hidden="true" />
@@ -17,8 +17,8 @@
       <span class="l99-level" aria-hidden="true">{{ level }}</span>
     </div>
 
-    <p class="l99-title">{{ name }} mastered</p>
-    <p class="l99-sub">Congratulations!</p>
+    <p v-if="text" class="l99-title">{{ name }} mastered</p>
+    <p v-if="text" class="l99-sub">Congratulations!</p>
   </div>
 </template>
 
@@ -35,6 +35,8 @@ const props = defineProps({
   run: { type: Number, default: 0 },
   // Without its own frame: the effects may reach past the box (the confetti, the rays), for playing straight over a page.
   free: { type: Boolean, default: false },
+  // The words under the badge; off, it is only the badge and what bursts around it (the badge sits where the box is centred).
+  text: { type: Boolean, default: true },
 })
 
 // The skill as the game writes it ("agility" -> "Agility"), so the icon and the title are right however it was passed in.
@@ -89,6 +91,7 @@ const stars = computed(() =>
 }
 
 .l99.free { overflow: visible; }
+.l99.bare { align-content: start; padding-top: 128px; }
 .l99.free .l99-title, .l99.free .l99-sub { filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.85)); }
 .l99.free .l99-sub { margin-top: 8px; color: #d8ccae; }
 

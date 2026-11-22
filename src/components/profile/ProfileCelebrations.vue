@@ -1,7 +1,7 @@
 <template>
   <div v-if="visible.length" class="congrats" role="status">
     <div v-for="c in visible" :key="c.key" class="congrats-row">
-      <button v-if="is99(c)" class="congrats-medal" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = c">
+      <button v-if="is99(c)" class="congrats-medal" :data-medal-skill="c.skill" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = c">
         <img :src="skillIconSrc(c.skill)" alt="" width="16" height="16" />
         <span aria-hidden="true" />
       </button>
@@ -17,7 +17,7 @@
         <button class="btn-text congrats-dismiss" type="button" aria-label="Hide this" @click="dismiss(c)">✕</button>
       </span>
     </div>
-    <Level99Modal v-if="playing" :skill="playing.skill" :name="name" @close="playing = null" @share="(skill) => { playing = null; $emit('share99', skill) }" />
+    <Level99Modal v-if="playing" :skill="playing.skill" @close="playing = null" />
   </div>
 </template>
 

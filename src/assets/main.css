@@ -6654,18 +6654,8 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .congrats-medal:hover { filter: brightness(1.08); }
 @keyframes congrats-shine { 0%, 55% { left: -70%; } 100% { left: 130%; } }
 @media (prefers-reduced-motion: reduce) { .congrats-medal span { display: none; } }
-.l99o { position: fixed; inset: 0; z-index: 1200; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 24px 16px; background: rgba(8, 6, 3, 0.5); animation: l99o-in 0.4s ease both; }
-.l99o > * { max-width: 100%; }
-.l99o-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, 0.08); color: var(--gold-bright); font-size: 0; line-height: 0; cursor: pointer; }
-.l99o-close::before, .l99o-close::after { content: ''; position: absolute; left: 50%; top: 50%; width: 18px; height: 2.5px; margin: -1.25px 0 0 -9px; border-radius: 2px; background: currentColor; transform: rotate(45deg); }
-.l99o-close::after { transform: rotate(-45deg); }
-.l99o-close:hover { background: rgba(255, 255, 255, 0.16); color: #fff; }
-.l99o-who { margin: -30px 0 14px; text-align: center; color: #d8ccae; font-size: 0.92rem; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8); }
-.l99o-who b { color: #fff; }
-.l99o-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-.l99o-btn { padding: 8px 20px; border-radius: 999px; border: 1px solid rgba(240, 201, 118, 0.55); background: rgba(20, 15, 8, 0.55); color: var(--gold-bright); font: inherit; font-size: 0.92rem; font-weight: 700; cursor: pointer; backdrop-filter: blur(4px); }
-.l99o-btn:hover { background: rgba(60, 45, 18, 0.7); }
-.l99o-btn.is-main { border-color: var(--gold); background: linear-gradient(180deg, #f0c976, #d9af52); color: #1a1510; }
-.l99o-btn.is-main:hover { filter: brightness(1.06); }
+.l99o { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.l99o-veil { position: absolute; inset: 0; background: rgba(8, 6, 3, 0.5); animation: l99o-in 0.4s ease both; }
+.l99o-fly { position: relative; will-change: transform, opacity; }
 @keyframes l99o-in { from { opacity: 0; } to { opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .l99o { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .l99o-veil { animation: none; } }
