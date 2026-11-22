@@ -3,8 +3,11 @@
     <header class="hl-head">
       <h2>Highlights</h2>
       <p class="hl-sum"><b>{{ rows.length }}</b> {{ rows.length === 1 ? 'skill' : 'skills' }} at 99<template v-if="n200"> · <b>{{ n200 }}</b> at 200M XP</template></p>
+      <button class="btn-text hl-toggle" type="button" :aria-expanded="showChart" @click="showChart = !showChart">{{ showChart ? 'Hide chart' : 'Show chart' }}</button>
     </header>
 
+    <!-- The chart starts folded away; the list of 99s below is always there. -->
+    <template v-if="showChart">
     <SkillJourneys ref="chart" :rows="rows" :min-ms="minMs" :max-ms="maxMs" :selected="selected" @select="(skill) => (selected = selected === skill ? '' : skill)" />
 
     <div class="hl-key" aria-hidden="true">
@@ -27,6 +30,7 @@
       </li>
     </ul>
     <p v-else class="hl-hint">Hover or tap a skill to see when it happened. Each gold mark is a level 99, and a diamond is 200M XP.</p>
+    </template>
 
     <!-- every 99, newest first, each one shareable -->
     <div class="hl-99">
@@ -66,6 +70,7 @@ const newest = computed(() => [...rows.value].reverse())
 const minMs = computed(() => new Date(props.snapshots[0]?.capturedAt || Date.now()).getTime())
 const maxMs = computed(() => new Date(props.snapshots[props.snapshots.length - 1]?.capturedAt || Date.now()).getTime())
 
+const showChart = ref(false)
 const selected = ref('')
 const chart = ref(null)
 const current = computed(() => chart.value?.active || null)
