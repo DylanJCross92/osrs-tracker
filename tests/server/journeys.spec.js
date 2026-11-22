@@ -66,3 +66,13 @@ describe('the visitor id on events', () => {
     expect(cleanEvents({ events }).vid).toBeNull()
   })
 })
+
+describe('requests nobody made by hand', () => {
+  it('does not record a view of a /.well-known file, whatever else arrives with it', () => {
+    const events = [
+      { name: 'spa_page_view', props: { page_path: '/.well-known/apple-app-site-association' } },
+      { name: 'spa_page_view', props: { page_path: '/planner' } },
+    ]
+    expect(cleanEvents({ events }).events.map((e) => e.props.page_path)).toEqual(['/planner'])
+  })
+})

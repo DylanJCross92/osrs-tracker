@@ -17,6 +17,12 @@ describe('internal traffic', () => {
     expect(isInternalTraffic({ hostname: 'localhost', storage: store() })).toBe(true)
   })
 
+  it('does not count a request for a /.well-known file, but counts the site\'s own pages', () => {
+    const live = { hostname: 'tickgains.com', storage: store() }
+    expect(isInternalTraffic({ ...live, pathname: '/.well-known/apple-app-site-association' })).toBe(true)
+    expect(isInternalTraffic({ ...live, pathname: '/planner' })).toBe(false)
+  })
+
   it('counts the visit when storage cannot be read', () => {
     expect(isInternalTraffic({ hostname: 'tickgains.com', storage: { getItem: () => { throw new Error('blocked') } } })).toBe(false)
   })

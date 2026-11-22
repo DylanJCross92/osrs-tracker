@@ -26,6 +26,10 @@ export function isCrawler(userAgent) {
   return !ua || CRAWLER.test(ua)
 }
 
+// Files that phones, browsers and scanners fetch from the site by themselves (Apple's app link file, security.txt and the like). They
+// are not people, and the app answers them like any page, so they must not count as a visitor.
+export const isAutomaticPath = (path) => /^\/\.well-known(\/|$|\?)/i.test(String(path || ''))
+
 /** True when the request carries Do Not Track or Global Privacy Control. */
 export const askedNotToTrack = (headers = {}) => headers.dnt === '1' || headers['sec-gpc'] === '1'
 
@@ -61,6 +65,7 @@ export function cleanEvents(body) {
   for (const e of list) {
     const name = typeof e?.name === 'string' ? e.name.trim().toLowerCase() : ''
     if (!NAME.test(name) || SERVER_ONLY_EVENTS.has(name)) continue
+    if (isAutomaticPath(e.props?.page_path)) continue
     events.push({ name, props: cleanProps(e.props) })
   }
   // The browser asked not to be tracked (Do Not Track / Global Privacy Control): count the event, but not against an account.

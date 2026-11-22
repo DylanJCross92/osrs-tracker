@@ -25,6 +25,8 @@ export function isInternalTraffic(env = {}) {
   try {
     const hostname = env.hostname ?? window.location.hostname
     const storage = env.storage ?? window.localStorage
+    // Something fetching a file the site answers by itself (/.well-known/...) is not a person.
+    if (/^\/\.well-known(\/|$)/i.test(env.pathname ?? (typeof window === 'undefined' ? '' : window.location.pathname))) return true
     return isLocalHost(hostname) || storage.getItem(INTERNAL_KEY) === '1' || storage.getItem(ACCOUNT_KEY) === '1'
   } catch {
     return false
