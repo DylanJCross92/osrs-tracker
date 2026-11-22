@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clusterMarks, defaultKinds, journeyPoints, skillHighlights, XP_99, XP_HALF } from '@/utils/historyHighlights'
+import { skillHighlights, skillRows, XP_99, XP_HALF } from '@/utils/historyHighlights'
 
 const snap = (day, agilityXp, overallXp = agilityXp) => ({ capturedAt: `2026-01-${String(day).padStart(2, '0')}T12:00:00Z`, overallXp, skills: { Agility: { xp: agilityXp } } })
 
@@ -33,35 +33,25 @@ describe('history highlights', () => {
   })
 })
 
-describe('journey line', () => {
-  it('never goes down and keeps the first and last points when thinned', () => {
-    const snaps = Array.from({ length: 1000 }, (_, i) => snap((i % 28) + 1, i * 100, i === 500 ? 10 : i * 1000))
-    const pts = journeyPoints(snaps, 100)
-    expect(pts).toHaveLength(100)
-    for (let i = 1; i < pts.length; i++) expect(pts[i].y).toBeGreaterThanOrEqual(pts[i - 1].y)
-    expect(pts[pts.length - 1].y).toBe(999_000)
-  })
-})
-
-describe('marks along the line', () => {
-  it('groups marks that are close together into one, biggest first, and keeps far ones apart', () => {
-    const items = [
-      { x: 105, rank: 1, atMs: 1 },
-      { x: 110, rank: 4, atMs: 2 },
-      { x: 112, rank: 4, atMs: 3 },
-      { x: 300, rank: 2, atMs: 4 },
-    ]
-    const c = clusterMarks(items, 30)
-    expect(c).toHaveLength(2)
-    expect(c[0].items.map((i) => i.atMs)).toEqual([3, 2, 1])
-    expect(c[0].x).toBeCloseTo((105 + 110 + 112) / 3)
-    expect(c[1].items).toHaveLength(1)
+describe('skill rows', () => {
+  const snaps = [
+    { capturedAt: '2026-01-01T12:00:00Z', overallXp: 1, skills: { Agility: { xp: 5_000_000 }, Mining: { xp: 100 }, Cooking: { xp: 100 } } },
+    { capturedAt: '2026-02-01T12:00:00Z', overallXp: 2, skills: { Agility: { xp: XP_99 }, Mining: { xp: 1_500_000 }, Cooking: { xp: 100 } } },
+    { capturedAt: '2026-03-01T12:00:00Z', overallXp: 3, skills: { Agility: { xp: XP_99 }, Mining: { xp: XP_99 }, Cooking: { xp: 100 } } },
+    { capturedAt: '2026-04-01T12:00:00Z', overallXp: 4, skills: { Agility: { xp: 200_000_000 }, Mining: { xp: XP_99 }, Cooking: { xp: 100 } } },
+  ]
+  it('has a row for each skill at 99, in the order the 99s came, with its start and 200M', () => {
+    const { events, before } = skillHighlights(snaps, ['Agility', 'Mining', 'Cooking'])
+    const rows = skillRows(events, before)
+    expect(rows.map((r) => r.skill)).toEqual(['Agility', 'Mining'])
+    expect(rows[0].t99).toBe(new Date('2026-02-01T12:00:00Z').getTime())
+    expect(rows[0].t200).toBe(new Date('2026-04-01T12:00:00Z').getTime())
+    expect(rows[1]).toMatchObject({ start: new Date('2026-02-01T12:00:00Z').getTime(), t99: new Date('2026-03-01T12:00:00Z').getTime(), t200: undefined })
   })
 
-  it('starts with the biggest moments only when there are a lot of them', () => {
-    expect([...defaultKinds({ l99: 24, xp200m: 18, half: 24, xp5m: 24, xp1m: 24 })]).toEqual(['l99', 'xp200m'])
-    expect([...defaultKinds({ l99: 1, half: 1, xp5m: 1, xp1m: 9 })]).toEqual(['l99', 'half', 'xp5m', 'xp1m'])
-    expect([...defaultKinds({ l99: 80 })]).toEqual(['l99'])
-    expect([...defaultKinds({})]).toEqual([])
+  it('puts a skill that was already 99 when tracking began first, with no date', () => {
+    const { events, before } = skillHighlights([{ capturedAt: '2026-01-01T00:00:00Z', overallXp: 1, skills: { Agility: { xp: XP_99 }, Mining: { xp: 1 } } }, { capturedAt: '2026-02-01T00:00:00Z', overallXp: 2, skills: { Agility: { xp: XP_99 }, Mining: { xp: XP_99 } } }], ['Agility', 'Mining'])
+    const rows = skillRows(events, before)
+    expect(rows.map((r) => [r.skill, r.t99 === null])).toEqual([['Agility', true], ['Mining', false]])
   })
 })

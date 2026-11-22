@@ -1,36 +1,44 @@
 <template>
-  <section v-if="events.length || before.length" class="hl">
+  <section v-if="rows.length" class="hl">
     <header class="hl-head">
       <h2>Highlights</h2>
-      <div class="hl-kinds" role="group" aria-label="Which moments to show">
-        <button v-for="k in kinds" :key="k.key" type="button" :class="{ on: on.has(k.key) }" :aria-pressed="on.has(k.key)" @click="toggle(k.key)">{{ k.label }} <small>{{ counts[k.key] || 0 }}</small></button>
-      </div>
+      <p class="hl-sum"><b>{{ rows.length }}</b> {{ rows.length === 1 ? 'skill' : 'skills' }} at 99<template v-if="n200"> · <b>{{ n200 }}</b> at 200M XP</template></p>
     </header>
 
-    <HistoryJourney v-if="points.length > 1" ref="chart" :points="points" :events="shown" :selected="selected" @select="(id) => (selected = selected === id ? '' : id)" />
+    <SkillJourneys ref="chart" :rows="rows" :min-ms="minMs" :max-ms="maxMs" :selected="selected" @select="(skill) => (selected = selected === skill ? '' : skill)" />
 
-    <!-- what is in the mark you hover or pick -->
+    <div class="hl-key" aria-hidden="true">
+      <span><i class="k99">99</i> reached level 99</span>
+      <span v-if="n200"><i class="k200" /> reached 200M XP</span>
+    </div>
+
+    <!-- the row you hover or pick -->
     <ul v-if="current" class="hl-now" aria-live="polite">
-      <li v-for="e in currentItems" :key="e.id">
-        <img :src="skillIconSrc(e.skill)" alt="" width="20" height="20" />
-        <b>{{ e.title }}</b>
-        <span>{{ dateText(e) }}</span>
-        <button v-if="e.kind === 'l99'" class="btn-text hl-share" type="button" @click="$emit('share99', e.skill)">Share</button>
+      <li>
+        <img :src="skillIconSrc(current.skill)" alt="" width="20" height="20" />
+        <b>{{ current.skill }} level 99</b>
+        <span>{{ dateText(current.e99) }}</span>
+        <button class="btn-text hl-share" type="button" @click="$emit('share99', current.skill)">Share</button>
+      </li>
+      <li v-if="current.e200">
+        <img :src="skillIconSrc(current.skill)" alt="" width="20" height="20" />
+        <b>{{ current.skill }} 200M XP</b>
+        <span>{{ dateText(current.e200) }}</span>
       </li>
     </ul>
-    <p v-else-if="points.length > 1" class="hl-hint">Hover or tap a mark to see what it was. Gold marks include a level 99, and a number means that many moments close together.</p>
+    <p v-else class="hl-hint">Hover or tap a skill to see when it happened. Each gold mark is a level 99, and a diamond is 200M XP.</p>
 
     <!-- every 99, newest first, each one shareable -->
-    <div v-if="all99.length" class="hl-99">
-      <h3>Level 99s <small>{{ all99.length }}</small></h3>
+    <div class="hl-99">
+      <h3>Level 99s <small>{{ rows.length }}</small></h3>
       <ul>
-        <li v-for="n in all99" :key="n.id">
-          <button class="hl-medal" type="button" :title="`Share ${n.skill} 99`" :aria-label="`Share ${n.skill} 99`" @click="$emit('share99', n.skill)">
-            <img :src="skillIconSrc(n.skill)" alt="" width="16" height="16" />
+        <li v-for="r in newest" :key="r.skill">
+          <button class="hl-medal" type="button" :title="`Share ${r.skill} 99`" :aria-label="`Share ${r.skill} 99`" @click="$emit('share99', r.skill)">
+            <img :src="skillIconSrc(r.skill)" alt="" width="16" height="16" />
             <span aria-hidden="true" />
           </button>
-          <span class="hl-99-text"><b>{{ n.skill }}</b><small>{{ n.at ? dateText(n) : 'before tracking began' }}</small></span>
-          <button class="btn-text hl-share" type="button" @click="$emit('share99', n.skill)">Share</button>
+          <span class="hl-99-text"><b>{{ r.skill }}</b><small>{{ r.t99 == null ? 'before tracking began' : dateText(r.e99) }}</small></span>
+          <button class="btn-text hl-share" type="button" @click="$emit('share99', r.skill)">Share</button>
         </li>
       </ul>
     </div>
@@ -39,45 +47,32 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import HistoryJourney from '@/components/profile/HistoryJourney.vue'
+import SkillJourneys from '@/components/profile/SkillJourneys.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { journeyPoints, defaultKinds, HIGHLIGHT_KINDS } from '@/utils/historyHighlights'
+import { skillRows } from '@/utils/historyHighlights'
 import { gameDay, formatGameDay } from '@/utils/gameDay'
 
-// The big moments of a character's whole history: a chart of total XP with each marked, and every level 99 with a way to share it.
+// The big moments of a character's whole history, and only those: each skill that reached 99 (and 200M XP), when, with a way to share the 99.
 const props = defineProps({
   snapshots: { type: Array, default: () => [] },
-  events: { type: Array, default: () => [] }, // dated moments (newest first)
+  events: { type: Array, default: () => [] }, // from skillHighlights (dated moments)
   before: { type: Array, default: () => [] }, // already reached when tracking began
 })
 defineEmits(['share99'])
 
-const kinds = HIGHLIGHT_KINDS.filter((k) => k.key !== 'xp200m' || props.events.some((e) => e.kind === 'xp200m')).sort((a, b) => b.rank - a.rank)
-const toggle = (key) => {
-  const next = new Set(on.value)
-  next.has(key) ? next.delete(key) : next.add(key)
-  on.value = next
-}
-const counts = computed(() => {
-  const c = {}
-  for (const e of props.events) c[e.kind] = (c[e.kind] || 0) + 1
-  return c
-})
-// Begin with the biggest moments, adding smaller ones only while the chart stays readable; the buttons above change it.
-const on = ref(defaultKinds(counts.value))
-const points = computed(() => journeyPoints(props.snapshots))
-const shown = computed(() => props.events.filter((e) => on.value.has(e.kind)))
+const rows = computed(() => skillRows(props.events, props.before))
+const n200 = computed(() => rows.value.filter((r) => r.e200).length)
+const newest = computed(() => [...rows.value].reverse())
+const minMs = computed(() => new Date(props.snapshots[0]?.capturedAt || Date.now()).getTime())
+const maxMs = computed(() => new Date(props.snapshots[props.snapshots.length - 1]?.capturedAt || Date.now()).getTime())
 
 const selected = ref('')
 const chart = ref(null)
-// What the line below the chart describes: the mark under the pointer, else the picked one.
 const current = computed(() => chart.value?.active || null)
-const currentItems = computed(() => [...(current.value?.items || [])].sort((a, b) => b.rank - a.rank || b.atMs - a.atMs).slice(0, 12))
-
-const all99 = computed(() => [...props.events.filter((e) => e.kind === 'l99'), ...props.before.filter((b) => b.kind === 'l99')])
 
 function dateText(n) {
   const f = (d) => formatGameDay(gameDay(d), { month: 'short', day: 'numeric', year: 'numeric' })
+  if (!n?.at) return ''
   return n.gap ? `sometime between ${formatGameDay(gameDay(n.after), { month: 'short', day: 'numeric' })} and ${f(n.at)}` : f(n.at)
 }
 </script>

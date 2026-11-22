@@ -6668,31 +6668,29 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .hl-top { padding-bottom: 22px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 12px 16px; flex-wrap: wrap; margin-bottom: 8px; }
 .hl-head h2 { margin: 0; }
-.hl-kinds { display: flex; gap: 6px; flex-wrap: wrap; }
-.hl-kinds button { padding: 5px 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 0.8rem; font-weight: 500; cursor: pointer; }
-.hl-kinds button small { margin-left: 4px; opacity: 0.7; font-variant-numeric: tabular-nums; }
-.hl-kinds button.on { background: rgba(217, 175, 82, 0.16); border-color: var(--gold); color: var(--gold-bright); }
-.jr { width: 100%; }
-.jr-svg { display: block; max-width: 100%; overflow: visible; }
-.jr-grid line { stroke: var(--border); stroke-dasharray: 2 5; }
-.jr-ylabel, .jr-xlabel { fill: var(--muted); font-size: 11px; }
-.jr-line { fill: none; stroke: var(--gold); stroke-width: 2; stroke-linejoin: round; }
-.jr-area { fill: rgba(217, 175, 82, 0.09); }
-.jr-node { cursor: pointer; outline: none; }
-.jr-stem { stroke: rgba(217, 175, 82, 0.28); stroke-width: 1; stroke-dasharray: 2 3; }
-.jr-dot { fill: var(--gold); stroke: var(--bg); stroke-width: 1.5; }
-.jr-hit { fill: transparent; }
-.jr-mark { fill: #241d10; stroke: rgba(217, 175, 82, 0.55); stroke-width: 1.5; transition: stroke 0.12s, fill 0.12s; }
-.jr-icon { image-rendering: pixelated; pointer-events: none; }
-.jr-count { fill: var(--gold-bright); font-size: 11px; font-weight: 700; pointer-events: none; }
-.jr-node.is-many .jr-mark { fill: #2b2211; stroke: rgba(217, 175, 82, 0.7); }
-.jr-node.is-many.big .jr-mark { fill: #f2cd78; stroke: #fff0b8; stroke-width: 2; }
-.jr-node.is-many.big .jr-count { fill: #2a1d05; }
-.jr-node.k-l99 .jr-mark, .jr-node.k-xp200m .jr-mark { fill: #f2cd78; stroke: #fff0b8; stroke-width: 2; }
-.jr-node.k-half .jr-mark { stroke: #9fd48a; }
-.jr-node.k-l99 .jr-stem { stroke: rgba(240, 201, 118, 0.55); }
-.jr-node.on .jr-mark, .jr-node:focus-visible .jr-mark { stroke: #fff; stroke-width: 2.5; }
-.jr-node.on .jr-stem { stroke: rgba(255, 255, 255, 0.6); stroke-dasharray: none; }
+.hl-sum { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.hl-sum b { color: var(--gold-bright); }
+.sj { width: 100%; }
+.sj-svg { display: block; max-width: 100%; overflow: visible; }
+.sj-grid line { stroke: var(--border); stroke-dasharray: 2 5; }
+.sj-xlabel { fill: var(--muted); font-size: 11px; }
+.sj-row { cursor: pointer; outline: none; }
+.sj-band { fill: transparent; transition: fill 0.12s; }
+.sj-row.on .sj-band, .sj-row:focus-visible .sj-band { fill: rgba(217, 175, 82, 0.1); }
+.sj-icon { image-rendering: pixelated; }
+.sj-name { fill: var(--text); font-size: 12.5px; font-weight: 500; }
+.sj-run { stroke: rgba(217, 175, 82, 0.55); stroke-width: 5; stroke-linecap: round; }
+.sj-run.is-after { stroke: rgba(217, 175, 82, 0.28); stroke-width: 2; stroke-dasharray: 1 5; }
+.sj-99 circle { fill: #f2cd78; stroke: #fff0b8; stroke-width: 1.5; }
+.sj-99 text { fill: #2a1d05; font-size: 9px; font-weight: 800; pointer-events: none; }
+.sj-200 { fill: #7cd06a; stroke: #d7f5cc; stroke-width: 1.3; }
+.sj-row.on .sj-99 circle { stroke: #fff; stroke-width: 2.5; }
+.sj-row.on .sj-run { stroke: rgba(240, 201, 118, 0.85); }
+.hl-key { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 6px; color: var(--muted); font-size: 0.78rem; }
+.hl-key span { display: inline-flex; align-items: center; gap: 7px; }
+.hl-key i { display: inline-grid; place-items: center; }
+.hl-key .k99 { width: 18px; height: 18px; border-radius: 50%; background: #f2cd78; color: #2a1d05; font-size: 0.55rem; font-weight: 800; font-style: normal; }
+.hl-key .k200 { width: 11px; height: 11px; background: #7cd06a; transform: rotate(45deg); }
 .hl-now { list-style: none; margin: 10px 0 0; padding: 0; min-height: 28px; max-height: 260px; overflow-y: auto; font-size: 0.92rem; }
 .hl-now li { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding: 4px 0; }
 .hl-now span { color: var(--muted); }

@@ -142,8 +142,7 @@ const categories = computed(() => {
   for (const e of otherEvents.value) cats.add(e.category)
   return [...cats]
 })
-// The big moments (first 1M and 5M XP in a skill, halfway to 99, 99, 200M), from the saved snapshots. They fill the Highlights chart and add the
-// ones the server does not record (1M, 5M, halfway) to the list below.
+// The big moments (99 and 200M XP in each skill), from the saved snapshots, for the Highlights chart above the list.
 const hl = computed(() => skillHighlights(props.snapshots))
 const hlEvents = computed(() => hl.value.events.filter((e) => !skill.value || e.skill === skill.value))
 const hlBefore = computed(() => hl.value.before.filter((e) => !skill.value || e.skill === skill.value))
@@ -196,11 +195,7 @@ const allRows = computed(() => {
     const pl = placement(e.at, e.after)
     return { ...pl, id: e.id, skill: e.skill, title: e.title, chip: 'milestone', at: e.at, kind: 'milestone', sort: 1e12 }
   })
-  // Moments the server does not list (the first 1M and 5M XP, halfway to 99): added here from the snapshots.
-  const extra = hl.value.events
-    .filter((e) => ['xp1m', 'xp5m', 'half'].includes(e.kind) && keep({ skill: e.skill, category: 'Skill XP' }))
-    .map((e) => ({ ...placement(e.at, e.after), id: `hl:${e.id}`, skill: e.skill, title: e.title, chip: 'milestone', at: e.at, kind: 'milestone', sort: 1e12 - e.rank }))
-  return [...runs, ...others, ...extra]
+  return [...runs, ...others]
 })
 
 const countLevels = (rows) => rows.filter((r) => r.kind === 'level').reduce((n, r) => n + (Number(r.chip.replace(/\D/g, '')) || 1), 0)

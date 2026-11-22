@@ -61,51 +61,21 @@ export function skillHighlights(snapshots, skills = SKILL_NAMES) {
   return { events, before }
 }
 
-/** The total XP line for the chart: [{ x: ms, y: xp }] oldest first, never going down, thinned to about `max` points. */
-export function journeyPoints(snapshots, max = 260) {
-  const list = (Array.isArray(snapshots) ? snapshots : []).filter((s) => Number.isFinite(Number(s.overallXp)))
-  let best = 0
-  const pts = list.map((s) => {
-    best = Math.max(best, Number(s.overallXp))
-    return { x: new Date(s.capturedAt).getTime(), y: best }
-  })
-  if (pts.length <= max) return pts
-  const step = (pts.length - 1) / (max - 1)
-  const out = []
-  for (let i = 0; i < max; i++) out.push(pts[Math.round(i * step)])
-  return out
-}
-
 /**
- * Marks that would sit close together along the line become one: they are grouped into bins `bin` pixels wide.
- * items: [{ x, rank, atMs, ... }]. Returns [{ bin, x, items }] left to right, `items` biggest first (then newest), `x` the middle of them.
+ * One row per skill that has reached 99, for the skill journeys chart: when it got going (its first 1M XP), when it reached 99 and, if it
+ * has, 200M XP. Rows are in the order the 99s came, the first on top. A date is null when it was already reached when tracking began.
+ * events / before: from skillHighlights. Returns [{ skill, start, t99, t200, e99, e200 }].
  */
-export function clusterMarks(items, bin) {
-  const bins = new Map()
-  for (const it of items) {
-    const key = Math.floor(it.x / bin)
-    if (!bins.has(key)) bins.set(key, [])
-    bins.get(key).push(it)
+export function skillRows(events, before) {
+  const by = new Map()
+  const get = (skill) => {
+    if (!by.has(skill)) by.set(skill, { skill })
+    return by.get(skill)
   }
-  return [...bins.entries()]
-    .sort((a, b) => a[0] - b[0])
-    .map(([key, list]) => ({ bin: key, x: list.reduce((s, i) => s + i.x, 0) / list.length, items: [...list].sort((a, b) => b.rank - a.rank || b.atMs - a.atMs) }))
-}
-
-/**
- * Which kinds of moment to show to begin with: the biggest ones, adding the next kind down only while the chart stays readable.
- * counts: { kindKey: n }. Returns a Set of kind keys (always including 99 when there is one).
- */
-export function defaultKinds(counts, limit = 48) {
-  const order = ['l99', 'xp200m', 'half', 'xp5m', 'xp1m']
-  const on = new Set()
-  let total = 0
-  for (const key of order) {
-    const n = counts[key] || 0
-    if (!n) continue
-    if (on.size && total + n > limit) break
-    on.add(key)
-    total += n
-  }
-  return on
+  for (const e of events) get(e.skill)[e.kind] = e
+  for (const b of before) get(b.skill)[b.kind] = { ...b, atMs: null }
+  return [...by.values()]
+    .filter((r) => r.l99)
+    .map((r) => ({ skill: r.skill, start: r.xp1m?.atMs ?? null, t99: r.l99.atMs ?? null, t200: r.xp200m ? (r.xp200m.atMs ?? null) : undefined, e99: r.l99, e200: r.xp200m || null }))
+    .sort((a, b) => (a.t99 ?? -Infinity) - (b.t99 ?? -Infinity) || a.skill.localeCompare(b.skill))
 }
