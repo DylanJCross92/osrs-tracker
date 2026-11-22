@@ -1,10 +1,13 @@
 <template>
   <Teleport to="body">
-    <!-- Only the badge and its burst, straight over the profile. It plays for about five seconds, then shrinks into the medal in the banner. -->
-    <div ref="root" class="l99o" role="img" :aria-label="`${skillName} level 99`" @click="startFly">
+    <!-- Rises from the bottom of the screen into its lowest third, over the profile (which stays usable). After about five seconds the badge
+         shrinks into the medal in the banner. -->
+    <div ref="root" class="l99o" role="img" :aria-label="`${skillName} level 99`" :style="{ height: `${panel}px` }">
       <div ref="veil" class="l99o-veil" />
       <div ref="fly" class="l99o-fly">
-        <Level99Celebration :skill="skillName" :level="99" :run="run" :text="false" free />
+        <div class="l99o-scale" :style="{ transform: `scale(${k})` }">
+          <Level99Celebration :skill="skillName" :level="99" :run="run" :text="false" free />
+        </div>
       </div>
     </div>
   </Teleport>
@@ -23,6 +26,9 @@ const veil = ref(null)
 const fly = ref(null)
 const run = ref(0)
 const skillName = computed(() => SKILL_NAMES.find((n) => n.toLowerCase() === String(props.skill).trim().toLowerCase()) || props.skill)
+// The lowest third of the screen, and how much to shrink the celebration (made for 380px) to fit in it.
+const panel = Math.max(200, Math.round((typeof window === 'undefined' ? 720 : window.innerHeight) / 3))
+const k = Math.min(1, panel / 400)
 const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
 
 const SHOW_MS = 4000 // how long it plays before it starts to leave

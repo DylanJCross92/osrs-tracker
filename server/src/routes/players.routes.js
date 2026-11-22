@@ -9,7 +9,7 @@ import {
   startWomImport,
 } from '../services/players.service.js'
 import { syncAllPlayers } from '../jobs/sync.js'
-import { getProfileAchievements, getCelebrations, addCheer, visitorHash } from '../services/milestones.service.js'
+import { getProfileAchievements, getCelebrations, addCheer, markCelebrationSeen, visitorHash } from '../services/milestones.service.js'
 import { searchPlayers } from '../services/discover.service.js'
 import { getFollowCounts } from '../services/follows.service.js'
 import { getStreak } from '../services/records.service.js'
@@ -47,11 +47,11 @@ playersRouter.get('/search', searchLimiter, async (req, res, next) => {
   }
 })
 
-playersRouter.get('/:id/profile', async (req, res, next) => {
+playersRouter.get('/:id/profile', attachUser, async (req, res, next) => {
   try {
     const player = await getPlayer(req.params.id)
     if (!player) return res.status(404).json({ error: 'Player not found.' })
-    const [profile, celebrations, streak] = await Promise.all([getProfileAchievements(player.id), getCelebrations(player.id, visitorHash(req.ip)), getStreak(player)])
+    const [profile, celebrations, streak] = await Promise.all([getProfileAchievements(player.id), getCelebrations(player.id, visitorHash(req.ip), req.user?.id ?? null), getStreak(player)])
     res.json({ ...profile, celebrations, streak })
   } catch (err) {
     next(err)
@@ -65,6 +65,21 @@ playersRouter.get('/:id/follow-counts', async (req, res, next) => {
     if (!player) return res.status(404).json({ error: 'Player not found.' })
     res.set('Cache-Control', 'no-store')
     res.json(await getFollowCounts(player.id))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// A signed-in account has watched the celebration for a recent milestone: remembered against the account, so it never plays for them again.
+const seenLimiter = rateLimit({ windowMs: 60_000, max: 30, message: 'Too many requests.' })
+playersRouter.post('/:id/celebration-seen', seenLimiter, attachUser, async (req, res, next) => {
+  try {
+    if (!req.user) return res.status(204).end()
+    const player = await getPlayer(req.params.id)
+    if (!player) return res.status(404).json({ error: 'Player not found.' })
+    const { type, skill, value } = req.body || {}
+    await markCelebrationSeen(req.user.id, player.id, { type, skill: typeof skill === 'string' ? skill : '', value: Number(value) })
+    res.status(204).end()
   } catch (err) {
     next(err)
   }

@@ -27,14 +27,13 @@ import { playersApi } from '@/api/players'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { track } from '@/utils/analytics'
+import { authReady, useAuth } from '@/composables/useAuth'
 import Level99Modal from '@/components/profile/Level99Modal.vue'
 
 const props = defineProps({
   playerId: { type: Number, required: true },
   name: { type: String, required: true },
   celebrations: { type: Array, default: () => [] },
-  // The owner of this profile sees a fresh 99 play once by itself; everyone else can click the medal to watch it.
-  autoPlay: { type: Boolean, default: false },
 })
 defineEmits(['share', 'share99'])
 
@@ -78,20 +77,44 @@ const visible = computed(() =>
 
 const is99 = (c) => c.type === 'skill_level' && c.value === 99 && !!c.skill
 const playing = ref(null)
-const PLAYED_KEY = 'tickgains-congrats-played'
-const played = readSet(PLAYED_KEY)
+// Anyone who opens the profile of a player with a recent 99 sees it play once. A signed-in account is remembered on the server (so it
+// never plays for them again, on any device); a signed-out visitor is remembered only for this tab's session.
+const SESSION_KEY = 'tickgains-congrats-played'
+const sessionSeen = (() => {
+  try {
+    return new Set(JSON.parse(sessionStorage.getItem(SESSION_KEY) || '[]'))
+  } catch {
+    return new Set()
+  }
+})()
+const rememberInSession = (key) => {
+  sessionSeen.add(key)
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify([...sessionSeen].slice(-100)))
+  } catch {
+    /* storage unavailable */
+  }
+}
+const { loggedIn } = useAuth()
+const authKnown = ref(false)
+authReady().finally(() => (authKnown.value = true))
 // Development: ?fake99 plays every time the page opens, so it can be watched again.
 const forced = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('fake99')
 let forcedDone = false
 watch(
-  [visible, () => props.autoPlay],
-  ([list, auto]) => {
-    if (!auto || playing.value) return
-    const fresh = list.find((c) => is99(c) && (forced ? !forcedDone : !played.has(c.key)))
+  [visible, authKnown],
+  ([list, known]) => {
+    // Wait until it is known whether someone is signed in, so the right kind of "seen" is used.
+    if (!known || playing.value) return
+    const fresh = list.find((c) => is99(c) && (forced ? !forcedDone : loggedIn.value ? !c.seen : !sessionSeen.has(c.key)))
     if (!fresh) return
     forcedDone = true
-    played.add(fresh.key)
-    writeSet(PLAYED_KEY, played)
+    if (!forced) {
+      if (loggedIn.value) {
+        fresh.seen = true
+        playersApi.celebrationSeen(props.playerId, { type: fresh.type, skill: fresh.skill, value: fresh.value }).catch(() => {})
+      } else rememberInSession(fresh.key)
+    }
     playing.value = fresh
     track('level_99_celebration', { skill: fresh.skill })
   },

@@ -123,6 +123,18 @@ CREATE TABLE IF NOT EXISTS milestone_cheers (
 );
 CREATE INDEX IF NOT EXISTS milestone_cheers_lookup_idx ON milestone_cheers (player_id, milestone_type, skill, value);
 
+-- A signed-in account that has already watched the celebration for a recent milestone (the animation over a profile with a new 99).
+-- Kept against the account so it is never shown to them again on any device. Signed-out visitors are tracked only in their own tab.
+CREATE TABLE IF NOT EXISTS celebration_seen (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  milestone_type TEXT NOT NULL,
+  skill TEXT NOT NULL DEFAULT '',
+  value BIGINT NOT NULL,
+  seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (user_id, player_id, milestone_type, skill, value)
+);
+
 
 -- People who asked to hear about news and new features (for example profile claiming). Only an email address and
 -- where they signed up from; nothing else. unsub_token goes in the link of every email we send so anyone can leave

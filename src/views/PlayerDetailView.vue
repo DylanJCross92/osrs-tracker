@@ -93,7 +93,7 @@
   <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" :preview="!!fakeNinetyNine" @close="share99Skill = ''" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
-  <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" :auto-play="isProfileOwner || !!fakeNinetyNine" @share="openShare" @share99="(skill) => (share99Skill = skill)" />
+  <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" @share="openShare" @share99="(skill) => (share99Skill = skill)" />
 
   <div v-if="isImportingWomHistory" class="card wom-import-banner">
     <span class="spinner" />

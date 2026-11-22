@@ -211,15 +211,16 @@ export function visitorHash(ip) {
 }
 
 /** Recent 99s / 200M milestones for a player, with congratulation counts and whether this visitor already clicked. */
-export async function getCelebrations(playerId, visitor) {
+export async function getCelebrations(playerId, visitor, userId = null) {
   const { rows } = await pool.query(
     `SELECT m.milestone_type, m.skill, m.value, m.occurred_at,
             (SELECT COUNT(*)::int FROM milestone_cheers c WHERE c.player_id = m.player_id AND c.milestone_type = m.milestone_type AND c.skill = m.skill AND c.value = m.value) AS cheers,
-            EXISTS (SELECT 1 FROM milestone_cheers c WHERE c.player_id = m.player_id AND c.milestone_type = m.milestone_type AND c.skill = m.skill AND c.value = m.value AND c.visitor_hash = $2) AS cheered
+            EXISTS (SELECT 1 FROM milestone_cheers c WHERE c.player_id = m.player_id AND c.milestone_type = m.milestone_type AND c.skill = m.skill AND c.value = m.value AND c.visitor_hash = $2) AS cheered,
+            ($3::int IS NOT NULL AND EXISTS (SELECT 1 FROM celebration_seen s WHERE s.user_id = $3 AND s.player_id = m.player_id AND s.milestone_type = m.milestone_type AND s.skill = m.skill AND s.value = m.value)) AS seen
      FROM player_milestones m
      WHERE m.player_id = $1 AND ${celebrationWhere}
      ORDER BY m.occurred_at DESC`,
-    [playerId, visitor || ''],
+    [playerId, visitor || '', userId],
   )
   const defs = achievementDefinitions()
   return rows.map((r) => {
@@ -232,8 +233,23 @@ export async function getCelebrations(playerId, visitor) {
       occurredAt: r.occurred_at,
       cheers: r.cheers,
       cheered: r.cheered,
+      seen: r.seen,
     }
   })
+}
+
+/** Remember that this account has watched the celebration for a milestone. False when that milestone is not currently celebrated. */
+export async function markCelebrationSeen(userId, playerId, { type, skill, value }) {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM player_milestones m WHERE m.player_id = $1 AND m.milestone_type = $2 AND m.skill = $3 AND m.value = $4 AND ${celebrationWhere}`,
+    [playerId, type, skill || '', value],
+  )
+  if (!rows.length) return false
+  await pool.query(
+    `INSERT INTO celebration_seen (user_id, player_id, milestone_type, skill, value) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+    [userId, playerId, type, skill || '', value],
+  )
+  return true
 }
 
 /** Record one congratulation. Returns the new count, or null if that milestone is not currently celebrated. */
