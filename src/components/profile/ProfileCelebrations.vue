@@ -1,7 +1,7 @@
 <template>
   <div v-if="visible.length" class="congrats" role="status">
     <div v-for="c in visible" :key="c.key" class="congrats-row">
-      <button v-if="is99(c)" class="congrats-medal" :data-medal-skill="c.skill" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = c">
+      <button v-if="is99(c)" class="congrats-medal" :data-medal-skill="c.skill" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = [c]">
         <img :src="skillIconSrc(c.skill)" alt="" width="16" height="16" />
         <span aria-hidden="true" />
       </button>
@@ -17,7 +17,7 @@
         <button class="btn-text congrats-dismiss" type="button" aria-label="Hide this" @click="dismiss(c)">✕</button>
       </span>
     </div>
-    <Level99Modal v-if="playing" :key="playing.key" :skill="playing.skill" :show-ms="sequence > 1 ? 2600 : 4000" :fly-ms="sequence > 1 ? 800 : 900" @close="onPlayed" />
+    <Level99Modal v-if="playing" :key="playing.map((c) => c.key).join()" :skills="playing.map((c) => c.skill)" :show-ms="playing.length > 1 ? 4600 : 4000" @close="playing = null" />
   </div>
 </template>
 
@@ -101,23 +101,16 @@ authReady().finally(() => (authKnown.value = true))
 // Development: ?fake99 plays every time the page opens, so it can be watched again.
 const forced = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('fake99')
 let forcedDone = false
-// Several new 99s play one after another (the newest first, three at most), each a little shorter, each flying into its own medal.
-const sequence = ref(1)
-let upNext = []
+// Every new 99 plays together, side by side (the newest first, three at most), and each badge flies into its own row's medal.
 const unseen = (c) => is99(c) && (forced ? !forcedDone : loggedIn.value ? !c.seen : !sessionSeen.has(c.key))
-function onPlayed() {
-  playing.value = null
-  if (upNext.length) setTimeout(() => (playing.value = upNext.shift()), 250)
-}
 watch(
   [visible, authKnown],
   ([list, known]) => {
     // Wait until it is known whether someone is signed in, so the right kind of "seen" is used.
-    if (!known || playing.value || upNext.length) return
+    if (!known || playing.value) return
     const fresh = list.filter(unseen).slice(0, 3)
     if (!fresh.length) return
     forcedDone = true
-    // All of them count as seen now, so leaving or reloading part-way does not start the same ones again.
     if (!forced) {
       for (const c of fresh) {
         if (loggedIn.value) {
@@ -126,9 +119,7 @@ watch(
         } else rememberInSession(c.key)
       }
     }
-    sequence.value = fresh.length
-    upNext = fresh.slice(1)
-    playing.value = fresh[0]
+    playing.value = fresh
     track('level_99_celebration', { skill: fresh[0].skill, count: fresh.length })
   },
   { immediate: true },
