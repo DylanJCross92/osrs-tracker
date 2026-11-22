@@ -1,6 +1,23 @@
 <template>
   <div v-if="visible.length" class="congrats" role="status">
-    <div v-for="c in visible" :key="c.key" class="congrats-row">
+    <!-- Three or more new 99s are one short row with a strip of medals (each plays its own celebration), and "Details" opens a row for each. -->
+    <div v-if="group.length" class="congrats-row congrats-group">
+      <span class="congrats-strip">
+        <button v-for="c in group" :key="c.key" class="congrats-medal" :data-medal-skill="expanded ? undefined : c.skill" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = [c]">
+          <img :src="skillIconSrc(c.skill)" alt="" width="16" height="16" />
+          <span aria-hidden="true" />
+        </button>
+      </span>
+      <span class="congrats-text">
+        <b>{{ name }}</b> reached <b class="congrats-gold">99 in {{ group.length }} skills</b> <span class="congrats-time">{{ formatRelative(group[0].occurredAt) }} ago</span>
+      </span>
+      <span class="congrats-actions">
+        <button class="congrats-btn" type="button" :class="{ done: groupCheered }" :disabled="groupCheered || group.some((c) => c.busy)" @click="cheerAll">{{ groupCheered ? 'Congratulated' : 'Congratulate' }}</button>
+        <button class="btn-text congrats-share" type="button" :aria-expanded="expanded" @click="expanded = !expanded">{{ expanded ? 'Hide details' : 'Details' }}</button>
+        <button class="btn-text congrats-dismiss" type="button" aria-label="Hide these" @click="group.forEach(dismiss)">✕</button>
+      </span>
+    </div>
+    <div v-for="c in singles" :key="c.key" class="congrats-row">
       <button v-if="is99(c)" class="congrats-medal" :data-medal-skill="c.skill" type="button" :title="`Watch the ${c.skill} 99 celebration`" :aria-label="`Watch the ${c.skill} 99 celebration`" @click="playing = [c]">
         <img :src="skillIconSrc(c.skill)" alt="" width="16" height="16" />
         <span aria-hidden="true" />
@@ -75,6 +92,16 @@ const visible = computed(() =>
     .filter((c) => !dismissed.value.has(c.key) && Date.now() - new Date(c.occurredAt).getTime() < SHOW_MS)
     .slice(0, MAX_SHOWN),
 )
+
+// Three or more new 99s collapse into one row (see the template); the rest, and everything once "Details" is open, are rows of their own.
+const GROUP_MIN = 3
+const expanded = ref(false)
+const group = computed(() => (visible.value.filter(is99).length >= GROUP_MIN ? visible.value.filter(is99) : []))
+const singles = computed(() => (group.value.length && !expanded.value ? visible.value.filter((c) => !is99(c)) : visible.value))
+const groupCheered = computed(() => group.value.every((c) => c.cheered))
+async function cheerAll() {
+  for (const c of group.value) if (!c.cheered && !c.busy) await cheer(c)
+}
 
 const is99 = (c) => c.type === 'skill_level' && c.value === 99 && !!c.skill
 const playing = ref(null)
