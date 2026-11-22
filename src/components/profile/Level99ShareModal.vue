@@ -34,12 +34,14 @@ const props = defineProps({
   username: { type: String, required: true },
   displayName: { type: String, required: true },
   skill: { type: String, required: true },
+  // Development only: draw the card for a skill that is not 99 yet (see ?fake99 on the profile).
+  preview: { type: Boolean, default: false },
 })
 const emit = defineEmits(['close'])
 const { showToast } = useToast()
 const copyingImage = ref(false)
 
-const imageUrl = computed(() => cardsApi.level99ImageUrl(props.username, props.skill))
+const imageUrl = computed(() => cardsApi.level99ImageUrl(props.username, props.skill, props.preview))
 const link = computed(() => cardsApi.level99ShareUrl(props.username, props.skill))
 const text = computed(() => `I just reached level 99 ${props.skill} in OSRS!`)
 const xUrl = computed(() => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text.value)}&url=${encodeURIComponent(link.value)}&hashtags=OSRS,OldSchoolRuneScape`)

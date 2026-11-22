@@ -90,7 +90,7 @@
   <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" :achievements="profile?.achievements || []" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
   <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
-  <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" @close="share99Skill = ''" />
+  <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" :preview="!!fakeNinetyNine" @close="share99Skill = ''" />
   <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" :auto-play="isProfileOwner || !!fakeNinetyNine" @share="openShare" @share99="(skill) => (share99Skill = skill)" />

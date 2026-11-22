@@ -52,7 +52,7 @@ cardsRouter.get('/players/:username/card/level99/image.png', async (req, res, ne
   try {
     const player = await resolvePlayer(req, res)
     if (!player) return
-    const data = await getLevel99Card(player, req.query.skill)
+    const data = await getLevel99Card(player, req.query.skill, { preview: req.query.preview === '1' })
     if (!data) return res.status(404).end()
     const png = await renderLevel99CardPng(data)
     res.set('Content-Type', 'image/png')

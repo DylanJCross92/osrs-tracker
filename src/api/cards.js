@@ -17,7 +17,7 @@ export const cardsApi = {
   getFrozen: (slug) => api.get(`/cards/${encodeURIComponent(slug)}`),
   weeklyImageUrl: (username, skill, period) =>
     `${BASE_URL}/players/${encodeURIComponent(username)}/card/weekly/image.png${cardQuery(skill, period)}`,
-  level99ImageUrl: (username, skill) => `${BASE_URL}/players/${encodeURIComponent(username)}/card/level99/image.png?skill=${encodeURIComponent(skill)}`,
+  level99ImageUrl: (username, skill, preview = false) => `${BASE_URL}/players/${encodeURIComponent(username)}/card/level99/image.png?skill=${encodeURIComponent(skill)}${preview ? '&preview=1' : ''}`,
   // The link people share: the server gives it the congratulations card, then the app opens the profile.
   level99ShareUrl: (username, skill) => `${window.location.origin}/player/${encodeURIComponent(username)}/level-99/${encodeURIComponent(skill)}`,
   cardQuery,
