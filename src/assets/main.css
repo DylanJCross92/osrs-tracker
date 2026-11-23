@@ -6905,3 +6905,5 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .spl-gp .coin-stack img { position: absolute; width: 36px; height: 35px; image-rendering: pixelated; }
 .spl-gp button:hover .coin-stack, .spl-gp button.on .coin-stack { filter: none; }
 @media (max-width: 560px) { .spl-gp { grid-template-columns: repeat(2, 1fr); } .spl-gp .coin-stack { transform: scale(0.85); height: 76px; margin-bottom: -6px; } }
+.planner-top.is-start .pt-title { flex: 1 1 100%; min-width: 0; }
+.pt-toprow .pt-live { margin-top: 0; margin-left: auto; }
