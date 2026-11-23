@@ -59,11 +59,12 @@
             <h2 id="skill-modal-h">Choose a skill</h2>
             <button class="btn-text" type="button" aria-label="Close" @click="skillOpen = false">✕</button>
           </div>
-          <p class="pm-sub">Pick the skill you want to train, then set your own goal and fine-tune the route.</p>
+          <p class="pm-sub">Pick the skill you want to train, then set your own goal and fine-tune the route.{{ hasPlayer ? ` The number is ${playerLabel}'s level now.` : '' }}</p>
           <div class="byo-skills" role="group" aria-label="Start with a skill">
             <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="pickSkill(s)">
               <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
               <span>{{ s }}</span>
+              <i v-if="levelOf(s) != null" class="byo-lvl" :class="{ maxed: levelOf(s) >= 99 }" :title="`${playerLabel || 'Your'} level ${levelOf(s)}`">{{ levelOf(s) }}</i>
             </button>
           </div>
         </div>
@@ -136,6 +137,8 @@ function showPlans() {
 }
 defineExpose({ showPlans })
 
+// The player's current level in a skill, when a player is chosen
+const levelOf = (skill) => (props.hasPlayer ? props.skills?.[skill]?.level ?? null : null)
 const skillOpen = ref(false)
 function pickSkill(skill) {
   skillOpen.value = false
