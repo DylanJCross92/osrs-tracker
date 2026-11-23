@@ -140,6 +140,7 @@ const footerCols = computed(() => [
     links: [
       { label: 'About', to: { name: 'about' } },
       { label: 'Join our Discord', href: DISCORD_URL },
+      { label: 'Release notes', to: { name: 'releaseNotes' } },
       { label: 'Contact', to: { name: 'contact' } },
       { label: 'Privacy', to: { name: 'privacy' } },
       loggedIn.value ? { label: 'Your account', to: { name: 'account' } } : { label: 'Log in or sign up', to: { name: 'login' } },

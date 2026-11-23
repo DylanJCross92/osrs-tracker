@@ -181,6 +181,7 @@ app.get('/sitemap.xml', async (req, res) => {
     // The Grand Exchange pages (about 4,500 items, well under the 50,000 a sitemap file may list).
     ...items.slugs.map((slug) => ({ path: `/items/${slug}`, changefreq: 'daily', priority: '0.4', lastmod: items.updatedAt ? items.updatedAt.slice(0, 10) : undefined })),
     { path: '/about', changefreq: 'monthly', priority: '0.3' },
+    { path: '/release-notes', changefreq: 'weekly', priority: '0.3' },
     { path: '/contact', changefreq: 'monthly', priority: '0.3' },
     { path: '/privacy', changefreq: 'yearly', priority: '0.2' },
   ]
@@ -496,6 +497,15 @@ if (distExists) {
       path: '/contact',
       h1: 'Contact TickGains',
       paragraphs: ['Found a bug, have an idea, or want a tracked username removed? Join the TickGains Discord or use the feedback button on any page.'],
+    }),
+  )
+  app.get('/release-notes', (req, res) =>
+    plainPage(res, {
+      title: "Release Notes: What's New on TickGains | TickGains",
+      description: 'Everything new on TickGains, day by day: new features, improvements and bug fixes for the OSRS XP tracker, account planner, Smart Planner, Discover and clans.',
+      path: '/release-notes',
+      h1: 'TickGains release notes',
+      paragraphs: ['What is new on TickGains, day by day: new features, improvements and bug fixes for the OSRS XP tracker, the account planner and Smart Planner, Discover, Grand Exchange prices and clans.'],
     }),
   )
   app.get('/privacy', (req, res) =>
