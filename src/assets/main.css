@@ -6969,7 +6969,7 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 
 /* The tooltip over the finish-line bar */
 .fl-track { position: relative; }
-.fl-bar i { cursor: default; outline: none; }
+.fl-bar i { cursor: pointer; outline: none; }
 .fl-bar i:focus-visible { box-shadow: 0 0 0 2px var(--gold); }
 .fl-tip { position: absolute; top: -8px; transform: translate(-50%, -100%); z-index: 20; display: flex; flex-direction: column; gap: 3px; width: max-content; max-width: 240px; padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55); pointer-events: none; font-size: 0.82rem; }
 .fl-tip-head { display: flex; align-items: center; gap: 7px; }
