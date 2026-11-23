@@ -32,7 +32,7 @@
           <template #hint>
             <p class="pt-hint pt-hint-start">
               <template v-if="lookingUp">Loading stats…</template>
-              <template v-else>No sign-up required · Or <a href="#ps-start" @click.prevent="scrollToStart">start without a username</a></template>
+              <template v-else>No sign-up required · Or <a href="#ps-smart" @click.prevent="scrollToStart">start without a username</a></template>
             </p>
           </template>
         </PlannerPlayerBox>
@@ -47,6 +47,7 @@
         :gp-value="gpValue"
         @use="startFromPlan"
         @custom="startCustom"
+        @smart="startSmart"
       />
     </template>
 
@@ -63,7 +64,7 @@
 
     <!-- The finished plan: clean and read-only -->
     <template v-else>
-      <PlannerHero :name="currentPlanName || 'My training plan'" :back-to="{ name: 'planner' }" :player="player" :strategy-label="strategyName" :hours-per-day="hoursPerDay" :goal-count="goals.length" @settings="openSettings()">
+      <PlannerHero :name="currentPlanName || 'My training plan'" :back-to="{ name: 'planner' }" :player="player" :strategy-label="strategyName" :hours-per-day="hoursPerDay" :goal-count="goals.length" :tailored="tailoredText" @settings="openSettings()">
         <template #actions><PlannerSavedPlans v-bind="savedPlansProps" hide-switcher v-on="savedPlansOn" /></template>
         <template #summary><PlannerFinishLine v-if="!progress" :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="scrollToPath" /></template>
         <p v-if="scratch && !currentPlanId" class="ps-explore" role="status">
@@ -182,6 +183,8 @@ import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
+import { planFromProfile } from '@/utils/smartPlanner'
+import { describeProfile } from '@/utils/smartProfile'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -927,6 +930,9 @@ watch(
 
 const refreshSaved = () => (savedPlans.value = listSavedPlans())
 
+// The Smart Planner answers a plan was made from (null for any other plan), kept with the plan and shown on it.
+const smartProfile = ref(null)
+const tailoredText = computed(() => (smartProfile.value ? describeProfile(smartProfile.value) : ''))
 function currentSnapshotState() {
   return {
     rsn: player.value?.displayName || username.value,
@@ -936,6 +942,7 @@ function currentSnapshotState() {
     gpValue: gpValue.value,
     budget: null,
     hoursPerDay: hoursPerDay.value,
+    smart: smartProfile.value,
     goals: goals.value,
   }
 }
@@ -1000,6 +1007,14 @@ function personalizeTemplate() {
     track('planner_recommended_personalized', { goals: goals.value.length })
     return
   }
+  // A Smart Planner plan made before any player was known is worked out again from the player's real levels, with the same answers.
+  if (template.value?.smart) {
+    goals.value = planFromProfile(template.value.smart, player.value.latest.skills).goals
+    statsAt.value = player.value.latest.capturedAt
+    templatePending.value = false
+    track('smart_planner_personalized', { goals: goals.value.length })
+    return
+  }
   const orderOpts = smartOpts()
   const wasSmart = goals.value.length > 1 && !smartOrderGoals(goals.value, orderOpts).changed
   for (const g of goals.value) {
@@ -1048,11 +1063,40 @@ function useRecommended(rec) {
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)
   template.value = { slug: '', name: rec.title, rsn: '', recommendedId: rec.id }
+  smartProfile.value = null
   keepSmart.value = true
   templatePending.value = !player.value?.latest
   expanded.value = new Set() // goals stay collapsed; only a goal you add yourself opens
   track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest })
   afterCreate(rec.title)
+}
+
+// "Start this plan" in the Smart Planner: the answers become settings, and the goals are worked out from the player's stats right now.
+function useSmartPlan(plan) {
+  keepCurrentPlanBefore('Smart plan')
+  unsavedShareId.value = ''
+  tab.value = 'overview'
+  goalFilter.value = 'all'
+  // The settings first: everything that works the plan out (the order, the totals) reads them.
+  hoursPerDay.value = plan.hoursPerDay
+  globalStrategy.value = plan.globalStrategy
+  gpValue.value = plan.gpValue
+  goals.value = plan.goals
+  statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
+  currentPlanId.value = ''
+  currentPlanName.value = 'Smart plan'
+  template.value = { slug: '', name: 'Smart plan', rsn: '', smart: plan.profile }
+  smartProfile.value = plan.profile
+  templatePending.value = !player.value?.latest
+  expanded.value = new Set()
+  track('planner_smart_used', { goal: plan.profile.goal, goals: goals.value.length, hasPlayer: !!player.value?.latest })
+  afterCreate('Smart plan')
+}
+async function startSmart(profile) {
+  await loadTyped()
+  const plan = planFromProfile(profile, player.value?.latest?.skills || null)
+  if (!plan.goals.length) return showToast('Nothing to plan for those answers. Change one and try again.')
+  useSmartPlan(plan)
 }
 
 async function loadTemplate(slug) {
@@ -1139,6 +1183,7 @@ async function loadSaved(stored, { silent = false } = {}) {
   if (res.warnings.length && !silent) showToast(res.warnings[0])
   // Load the player so newer stats can be offered, the saved starting values stay as they were.
   template.value = null
+  smartProfile.value = res.plan.smart || null
   templatePending.value = false
   if (res.plan.player.rsn) {
     username.value = res.plan.player.rsn
@@ -1158,6 +1203,7 @@ function startNew() {
   currentPlanName.value = ''
   unsavedShareId.value = ''
   template.value = null
+  smartProfile.value = null
   templatePending.value = false
   expanded.value = new Set()
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
@@ -1255,7 +1301,7 @@ async function startCustom(skill) {
   openAdd(skill)
 }
 function scrollToStart() {
-  document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  document.getElementById('ps-smart')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 // --- Persistence ----------------------------------------------------------------------

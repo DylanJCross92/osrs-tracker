@@ -8,6 +8,7 @@ import { MATERIALS } from '@/data/methodMaterials'
 import { ECONOMY } from '@/data/methodEconomy'
 import { itemsStatus } from '@/utils/methodItems'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { cleanProfile } from '@/utils/smartProfile'
 import { startOfGameDay } from '@/utils/gameDay'
 import {
   MAX_XP,
@@ -556,6 +557,7 @@ export function snapshotPlan(state, name, existing = {}) {
     gpValue: state.gpValue,
     budget: state.budget || null,
     hoursPerDay: state.hoursPerDay,
+    ...(state.smart ? { smart: cleanProfile(state.smart) } : {}),
     goals: state.goals.map((g) => ({
       skill: g.skill,
       currentXp: g.currentXp,
@@ -679,6 +681,7 @@ export function validatePlan(raw) {
     gpValue: Math.floor(num(src.gpValue, 0, 1_000_000_000, DEFAULT_GP_VALUE)),
     budget: src.budget ? Math.floor(num(src.budget, 0, 100_000_000_000, 0)) || null : null,
     hoursPerDay: num(src.hoursPerDay, 0.25, 24, 2),
+    ...(src.smart && typeof src.smart === 'object' ? { smart: cleanProfile(src.smart) } : {}),
     goals,
   }
   return { plan, warnings }

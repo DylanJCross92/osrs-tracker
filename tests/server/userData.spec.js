@@ -56,3 +56,15 @@ describe('watched items', () => {
     expect(sanitizeUserData({ watch: { value: 'dragon-bones', updatedAt: T } }).watch).toBeUndefined()
   })
 })
+
+describe('planner profile (the Smart Planner answers)', () => {
+  it('keeps the known choices and drops anything else', () => {
+    const out = sanitizeUserData({ plannerProfile: { value: { members: false, goal: 'money', hours: 3.2, gp: 'rich', experience: 'veteran', iron: true, evil: '<script>', goalx: 1 }, updatedAt: '2026-01-01T00:00:00Z' } })
+    expect(out.plannerProfile.value).toEqual({ members: false, goal: 'money', hours: 3, gp: 'rich', experience: 'veteran', iron: true })
+  })
+  it('ignores an unknown choice and a value that is not an object', () => {
+    expect(sanitizeUserData({ plannerProfile: { value: { goal: 'nope', gp: 'lots', experience: 'god', hours: 99 } } }).plannerProfile.value).toEqual({ hours: 12 })
+    expect(sanitizeUserData({ plannerProfile: { value: 'x' } }).plannerProfile).toBeUndefined()
+    expect(sanitizeUserData({ plannerProfile: { value: [1] } }).plannerProfile).toBeUndefined()
+  })
+})

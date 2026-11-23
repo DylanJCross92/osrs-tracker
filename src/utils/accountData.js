@@ -16,6 +16,7 @@ export const KEYS = {
   dismissed: 'tickgains-congrats-dismissed',
   requirements: 'tickgains-planner-requirements-v1',
   watch: 'tickgains-ge-watch-v1',
+  plannerProfile: 'tickgains-planner-profile-v1',
 }
 const NAMES = Object.keys(KEYS)
 const BY_STORAGE_KEY = Object.fromEntries(NAMES.map((n) => [KEYS[n], n]))
@@ -71,6 +72,7 @@ const isEmpty = (name, value) => {
   if (value == null) return true
   if (name === 'planner') return !Array.isArray(value.goals) || value.goals.length === 0
   if (name === 'requirements') return typeof value !== 'object' || Object.keys(value).length === 0
+  if (name === 'plannerProfile') return typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length === 0
   return Array.isArray(value) && value.length === 0
 }
 
@@ -116,7 +118,7 @@ export async function flush() {
   for (const name of names) {
     const value = readRaw(name)
     // An emptied piece is still sent, so clearing it on one device clears it everywhere.
-    payload[name] = { value: value ?? (name === 'planner' ? { goals: [] } : name === 'requirements' ? {} : []), updatedAt: meta[name]?.ts || nowIso() }
+    payload[name] = { value: value ?? (name === 'planner' ? { goals: [] } : name === 'requirements' || name === 'plannerProfile' ? {} : []), updatedAt: meta[name]?.ts || nowIso() }
   }
   try {
     await authApi.saveData(payload)

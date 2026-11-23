@@ -18,6 +18,7 @@
           <span aria-hidden="true">·</span>
           <span>{{ hoursPerDay }} h/day</span>
         </p>
+        <p v-if="tailored" class="pgh-tailored"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg>Smart Planner · {{ tailored }}</p>
       </div>
       <div class="pgh-actions">
         <slot name="actions" />
@@ -45,6 +46,8 @@ defineProps({
   goalCount: { type: Number, default: 0 },
   // A link back to the overview of plans.
   backTo: { type: Object, default: null },
+  // The Smart Planner answers a plan was made from, in words (empty for other plans).
+  tailored: { type: String, default: '' },
 })
 defineEmits(['settings'])
 </script>

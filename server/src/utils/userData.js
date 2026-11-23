@@ -59,6 +59,22 @@ function cleanSet(list) {
   return [...new Set(list.filter((v) => typeof v === 'string' && v.length > 0 && v.length <= 80))].slice(-MAX_SET)
 }
 
+// The answers to the Smart Planner's questions (see utils/smartPlanner.js): a small fixed set of choices, nothing free-form.
+const PLANNER_GOALS = ['skills', 'money', 'combat', 'quests']
+const PLANNER_GP = ['low', 'some', 'good', 'rich']
+const PLANNER_EXPERIENCE = ['new', 'returning', 'veteran']
+function cleanPlannerProfile(v) {
+  if (!isObj(v)) return null
+  const out = {}
+  if (typeof v.members === 'boolean') out.members = v.members
+  if (PLANNER_GOALS.includes(v.goal)) out.goal = v.goal
+  if (Number.isFinite(Number(v.hours))) out.hours = Math.min(12, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
+  if (PLANNER_GP.includes(v.gp)) out.gp = v.gp
+  if (PLANNER_EXPERIENCE.includes(v.experience)) out.experience = v.experience
+  if (typeof v.iron === 'boolean') out.iron = v.iron
+  return out
+}
+
 // The Grand Exchange items someone watches, as item addresses ("dragon-bones"), in the order they were added.
 function cleanWatch(list) {
   if (!Array.isArray(list)) return null
@@ -82,5 +98,6 @@ export function sanitizeUserData(input) {
   take('dismissed', cleanSet)
   take('requirements', cleanRequirements)
   take('watch', cleanWatch)
+  take('plannerProfile', cleanPlannerProfile)
   return out
 }

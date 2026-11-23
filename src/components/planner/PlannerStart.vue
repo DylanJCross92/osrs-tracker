@@ -2,10 +2,13 @@
   <section class="ps" aria-label="Start a plan">
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
+    <!-- The Smart Planner: a few questions and the steps they lead to -->
+    <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="scrollToReadyMade" />
+
     <!-- Recommended plans: three to begin with, the rest on request -->
     <div id="ps-start" class="ps-block">
       <header class="ps-head">
-        <h2>Start from a recommended plan</h2>
+        <h2>Or start from a ready-made plan</h2>
       </header>
       <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ hasPlayer ? `${playerLabel}'s` : 'your' }} stats{{ hasPlayer ? '' : ' (every skill starts from level 1 until you add your name)' }}. Change anything afterwards.</p>
       <RecommendedPlans
@@ -73,6 +76,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
+import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours, levelAtXp, planGoal } from '@/utils/planner'
@@ -88,7 +92,8 @@ const props = defineProps({
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
 })
-const emit = defineEmits(['use', 'custom'])
+const emit = defineEmits(['use', 'custom', 'smart'])
+const scrollToReadyMade = () => document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 const allCount = computed(() => recommendedPlans(props.skills).length)
 const canShowAll = computed(() => allCount.value > 3)
