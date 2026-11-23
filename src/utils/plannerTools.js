@@ -198,6 +198,7 @@ export function buildTimeline(goals, plans, hoursPerDay, startDate = new Date())
       milestones,
       targetLevel,
       startLevel: levelAtXp(plan.startXp, true),
+      xp: Math.max((plan.targetXp || 0) - (plan.startXp || 0), 0),
       done: hours === 0,
     }
   })

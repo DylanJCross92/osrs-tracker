@@ -6978,3 +6978,18 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .fl-tip-levels { margin-left: auto; color: var(--gold-bright); font-weight: 700; }
 .fl-tip-line { color: var(--muted); }
 .fl-tip-cat { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* The block being described: the rest of the bar steps back */
+.fl-bar.has-tip i { opacity: 0.4; transition: opacity 0.12s, filter 0.12s; }
+.fl-bar.has-tip i.is-on { opacity: 1; filter: brightness(1.2) saturate(1.1); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85); }
+/* Tooltip colours: the kind of skill on its edge and label, XP in gold, profit green, cost red */
+.fl-tip { border-left: 3px solid var(--cat, var(--border-strong)); }
+.fl-tip-cat { color: var(--cat, var(--muted)); font-weight: 700; }
+.fl-tip-stat { display: flex; justify-content: space-between; gap: 18px; align-items: baseline; margin-top: 2px; padding: 3px 8px; border-radius: 7px; background: rgba(255, 255, 255, 0.05); }
+.fl-tip-stat > span { color: var(--muted); font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.fl-tip-stat b { font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.fl-tip-xp b { color: var(--gold-bright); }
+.fl-tip-gain { background: rgba(124, 184, 105, 0.14); }
+.fl-tip-gain b { color: var(--xp-green, #8fd16f); }
+.fl-tip-cost { background: rgba(217, 105, 90, 0.14); }
+.fl-tip-cost b { color: #f0907f; }
