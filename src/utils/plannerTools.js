@@ -197,6 +197,7 @@ export function buildTimeline(goals, plans, hoursPerDay, startDate = new Date())
       netGp: plan.netGp,
       milestones,
       targetLevel,
+      startLevel: levelAtXp(plan.startXp, true),
       done: hours === 0,
     }
   })

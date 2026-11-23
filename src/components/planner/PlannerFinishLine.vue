@@ -15,14 +15,21 @@
       </template>
     </div>
 
-    <div v-if="timeline.totalHours > 0" class="fl-track">
+    <div v-if="timeline.totalHours > 0" ref="trackEl" class="fl-track">
       <div class="fl-bar" :class="{ labelled }" role="img" :aria-label="`The plan is ${formatHours(timeline.totalHours)} of training: ${summary}`">
-        <i v-for="e in segments" :key="e.skill" :class="`cat-${e.category}`" :style="{ flexGrow: e.hours }" :title="`${e.skill}: ${formatHours(e.hours)}`">
+        <i v-for="e in segments" :key="e.skill" :class="`cat-${e.category}`" :style="{ flexGrow: e.hours }" tabindex="0" @pointerenter="showTip(e, $event)" @pointermove="moveTip($event)" @pointerleave="tip = null" @focus="showTip(e, $event)" @blur="tip = null">
           <template v-if="labelled">
             <img :src="skillIconSrc(e.skill)" alt="" width="18" height="18" />
             <span>{{ e.skill }}<small>{{ formatHours(e.hours) }}</small></span>
           </template>
         </i>
+      </div>
+      <div v-if="tip" class="fl-tip" role="tooltip" :style="{ left: tip.x + 'px' }">
+        <span class="fl-tip-head"><img :src="skillIconSrc(tip.e.skill)" alt="" width="18" height="18" /><b>{{ tip.e.skill }}</b><span class="fl-tip-levels">{{ tip.e.startLevel }} → {{ tip.e.targetLevel }}</span></span>
+        <span class="fl-tip-line">{{ formatHours(tip.e.hours) }} of training<template v-if="tip.e.hours && hoursPerDay"> · about {{ Math.max(1, Math.round(tip.e.hours / hoursPerDay)) }} day{{ Math.round(tip.e.hours / hoursPerDay) > 1 ? 's' : '' }}</template></span>
+        <span v-if="tip.e.startDate && tip.e.endDate" class="fl-tip-line">{{ shortDate(tip.e.startDate) }} to {{ shortDate(tip.e.endDate) }}</span>
+        <span v-if="tip.e.netGp != null && tip.e.netGp !== 0" class="fl-tip-line" :class="tip.e.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ tip.e.netGp >= 0 ? 'Earns' : 'Costs' }} {{ formatGp(Math.abs(tip.e.netGp)).replace(/ gp$/, '') }} gp</span>
+        <span class="fl-tip-cat">{{ categoryLabel(tip.e.category) }}</span>
       </div>
       <div class="fl-ends"><span>Today</span><span>{{ dateText }}</span></div>
       <!-- Many skills: the bar is too thin to label, so the hours are given by kind of skill instead -->
@@ -35,9 +42,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours } from '@/utils/planner'
+import { formatGp, formatHours } from '@/utils/planner'
 import { SKILL_CATEGORIES } from '@/utils/plannerTools'
 
 const props = defineProps({
@@ -45,6 +52,25 @@ const props = defineProps({
   hoursPerDay: { type: Number, required: true },
 })
 defineEmits(['see-route'])
+
+// A small box over the bar saying what is being trained in the block the pointer is on.
+const tip = ref(null)
+const trackEl = ref(null)
+function placeTip(clientX) {
+  const box = trackEl.value?.getBoundingClientRect()
+  if (!box) return 0
+  // Centred on the pointer, kept inside the track.
+  return Math.min(Math.max(clientX - box.left, 110), Math.max(box.width - 110, 110))
+}
+function showTip(e, ev) {
+  const target = ev.currentTarget.getBoundingClientRect()
+  tip.value = { e, x: placeTip(ev.clientX || target.left + target.width / 2) }
+}
+function moveTip(ev) {
+  if (tip.value) tip.value = { ...tip.value, x: placeTip(ev.clientX) }
+}
+const shortDate = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+const categoryLabel = (key) => SKILL_CATEGORIES[key]?.label || ''
 const LABEL_UP_TO = 6
 
 const segments = computed(() => props.timeline.entries.filter((e) => !e.done && e.hours > 0))
