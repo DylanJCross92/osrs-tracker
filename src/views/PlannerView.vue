@@ -47,6 +47,7 @@
         :global-strategy="globalStrategy"
         :gp-value="gpValue"
         @use="startFromPlan"
+        @open="(r) => startFromPlan(r, { save: false })"
         @custom="startCustom"
         @smart="startSmart"
         @smart-open="(open) => (smartOpen = open)"
@@ -88,9 +89,13 @@
       <PlannerHero :name="currentPlanName || 'My training plan'" :back-to="{ name: 'planner' }" :player="player" :strategy-label="strategyName" :hours-per-day="hoursPerDay" :goal-count="goals.length" :tailored="tailoredText" @settings="openSettings()">
         <template #actions><PlannerSavedPlans v-bind="savedPlansProps" hide-switcher v-on="savedPlansOn" /></template>
         <template #summary><PlannerFinishLine v-if="!progress" :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="scrollToPath" /></template>
-        <p v-if="scratch && !currentPlanId" class="ps-explore" role="status">
-          <b>Not saved yet.</b> Press Save plan to keep this plan and start tracking your progress, or share the link.
-        </p>
+        <div v-if="scratch && !currentPlanId && goals.length" class="callout callout-unsaved" role="status">
+          <div class="callout-text">
+            <b>This plan is not saved yet</b>
+            <span>It is only here to look at. Press Save plan to keep it in your plans and start tracking your progress, or leave and it is gone.</span>
+          </div>
+          <button class="btn btn-primary callout-btn" type="button" @click="saveCurrent(currentPlanName)">Save plan</button>
+        </div>
         <!-- A plan that does not know who it is for yet: say what adding a name gives you, with one clear button -->
         <div v-if="template && templatePending" class="callout" role="status">
           <div class="callout-text">
@@ -1080,7 +1085,8 @@ function keepCurrentPlanBefore(name) {
 }
 
 // "Use this plan" on a recommended plan: its goals come from the player's own stats, so they start from where they really are.
-function useRecommended(rec) {
+// `save: false` opens the plan on /planner/new without saving it: nothing is kept until they press Save plan.
+function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
   unsavedShareId.value = ''
   tab.value = 'overview'
@@ -1095,8 +1101,14 @@ function useRecommended(rec) {
   keepSmart.value = true
   templatePending.value = !player.value?.latest
   expanded.value = new Set() // goals stay collapsed; only a goal you add yourself opens
-  track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest })
-  afterCreate(rec.title)
+  track('planner_recommended_used', { plan: rec.id, goals: goals.value.length, hasPlayer: !!player.value?.latest, saved: save })
+  if (save) afterCreate(rec.title)
+  else {
+    scratch.value = true
+    if (route.name !== 'plannerNew') router.replace({ name: 'plannerNew' })
+    // The plan opens at the top, where the "not saved" notice and the Save plan button are.
+    window.scrollTo({ top: 0 })
+  }
 }
 
 // "Start this plan" in the Smart Planner: the answers become settings, and the goals are worked out from the player's stats right now.
@@ -1319,14 +1331,14 @@ async function loadTyped({ force = false } = {}) {
 }
 // A name typed in the search box but not loaded yet (they went straight for a plan) is loaded first, so the plan starts from
 // their own stats. With no name, or a name that cannot be found, the plan starts every skill from level 1.
-async function startFromPlan(rec) {
+async function startFromPlan(rec, { save = true } = {}) {
   await loadTyped()
   let plan = rec
   if (player.value?.latest) {
     plan = recommendedPlans(player.value.latest.skills).find((r) => r.id === rec.id)
     if (!plan) return showToast('That plan is already done for this player. Pick another.')
   }
-  useRecommended(plan)
+  useRecommended(plan, { save })
 }
 async function startCustom(skill) {
   await loadTyped()

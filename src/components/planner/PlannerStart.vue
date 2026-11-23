@@ -18,6 +18,7 @@
         :global-strategy="globalStrategy"
         :gp-value="gpValue"
         @use="(r) => $emit('use', r)"
+        @open="(r) => $emit('open', r)"
       />
       <p v-if="canShowAll" class="ps-seemore"><button class="ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">See all ready-made plans</button></p>
     </div>
@@ -56,6 +57,7 @@
       :gp-value="gpValue"
       @close="showAll = false"
       @use="onModalUse"
+      @open="onModalOpen"
     />
 
     <!-- What a finished estimate looks like (only before there are stats to show a real one) -->
@@ -102,7 +104,7 @@ const props = defineProps({
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
 })
-const emit = defineEmits(['use', 'custom', 'smart', 'smart-open'])
+const emit = defineEmits(['use', 'open', 'custom', 'smart', 'smart-open'])
 // The ready-made plans are at the top of the page; the links that point at them scroll there.
 async function showPlans(scroll = false) {
   if (!scroll) return
@@ -116,6 +118,10 @@ const levelOf = (skill) => (props.hasPlayer ? props.skills?.[skill]?.level ?? nu
 const allCount = computed(() => recommendedPlans(props.skills).length)
 const canShowAll = computed(() => allCount.value > 3)
 const showAll = ref(false)
+function onModalOpen(r) {
+  showAll.value = false
+  emit('open', r)
+}
 function onModalUse(r) {
   showAll.value = false
   emit('use', r)

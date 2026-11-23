@@ -23,7 +23,7 @@
               <svg v-else viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 4-9 4-9-4zM3 12l9 4 9-4M3 16l9 4 9-4" /></svg>
             </span>
             <div class="pm-main">
-              <b><button class="rp-open" type="button" aria-haspopup="dialog" :title="`See what is in ${r.title}`" @click="preview = r">{{ r.title }}</button></b>
+              <b><button class="rp-open" type="button" aria-haspopup="dialog" :title="`Open ${r.title} without saving it`" @click="$emit('open', r)">{{ r.title }}</button></b>
               <small>{{ short(r) }}</small>
               <span class="pm-skills" aria-hidden="true">
                 <img v-for="g in r.goals.slice(0, MAX_ICONS)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="18" height="18" :title="g.skill" />
@@ -40,14 +40,12 @@
         </li>
       </ul>
     </div>
-    <PlanPreviewModal v-if="preview" :plan="preview" :has-player="hasPlayer" :player-label="playerLabel" :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @close="preview = null" @use="(r) => $emit('use', r)" />
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import PlanPreviewModal from '@/components/planner/PlanPreviewModal.vue'
 import { formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
 import { MAX_TOTAL, groupedPlans, recommendedPlans } from '@/utils/recommendedPlans'
@@ -60,7 +58,7 @@ const props = defineProps({
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
 })
-const emit = defineEmits(['close', 'use'])
+const emit = defineEmits(['close', 'use', 'open'])
 
 const groups = computed(() => groupedPlans(recommendedPlans(props.skills)))
 const tabs = computed(() =>
@@ -81,7 +79,6 @@ const MAX_ICONS = 8
 // Which picture a plan gets: the finish line goals, combat, a total level, or a plain level goal.
 const iconOf = (r) => (r.kind === 'combat' ? 'combat' : r.kind === 'total' ? (r.targetTotal === MAX_TOTAL ? 'max' : 'total') : r.id === 'all-99' || r.id.startsWith('virtual') || r.id === 'xp-200m' ? 'max' : 'levels')
 
-const preview = ref(null)
 const closeBtn = ref(null)
 const onKey = (e) => e.key === 'Escape' && emit('close')
 onMounted(() => {
