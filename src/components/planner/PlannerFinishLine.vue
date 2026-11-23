@@ -16,15 +16,15 @@
     </div>
 
     <div v-if="timeline.totalHours > 0" ref="trackEl" class="fl-track">
-      <div class="fl-bar" :class="{ labelled, 'has-tip': !!tip }" role="img" :aria-label="`The plan is ${formatHours(timeline.totalHours)} of training: ${summary}`">
-        <i v-for="e in segments" :key="e.skill" :class="[`cat-${e.category}`, { 'is-on': tip && tip.e.skill === e.skill }]" :style="{ flexGrow: e.hours }" tabindex="0" @pointerenter="showTip(e, $event)" @pointermove="moveTip($event)" @pointerleave="tip = null" @focus="showTip(e, $event)" @blur="tip = null">
+      <div class="fl-bar" :class="{ labelled, 'has-tip': !!tip }" @pointerleave="tip = null" role="img" :aria-label="`The plan is ${formatHours(timeline.totalHours)} of training: ${summary}`">
+        <i v-for="e in segments" :key="e.skill" :class="[`cat-${e.category}`, { 'is-on': tip && tip.e.skill === e.skill }]" :style="{ flexGrow: e.hours }" tabindex="0" @pointerenter="showTip(e, $event)" @pointermove="moveTip($event)" @focus="showTip(e, $event)" @blur="tip = null">
           <template v-if="labelled">
             <img :src="skillIconSrc(e.skill)" alt="" width="18" height="18" />
             <span>{{ e.skill }}<small>{{ formatHours(e.hours) }}</small></span>
           </template>
         </i>
       </div>
-      <div v-if="tip" class="fl-tip" :class="`cat-${tip.e.category}`" role="tooltip" :style="{ left: tip.x + 'px' }">
+      <div v-if="tip" class="fl-tip" :class="[`cat-${tip.e.category}`, { below: tip.below }]" role="tooltip" :style="tip.below ? { left: tip.x + 'px', top: tip.barH + 8 + 'px', transform: 'translateX(-50%)' } : { left: tip.x + 'px' }">
         <span class="fl-tip-head"><img :src="skillIconSrc(tip.e.skill)" alt="" width="18" height="18" /><b>{{ tip.e.skill }}</b><span class="fl-tip-levels">{{ tip.e.startLevel }} → {{ tip.e.targetLevel }}</span></span>
         <span class="fl-tip-line">{{ formatHours(tip.e.hours) }} of training<template v-if="tip.e.hours && hoursPerDay"> · about {{ Math.max(1, Math.round(tip.e.hours / hoursPerDay)) }} day{{ Math.round(tip.e.hours / hoursPerDay) > 1 ? 's' : '' }}</template></span>
         <span v-if="tip.e.startDate && tip.e.endDate" class="fl-tip-line">{{ shortDate(tip.e.startDate) }} to {{ shortDate(tip.e.endDate) }}</span>
@@ -55,6 +55,7 @@ const props = defineProps({
 defineEmits(['see-route'])
 
 // A small box over the bar saying what is being trained in the block the pointer is on.
+const TIP_ROOM = 260 // px the tooltip needs above the bar (its height and the sticky header)
 const tip = ref(null)
 const trackEl = ref(null)
 function placeTip(clientX) {
@@ -65,7 +66,9 @@ function placeTip(clientX) {
 }
 function showTip(e, ev) {
   const target = ev.currentTarget.getBoundingClientRect()
-  tip.value = { e, x: placeTip(ev.clientX || target.left + target.width / 2) }
+  // Under the bar instead of over it when there is no room above (the page header is in the way near the top of the screen).
+  const bar = trackEl.value?.querySelector('.fl-bar')?.getBoundingClientRect()
+  tip.value = { e, x: placeTip(ev.clientX || target.left + target.width / 2), below: !!bar && bar.top < TIP_ROOM, barH: bar ? bar.height : 14 }
 }
 function moveTip(ev) {
   if (tip.value) tip.value = { ...tip.value, x: placeTip(ev.clientX) }
