@@ -40,7 +40,7 @@
       <h3 id="spw-h">What do you want most?</h3>
       <div class="spl-choices" role="radiogroup" aria-label="Main goal">
         <button v-for="g in GOALS" :key="g.key" type="button" role="radio" :aria-checked="profile.goal === g.key" :class="[{ on: profile.goal === g.key }, 'spw-goal']" @click="set({ goal: g.key }, 'goal')">
-          <span class="spw-goal-art" aria-hidden="true"><img v-for="s in GOAL_ART[g.key]" :key="s" :src="skillIconSrc(s)" alt="" width="26" height="26" /></span>
+          <span class="spw-goal-art" aria-hidden="true"><img v-for="s in GOAL_ART[g.key]" :key="s" :src="s.startsWith('/') ? s : skillIconSrc(s)" alt="" width="26" height="26" /></span>
           <span class="spw-goal-text"><b>{{ g.label }}</b><small>{{ g.hint }}</small></span>
         </button>
       </div>
@@ -153,7 +153,7 @@ import { track } from '@/utils/analytics'
 // The skills that stand for each goal, drawn beside it
 const GOAL_ART = {
   skills: ['Overall'],
-  money: ['Thieving', 'Runecraft', 'Mining'],
+  money: ['/icons/methods/coins_10000.png', 'Runecraft', 'Mining'],
   combat: ['Attack', 'Strength', 'Defence'],
   quests: ['Magic', 'Slayer', 'Crafting'],
 }
