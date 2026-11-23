@@ -8,7 +8,7 @@ import { skillStates, recommendedPlans } from '@/utils/recommendedPlans'
 import { smartOrder } from '@/utils/smartOrder'
 import { SYNERGIES } from '@/data/skillSynergies'
 import { formatXp } from '@/utils/osrsSkills'
-import { canUseMethod, fundingFor, levelsOf, questsFor, unlockFor } from '@/utils/smartReasons'
+import { canUseMethod, fitBudget, fundingFor, levelsOf, questsFor, unlockFor } from '@/utils/smartReasons'
 import { GOALS, EXPERIENCE, GP_LEVELS, DEFAULT_PROFILE, cleanProfile } from '@/utils/smartProfile'
 
 // The Smart Planner: from a few answers and a player's levels, the steps to take, in order, each with why. Pure and deterministic.
@@ -122,8 +122,12 @@ function bestGpAt(skill, level, allowed) {
 const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)
 const gpShortText = (n) => formatGp(n).replace(/^\+/, '').replace(/ gp$/, '')
 
+/** The most hours one money step is worth setting out (a few weeks at a normal pace), and how much play a money plan should be at least. */
+const MONEY_STEP_HOURS = 40
+const MONEY_MIN_DAYS = 7
+
 /** The best-paying methods the player can already do: train that skill with that method for the next stretch. */
-function moneyNowPhase(states, profile, done = new Set()) {
+function moneyNowPhase(states, profile, done = new Set(), hoursPerDay = 2) {
   const levels = levelsOf(states)
   const best = []
   for (const s of states) {
@@ -139,10 +143,36 @@ function moneyNowPhase(states, profile, done = new Set()) {
     if (top) best.push({ s, m: top })
   }
   best.sort((a, b) => b.m.gpPerHour - a.m.gpPerHour || (a.s.skill < b.s.skill ? -1 : 1))
-  const goals = best.slice(0, 3).map(({ s, m }) => {
-    const to = reachable(s.skill, Math.min(99, s.level + 10), profile)
-    return { ...mk(s, to, profile), methodId: m.id, why: [`${m.name}: about ${gpShortText(m.gpPerHour)} gp an hour while you train.`] }
-  }).filter((g) => g.targetXp > g.currentXp)
+  // Each skill is trained for the best-paying method at every level (the planner's profit strategy), as far as about 40 hours go, so the
+  // step is a real stretch of play that moves on to the next method when this one runs out.
+  const stretch = ({ s, m }) => {
+    const f2p = profile.members ? null : new Set(f2pIds(s.skill))
+    // The methods this player can actually do (everything but the skill's own level is checked), so the profit route never needs a quest they lack.
+    const allowedMethodIds = methodsForSkill(s.skill).filter((x) => !(f2p && !f2p.has(x.id)) && canUseMethod(x, { ...levels, [s.skill]: 99 }, done)).map((x) => x.id)
+    const base = { ...mk(s, s.level + 1, profile), methodId: AUTO_PROFIT, allowedMethodIds }
+    const candidates = [...new Set([...LEVEL_STEPS.filter((t) => t > s.level), 99, Math.min(99, s.level + 5)])].map((t) => reachable(s.skill, t, profile)).filter((t) => t > s.level).sort((a, b) => b - a)
+    let to = null
+    for (const t of candidates) {
+      const plan = planGoal({ ...base, targetXp: xpAtLevel(t) })
+      // A step for making money must not lose money, so it stops where the best route turns into a cost.
+      if (plan.complete !== false && plan.hours != null && plan.hours <= MONEY_STEP_HOURS && (plan.netGp == null || plan.netGp >= 0)) {
+        to = t
+        break
+      }
+    }
+    if (to == null) return null
+    return { ...base, targetXp: xpAtLevel(to), why: [`${m.name} pays about ${gpShortText(m.gpPerHour)} gp an hour now, and the plan moves to the next best method as you level.`] }
+  }
+  // The top three, then more of them until the plan is about a week of play (at most six).
+  const goals = []
+  let hours = 0
+  for (const b of best.slice(0, 6)) {
+    if (goals.length >= 3 && hours >= hoursPerDay * MONEY_MIN_DAYS) break
+    const g = stretch(b)
+    if (!g || !(g.targetXp > g.currentXp)) continue
+    goals.push(g)
+    hours += planGoal(g).hours || 0
+  }
   return goals.length ? { id: 'money-now', title: 'Make money while you train', why: 'The best-paying methods you can already do. Check each one’s requirements before you start.', goals } : null
 }
 
@@ -396,7 +426,7 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   const settings = settingsFor(profile)
   const hasStats = !!skills
   const doneSet = done instanceof Set ? done : new Set(done)
-  const next = (kind, from, i) => (kind === 'afk' || kind === 'hardcore' ? intensityPhase(from, profile, doneSet, kind) : kind === 'combat' ? combatPhase(from, profile, hasStats) : kind === 'money' ? (i === 0 ? moneyNowPhase(from, profile, doneSet) : moneyUnlockPhase(from, profile, doneSet)) : skillsPhase(from, profile, hasStats))
+  const next = (kind, from, i) => (kind === 'afk' || kind === 'hardcore' ? intensityPhase(from, profile, doneSet, kind) : kind === 'combat' ? combatPhase(from, profile, hasStats) : kind === 'money' ? (i === 0 ? moneyNowPhase(from, profile, doneSet, settings.hoursPerDay) : moneyUnlockPhase(from, profile, doneSet)) : skillsPhase(from, profile, hasStats))
   const build = (kind) => {
     const out = []
     let virtual = states
@@ -460,9 +490,8 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   for (const p of phases) for (const g of p.goals) g.quests = g.quests || []
 
   // Within a phase: the order the reasons give, or for the plain phases the order that helps the most (Fishing before Cooking and so on).
-  const ordered = []
   const planOf = (g) => planGoal(resolveGoal(g, settings.globalStrategy, settings.gpValue))
-  const outPhases = phases.map((p) => {
+  const passes = phases.map((p) => {
     const plans = p.goals.map(planOf)
     let sorted = p.goals
     let reasonsFor = (g) => g.why || []
@@ -472,12 +501,34 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
       sorted = [...p.goals].sort((a, b) => rank.get(a.skill) - rank.get(b.skill))
       reasonsFor = (g) => [...(g.why || []), ...(so.reasons[g.skill] || [])]
     }
-    const rows = sorted.map((g) => {
-      const plan = plans[p.goals.indexOf(g)]
-      let reasons = reasonsFor(g).filter((t) => t !== 'Done')
+    return { p, plans, sorted, reasonsFor }
+  })
+
+  // The gp answer: the plan, in the order it is trained, has to fit inside it (making money and ironmen are measured differently).
+  const budget = GP_LEVELS.find((l) => l.key === profile.gp)?.budget
+  let changes = new Map()
+  if (profile.goal !== 'money' && !profile.iron && budget) {
+    const inOrder = passes.filter((x) => !x.p.later).flatMap((x) => x.sorted)
+    const fit = fitBudget(inOrder, settings, budget)
+    changes = fit.goals
+    notes.push(...fit.notes)
+  }
+
+  const ordered = []
+  const outPhases = passes.map(({ p, plans, sorted, reasonsFor }) => {
+    const rows = []
+    for (const g0 of sorted) {
+      const changed = !p.later && changes.has(g0.skill)
+      const fitted = changed ? changes.get(g0.skill) : g0
+      if (!fitted) continue
+      const g = fitted
+      const plan = changed ? planOf(g) : plans[p.goals.indexOf(g0)]
+      let reasons = reasonsFor(g0).filter((t) => t !== 'Done')
       // The quests' own XP can cover a whole goal: say that, not "Done".
       if (plan.remainingXp === 0 && g.quests.length) reasons = [...reasons, 'The quest XP above covers this.']
-      return {
+      // Every step says why: a step with nothing more to say is at least named for the stretch it belongs to.
+      if (!reasons.length) reasons = [`${levelAtXp(g.currentXp, true)} to ${levelAtXp(g.targetXp, true)} is part of "${p.title}".`]
+      rows.push({
         skill: g.skill,
         from: levelAtXp(g.currentXp, true),
         to: levelAtXp(g.targetXp, true),
@@ -486,8 +537,8 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
         netGp: plan.netGp,
         reasons: reasons.slice(0, 3),
         quests: g.quests.map((id) => getQuest(id)?.name).filter(Boolean),
-      }
-    })
+      })
+    }
     if (!p.later) for (const r of rows) ordered.push({ ...r.goal, why: undefined })
     const lead = p.questRows ? p.questRows : []
     return { id: p.id, title: p.title, why: p.why, later: !!p.later, rows: [...lead, ...rows] }

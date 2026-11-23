@@ -19,10 +19,10 @@ export const EXPERIENCE = [
 ]
 // Starting gp changes how the planner weighs time against gp: with little to spend it picks the cheapest routes, with plenty the fastest.
 export const GP_LEVELS = [
-  { key: 'low', label: 'Under 1M', strategy: AUTO_CHEAP, gpValue: 1_000_000 },
-  { key: 'some', label: '1M to 10M', strategy: AUTO_BALANCED, gpValue: 2_000_000 },
-  { key: 'good', label: '10M to 100M', strategy: AUTO_BALANCED, gpValue: 4_000_000 },
-  { key: 'rich', label: '100M or more', strategy: AUTO_FAST, gpValue: 6_000_000 },
+  { key: 'low', label: 'Under 1M', strategy: AUTO_CHEAP, gpValue: 1_000_000, budget: 1_000_000 },
+  { key: 'some', label: '1M to 10M', strategy: AUTO_BALANCED, gpValue: 2_000_000, budget: 10_000_000 },
+  { key: 'good', label: '10M to 100M', strategy: AUTO_BALANCED, gpValue: 4_000_000, budget: 100_000_000 },
+  { key: 'rich', label: '100M or more', strategy: AUTO_FAST, gpValue: 6_000_000, budget: null },
 ]
 
 export const DEFAULT_PROFILE = { members: true, goal: 'skills', hours: 2, gp: 'low', experience: 'returning', iron: false }

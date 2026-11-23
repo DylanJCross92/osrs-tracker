@@ -4,7 +4,8 @@ import { requirementsFor } from '@/data/methodRequirements'
 import { QUESTS, getQuest, questChain } from '@/data/quests'
 import { questBySlug } from '@/data/questList'
 import { questSlug } from '@/utils/questSlug'
-import { AUTO_FAST, AUTO_PROFIT, levelAtXp, planGoal, xpAtLevel, formatGp } from '@/utils/planner'
+import { AUTO_CHEAP, AUTO_FAST, AUTO_PROFIT, levelAtXp, planGoal, xpAtLevel, formatGp } from '@/utils/planner'
+import { resolveGoal } from '@/utils/plannerTools'
 import { formatXp } from '@/utils/osrsSkills'
 
 // The reasoning behind the Smart Planner's steps (see utils/smartPlanner.js): the next level that opens something better, which skill to
@@ -209,3 +210,57 @@ export function fundingFor(states, profile, spenders, avoid = new Set()) {
 }
 
 export { levelAtXp }
+
+/**
+ * Keeps a plan inside the gp the player said they can spend. Goals are taken in the order they will be trained, with a running balance (the
+ * budget, less what each goal costs and plus what an earlier one made). A goal that does not fit is first planned with the cheapest methods,
+ * then stopped at the highest level that does fit, then left out. Returns { goals: Map(skill -> goal | null), notes } (null is left out);
+ * only goals that changed or went are in the map. `budgetGp` of null or Infinity means no limit.
+ */
+export function fitBudget(goals, { globalStrategy, gpValue }, budgetGp) {
+  const changes = new Map()
+  const notes = []
+  if (!(budgetGp > 0) || !Number.isFinite(budgetGp)) return { goals: changes, notes }
+  const netOf = (g) => {
+    const plan = planGoal(resolveGoal(g, globalStrategy, gpValue))
+    return plan.netGp ?? 0
+  }
+  const money = (n) => formatXp(Math.round(n))
+  let balance = budgetGp
+  for (const g of goals) {
+    const net = netOf(g)
+    if (balance + net >= 0) {
+      balance += net
+      continue
+    }
+    const cheap = { ...g, methodId: AUTO_CHEAP }
+    const cheapNet = netOf(cheap)
+    if (balance + cheapNet >= 0) {
+      changes.set(g.skill, cheap)
+      balance += cheapNet
+      continue
+    }
+    // Stop short: the highest level whose cost still fits.
+    const from = levelAtXp(g.currentXp)
+    let lo = from + 1
+    let hi = levelAtXp(g.targetXp) - 1
+    let best = null
+    while (lo <= hi) {
+      const mid = Math.floor((lo + hi) / 2)
+      const trial = { ...cheap, targetXp: xpAtLevel(mid) }
+      if (balance + netOf(trial) >= 0) {
+        best = { level: mid, goal: trial }
+        lo = mid + 1
+      } else hi = mid - 1
+    }
+    if (best) {
+      changes.set(g.skill, best.goal)
+      balance += netOf(best.goal)
+      notes.push(`${g.skill} stops at level ${best.level} to stay inside your ${money(budgetGp)} gp budget.`)
+    } else {
+      changes.set(g.skill, null)
+      notes.push(`${g.skill} is left out: even the cheapest route costs about ${money(-cheapNet)} gp, over your ${money(budgetGp)} gp budget.`)
+    }
+  }
+  return { goals: changes, notes }
+}
