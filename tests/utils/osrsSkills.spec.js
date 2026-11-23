@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { formatXp, formatSignedXp, xpForSkill, levelForSkill, xpGain } from '@/utils/osrsSkills'
 
 describe('formatXp', () => {
@@ -64,15 +64,32 @@ describe('xpGain', () => {
     expect(xpGain(snapshots, 'Overall', 'all')).toBe(1000)
   })
 
-  it('"week" uses the oldest snapshot still inside the trailing window', () => {
-    expect(xpGain(snapshots, 'Overall', 'week')).toBe(200)
+  it('"week" starts from the newest snapshot from before the window (the state at its start)', () => {
+    // The snapshot 10 days back is the newest one before the 7-game-day window, so it is the starting state.
+    expect(xpGain(snapshots, 'Overall', 'week')).toBe(500)
   })
 
   it('falls back to the first snapshot when the window predates all data', () => {
-    expect(xpGain(snapshots, 'Overall', 'month')).toBe(500)
+    expect(xpGain(snapshots, 'Overall', 'month')).toBe(1000)
   })
 
   it('returns 0 for an empty history', () => {
     expect(xpGain([], 'Overall', 'day')).toBe(0)
+  })
+})
+
+describe('xpGain over the last 7 game days', () => {
+  // Monday 23 Nov 2026, 9:54 AM Eastern. The window starts at 6 AM Eastern on Tue 17 Nov (11:00 UTC), not 7 x 24 hours back.
+  const NOW = Date.UTC(2026, 10, 23, 14, 54)
+  const at = (iso, xp) => ({ capturedAt: new Date(iso).toISOString(), overallXp: xp, skills: {} })
+  const snaps = [at('2026-11-15T23:42:00Z', 100), at('2026-11-16T05:00:00Z', 300), at('2026-11-16T20:40:00Z', 900), at('2026-11-17T02:38:00Z', 1000), at('2026-11-20T19:00:00Z', 1130)]
+  it('counts from the last snapshot before the 6 AM edge seven game days back, so the day before it is not in the week', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    try {
+      expect(xpGain(snaps, 'Overall', 'week')).toBe(130)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

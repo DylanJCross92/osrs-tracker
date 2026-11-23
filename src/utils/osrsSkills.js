@@ -134,11 +134,12 @@ const PERIODS = {
  * or the very first snapshot if the player hasn't been tracked that long. Snapshots are only saved when
  * xp changes, so the newest earlier one is still the current state at that moment. Callers should pass
  * only snapshots TickGains tracked itself: sparse imported history (months apart) is not a valid window
- * start. "day" runs from 6:00 AM Eastern to the next 6:00 AM Eastern; "week"/"month" are rolling windows.
+ * start. "day" runs from 6:00 AM Eastern to the next 6:00 AM Eastern; "week" is the last 7 game days (starting at a 6 AM edge); "month" is a rolling window.
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
-  const cutoff = period === 'day' ? startOfGameDay() : Date.now() - PERIODS[period]
+  // "week" is the last 7 game days (it starts at a 6 AM edge, like the profile's This week and the server's weekly gains).
+  const cutoff = period === 'day' ? startOfGameDay() : period === 'week' ? startOfGameDay(Date.now() - 6 * 86_400_000) : Date.now() - PERIODS[period]
   let baseline = snapshots[0]
   for (const s of snapshots) {
     if (new Date(s.capturedAt).getTime() < cutoff) baseline = s

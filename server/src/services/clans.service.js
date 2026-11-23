@@ -5,6 +5,7 @@ import { addNotification, ownerOfPlayer } from './inbox.service.js'
 import { addEntrantToOpenCompetitions, getCompetition, listClanCompetitions, removeEntrantFromOpenCompetitions } from './competitions.service.js'
 import { MAX_CLANS_PER_USER, MAX_MEMBERS, MAX_PENDING_REQUESTS, cleanClanInput, cleanRsn, newInviteToken, newSlug, summarizeClans } from '../utils/clans.js'
 import { metricLabel } from '../utils/competitions.js'
+import { APP_TIMEZONE } from '../utils/dates.js'
 
 /** An error that is safe to show as-is. */
 export class ClanError extends Error {
@@ -80,11 +81,11 @@ async function loadMembers(clanId) {
      FROM clan_members gm
      JOIN players p ON p.id = gm.player_id
      LEFT JOIN LATERAL (SELECT overall_level, overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) ls ON true
-     LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id AND captured_at <= now() - interval '7 days' ORDER BY captured_at DESC LIMIT 1) ws ON true
+     LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id AND captured_at <= (date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') - interval '6 days' + interval '6 hours') AT TIME ZONE $2 ORDER BY captured_at DESC LIMIT 1) ws ON true
      LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at ASC LIMIT 1) fs ON true
      WHERE gm.clan_id = $1
      ORDER BY week_gain DESC, p.username`,
-    [clanId],
+    [clanId, APP_TIMEZONE],
   )
   return rows.map((r) => ({
     username: r.username,
@@ -455,10 +456,10 @@ async function summarize(clans) {
      FROM clan_members gm
      JOIN players p ON p.id = gm.player_id
      LEFT JOIN LATERAL (SELECT overall_level, overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) ls ON true
-     LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id AND captured_at <= now() - interval '7 days' ORDER BY captured_at DESC LIMIT 1) ws ON true
+     LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id AND captured_at <= (date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') - interval '6 days' + interval '6 hours') AT TIME ZONE $2 ORDER BY captured_at DESC LIMIT 1) ws ON true
      LEFT JOIN LATERAL (SELECT overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at ASC LIMIT 1) fs ON true
      WHERE gm.clan_id = ANY($1::int[])`,
-    [ids],
+    [ids, APP_TIMEZONE],
   )
   const { rows: comps } = await pool.query(
     `SELECT c.id, c.clan_id, c.title, c.metric, c.skill, c.status, c.starts_at, c.ends_at,
