@@ -6918,3 +6918,12 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .modal-card.spm { height: min(700px, calc(100vh - max(16px, 7vh) - 16px)); min-height: 0; }
 .modal-card.spm .spw-nav { position: sticky; bottom: -26px; margin-bottom: -26px; padding-bottom: 26px; background: var(--panel); z-index: 2; }
 @media (max-width: 560px) { .modal-card.spm .spw-nav { bottom: -20px; margin-bottom: -20px; padding-bottom: 20px; } }
+
+/* Even spacing in the steps: questions are spaced the same, the legend sits above its choices (not on a line through it) */
+.spw-step .spl-ask, .spw-step .spl-ask:first-of-type { padding: 0; margin: 0; background: none; }
+.spw-step .spl-ask + .spl-ask { margin-top: 22px; }
+.spw-step .spl-ask legend { float: left; width: 100%; margin: 0 0 10px; padding: 0; }
+.spw-step .spl-ask legend + * { clear: both; }
+.spw-step .ppb { margin: 6px 0 22px; }
+.spw-step .spw-sub { margin-bottom: 14px; }
+.spw-step > h3 { margin-bottom: 14px; }
