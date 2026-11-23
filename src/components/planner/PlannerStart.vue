@@ -32,6 +32,25 @@
       </div>
     </section>
 
+    <!-- Recommended plans: the top three, always shown; every plan is in the Ready-made plan window -->
+    <div id="ps-start" class="ps-block">
+      <header class="ps-head">
+        <h2>Recommended plans</h2>
+      </header>
+      <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ hasPlayer ? `${playerLabel}'s` : 'your' }} stats{{ hasPlayer ? '' : ' (every skill starts from level 1 until you add your name)' }}. Change anything afterwards.</p>
+      <RecommendedPlans
+        quiet
+        featured
+        :skills="skills"
+        :has-player="hasPlayer"
+        :hours-per-day="hoursPerDay"
+        :global-strategy="globalStrategy"
+        :gp-value="gpValue"
+        @use="(r) => $emit('use', r)"
+      />
+      <p v-if="canShowAll" class="ps-seemore"><button class="ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">See all ready-made plans</button></p>
+    </div>
+
     <!-- Choose a skill, in a window -->
     <Teleport to="body">
       <div v-if="skillOpen" class="modal-overlay" @click.self="skillOpen = false">
@@ -90,6 +109,7 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, computed, ref } from 'vue'
+import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
 import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
@@ -125,6 +145,8 @@ const onKey = (e) => e.key === 'Escape' && skillOpen.value && (skillOpen.value =
 onMounted(() => document.addEventListener('keydown', onKey))
 onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
 
+const allCount = computed(() => recommendedPlans(props.skills).length)
+const canShowAll = computed(() => allCount.value > 3)
 const showAll = ref(false)
 function onModalUse(r) {
   showAll.value = false
