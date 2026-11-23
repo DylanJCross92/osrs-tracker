@@ -46,7 +46,7 @@
               </span>
               <small v-if="avail(m).items.length" class="mpick-req">
                 Needs
-                <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="k < avail(m).items.length - 1">, </template></span>
+                <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="i.req.quests?.length"> ({{ i.req.quests.map((x) => x.label).join(' + ') }})</template><template v-if="k < avail(m).items.length - 1">, </template></span>
               </small>
             </span>
             </span>

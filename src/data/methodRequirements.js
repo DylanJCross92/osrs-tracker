@@ -10,6 +10,8 @@
 //   note       a recommendation or detail that is shown but not confirmable
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { QUEST_LIST } from '@/data/questList'
+import { REQUIREMENT_QUESTS } from '@/data/requirementQuests'
+import { questId } from '@/utils/questSlug'
 
 // Every quest we know (data/questList.js), so a quest named in a method's requirement text is a quest and not an "unlock".
 const QUEST_NAMES = QUEST_LIST.map((q) => q.name)
@@ -29,7 +31,7 @@ function skillName(raw) {
   return SKILL_NAMES.find((n) => n.toLowerCase() === String(raw).toLowerCase())
 }
 
-function parseToken(raw) {
+function parseTokenBase(raw) {
   let t = raw.trim().replace(/\.$/, '')
   if (!t) return null
 
@@ -61,6 +63,14 @@ function parseToken(raw) {
   if (EQUIPMENT_RE.test(core)) return { id: `equipment:${slug(core)}`, kind: 'equipment', label: titleCase(core) }
   if (UNLOCK_RE.test(core)) return { id: `unlock:${slug(core)}`, kind: 'unlock', label: titleCase(core) }
   return { id: `unlock:${slug(core)}`, kind: 'unlock', label: titleCase(core) }
+}
+
+/** One token as a requirement. An item or unlock that a quest opens carries `quests` (and `covers`: the quests alone give the unlock). */
+function parseToken(raw) {
+  const req = parseTokenBase(raw)
+  const known = req && REQUIREMENT_QUESTS[req.id]
+  if (!known) return req
+  return { ...req, covers: known.covers, quests: known.quests.map((x) => ({ id: `${questId(x.name)}${x.partial ? ':partial' : ''}`, kind: 'quest', label: x.name, partial: x.partial })) }
 }
 
 /** Structured requirements from a method's text. A skill level in the method's own skill that its minimum level already covers is dropped. */

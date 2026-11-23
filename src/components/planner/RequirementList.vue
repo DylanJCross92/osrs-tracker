@@ -8,6 +8,12 @@
       <span class="req-main">
         <span class="req-label">{{ item.req.label }} <small class="req-kind">{{ KINDS[item.req.kind] }}</small></span>
         <span class="req-state">{{ stateText(item) }}</span>
+        <span v-if="item.req.quests?.length" class="req-quests">
+          <span class="req-quests-lead">{{ item.req.covers ? 'Unlocked by' : 'Comes from' }}</span>
+          <button v-for="qr in behind(item.req)" :key="qr.id" type="button" class="req-quest" :class="{ done: qr.done }" :aria-pressed="qr.done" :title="qr.done ? 'Marked done. Click to undo' : 'Click to mark this quest done'" @click="toggleQuest(qr)">
+            <span aria-hidden="true">{{ qr.done ? '✓' : '○' }}</span> {{ qr.label }}<small v-if="qr.partial"> (started is enough)</small>
+          </button>
+        </span>
       </span>
       <span v-if="isConfirmable(item.req)" class="req-actions" role="group" :aria-label="`Do you have ${item.req.label}?`">
         <button type="button" :class="{ on: answer(item.req) === 'have' }" :aria-pressed="answer(item.req) === 'have'" @click="choose(item.req, 'have')">I have this</button>
@@ -19,7 +25,7 @@
 
 <script setup>
 import { inject } from 'vue'
-import { MET, UNMET, UNKNOWN, PLANNED, confirmationFor, requirementReason } from '@/utils/requirements'
+import { MET, UNMET, UNKNOWN, PLANNED, confirmationFor, questsBehind, requirementReason } from '@/utils/requirements'
 import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 
@@ -31,6 +37,12 @@ const KINDS = { skill: 'level', quest: 'quest', diary: 'diary', equipment: 'item
 
 const { confirmations, setAnswer } = useRequirements()
 const ctx = inject(plannerRequirementContext, null)
+
+// The quests that give an item or unlock, each tickable here the same way as in the quest tracker (the answer is saved under the quest's own id).
+const behind = (req) => questsBehind(req, confirmations.value)
+function toggleQuest(qr) {
+  setAnswer(qr.id, qr.done ? null : 'have')
+}
 
 const isConfirmable = (req) => req.kind !== 'skill' && req.kind !== 'note'
 const answer = (req) => confirmationFor(req, confirmations.value)
@@ -48,7 +60,7 @@ function stateText(item) {
     if (status === UNMET) return `You are level ${level}. Not met yet`
     return 'Load a player to check this'
   }
-  if (status === MET) return answer(req) === 'have' ? 'You confirmed this' : 'Covered by a quest you completed'
+  if (status === MET) return answer(req) === 'have' ? 'You confirmed this' : 'Covered by quests you finished'
   if (status === UNMET) return "You said you don't have this"
   return 'Not confirmed. TickGains cannot see this from the hiscores'
 }

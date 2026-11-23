@@ -3473,6 +3473,12 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .req-state { color: var(--muted); font-size: 0.78rem; }
 .req.is-unmet .req-state { color: #e58a7c; }
 .req.is-met .req-state { color: var(--xp-green); }
+.req-quests { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; }
+.req-quests-lead { color: var(--muted); font-size: 0.74rem; }
+.req-quest { padding: 1px 8px; border-radius: 999px; background: transparent; border: 1px solid var(--border); color: var(--text); font: inherit; font-size: 0.74rem; cursor: pointer; }
+.req-quest:hover { border-color: var(--border-strong); }
+.req-quest.done { border-color: var(--xp-green); color: var(--xp-green); }
+.req-quest small { color: var(--muted); }
 .req-actions { flex: none; display: inline-flex; gap: 4px; }
 .req-actions button { padding: 4px 10px; border-radius: 999px; background: var(--panel-alt); border: 1px solid var(--border); color: var(--text); font: inherit; font-size: 0.76rem; cursor: pointer; }
 .req-actions button:hover { border-color: var(--border-strong); }

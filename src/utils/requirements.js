@@ -26,6 +26,10 @@ export function confirmationFor(req, confirmations = {}) {
   return null
 }
 
+/** The quests behind an item or unlock, each with whether the player has said they are done. */
+export const questsBehind = (req, confirmations = {}) => (req.quests || []).map((qr) => ({ ...qr, done: confirmationFor(qr, confirmations) === 'have' }))
+const questsDone = (req, confirmations) => questsBehind(req, confirmations).length > 0 && questsBehind(req, confirmations).every((x) => x.done)
+
 export function requirementStatus(req, ctx = {}) {
   if (req.kind === 'note') return INFO
   if (req.kind === 'skill') {
@@ -36,6 +40,8 @@ export function requirementStatus(req, ctx = {}) {
   }
   const answer = confirmationFor(req, ctx.confirmations)
   if (answer === 'have') return MET
+  // An unlock that quests alone give (a spellbook, an area) is covered once those quests are confirmed. An item still has to be confirmed itself.
+  if (req.covers && answer !== 'missing' && questsDone(req, ctx.confirmations)) return MET
   if (req.kind === 'quest' && ctx.plannedQuests?.includes(fullQuestId(req) || req.id)) return PLANNED
   if (answer === 'missing') return UNMET
   return UNKNOWN
@@ -61,6 +67,8 @@ export function blockedMethodIds(methods, ctx = {}) {
   return ids.sort()
 }
 
+const questNote = (req) => (req.quests?.length ? ` It comes from ${req.quests.map((x) => x.label + (x.partial ? ' (started is enough)' : '')).join(' and ')}.` : '')
+
 /**
  * Why a requirement is there, in one sentence, for the hover on its icon. The catalog only stores what each method needs,
  * so the reason is worded from the kind of requirement and the method's name.
@@ -77,9 +85,9 @@ export function requirementReason(req, methodName = 'This method') {
     case 'diary':
       return `${m} uses a reward from the ${req.label}, so that diary tier has to be done first.`
     case 'equipment':
-      return `${m} will not work without ${req.label}. Have it in your inventory or equipped before you start.`
+      return `${m} will not work without ${req.label}. Have it in your inventory or equipped before you start.${questNote(req)}`
     case 'unlock':
-      return `${m} needs access to ${req.label.replace(/ access$/i, '')}. It is an area, spell, guild or other unlock you have to have before this method is possible.`
+      return `${m} needs access to ${req.label.replace(/ access$/i, '')}. It is an area, spell, guild or other unlock you have to have before this method is possible.${questNote(req)}`
     default:
       return `Not a hard requirement. A tip that makes ${m} smoother or faster.`
   }
