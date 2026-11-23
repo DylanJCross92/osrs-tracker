@@ -8,6 +8,7 @@ import { TRAINING_METHODS } from '@/data/trainingMethods'
 import { plannedQuestReqIds } from '@/data/quests'
 import { SKILL_NAMES, formatXp } from '@/utils/osrsSkills'
 import { recordUnitText, recordValueText } from '@/utils/recordText'
+import { addGameDays, gameDay } from '@/utils/gameDay'
 
 /**
  * The methods the planner would skip for this player (a missing quest or level), the same way the planner decides it.
@@ -148,9 +149,20 @@ function goalTitle(a) {
  * in the skills being trained, the closest 99s, and the achievements nearly earned. Each: { key, kind, skill, title,
  * detail, eta, pct } where eta is "about 9 days" (at the player's pace) or ''. Soonest first.
  */
-export function whatsNext({ latest, achievements = [], days = [], spanDays, limit = 5 }) {
+export function whatsNext({ latest, achievements = [], days = [], spanDays, pace = null, now = Date.now(), limit = 5 }) {
   const skills = latest?.skills || {}
-  const rates = skillRates(days, spanDays)
+  // `pace` ({ rates, today } from paceRates) is the average of the last seven full game days plus what was gained so far today; without it the
+  // week's days and `spanDays` are used.
+  const rates = pace?.rates || skillRates(days, spanDays)
+  const todayGain = (skill) => (pace ? pace.today.get(skill) || 0 : 0)
+  const totalToday = pace ? [...pace.today.values()].reduce((a, b) => a + b, 0) : 0
+  // Which game day (counted from today, 0 = today) the XP runs out on: the rest of today first (an average day less what has been gained),
+  // then whole days. Days run 6 AM to 6 AM, so XP gained at 1 AM still counts for the day before.
+  const offsetFor = (remaining, rate, gainedToday) => {
+    if (!pace || !(rate > 0)) return null
+    const leftToday = Math.max(rate - gainedToday, 0)
+    return remaining <= leftToday ? 0 : Math.ceil((remaining - leftToday) / rate)
+  }
   const totalRate = [...rates.values()].reduce((a, b) => a + b, 0)
   const etaFor = (remaining, rate) => (rate > 0 ? etaText(remaining / rate) : '')
   const daysFor = (remaining, rate) => (rate > 0 ? remaining / rate : Infinity)
@@ -166,11 +178,11 @@ export function whatsNext({ latest, achievements = [], days = [], spanDays, limi
     const base = xpAtLevel(level)
     const nextXp = xpAtLevel(level + 1)
     if (rate > 0) {
-      levelUps.push({ key: `${skill}:${level + 1}`, kind: 'level', skill, title: `Reach level ${level + 1} ${skill}`, detail: `${formatXp(nextXp - xp)} XP to go`, eta: etaFor(nextXp - xp, rate), days: daysFor(nextXp - xp, rate), pct: (xp - base) / (nextXp - base) })
+      levelUps.push({ key: `${skill}:${level + 1}`, kind: 'level', skill, title: `Reach level ${level + 1} ${skill}`, detail: `${formatXp(nextXp - xp)} XP to go`, eta: etaFor(nextXp - xp, rate), days: daysFor(nextXp - xp, rate), dueOffset: offsetFor(nextXp - xp, rate, todayGain(skill)), pct: (xp - base) / (nextXp - base) })
     }
     if (level >= 85) {
       const left = xpAtLevel(99) - xp
-      nines.push({ key: `${skill}:99`, kind: 'ninetynine', skill, title: `Reach 99 ${skill}`, detail: `${formatXp(left)} XP to go`, eta: etaFor(left, rate), days: daysFor(left, rate), pct: xp / xpAtLevel(99), left })
+      nines.push({ key: `${skill}:99`, kind: 'ninetynine', skill, title: `Reach 99 ${skill}`, detail: `${formatXp(left)} XP to go`, eta: etaFor(left, rate), days: daysFor(left, rate), dueOffset: offsetFor(left, rate, todayGain(skill)), pct: xp / xpAtLevel(99), left })
     }
   }
   levelUps.sort((a, b) => a.days - b.days)
@@ -189,6 +201,7 @@ export function whatsNext({ latest, achievements = [], days = [], spanDays, limi
       detail: a.type === 'total_level' ? `${formatNum(left)} level${left === 1 ? '' : 's'} to go` : `${formatXp(left)} XP to go`,
       eta: a.type === 'total_level' ? '' : etaFor(left, rate),
       days: a.type === 'total_level' ? Infinity : daysFor(left, rate),
+      dueOffset: a.type === 'total_level' ? null : offsetFor(left, rate, a.type === 'skill_xp' ? todayGain(a.skill) : totalToday),
       pct: a.progress,
     })
   }
@@ -204,7 +217,7 @@ export function whatsNext({ latest, achievements = [], days = [], spanDays, limi
   // Soonest first (known pace before unknown), then the closest to done.
   picked.sort((a, b) => (a.days === b.days ? b.pct - a.pct : a.days - b.days))
   // etaDays is how many days at the current pace (null with no pace, or too far off to mean anything).
-  return picked.slice(0, limit).map(({ days, left: _l, ...item }) => ({ ...item, etaDays: Number.isFinite(days) && days < 730 ? days : null }))
+  return picked.slice(0, limit).map(({ days, left: _l, dueOffset, ...item }) => ({ ...item, etaDays: Number.isFinite(days) && days < 730 ? days : null, ...(dueOffset != null ? { dueOffset } : {}) }))
 }
 
 // --- The timeline ----------------------------------------------------------------------------------------------------
@@ -212,6 +225,11 @@ export function whatsNext({ latest, achievements = [], days = [], spanDays, limi
 const DAY_MS = 86_400_000
 const HORIZON_DAYS = 90
 const localKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+// A game-day key ('2026-11-24') as a local date at midnight, so the month, day and weekday read as that day.
+const gameDayDate = (key) => {
+  const [y, m, d] = key.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 const startOfDay = (t) => {
   const d = new Date(t)
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
@@ -231,13 +249,16 @@ export function timelineModel(items, now = Date.now(), horizonDays = HORIZON_DAY
       later.push(item)
       continue
     }
-    withDue.push({ ...item, due: startOfDay(now + item.etaDays * DAY_MS) })
+    // With a day count worked out in game days (6 AM to 6 AM), the date is that game day's; else the calendar day the pace lands on.
+    const due = item.dueOffset != null ? gameDayDate(addGameDays(gameDay(now), item.dueOffset)) : startOfDay(now + item.etaDays * DAY_MS)
+    withDue.push({ ...item, due, dueOffset: item.dueOffset })
   }
   withDue.sort((a, b) => a.due - b.due || a.etaDays - b.etaDays)
   later.sort((a, b) => (a.etaDays ?? Infinity) - (b.etaDays ?? Infinity))
 
-  const relText = (due) => {
-    const n = Math.round((due - today) / DAY_MS)
+  const todayGameDay = gameDayDate(gameDay(now))
+  const relText = (due, offset) => {
+    const n = offset != null ? Math.round((due - todayGameDay) / DAY_MS) : Math.round((due - today) / DAY_MS)
     return n <= 0 ? 'today' : n === 1 ? 'tomorrow' : `in ${n} days`
   }
   const groups = []
@@ -251,12 +272,12 @@ export function timelineModel(items, now = Date.now(), horizonDays = HORIZON_DAY
         day: item.due.getDate(),
         year: item.due.getFullYear(),
         weekday: item.due.toLocaleDateString(undefined, { weekday: 'short' }),
-        whenText: relText(item.due),
+        whenText: relText(item.due, item.dueOffset),
         items: [],
       }
       groups.push(g)
     }
-    const { due: _due, ...rest } = item
+    const { due: _due, dueOffset: _off, ...rest } = item
     g.items.push(rest)
   }
   return { groups, later }

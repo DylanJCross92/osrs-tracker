@@ -77,7 +77,7 @@
   <section v-else-if="kind === 'next'" class="card dash-card dash-sk" aria-busy="true" aria-labelledby="dash-next-sk">
     <header class="dash-card-head">
       <h2 id="dash-next-sk">What's next</h2>
-      <span class="dash-hint sk sk-w180">projected at your pace this week</span>
+      <span class="dash-hint sk sk-w180">by your average over the last 7 full days</span>
     </header>
     <ol class="dtl" aria-hidden="true">
       <li v-for="n in 2" :key="n" class="dtl-stop">

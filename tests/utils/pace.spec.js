@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
-import { skillRates, whatsNext } from '@/utils/dashboard'
+import { paceRates, paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
+import { skillRates, timelineModel, whatsNext } from '@/utils/dashboard'
 import { projectFinish } from '@/utils/plannerTools'
 import { xpAtLevel } from '@/utils/planner'
 
@@ -85,5 +85,64 @@ describe('projectFinish measures up to the newest snapshot', () => {
       goals, remainingXp: 900_000, plannedDays: 200, baselineAt: new Date(now.getTime() - (10 * 24 + 18) * HOUR).toISOString(), now,
     })
     expect(Math.round(r.xpPerDay)).toBe(10_000)
+  })
+})
+
+describe('pace from the last seven full game days', () => {
+  // 6 AM Eastern (11:00 UTC) on Monday 23 Nov 2026 starts the current game day; the player gains 300k Agility XP in each of the seven days before it.
+  const todayStart = Date.UTC(2026, 10, 23, 11, 0, 0)
+  const BASE = 5_000_000
+  const snapsAt = (extra = []) => {
+    const out = []
+    for (let d = 7; d >= 0; d--) {
+      const xp = BASE + (7 - d) * 300_000
+      out.push({ capturedAt: new Date(todayStart - d * DAY).toISOString(), overallXp: xp, skills: { Agility: { xp, level: 90 } } })
+    }
+    return [...out, ...extra]
+  }
+  const AT_EDGE = BASE + 7 * 300_000
+  const snap = (t, xp) => ({ capturedAt: new Date(t).toISOString(), overallXp: xp, skills: { Agility: { xp, level: 90 } } })
+  it('averages the seven complete days and ignores a morning with nothing played yet', () => {
+    const morning = Date.UTC(2026, 10, 23, 13, 54)
+    const a = paceRates(snapsAt(), morning)
+    const b = paceRates(snapsAt([snap(morning, AT_EDGE)]), morning)
+    expect(a.rates.get('Agility')).toBeCloseTo(300_000, 0)
+    // The extra snapshot with no gain does not dilute the pace.
+    expect(b.rates.get('Agility')).toBeCloseTo(300_000, 0)
+    expect(b.today.get('Agility')).toBeUndefined()
+  })
+  it('counts what was gained so far today separately', () => {
+    const now = Date.UTC(2026, 10, 23, 20, 0)
+    const p = paceRates(snapsAt([snap(now, AT_EDGE + 120_000)]), now)
+    expect(p.today.get('Agility')).toBe(120_000)
+    expect(p.rates.get('Agility')).toBeCloseTo(300_000, 0)
+  })
+  it('dates a goal by game day: the whole of today is still ahead in the morning, so 500K at 300K a day lands tomorrow', () => {
+    const now = Date.UTC(2026, 10, 23, 13, 54)
+    const pace = paceRates(snapsAt([snap(now, AT_EDGE)]), now)
+    const items = whatsNext({ latest: { skills: { Agility: { xp: xpAtLevel(91) - 500_000, level: 90 } } }, days: [], pace, now, limit: 5 })
+    const lvl = items.find((i) => i.key === 'Agility:91')
+    // Today's average day (300k), then 200k of the next one.
+    expect(lvl.dueOffset).toBe(1)
+    const g = timelineModel(items, now).groups.find((x) => x.items.some((i) => i.key === 'Agility:91'))
+    expect(g.whenText).toBe('tomorrow')
+    expect(g.day).toBe(24)
+  })
+  it('counts XP already gained today against today, and finishes today when the average day covers it', () => {
+    const now = Date.UTC(2026, 10, 23, 20, 0)
+    const cur = AT_EDGE + 200_000
+    const pace = paceRates(snapsAt([snap(now, cur)]), now)
+    const near = whatsNext({ latest: { skills: { Agility: { xp: xpAtLevel(91) - 90_000, level: 90 } } }, days: [], pace, now, limit: 5 }).find((i) => i.key === 'Agility:91')
+    // 100k are left in today's average day and 90k are needed: still today.
+    expect(near.dueOffset).toBe(0)
+    const far = whatsNext({ latest: { skills: { Agility: { xp: xpAtLevel(91) - 250_000, level: 90 } } }, days: [], pace, now, limit: 5 }).find((i) => i.key === 'Agility:91')
+    // 100k today, then 150k on the next day.
+    expect(far.dueOffset).toBe(1)
+  })
+  it('uses the days it has with a short history, and nothing without any', () => {
+    const now = Date.UTC(2026, 10, 23, 13, 54)
+    expect(paceRates([], now)).toBeNull()
+    const three = [snap(todayStart - 3 * DAY, BASE), snap(todayStart - 2 * DAY, BASE + 300_000), snap(todayStart - DAY, BASE + 600_000), snap(todayStart, BASE + 900_000)]
+    expect(paceRates(three, now).rates.get('Agility')).toBeCloseTo(300_000, 0)
   })
 })

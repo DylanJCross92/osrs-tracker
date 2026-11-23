@@ -2,7 +2,7 @@
 // dashboard. Each snapshot's gain is credited to its own day, starting from the newest snapshot before the window, so the
 // days add up to the same 7-day total as the stats table and a gap in older data can never be dumped onto one day.
 // `snapshots` are the player's tracked snapshots, oldest first. Returns [] when there is not enough to draw.
-import { gameDay, recentGameDays, startOfGameDay } from '@/utils/gameDay'
+import { addGameDays, gameDay, recentGameDays, startOfGameDay } from '@/utils/gameDay'
 import { SKILL_NAMES, levelForSkill, xpForSkill } from '@/utils/osrsSkills'
 
 // The snapshots the week is measured from: the newest one before the window (the starting point) and everything inside it.
@@ -57,4 +57,44 @@ export function weekDaysFrom(snapshots, now = Date.now()) {
     const skills = skillsOf(d.key)
     return { key: d.key, label: d.label, xp: byDay.get(d.key) || 0, skills, topSkills: skills.slice(0, 2) }
   })
+}
+
+/**
+ * The player's pace for projecting dates: XP a day in each skill, averaged over the last seven COMPLETE game days (6 AM to 6 AM),
+ * measured to the hour from the snapshots at those 6 AM edges. The game day in progress is left out of the average (a morning with
+ * nothing played yet is not a day of nothing), and what was gained so far today comes back separately in `today`, so a projection can
+ * count it against today. With fewer than seven days of history the days that exist are used (never fewer than one).
+ * `snapshots` are tracked snapshots, oldest first. Returns { rates: Map(skill -> xp/day), today: Map(skill -> xp so far today), days }, or null
+ * when there is nothing before today to measure from.
+ */
+export function paceRates(snapshots, now = Date.now()) {
+  const list = snapshots || []
+  if (list.length < 2) return null
+  const todayStart = startOfGameDay(now)
+  const at = (t) => {
+    // The newest snapshot at or before t, else the oldest one we have.
+    let found = list[0]
+    for (const s of list) {
+      if (new Date(s.capturedAt).getTime() <= t) found = s
+      else break
+    }
+    return found
+  }
+  const edge = at(todayStart)
+  const first = at(startOfGameDay(new Date(`${addGameDays(gameDay(now), -7)}T12:00:00Z`).getTime()))
+  const newest = list[list.length - 1]
+  const spanMs = new Date(edge.capturedAt).getTime() - new Date(first.capturedAt).getTime()
+  if (!(spanMs > 0)) return null
+  // The real span (about seven days; longer when there is a gap in the history, so the average stays honest), at least one day.
+  const days = Math.max(spanMs / 86_400_000, 1)
+  const rates = new Map()
+  const today = new Map()
+  for (const name of SKILL_NAMES) {
+    if (name === 'Overall') continue
+    const gained = xpForSkill(edge, name) - xpForSkill(first, name)
+    if (gained > 0) rates.set(name, gained / days)
+    const sofar = xpForSkill(newest, name) - xpForSkill(edge, name)
+    if (sofar > 0) today.set(name, sofar)
+  }
+  return { rates, today, days }
 }

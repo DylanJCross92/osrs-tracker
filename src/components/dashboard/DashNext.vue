@@ -2,7 +2,7 @@
   <section class="card dash-card" aria-labelledby="dash-next-h">
     <header class="dash-card-head">
       <h2 id="dash-next-h">What's next</h2>
-      <span class="dash-hint">projected at your pace this week</span>
+      <span class="dash-hint">by your average over the last 7 full days</span>
     </header>
 
     <p v-if="!items.length" class="dash-empty">Train for a few days and your next level-ups and 99s show up here, with the day they should land.</p>
