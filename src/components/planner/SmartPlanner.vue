@@ -7,7 +7,7 @@
       <span class="start-art"><img v-for="s in ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
     </span>
     <span class="start-eyebrow">Not sure what to do?</span>
-    <h3>Smart Planner</h3>
+    <span class="start-titlerow"><h3>Smart Planner</h3><span class="beta-tag" title="Still being tuned: plans can be off, so check them before you start">Beta</span></span>
     <p>Answer a few questions and get a step-by-step plan from your real levels.</p>
     <div class="start-foot">
       <button class="btn btn-primary" type="button" aria-haspopup="dialog" @click.stop="openIt">Open Smart Planner</button>
@@ -22,7 +22,7 @@
               <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
             </span>
             <div class="spl-title">
-              <span class="spl-eyebrow">Tailored to you</span>
+              <span class="spl-eyebrow">Tailored to you <span class="beta-tag" title="Still being tuned: plans can be off, so check them before you start">Beta</span></span>
               <h2 id="spm-h">Smart Planner</h2>
               <p>A few questions and your real levels make a step-by-step plan.</p>
             </div>

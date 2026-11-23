@@ -6948,3 +6948,8 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .ps-split .byo-split .byo-skills { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
 .ps-split-smart .start-smart { flex: 1; cursor: pointer; }
 @media (max-width: 860px) { .ps-split { grid-template-columns: minmax(0, 1fr); } }
+
+/* Beta tag on the Smart Planner */
+.beta-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; border: 1px solid rgba(201, 182, 255, 0.5); background: rgba(167, 139, 250, 0.16); color: #d8c8ff; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.12em; line-height: 1.5; text-transform: uppercase; vertical-align: middle; -webkit-text-fill-color: #d8c8ff; }
+.start-titlerow { display: flex; align-items: center; gap: 8px; }
+.spl-eyebrow .beta-tag { margin-left: 6px; }
