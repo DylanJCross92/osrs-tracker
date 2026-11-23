@@ -48,7 +48,26 @@
         @use="startFromPlan"
         @custom="startCustom"
         @smart="startSmart"
-      />
+      >
+        <!-- The same name box as at the top of the page, for the Smart Planner window that covers it -->
+        <template #name-box>
+          <PlannerPlayerBox
+            v-model:username="username"
+            :player="player"
+            :editing="editingPlayer"
+            :looking-up="lookingUp"
+            :lookup-error="lookupError"
+            :suggestions="suggestions"
+            :show-recent="searchFocused && !username.trim()"
+            @submit="loadPlayer({ typed: true })"
+            @change="startChangePlayer"
+            @cancel="editingPlayer = false"
+            @pick="pickSuggestion"
+            @focus="searchFocused = true"
+            @blur="onSearchBlur"
+          />
+        </template>
+      </PlannerStart>
     </template>
 
     <!-- An address for a plan that is not on this device or account -->

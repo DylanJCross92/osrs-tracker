@@ -3,7 +3,9 @@
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
     <!-- The Smart Planner: a few questions and the steps they lead to -->
-    <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="scrollToReadyMade" />
+    <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="scrollToReadyMade">
+      <template #name-box><slot name="name-box" /></template>
+    </SmartPlanner>
 
     <!-- Recommended plans: three to begin with, the rest on request -->
     <div id="ps-start" class="ps-block">

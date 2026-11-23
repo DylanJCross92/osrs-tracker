@@ -1,6 +1,9 @@
 <template>
   <div class="spl-body">
-    <p v-if="!hasPlayer" class="spl-name"><b>More accurate with your name.</b> Right now every skill starts at level 1. Add your RuneScape name above and every step starts from your real levels.</p>
+    <div v-if="!hasPlayer" class="spl-name">
+      <p><b>More accurate with your name.</b> Right now every skill starts at level 1. Enter your RuneScape name and every step starts from your real levels.</p>
+      <slot name="name-box" />
+    </div>
     <p v-else class="spl-fits" role="status">Using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels.</p>
 
     <div class="spl-grid">
