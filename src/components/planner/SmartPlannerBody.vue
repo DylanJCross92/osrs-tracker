@@ -62,8 +62,11 @@
       </fieldset>
       <fieldset class="spl-ask">
         <legend>Gp you can spend</legend>
-        <div class="spl-opts spl-gp" role="radiogroup" aria-label="Starting gp">
-          <button v-for="g in GP_LEVELS" :key="g.key" type="button" role="radio" :aria-checked="profile.gp === g.key" :class="{ on: profile.gp === g.key }" @click="set({ gp: g.key }, 'gp')">{{ g.label }}</button>
+        <div class="spl-gp" role="radiogroup" aria-label="Starting gp">
+          <button v-for="(g, i) in GP_LEVELS" :key="g.key" type="button" role="radio" :aria-checked="profile.gp === g.key" :class="{ on: profile.gp === g.key }" @click="set({ gp: g.key }, 'gp')">
+            <CoinStack :level="i + 1" />
+            <span>{{ g.label }}</span>
+          </button>
         </div>
       </fieldset>
     </section>
@@ -143,6 +146,7 @@ import { usePlannerProfile } from '@/composables/usePlannerProfile'
 import { useRequirements } from '@/composables/useRequirements'
 import { EXPERIENCE, GOALS, GP_LEVELS, recommend } from '@/utils/smartPlanner'
 import { skillIconSrc } from '@/utils/osrsSkills'
+import CoinStack from '@/components/planner/CoinStack.vue'
 import { formatGp, formatHours } from '@/utils/planner'
 import { track } from '@/utils/analytics'
 

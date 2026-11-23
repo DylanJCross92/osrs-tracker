@@ -6895,3 +6895,12 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .po-new-link:hover, .po-new-link:focus-visible { border-color: var(--gold); background: rgba(240, 201, 118, 0.05); text-decoration: none; }
 .po-new-link:hover b { color: var(--gold-bright); }
 @media (max-width: 560px) { .po-new-link { min-height: 120px; flex-direction: row; gap: 14px; text-align: left; justify-content: flex-start; } .po-new-link .po-new-plus { margin: 0; flex: none; } .po-new-link small { display: none; } }
+
+/* Gp you can spend: a pile of coins that grows with the amount */
+.spl-gp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.spl-gp button { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding: 12px 8px 10px; border: 1px solid var(--border); border-radius: 14px; background: rgba(0, 0, 0, 0.18); color: var(--muted); font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+.spl-gp button:hover { color: var(--text); border-color: var(--border-strong); }
+.spl-gp button.on { background: rgba(217, 175, 82, 0.16); border-color: var(--gold); color: var(--gold-bright); }
+.spl-gp .coin-stack { display: block; width: 108px; height: 84px; filter: grayscale(0.3) brightness(0.85); transition: filter 0.12s; }
+.spl-gp button:hover .coin-stack, .spl-gp button.on .coin-stack { filter: none; }
+@media (max-width: 560px) { .spl-gp { grid-template-columns: repeat(2, 1fr); } .spl-gp .coin-stack { width: 90px; height: 70px; } }
