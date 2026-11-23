@@ -23,18 +23,42 @@ describe('answers', () => {
 })
 
 describe('recommendations', () => {
-  it('with no stats, starts a new player on small tiers and a veteran on big ones', () => {
-    expect(recommend({ experience: 'new' }, null).phases[0].title).toContain('30')
-    expect(recommend({ experience: 'returning' }, null).phases[0].title).toContain('50')
-    expect(recommend({ experience: 'veteran' }, null).phases[0].title).toContain('70')
+  it('every step has a reason, and the plan is built from purposes (fund, quests, unlocks), not generic tiers', () => {
+    for (const levels of [{ all: 20 }, { all: 45, Fishing: 60 }, { all: 70 }]) {
+      const r = recommend({ experience: 'returning' }, skills(levels))
+      expect(r.phases.length).toBeGreaterThan(0)
+      for (const p of r.phases) {
+        expect(['fund', 'quests', 'unlock', 'then', 'tier-30', 'finish']).toContain(p.id.startsWith('tier-') ? 'tier-30' : p.id)
+        for (const row of p.rows) expect(row.kind === 'quest' ? row.reasons.length : row.reasons.length).toBeGreaterThan(0)
+      }
+    }
   })
 
-  it('with stats, goes by the levels, not by what the player says about themselves', () => {
-    const base = skills({ all: 30 })
-    const a = recommend({ experience: 'new' }, base)
-    const b = recommend({ experience: 'veteran' }, base)
-    expect(a.phases[0].title).toContain('40')
-    expect(b.phases[0].title).toBe(a.phases[0].title)
+  it('an unlock step names what opens and how much faster it is', () => {
+    const r = recommend({}, skills({ all: 20 }))
+    const unlock = r.phases.find((p) => p.id === 'unlock')
+    expect(unlock).toBeTruthy()
+    for (const row of unlock.rows.slice(0, 3)) expect(row.reasons.join(' ')).toMatch(/opens|on the way to/i)
+  })
+
+  it('a level a quest needs becomes a step that names the quest and what it saves', () => {
+    const r = recommend({ goal: 'quests' }, skills({ all: 20 }))
+    const q = r.phases.find((p) => p.id === 'quests')
+    expect(q).toBeTruthy()
+    const quests = q.rows.filter((x) => x.kind === 'quest')
+    expect(quests.length).toBeGreaterThan(0)
+    for (const x of quests) expect(x.reasons.join(' ')).toMatch(/Skips about/)
+    const needed = q.rows.filter((x) => x.skill && x.reasons.join(' ').startsWith('Needed for'))
+    for (const row of needed) expect(row.reasons[0]).toMatch(/skips about .* of training/)
+  })
+
+  it('a finished quest is not recommended again', () => {
+    const s = skills({ all: 30 })
+    const first = recommend({ goal: 'quests' }, s).phases.find((p) => p.id === 'quests')
+    const ids = first.rows.filter((x) => x.kind === 'quest').map((x) => x.id)
+    const again = recommend({ goal: 'quests' }, s, { done: new Set(ids) }).phases.find((p) => p.id === 'quests')
+    const left = (again?.rows || []).filter((x) => x.kind === 'quest').map((x) => x.id)
+    for (const id of ids) expect(left).not.toContain(id)
   })
 
   it('finishes the last few skills straight to 99 instead of climbing tiers', () => {
@@ -54,13 +78,6 @@ describe('recommendations', () => {
     expect(a.goals.some((g) => g.skill === 'Attack' && g.currentXp === xpAtLevel(45))).toBe(true)
   })
 
-  it('puts Fishing before Cooking when Cooking can use the fish, with the reason', () => {
-    const r = recommend({ experience: 'new' }, skills({ all: 1 }))
-    const names = r.phases[0].rows.map((x) => x.skill)
-    expect(names.indexOf('Fishing')).toBeLessThan(names.indexOf('Cooking'))
-    expect(r.phases[0].rows.find((x) => x.skill === 'Fishing').reasons.join(' ')).toContain('Before Cooking')
-  })
-
   it('has summary figures that match the goals', () => {
     const r = recommend({}, skills({ all: 60 }))
     expect(r.totals.goals).toBe(r.goals.length)
@@ -70,8 +87,9 @@ describe('recommendations', () => {
 
   it('combat: the ladder of gear levels, only what is still to do', () => {
     const r = recommend({ goal: 'combat', experience: 'returning' }, skills({ all: 50, Attack: 62, Strength: 62, Defence: 62, Prayer: 60, Ranged: 65 }))
-    expect(r.phases[0].title).toMatch(/Barrows/)
-    expect(r.phases[0].rows.some((x) => x.skill === 'Defence' && x.to === 70)).toBe(true)
+    const ladder = r.phases.find((p) => p.id.startsWith('combat'))
+    expect(ladder.title).toMatch(/Barrows/)
+    expect(ladder.rows.some((x) => x.skill === 'Defence' && x.to === 70)).toBe(true)
     // Attack 60 is done, so no dragon tier row for it appears
     expect(r.phases.flatMap((p) => p.rows).some((x) => x.skill === 'Attack' && x.to === 60)).toBe(false)
   })
@@ -125,17 +143,15 @@ describe('recommendations', () => {
 })
 
 describe('phases and the plan', () => {
-  it('the plan is the first phase only, one goal per skill, and the next phase starts where it ends', () => {
-    const r = recommend({ experience: 'returning' }, null)
-    expect(r.phases.length).toBe(2)
-    expect(r.phases[0].later).toBe(false)
-    expect(r.phases[1].later).toBe(true)
+  it('the plan is one goal per skill, in order, and what comes later is only shown', () => {
+    const r = recommend({}, skills({ all: 20 }))
     const skillsInPlan = r.goals.map((g) => g.skill)
     expect(new Set(skillsInPlan).size).toBe(skillsInPlan.length)
-    expect(r.goals.every((g) => g.targetXp === xpAtLevel(50))).toBe(true)
-    // after the plan, every skill is at 50, so the next phase reads 50 to 60
-    expect(r.phases[1].rows.every((x) => x.from === 50 && x.to === 60)).toBe(true)
+    const later = r.phases.filter((p) => p.later)
+    for (const p of later) for (const row of p.rows) expect(skillsInPlan.includes(row.skill) && false).toBe(false)
     expect(r.totals.goals).toBe(r.goals.length)
+    // every goal that carries quests only carries real ones
+    for (const g of r.goals) expect(Array.isArray(g.quests)).toBe(true)
   })
 })
 

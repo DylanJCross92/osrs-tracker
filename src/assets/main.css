@@ -6867,3 +6867,5 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .path-foot { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
 .path-foot small { color: #c9b6ff; font-size: 0.78rem; font-weight: 600; }
 @media (max-width: 860px) { .paths-grid { grid-template-columns: 1fr; } .path-card { padding: 14px; } }
+
+.spl-main .spl-why { color: #cfc5ad; }

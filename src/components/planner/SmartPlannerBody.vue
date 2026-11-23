@@ -85,15 +85,15 @@
         <p v-if="shown.empty" class="empty-hint">Nothing to recommend for these answers. Go back and change one of them.</p>
         <section v-for="p in shown.phases" :key="p.id" class="spl-phase" :class="{ later: p.later }">
           <header>
-            <span class="spl-num">{{ p.later ? '›' : '1' }}</span>
+            <span class="spl-num">{{ p.later ? '›' : phaseNumber(p) }}</span>
             <div><b>{{ p.later ? `Then: ${lower(p.title)}` : p.title }}</b><small v-if="p.later">{{ laterLine(p) }}</small><small v-else-if="p.why">{{ p.why }}</small></div>
           </header>
           <ol v-if="!p.later">
             <li v-for="(r, i) in p.rows.slice(0, SHOW_ROWS)" :key="r.skill || r.id" :style="{ '--i': i }">
               <template v-if="r.kind === 'quest'">
                 <span class="spw-quest" aria-hidden="true">★</span>
-                <div class="spl-main"><b>{{ r.title }}</b><span>{{ r.rewards }}</span></div>
-                <div class="spl-fig"><b v-if="r.hours">{{ formatHours(r.hours) }}</b></div>
+                <div class="spl-main"><b>{{ r.title }}</b><span>{{ r.rewards }}</span><span v-for="t in r.reasons || []" :key="t" class="spl-why">{{ t }}</span></div>
+                <div class="spl-fig"><b v-if="r.hours">{{ r.estimated ? '~' : '' }}{{ formatHours(r.hours) }}</b><small v-if="r.estimated">estimate</small></div>
               </template>
               <template v-else>
                 <img :src="skillIconSrc(r.skill)" alt="" width="26" height="26" />
@@ -139,6 +139,7 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { usePlannerProfile } from '@/composables/usePlannerProfile'
+import { useRequirements } from '@/composables/useRequirements'
 import { EXPERIENCE, GOALS, GP_LEVELS, recommend } from '@/utils/smartPlanner'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours } from '@/utils/planner'
@@ -182,7 +183,9 @@ const goalLabel = computed(() => GOALS.find((g) => g.key === profile.value.goal)
 const gpLabel = computed(() => GP_LEVELS.find((g) => g.key === profile.value.gp)?.label || '')
 
 // Worked out as soon as anything changes; the plan step shows it after a short beat so a change reads as the plan being worked out.
-const live = computed(() => recommend(profile.value, props.skills))
+// Quests marked finished (in the planner's quest tracker) are left out of the steps.
+const { doneQuestIds } = useRequirements()
+const live = computed(() => recommend(profile.value, props.skills, { done: new Set(doneQuestIds.value) }))
 const teaser = computed(() => {
   const p = live.value.phases.find((x) => !x.later)
   return p && live.value.totals.goals ? `${lower(p.title)} (${live.value.totals.goals} goal${live.value.totals.goals === 1 ? '' : 's'}, about ${formatHours(live.value.totals.hours)})` : ''
@@ -220,6 +223,8 @@ watch(
     }
   },
 )
+// 1, 2, 3 for the steps of the plan itself (what comes later has no number).
+const phaseNumber = (p) => shown.value.phases.filter((x) => !x.later).indexOf(p) + 1
 const laterLine = (p) => `${p.rows.length} more ${p.rows.length === 1 ? 'skill' : 'skills'}, after this plan.`
 
 function set(patch, question) {

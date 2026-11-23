@@ -1037,7 +1037,7 @@ function personalizeTemplate() {
   }
   // A Smart Planner plan made before any player was known is worked out again from the player's real levels, with the same answers.
   if (template.value?.smart) {
-    goals.value = planFromProfile(template.value.smart, player.value.latest.skills).goals
+    goals.value = planFromProfile(template.value.smart, player.value.latest.skills, { done: new Set(doneQuestIds.value) }).goals
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
     track('smart_planner_personalized', { goals: goals.value.length })
@@ -1124,7 +1124,7 @@ async function startSmart(profile) {
   await loadTyped()
   // The Smart Planner is built on the player's real levels, so it does not start without them.
   if (!player.value?.latest) return showToast('The Smart Planner needs your RuneScape name to make a plan that fits you.')
-  const plan = planFromProfile(profile, player.value?.latest?.skills || null)
+  const plan = planFromProfile(profile, player.value?.latest?.skills || null, { done: new Set(doneQuestIds.value) })
   if (!plan.goals.length) return showToast('Nothing to plan for those answers. Change one and try again.')
   useSmartPlan(plan)
 }
