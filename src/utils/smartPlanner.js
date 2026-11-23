@@ -298,6 +298,9 @@ function questReasons(q) {
   if (q.combatNeed >= 20) lines.push(`Its fights need roughly combat level ${q.combatNeed}.`)
   if (q.qpNeed > 0 && !q.qpOk) lines.push(`Needs ${q.qpNeed} quest points to start; check your quest log.`)
   if (q.quest.note) lines.push(q.quest.note)
+  // A lamp's experience goes to a skill of the player's choice, so it is mentioned, not counted in the plan.
+  const lamp = q.quest.lamps?.[0]?.xp?.replace(/\s*\[[^\]]*\]/g, '').trim()
+  if (lamp && !q.quest.note) lines.push(`Also gives an XP lamp (${lamp} XP, in a skill you choose), not counted here.`)
   return lines
 }
 
