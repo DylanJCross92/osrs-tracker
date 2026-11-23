@@ -505,6 +505,8 @@ CREATE TABLE IF NOT EXISTS feedback (
   emailed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS feedback_created_idx ON feedback (created_at DESC);
+-- A "this plan looks wrong" report from the Smart Planner carries its answers and plan (no names), see utils/feedback.js cleanPlanContext.
+ALTER TABLE feedback ADD COLUMN IF NOT EXISTS context JSONB;
 
 -- When the current leader of that day took the lead (kept while the same player stays on top), so "top gainer for 3 hours" can be shown.
 ALTER TABLE daily_top_gainers ADD COLUMN IF NOT EXISTS lead_since TIMESTAMPTZ;

@@ -82,6 +82,21 @@ describe('sequential counting', () => {
   })
 })
 
+describe('the Smart Planner funnel', () => {
+  const smart = def('smartPlanner')
+  it('counts a person from opening it to starting the plan, in order', () => {
+    const full = person([ev('smart_planner_open', 0), ev('smart_planner_answer', 1), ev('smart_planner_plan_viewed', 2), ev('smart_planner_start', 3)])
+    const looked = person([ev('smart_planner_open', 0), ev('smart_planner_answer', 1), ev('smart_planner_plan_viewed', 2)])
+    const bounced = person([ev('smart_planner_open', 0)])
+    const f = buildFunnel(smart, prep([full, looked, bounced]))
+    expect(f.steps.map((x) => x.value)).toEqual([3, 3, 2, 2, 1])
+  })
+  it('also counts a plan that was started from the planner side', () => {
+    const f = buildFunnel(smart, prep([person([ev('smart_planner_open', 0), ev('smart_planner_answer', 1), ev('smart_planner_plan_viewed', 2), ev('planner_smart_used', 3)])]))
+    expect(f.steps[f.steps.length - 1].value).toBe(1)
+  })
+})
+
 describe('segments', () => {
   const account = person([ev('spa_page_view', 0, '/')], { kind: 'account', signedUpAt: min(1) })
   const guest = person([ev('spa_page_view', 0, '/'), ev('spa_page_view', 60 * 30, '/planner')])

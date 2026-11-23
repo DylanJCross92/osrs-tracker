@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { cleanFeedback, cleanPage, cleanViewport, MAX_MESSAGE } from '../../server/src/utils/feedback.js'
+import { cleanFeedback, cleanPage, cleanPlanContext, cleanViewport, MAX_CONTEXT_BYTES, MAX_MESSAGE } from '../../server/src/utils/feedback.js'
 import { notifyFeedback, _resetNotifyCap } from '../../server/src/services/notify.service.js'
 
 describe('cleanFeedback', () => {
@@ -24,6 +24,32 @@ describe('cleanFeedback', () => {
   it('refuses an email that does not look right, but an empty one is fine', () => {
     expect(cleanFeedback({ message: 'hello there', email: 'not-an-email' }).error).toBeTruthy()
     expect(cleanFeedback({ message: 'hello there', email: '' }).value.email).toBeNull()
+  })
+})
+
+describe('a Smart Planner plan report', () => {
+  const context = {
+    profile: { members: true, iron: false, goal: 'money', gp: 'low', experience: 'returning', hours: 2.5 },
+    goals: [{ skill: 'Runecraft', from: 44, to: 54, hours: 7.2, rsn: 'SomeName' }],
+    phases: [{ title: 'Make money while you train', rows: 3 }],
+    notes: ['Fletching stops at level 40 to stay inside your 1M gp budget.'],
+    skipped: [{ title: 'Monkey Madness I', reason: 'Its fights need about combat level 65; yours is 40.' }],
+    assumed: { combat: 40, doneQuests: 2 },
+    username: 'SomeName',
+  }
+  it('keeps the plan context only for a plan report, with only known fields', () => {
+    const { value } = cleanFeedback({ kind: 'plan_report', message: 'This looks wrong to me', context })
+    expect(value.kind).toBe('plan_report')
+    expect(value.context.profile).toEqual({ members: true, iron: false, goal: 'money', gp: 'low', experience: 'returning', hours: 2.5 })
+    expect(value.context.goals).toEqual([{ skill: 'Runecraft', from: 44, to: 54, hours: 7 }])
+    expect(JSON.stringify(value.context)).not.toMatch(/SomeName/)
+    expect(cleanFeedback({ kind: 'bug', message: 'This looks wrong to me', context }).value.context).toBeUndefined()
+  })
+  it('drops a context that is too big or not an object, and unknown answers', () => {
+    const huge = { ...context, notes: Array.from({ length: 8 }, () => 'x'.repeat(200)), skipped: Array.from({ length: 6 }, () => ({ title: 'y'.repeat(60), reason: 'z'.repeat(160) })), goals: Array.from({ length: 30 }, () => ({ skill: 'Mining', from: 1, to: 99, hours: 5 })) }
+    expect(JSON.stringify(cleanPlanContext(huge) || {}).length).toBeLessThanOrEqual(MAX_CONTEXT_BYTES)
+    expect(cleanPlanContext('nope')).toBeNull()
+    expect(cleanPlanContext({ profile: { goal: 'evil', gp: 'lots', experience: 'god', hours: 99 } }).profile).toMatchObject({ goal: null, gp: null, experience: null, hours: 12 })
   })
 })
 

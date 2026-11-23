@@ -196,6 +196,9 @@ function parseDetails(text) {
       if (t) prereq.push(t)
     } else if (/^\*(?!\*)/.test(line)) inQuests = false
   }
+  // Quest points the quest gives (its rewards box)
+  const rewardsAt = text.indexOf('{{Quest rewards')
+  const rewards = rewardsAt > -1 ? fields(balanced(text, rewardsAt)) : {}
   const combatMatch = String(f.recommended || '').match(/\{\{SCP\|Combat\|(\d+)/)
   const kills = String(f.kills || '')
   const levels = [...kills.matchAll(/level\s*(\d+)/gi)].map((m) => Number(m[1]))
@@ -205,6 +208,7 @@ function parseDetails(text) {
     length: pickWord(f.length, LENGTHS),
     reqs,
     qpReq,
+    qp: rewards.qp != null && /^\d+$/.test(String(rewards.qp).trim()) ? Number(rewards.qp) : null,
     prereq: [...new Set(prereq)],
     recommendedCombat: combatMatch ? Number(combatMatch[1]) : null,
     enemyMax: levels.length ? Math.max(...levels) : null,
@@ -228,7 +232,7 @@ async function addQuest(name, entry, support = false) {
     const page = await wikitext(name)
     const details = parseDetails(page)
     if (!details) problems.push(`${name}: no "Quest details" box`)
-    const { members: pageMembers, ...rest } = details || { members: null, difficulty: null, length: null, reqs: {}, qpReq: null, prereq: [], recommendedCombat: null, enemyMax: null, mustDefeat: null }
+    const { members: pageMembers, ...rest } = details || { members: null, difficulty: null, length: null, reqs: {}, qpReq: null, qp: null, prereq: [], recommendedCombat: null, enemyMax: null, mustDefeat: null }
     out.push({
       name,
       slug: questSlug(name),

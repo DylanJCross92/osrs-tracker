@@ -89,6 +89,18 @@ export const FUNNELS = [
     ],
   },
   {
+    key: 'smartPlanner',
+    label: 'Smart Planner',
+    blurb: 'From opening the Smart Planner to a plan someone started from it, and whether they said it looked wrong.',
+    steps: [
+      { key: 'visited', label: 'Visited', times: (p) => [p.first] },
+      { key: 'opened', label: 'Opened the Smart Planner', times: named('smart_planner_open') },
+      { key: 'answered', label: 'Answered a question', times: named('smart_planner_answer') },
+      { key: 'plan', label: 'Saw their plan', times: named('smart_planner_plan_viewed') },
+      { key: 'started', label: 'Started the plan', times: named('smart_planner_start', 'planner_smart_used') },
+    ],
+  },
+  {
     key: 'clans',
     label: 'Clans',
     blurb: 'From opening Clans to joining or running one.',

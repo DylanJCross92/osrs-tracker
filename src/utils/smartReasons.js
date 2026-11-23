@@ -107,11 +107,16 @@ export function unlockFor(state, profile, done = new Set(), levels = {}) {
 
 /**
  * Quests worth doing (each with whatever it needs first), with what they are worth: { quest, chain, xp, savedHours, minutes, estimated, unmet,
- * reqHours, net }. A quest is worth it when the training time its XP saves beats its own length plus the hours to reach any level it needs.
+ * reqHours, net, combatNeed, qpNeed, qpOk }. A quest is worth it when the training time its XP saves beats its own length plus the hours to
+ * reach any level it needs. `skipped` is the quests that would have been worth it but for the combat level they need: [{ quest, combatNeed, combat, net }].
+ * Quest points are not tracked, so a quest that needs some is shown with a note (`qpOk` false) unless the finished quests and the ones it comes
+ * after add up to enough.
  */
-export function questsFor(states, profile, done = new Set(), { skills = null, minNet = 0.5 } = {}) {
+export function evaluateQuests(states, profile, done = new Set(), { skills = null, minNet = 0.5 } = {}) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
   const rows = []
+  const skipped = []
+  const doneQp = [...done].reduce((sum, id) => sum + (getQuest(id)?.qp || 0), 0)
   for (const q of QUESTS) {
     if (done.has(q.id)) continue
     if (!profile.members && !isFreeQuest(q)) continue
@@ -122,6 +127,8 @@ export function questsFor(states, profile, done = new Set(), { skills = null, mi
     let estimated = true // every length here is a first-timer's estimate, shown as one
     let minutes = 0
     let combatNeed = 0
+    let qpNeed = 0
+    let qpBefore = doneQp
     for (const id of chain) {
       const c = getQuest(id)
       for (const [sk, amount] of Object.entries(c.rewards)) xp[sk] = (xp[sk] || 0) + amount
@@ -131,6 +138,8 @@ export function questsFor(states, profile, done = new Set(), { skills = null, mi
       }
       minutes += c.minutes || ESTIMATED_QUEST_MINUTES
       combatNeed = Math.max(combatNeed, c.combat || 0)
+      qpNeed = Math.max(qpNeed, c.qpReq || 0)
+      if (id !== q.id) qpBefore += c.qp || 0
     }
     if (skills && !Object.keys(xp).some((sk) => skills.has(sk))) continue
     if (!profile.members && unmet.some((u) => !F2P_SKILLS.includes(u.skill))) continue
@@ -142,11 +151,6 @@ export function questsFor(states, profile, done = new Set(), { skills = null, mi
       else reqHours += h
     }
     if (blocked) continue
-    // Its fights need a combat level: counted with the levels the quest itself asks for first, and left out until the account has it.
-    const levels = { ...levelsOf(states) }
-    for (const u of unmet) levels[u.skill] = Math.max(levels[u.skill] || 1, u.need)
-    const combat = combatLevel(levels)
-    if (combat < combatNeed) continue
     let saved = 0
     for (const [sk, amount] of Object.entries(xp)) {
       const s = byName[sk]
@@ -159,9 +163,24 @@ export function questsFor(states, profile, done = new Set(), { skills = null, mi
     }
     const net = saved - minutes / 60 - reqHours
     if (net < minNet) continue
-    rows.push({ quest: q, chain, xp, savedHours: saved, minutes, estimated, unmet, reqHours, net, combatNeed })
+    // Its fights need a combat level: counted with the levels the quest itself asks for first, and left out until the account has it.
+    const levels = { ...levelsOf(states) }
+    for (const u of unmet) levels[u.skill] = Math.max(levels[u.skill] || 1, u.need)
+    const combat = combatLevel(levels)
+    if (combat < combatNeed) {
+      skipped.push({ quest: q, combatNeed, combat, net })
+      continue
+    }
+    rows.push({ quest: q, chain, xp, savedHours: saved, minutes, estimated, unmet, reqHours, net, combatNeed, qpNeed, qpOk: qpNeed <= qpBefore })
   }
-  return rows.sort((a, b) => b.net - a.net || (a.quest.name < b.quest.name ? -1 : 1))
+  rows.sort((a, b) => b.net - a.net || (a.quest.name < b.quest.name ? -1 : 1))
+  skipped.sort((a, b) => b.net - a.net || (a.quest.name < b.quest.name ? -1 : 1))
+  return { rows, skipped }
+}
+
+/** The quests worth doing: the rows of evaluateQuests. */
+export function questsFor(states, profile, done = new Set(), opts = {}) {
+  return evaluateQuests(states, profile, done, opts).rows
 }
 
 /**

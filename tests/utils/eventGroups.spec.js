@@ -8,6 +8,8 @@ describe('eventGroup', () => {
     ['shared_plan_viewed', 'sharing'],
     ['planner_goal_added', 'planner'],
     ['quick_planner_modal_open', 'planner'],
+    ['smart_planner_plan_viewed', 'planner'],
+    ['smart_planner_report', 'planner'],
     ['search_started', 'search'],
     ['player_added', 'search'],
     ['sign_up', 'account'],

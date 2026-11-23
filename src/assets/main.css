@@ -6993,3 +6993,22 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .fl-tip-gain b { color: var(--xp-green, #8fd16f); }
 .fl-tip-cost { background: rgba(217, 105, 90, 0.14); }
 .fl-tip-cost b { color: #f0907f; }
+
+/* Smart Planner: what the plan assumed, and the "this plan looks wrong" window */
+.spl-checks { margin: 12px 0 0; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.86rem; color: var(--muted); }
+.spl-checks summary { cursor: pointer; color: var(--text); font-weight: 600; }
+.spl-checks ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.spl-checks-h { display: block; margin-top: 10px; color: var(--text); }
+.spl-report { margin: 8px 0 0; text-align: right; font-size: 0.86rem; }
+.spr-overlay { z-index: 80; }
+.modal-card.spr { width: min(520px, calc(100vw - 24px)); max-width: none; padding: 20px 22px 18px; }
+.spr-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.spr-head h2 { margin: 0; font-size: 1.3rem; }
+.spr-sub { margin: 6px 0 14px; color: var(--muted); font-size: 0.9rem; }
+.spr-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; font-size: 0.86rem; color: var(--muted); }
+.spr-field textarea, .spr-field input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 0.95rem; }
+.spr-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.spr-error { margin: 0 0 10px; color: #f0907f; font-size: 0.88rem; }
+.spr-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+.spr-done { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 0 4px; }
+.spr-done p { margin: 0 0 8px; color: var(--muted); }

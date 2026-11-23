@@ -127,7 +127,21 @@ const feedbackSent = []
  * Email the owner a piece of feedback. Replying to the email goes straight to the sender when they left an address.
  * Resolves true if Resend took it, false otherwise; never throws. The message is already saved before this is called.
  */
-export async function notifyFeedback({ id, kind, kindLabel, message, email = null, page = '', viewport = '', signedIn = false }) {
+/** The Smart Planner's answers and plan, as a few readable rows for the owner's email (nothing when there is none). */
+export function planRows(context) {
+  if (!context?.profile) return []
+  const p = context.profile
+  const answers = [p.members ? 'Members' : 'Free-to-play', p.iron ? 'Ironman' : 'Main', p.goal, `${p.hours} h a day`, `gp ${p.gp}`, p.experience].filter(Boolean).join(', ')
+  const goals = (context.goals || []).slice(0, 14).map((g) => `${g.skill} ${g.from}-${g.to}`).join(', ')
+  return [
+    { label: 'Answers', value: answers },
+    ...(goals ? [{ label: 'Plan', value: goals + ((context.goals || []).length > 14 ? ` and ${(context.goals || []).length - 14} more` : '') }] : []),
+    ...(context.skipped?.length ? [{ label: 'Left out', value: context.skipped.map((s) => s.title).join(', ') }] : []),
+    ...(context.assumed?.combat ? [{ label: 'Combat level', value: String(context.assumed.combat) }] : []),
+  ]
+}
+
+export async function notifyFeedback({ id, kind, kindLabel, message, email = null, page = '', viewport = '', signedIn = false, context = null }) {
   if (!notifyConfigured()) return false
   const now = Date.now()
   while (feedbackSent.length && feedbackSent[0] < now - 3_600_000) feedbackSent.shift()
@@ -141,6 +155,7 @@ export async function notifyFeedback({ id, kind, kindLabel, message, email = nul
     ...(page ? [{ label: 'Page', value: page }] : []),
     ...(viewport ? [{ label: 'Screen', value: viewport }] : []),
     { label: 'Signed in', value: signedIn ? 'Yes' : 'No' },
+    ...planRows(context),
   ]
   const mail = renderEmail({
     preheader: preview,

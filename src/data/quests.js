@@ -10,6 +10,7 @@
 //   minutes   a first run, not a speedrun: the Wiki's length class for a player who is not expert, see LENGTH_MINUTES
 //   combat    the combat level to take its fights safely: the Wiki's recommendation, else worked out from the strongest enemy it lists
 //             (`combatGuess`), else 0 (nothing to fight). The Smart Planner leaves a quest out until the account has it.
+//   qp        quest points it gives, and `qpReq` the quest points it needs before it can be started
 //   suggest   short and cheap enough that the planner turns it on by itself when it pays off
 
 import { questId, questSlug } from '@/utils/questSlug'
@@ -67,6 +68,7 @@ function build(d) {
     difficulty: d.difficulty,
     length: d.length,
     qpReq: d.qpReq,
+    qp: d.qp || 0,
     lamps: d.lamps || [],
     support: !!d.support,
     // The Wiki gave no details box (length, difficulty, requirements): not recommended, since what it needs is unknown.

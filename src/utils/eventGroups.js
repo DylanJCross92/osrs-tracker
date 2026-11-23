@@ -2,7 +2,7 @@
 const GROUPS = [
   { key: 'pages', label: 'Page views', test: /^spa_page_view$/ },
   { key: 'sharing', label: 'Sharing', test: /share|shared|link_copied/ },
-  { key: 'planner', label: 'Planner', test: /^(planner_|quick_planner_|plan_|profile_skill_planner|quest_tracker)/ },
+  { key: 'planner', label: 'Planner', test: /^(planner_|quick_planner_|smart_planner_|plan_|profile_skill_planner|quest_tracker)/ },
   { key: 'search', label: 'Search', test: /^(search_|player_search|player_added|player_link_click)/ },
   { key: 'account', label: 'Accounts', test: /^(sign_up|login|logout|session_resumed|password_|verification_|newsletter)/ },
   { key: 'profile', label: 'Profiles and Discover', test: /^(profile_|leaderboard_|home_view|congratulate|challenge_)/ },

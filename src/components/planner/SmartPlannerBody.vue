@@ -116,13 +116,31 @@
         <p v-for="n in shown.notes" :key="n" class="spl-note">{{ n }}</p>
         <p v-if="shown.profile.iron" class="spl-note">Costs use Grand Exchange prices. As an ironman you gather these supplies yourself, so read gp as the value of what you gather.</p>
         <p v-if="shown.profile.goal === 'money' && !shown.empty" class="spl-note">Check each method's requirements before you start; the plan lists them.</p>
+        <details v-if="!shown.empty" class="spl-checks">
+          <summary>What this plan assumed, and what it left out</summary>
+          <ul>
+            <li>Combat level {{ shown.assumed.combat }}, worked out from your levels.</li>
+            <li>{{ shown.assumed.members ? 'Members' : 'Free-to-play' }}{{ shown.assumed.iron ? ', ironman' : '' }}.</li>
+            <li v-if="shown.assumed.doneQuests">{{ shown.assumed.doneQuests }} quest{{ shown.assumed.doneQuests === 1 ? '' : 's' }} you marked finished in the planner are left out.</li>
+            <li v-else>No quests are marked finished, so any of them could be suggested. Mark the ones you have done in the planner's quest tracker.</li>
+            <li>Quest lengths are for a first run, not a speedrun, and rates are approximate.</li>
+          </ul>
+          <template v-if="shown.skippedQuests.length">
+            <b class="spl-checks-h">Left out for now</b>
+            <ul>
+              <li v-for="q in shown.skippedQuests" :key="q.id"><b>{{ q.title }}</b> {{ q.reason }}</li>
+            </ul>
+          </template>
+        </details>
         <p v-if="!shown.empty" class="spl-sum">
           <b>{{ shown.totals.goals }}</b> goal{{ shown.totals.goals === 1 ? '' : 's' }} · about <b>{{ formatHours(shown.totals.hours) }}</b>
           <template v-if="shown.totals.days"> · <b>{{ shown.totals.days.toLocaleString('en-US') }}</b> day{{ shown.totals.days === 1 ? '' : 's' }} at {{ shown.settings.hoursPerDay }} h/day</template>
           <template v-if="shown.totals.netGp != null && Math.abs(shown.totals.netGp) >= 1000"> · <b :class="shown.totals.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ gpShort(shown.totals.netGp) }}</b></template>
         </p>
+        <p v-if="!shown.empty" class="spl-report"><button class="btn-text" type="button" @click="reportOpen = true">This plan looks wrong</button></p>
       </template>
     </section>
+    <SmartPlanReport v-if="reportOpen" :plan="shown" @close="reportOpen = false" />
 
     <!-- the first thing we would do, so far (the recommendation, along the way) -->
     <p v-if="current !== 'plan' && hasPlayer && teaser" class="spw-teaser" aria-live="polite"><span aria-hidden="true">✦</span> So far we would start with <b>{{ teaser }}</b>.</p>
@@ -138,12 +156,13 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePlannerProfile } from '@/composables/usePlannerProfile'
 import { useRequirements } from '@/composables/useRequirements'
 import { EXPERIENCE, GOALS, GP_LEVELS, recommend } from '@/utils/smartPlanner'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import CoinStack from '@/components/planner/CoinStack.vue'
+import SmartPlanReport from '@/components/planner/SmartPlanReport.vue'
 import { formatGp, formatHours } from '@/utils/planner'
 import { track } from '@/utils/analytics'
 
@@ -176,6 +195,7 @@ const STEPS = [
 const SHOW_ROWS = 8
 const { profile, answer } = usePlannerProfile()
 const step = ref(0)
+const reportOpen = ref(false)
 const furthest = ref(step.value)
 const current = computed(() => STEPS[step.value].key)
 function go(i) {
@@ -237,6 +257,13 @@ watch(
 // 1, 2, 3 for the steps of the plan itself (what comes later has no number).
 const phaseNumber = (p) => shown.value.phases.filter((x) => !x.later).indexOf(p) + 1
 const laterLine = (p) => `${p.rows.length} more ${p.rows.length === 1 ? 'skill' : 'skills'}, after this plan.`
+
+// The first step counts too (moving between steps is tracked in go()), and so does seeing the finished plan, for the funnel.
+onMounted(() => track('smart_planner_step', { step: STEPS[0].key }))
+watch(
+  () => current.value === 'plan' && !thinking.value && !shown.value.empty,
+  (on) => on && track('smart_planner_plan_viewed', { goal: profile.value.goal, goals: shown.value.totals.goals }),
+)
 
 function set(patch, question) {
   answer(patch)

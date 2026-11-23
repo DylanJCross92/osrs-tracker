@@ -8,7 +8,7 @@ import { skillStates, recommendedPlans } from '@/utils/recommendedPlans'
 import { smartOrder } from '@/utils/smartOrder'
 import { SYNERGIES } from '@/data/skillSynergies'
 import { formatXp } from '@/utils/osrsSkills'
-import { canUseMethod, fitBudget, fundingFor, levelsOf, questsFor, unlockFor } from '@/utils/smartReasons'
+import { canUseMethod, combatLevel, evaluateQuests, fitBudget, fundingFor, levelsOf, unlockFor } from '@/utils/smartReasons'
 import { GOALS, EXPERIENCE, GP_LEVELS, DEFAULT_PROFILE, cleanProfile } from '@/utils/smartProfile'
 
 // The Smart Planner: from a few answers and a player's levels, the steps to take, in order, each with why. Pure and deterministic.
@@ -296,10 +296,12 @@ function questReasons(q) {
       : `Takes about ${cost} the first time (estimated). Its XP is only worth about ${hoursText(q.savedHours)} of training, so do it for the quest itself.`,
   ]
   if (q.combatNeed >= 20) lines.push(`Its fights need roughly combat level ${q.combatNeed}.`)
+  if (q.qpNeed > 0 && !q.qpOk) lines.push(`Needs ${q.qpNeed} quest points to start; check your quest log.`)
+  if (q.quest.note) lines.push(q.quest.note)
   return lines
 }
 
-function purposePhases(states, profile, settings, done, mode) {
+function purposePhases(states, profile, settings, done, mode, sink = {}) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
   // Only a few skills left: finishing them is the plan (see skillsPhase), not a search for what opens up.
   if (states.filter((s) => s.level < 99 && (profile.members || F2P_SKILLS.includes(s.skill))).length <= 3) return []
@@ -317,7 +319,9 @@ function purposePhases(states, profile, settings, done, mode) {
   }
   const nQuests = mode === 'quests' ? 6 : 4
   // Asked for quests, they are worth doing for the quest itself even when they take about as long as the training they replace.
-  const picks = questsFor(states, profile, done, { minNet: mode === 'quests' ? -1.2 : 0.5 }).slice(0, nQuests)
+  const evaluated = evaluateQuests(states, profile, done, { minNet: mode === 'quests' ? -1.2 : 0.5 })
+  sink.skipped = evaluated.skipped
+  const picks = evaluated.rows.slice(0, nQuests)
 
   // 1. The levels the quests need.
   const questRows = []
@@ -442,7 +446,9 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
     }
     return out
   }
-  const reasoned = () => purposePhases(states, profile, settings, doneSet, profile.goal === 'quests' ? 'quests' : 'skills')
+  // What was left out and why (the quests that need more combat than the account has), for the plan to show.
+  const sink = { skipped: [] }
+  const reasoned = () => purposePhases(states, profile, settings, doneSet, profile.goal === 'quests' ? 'quests' : 'skills', sink)
   let phases = profile.goal === 'skills' || profile.goal === 'quests' ? reasoned() : build(profile.goal)
   const notes = []
   // Nothing reasoned (every skill is far from anything that opens up, or all done): the plain levels, and say so.
@@ -476,7 +482,9 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   let combatQuestRows = []
   if (profile.goal === 'combat' && phases[0]) {
     const combatSkills = new Set(['Attack', 'Strength', 'Defence', 'Hitpoints', 'Ranged', 'Prayer', 'Magic'])
-    for (const q of questsFor(states, profile, doneSet, { skills: combatSkills }).slice(0, 4)) {
+    const evaluated = evaluateQuests(states, profile, doneSet, { skills: combatSkills })
+    sink.skipped = evaluated.skipped
+    for (const q of evaluated.rows.slice(0, 4)) {
       for (const [sk] of Object.entries(q.xp)) {
         const g = phases[0].goals.find((x) => x.skill === sk)
         if (g) for (const id of q.chain) if (!(g.quests || []).includes(id)) g.quests = [...(g.quests || []), id]
@@ -548,7 +556,10 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   if (profile.goal === 'quests' && !outPhases.some((p) => p.id === 'quests')) notes.push('No quest in our list would save you time at your levels.')
   const goals = ordered.map(({ why, purpose, ...g }) => g)
   const sum = goals.length ? summarizePlan({ goals, globalStrategy: settings.globalStrategy, gpValue: settings.gpValue, hoursPerDay: settings.hoursPerDay }) : { totalHours: 0, netGp: 0, days: 0 }
-  return { profile, settings, phases: outPhases, notes, goals, totals: { goals: goals.length, hours: sum.totalHours, days: sum.days, netGp: sum.netGp }, empty: !goals.length }
+  // Left out, and what the plan took for granted, so none of it is a mystery.
+  const skippedQuests = (sink.skipped || []).slice(0, 4).map((x) => ({ id: x.quest.id, title: x.quest.name, reason: `Its fights need about combat level ${x.combatNeed}${x.quest.combatGuess ? ' (worked out from its enemies)' : ''}; yours is ${x.combat}.` }))
+  const assumed = { combat: combatLevel(levelsOf(states)), members: profile.members, iron: profile.iron, doneQuests: doneSet.size }
+  return { profile, settings, phases: outPhases, notes, goals, skippedQuests, assumed, totals: { goals: goals.length, hours: sum.totalHours, days: sum.days, netGp: sum.netGp }, empty: !goals.length }
 }
 
 /** What to start a plan from: the ordered goals and the settings. */

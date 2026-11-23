@@ -27,6 +27,7 @@ export const QUEST_DATA = [
    "Magic": 35
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "The Depths of Despair",
    "The Queen of Thieves",
@@ -65,6 +66,7 @@ export const QUEST_DATA = [
    "Herblore": 32
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Priest in Peril"
   ],
@@ -89,6 +91,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "A Taste of Hope",
    "Darkness of Hallowvale",
@@ -116,6 +119,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 37,
@@ -137,6 +141,7 @@ export const QUEST_DATA = [
    "Crafting": 15
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": 23,
@@ -160,6 +165,7 @@ export const QUEST_DATA = [
    "Construction": 15
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 40,
   "enemyMax": 50,
@@ -180,6 +186,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 30,
   "enemyMax": 46,
@@ -202,6 +209,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Icthlarin's Little Helper",
    "Gertrude's Cat"
@@ -233,6 +241,7 @@ export const QUEST_DATA = [
    "Slayer": 38
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Darkness of Hallowvale",
    "In Aid of the Myreque",
@@ -258,6 +267,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -285,6 +295,7 @@ export const QUEST_DATA = [
    "Woodcutting": 35
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Restless Ghost",
    "Ernest the Chicken",
@@ -312,6 +323,7 @@ export const QUEST_DATA = [
    "Prayer": 25
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Death to the Dorgeshuun",
    "The Lost Tribe",
@@ -344,6 +356,7 @@ export const QUEST_DATA = [
    "Construction": 27
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun",
    "Eagles' Peak"
@@ -366,6 +379,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": 16,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": 25,
@@ -389,6 +403,7 @@ export const QUEST_DATA = [
    "Firemaking": 55
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Contact!",
    "Prince Ali Rescue",
@@ -419,6 +434,7 @@ export const QUEST_DATA = [
    "Smithing": 50
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Dwarf Cannon",
    "Fishing Contest"
@@ -447,6 +463,7 @@ export const QUEST_DATA = [
    "Ranged": 30
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 25,
   "enemyMax": 64,
@@ -466,6 +483,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "Plague City"
   ],
@@ -490,6 +508,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": 12,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": null,
@@ -508,6 +527,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Dig Site"
   ],
@@ -536,6 +556,7 @@ export const QUEST_DATA = [
    "Ranged": 40
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Pirate's Treasure",
    "Rum Deal",
@@ -562,6 +583,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -584,6 +606,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "X Marks the Spot"
   ],
@@ -605,6 +628,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": null,
@@ -632,6 +656,7 @@ export const QUEST_DATA = [
    "Thieving": 15
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 30,
   "enemyMax": 51,
@@ -656,6 +681,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Prince Ali Rescue",
    "Icthlarin's Little Helper",
@@ -679,6 +705,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -702,6 +729,7 @@ export const QUEST_DATA = [
    "Fishing": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -724,6 +752,7 @@ export const QUEST_DATA = [
    "Thieving": 25
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Priest in Peril",
    "The Restless Ghost"
@@ -750,6 +779,7 @@ export const QUEST_DATA = [
    "Fishing": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Pandemonium"
   ],
@@ -777,6 +807,7 @@ export const QUEST_DATA = [
    "Prayer": 31
   },
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": null,
@@ -796,6 +827,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -830,6 +862,7 @@ export const QUEST_DATA = [
    "Strength": 40
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "In Aid of the Myreque",
    "In Search of the Myreque",
@@ -860,6 +893,7 @@ export const QUEST_DATA = [
    "Agility": 32
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Children of the Sun"
   ],
@@ -881,6 +915,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -904,6 +939,7 @@ export const QUEST_DATA = [
    "Thieving": 23
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Lost Tribe",
    "Goblin Diplomacy",
@@ -931,6 +967,7 @@ export const QUEST_DATA = [
    "Hunter": 52
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Shield of Arrav",
    "Temple of Ikov",
@@ -966,6 +1003,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": 27,
@@ -990,6 +1028,7 @@ export const QUEST_DATA = [
    "Slayer": 10
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "The Dig Site",
    "Temple of Ikov",
@@ -1027,6 +1066,7 @@ export const QUEST_DATA = [
    "Construction": 60
   },
   "qpReq": null,
+  "qp": 5,
   "prereq": [
    "Desert Treasure I",
    "The Dig Site",
@@ -1094,6 +1134,7 @@ export const QUEST_DATA = [
    "Fletching": 50
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Wanted!",
    "Recruitment Drive",
@@ -1126,6 +1167,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1146,6 +1188,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": 32,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": 83,
@@ -1182,6 +1225,7 @@ export const QUEST_DATA = [
    "Hitpoints": 50
   },
   "qpReq": 200,
+  "qp": 5,
   "prereq": [
    "Legends' Quest",
    "Family Crest",
@@ -1241,6 +1285,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Lunar Diplomacy",
    "The Fremennik Trials",
@@ -1271,6 +1316,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 4,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 19,
@@ -1290,6 +1336,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1311,6 +1358,7 @@ export const QUEST_DATA = [
    "Herblore": 31
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Druidic Ritual",
    "Troll Stronghold",
@@ -1336,6 +1384,7 @@ export const QUEST_DATA = [
    "Hunter": 27
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 13,
@@ -1360,6 +1409,7 @@ export const QUEST_DATA = [
    "Crafting": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": 35,
@@ -1383,6 +1433,7 @@ export const QUEST_DATA = [
    "Smithing": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Elemental Workshop I"
   ],
@@ -1412,6 +1463,7 @@ export const QUEST_DATA = [
    "Magic": 39
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 25,
   "enemyMax": null,
@@ -1438,6 +1490,7 @@ export const QUEST_DATA = [
    "Crafting": 36
   },
   "qpReq": 20,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1457,6 +1510,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [
    "Rune Mysteries"
   ],
@@ -1481,6 +1535,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 4,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1502,6 +1557,7 @@ export const QUEST_DATA = [
    "Thieving": 25
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun",
    "Shield of Arrav"
@@ -1526,6 +1582,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Lost City",
    "Nature Spirit",
@@ -1560,6 +1617,7 @@ export const QUEST_DATA = [
    "Herblore": 57
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Fairytale I - Growing Pains",
    "Lost City",
@@ -1593,6 +1651,7 @@ export const QUEST_DATA = [
    "Mining": 53
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Pandemonium"
   ],
@@ -1621,6 +1680,7 @@ export const QUEST_DATA = [
    "Crafting": 40
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 55,
   "enemyMax": 170,
@@ -1641,6 +1701,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 142,
@@ -1662,6 +1723,7 @@ export const QUEST_DATA = [
    "Fishing": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1685,6 +1747,7 @@ export const QUEST_DATA = [
    "Farming": 17
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "The Giant Dwarf",
    "Fishing Contest"
@@ -1709,6 +1772,7 @@ export const QUEST_DATA = [
    "Farming": 25
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Creature of Fenkenstrain",
    "Priest in Peril",
@@ -1732,6 +1796,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1755,6 +1820,7 @@ export const QUEST_DATA = [
    "Construction": 26
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": null,
@@ -1777,6 +1843,7 @@ export const QUEST_DATA = [
    "Cooking": 20
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": 32,
@@ -1796,6 +1863,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 5,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -1826,6 +1894,7 @@ export const QUEST_DATA = [
    "Woodcutting": 71
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Witch's House"
   ],
@@ -1849,6 +1918,7 @@ export const QUEST_DATA = [
    "Crafting": 35
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Priest in Peril"
   ],
@@ -1870,6 +1940,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 13,
@@ -1905,6 +1976,7 @@ export const QUEST_DATA = [
    "Mining": 50
   },
   "qpReq": 55,
+  "qp": 1,
   "prereq": [
    "Shield of Arrav",
    "Lost City",
@@ -1929,6 +2001,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": 70,
   "enemyMax": 115,
@@ -1951,6 +2024,7 @@ export const QUEST_DATA = [
    "Attack": 20
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Merlin's Crystal"
   ],
@@ -1974,6 +2048,7 @@ export const QUEST_DATA = [
    "Prayer": 50
   },
   "qpReq": null,
+  "qp": null,
   "prereq": [
    "Desert Treasure I",
    "Fairytale II - Cure a Queen",
@@ -2001,6 +2076,7 @@ export const QUEST_DATA = [
    "Agility": 35
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 100,
@@ -2022,6 +2098,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 91,
@@ -2041,6 +2118,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": 2,
@@ -2068,6 +2146,7 @@ export const QUEST_DATA = [
    "Magic": 7
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "In Search of the Myreque",
    "Nature Spirit",
@@ -2095,6 +2174,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": null,
@@ -2120,6 +2200,7 @@ export const QUEST_DATA = [
    "Agility": 25
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Nature Spirit",
    "Priest in Peril",
@@ -2146,6 +2227,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [
    "Beneath Cursed Sands",
    "Contact!",
@@ -2173,6 +2255,7 @@ export const QUEST_DATA = [
    "Herblore": 3
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Druidic Ritual"
   ],
@@ -2203,6 +2286,7 @@ export const QUEST_DATA = [
    "Defence": 65
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Black Knights' Fortress",
    "Holy Grail",
@@ -2235,6 +2319,7 @@ export const QUEST_DATA = [
   "length": null,
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2256,6 +2341,7 @@ export const QUEST_DATA = [
    "Slayer": 40
   },
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 69,
@@ -2283,6 +2369,7 @@ export const QUEST_DATA = [
    "Herblore": 48
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Another Slice of H.A.M.",
    "Death to the Dorgeshuun",
@@ -2325,6 +2412,7 @@ export const QUEST_DATA = [
    "Woodcutting": 50
   },
   "qpReq": 107,
+  "qp": 4,
   "prereq": [
    "Family Crest",
    "Heroes' Quest",
@@ -2362,6 +2450,7 @@ export const QUEST_DATA = [
    "Woodcutting": 36
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": 101,
@@ -2390,6 +2479,7 @@ export const QUEST_DATA = [
    "Woodcutting": 55
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "The Fremennik Trials",
    "Lost City",
@@ -2424,6 +2514,7 @@ export const QUEST_DATA = [
    "Agility": 68
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "My Arm's Big Adventure",
    "Eadgar's Ruse",
@@ -2462,6 +2553,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "Priest in Peril",
    "The Restless Ghost"
@@ -2484,6 +2576,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun"
   ],
@@ -2505,6 +2598,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 6,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 39,
@@ -2524,6 +2618,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2543,6 +2638,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2565,6 +2661,7 @@ export const QUEST_DATA = [
   "length": "Long",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "The Grand Tree",
    "Tree Gnome Village"
@@ -2602,6 +2699,7 @@ export const QUEST_DATA = [
    "Firemaking": 60
   },
   "qpReq": null,
+  "qp": 4,
   "prereq": [
    "Enlightened Journey",
    "The Eyes of Glouphrie",
@@ -2634,6 +2732,7 @@ export const QUEST_DATA = [
    "Agility": 20
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 40,
   "enemyMax": 70,
@@ -2657,6 +2756,7 @@ export const QUEST_DATA = [
    "Thieving": 50
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Roving Elves",
    "Regicide",
@@ -2685,6 +2785,7 @@ export const QUEST_DATA = [
   "length": "Long",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Mourning's End Part I",
    "Roving Elves",
@@ -2717,6 +2818,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": 8,
@@ -2736,6 +2838,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2759,6 +2862,7 @@ export const QUEST_DATA = [
    "Woodcutting": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Eadgar's Ruse",
    "Druidic Ritual",
@@ -2786,6 +2890,7 @@ export const QUEST_DATA = [
   "length": null,
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2807,6 +2912,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Priest in Peril",
    "The Restless Ghost"
@@ -2829,6 +2935,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 42,
@@ -2851,6 +2958,7 @@ export const QUEST_DATA = [
    "Woodcutting": 50
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Fremennik Trials"
   ],
@@ -2880,6 +2988,7 @@ export const QUEST_DATA = [
    "Smithing": 30
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Rune Mysteries",
    "Shilo Village",
@@ -2904,6 +3013,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2932,6 +3042,7 @@ export const QUEST_DATA = [
    "Construction": 10
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Twilight's Promise",
    "Children of the Sun"
@@ -2954,6 +3065,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": 4,
@@ -2973,6 +3085,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -2992,6 +3105,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": 30,
@@ -3012,6 +3126,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 26,
@@ -3035,6 +3150,7 @@ export const QUEST_DATA = [
    "Sailing": 12
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Pandemonium",
    "The Knight's Sword"
@@ -3058,6 +3174,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": null,
@@ -3080,6 +3197,7 @@ export const QUEST_DATA = [
    "Defence": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Creature of Fenkenstrain"
   ],
@@ -3104,6 +3222,7 @@ export const QUEST_DATA = [
    "Slayer": 58
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "Rag and Bone Man II",
    "Rag and Bone Man I",
@@ -3154,6 +3273,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Icthlarin's Little Helper",
    "Gertrude's Cat"
@@ -3193,6 +3313,7 @@ export const QUEST_DATA = [
    "Woodcutting": 36
   },
   "qpReq": 175,
+  "qp": 10,
   "prereq": [
    "Cook's Assistant"
   ],
@@ -3215,6 +3336,7 @@ export const QUEST_DATA = [
    "Cooking": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Cook's Assistant"
   ],
@@ -3238,6 +3360,7 @@ export const QUEST_DATA = [
    "Agility": 48
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Monkey Madness I",
    "The Grand Tree",
@@ -3264,6 +3387,7 @@ export const QUEST_DATA = [
    "Cooking": 31
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Recipe for Disaster/Another Cook's Quest",
    "Cook's Assistant"
@@ -3288,6 +3412,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Black Knights' Fortress",
    "Druidic Ritual"
@@ -3313,6 +3438,7 @@ export const QUEST_DATA = [
    "Agility": 56
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "Underground Pass",
    "Biohazard",
@@ -3339,6 +3465,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 5,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3360,6 +3487,7 @@ export const QUEST_DATA = [
    "Agility": 56
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Regicide",
    "Underground Pass",
@@ -3390,6 +3518,7 @@ export const QUEST_DATA = [
    "Slayer": 40
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Throne of Miscellania",
    "Heroes' Quest",
@@ -3425,6 +3554,7 @@ export const QUEST_DATA = [
    "Fishing": 50
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Zogre Flesh Eaters",
    "Big Chompy Bird Hunting",
@@ -3450,6 +3580,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3471,6 +3602,7 @@ export const QUEST_DATA = [
    "Prayer": 31
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Alfred Grimhand's Barcrawl"
   ],
@@ -3498,6 +3630,7 @@ export const QUEST_DATA = [
    "Smithing": 35
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun"
   ],
@@ -3521,6 +3654,7 @@ export const QUEST_DATA = [
    "Firemaking": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3546,6 +3680,7 @@ export const QUEST_DATA = [
    "Hunter": 56
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Making Friends with My Arm",
    "My Arm's Big Adventure",
@@ -3602,6 +3737,7 @@ export const QUEST_DATA = [
    "Firemaking": 5
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "Priest in Peril"
   ],
@@ -3628,6 +3764,7 @@ export const QUEST_DATA = [
    "Crafting": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Golem",
    "Demon Slayer"
@@ -3658,6 +3795,7 @@ export const QUEST_DATA = [
    "Hunter": 36
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Children of the Sun"
   ],
@@ -3679,6 +3817,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 4,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3698,6 +3837,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3720,6 +3860,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 23,
@@ -3742,6 +3883,7 @@ export const QUEST_DATA = [
    "Agility": 32
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Jungle Potion",
    "Druidic Ritual"
@@ -3775,6 +3917,7 @@ export const QUEST_DATA = [
    "Magic": 49
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Vampyre Slayer",
    "A Taste of Hope",
@@ -3804,6 +3947,7 @@ export const QUEST_DATA = [
    "Cooking": 20
   },
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3825,6 +3969,7 @@ export const QUEST_DATA = [
    "Smithing": 15
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -3860,6 +4005,7 @@ export const QUEST_DATA = [
    "Woodcutting": 70
   },
   "qpReq": null,
+  "qp": 4,
   "prereq": [
    "Mourning's End Part II",
    "Mourning's End Part I",
@@ -3901,6 +4047,7 @@ export const QUEST_DATA = [
    "Thieving": 37
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 40,
   "enemyMax": 75,
@@ -3929,6 +4076,7 @@ export const QUEST_DATA = [
    "Crafting": 40
   },
   "qpReq": 100,
+  "qp": 2,
   "prereq": [
    "One Small Favour",
    "Rune Mysteries",
@@ -3965,6 +4113,7 @@ export const QUEST_DATA = [
    "Fishing": 5
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Jungle Potion",
    "Druidic Ritual"
@@ -3990,6 +4139,7 @@ export const QUEST_DATA = [
    "Mining": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Client of Kourend",
    "X Marks the Spot"
@@ -4016,6 +4166,7 @@ export const QUEST_DATA = [
    "Mining": 20
   },
   "qpReq": 43,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4039,6 +4190,7 @@ export const QUEST_DATA = [
    "Ranged": 40
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": 84,
@@ -4060,6 +4212,7 @@ export const QUEST_DATA = [
    "Runecraft": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Enter the Abyss",
    "Rune Mysteries"
@@ -4085,6 +4238,7 @@ export const QUEST_DATA = [
    "Hunter": 12
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Client of Kourend",
    "X Marks the Spot"
@@ -4108,6 +4262,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4141,6 +4296,7 @@ export const QUEST_DATA = [
    "Magic": 57
   },
   "qpReq": null,
+  "qp": 4,
   "prereq": [
    "A Night at the Theatre",
    "Sins of the Father",
@@ -4171,6 +4327,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 35,
@@ -4199,6 +4356,7 @@ export const QUEST_DATA = [
    "Slayer": 37
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Defender of Varrock",
    "Shield of Arrav",
@@ -4237,6 +4395,7 @@ export const QUEST_DATA = [
    "Agility": 18
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Client of Kourend",
    "X Marks the Spot"
@@ -4264,6 +4423,7 @@ export const QUEST_DATA = [
    "Thieving": 25
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4289,6 +4449,7 @@ export const QUEST_DATA = [
    "Magic": 46
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4310,6 +4471,7 @@ export const QUEST_DATA = [
    "Thieving": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 40,
   "enemyMax": 75,
@@ -4340,6 +4502,7 @@ export const QUEST_DATA = [
    "Fletching": 52
   },
   "qpReq": null,
+  "qp": 3,
   "prereq": [
    "The Heart of Darkness",
    "Twilight's Promise",
@@ -4365,6 +4528,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Client of Kourend",
    "X Marks the Spot"
@@ -4396,6 +4560,7 @@ export const QUEST_DATA = [
    "Mining": 60
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "The Fremennik Isles",
    "The Fremennik Trials",
@@ -4438,6 +4603,7 @@ export const QUEST_DATA = [
    "Construction": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "The Fremennik Trials"
   ],
@@ -4468,6 +4634,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 40,
   "enemyMax": 69,
@@ -4489,6 +4656,7 @@ export const QUEST_DATA = [
    "Farming": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": null,
@@ -4508,6 +4676,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": null,
   "prereq": [],
   "recommendedCombat": 60,
   "enemyMax": 160,
@@ -4537,6 +4706,7 @@ export const QUEST_DATA = [
    "Thieving": 14
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4560,6 +4730,7 @@ export const QUEST_DATA = [
    "Thieving": 25
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4583,6 +4754,7 @@ export const QUEST_DATA = [
    "Agility": 25
   },
   "qpReq": null,
+  "qp": 5,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 172,
@@ -4613,6 +4785,7 @@ export const QUEST_DATA = [
    "Prayer": 50
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 60,
   "enemyMax": 190,
@@ -4636,6 +4809,7 @@ export const QUEST_DATA = [
    "Crafting": 49
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4663,6 +4837,7 @@ export const QUEST_DATA = [
    "Agility": 46
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Twilight's Promise",
    "Children of the Sun"
@@ -4688,6 +4863,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 15,
   "enemyMax": null,
@@ -4709,6 +4885,7 @@ export const QUEST_DATA = [
    "Mining": 10
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": null,
@@ -4732,6 +4909,7 @@ export const QUEST_DATA = [
    "Mining": 17
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Goblin Diplomacy",
    "Rune Mysteries"
@@ -4763,6 +4941,7 @@ export const QUEST_DATA = [
    "Agility": 45
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "The Eyes of Glouphrie",
    "The Grand Tree",
@@ -4789,6 +4968,7 @@ export const QUEST_DATA = [
    "Thieving": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Client of Kourend",
    "X Marks the Spot"
@@ -4815,6 +4995,7 @@ export const QUEST_DATA = [
    "Smithing": 48
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Troubled Tortugans",
    "Pandemonium"
@@ -4837,6 +5018,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 10,
   "enemyMax": 13,
@@ -4858,6 +5040,7 @@ export const QUEST_DATA = [
    "Woodcutting": 15
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun"
   ],
@@ -4886,6 +5069,7 @@ export const QUEST_DATA = [
    "Thieving": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Wanted!",
    "Recruitment Drive",
@@ -4922,6 +5106,7 @@ export const QUEST_DATA = [
    "Smithing": 20
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 47,
@@ -4945,6 +5130,7 @@ export const QUEST_DATA = [
    "Thieving": 20
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -4967,6 +5153,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Heroes' Quest",
    "Shield of Arrav",
@@ -4997,6 +5184,7 @@ export const QUEST_DATA = [
    "Construction": 10
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -5016,6 +5204,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 2,
   "prereq": [],
   "recommendedCombat": 45,
   "enemyMax": 112,
@@ -5037,6 +5226,7 @@ export const QUEST_DATA = [
    "Thieving": 21
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -5059,6 +5249,7 @@ export const QUEST_DATA = [
    "Agility": 28
   },
   "qpReq": null,
+  "qp": 2,
   "prereq": [
    "Troll Stronghold",
    "Death Plateau"
@@ -5083,6 +5274,7 @@ export const QUEST_DATA = [
    "Agility": 15
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 50,
   "enemyMax": 113,
@@ -5110,6 +5302,7 @@ export const QUEST_DATA = [
    "Crafting": 34
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Pandemonium"
   ],
@@ -5131,6 +5324,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Children of the Sun"
   ],
@@ -5155,6 +5349,7 @@ export const QUEST_DATA = [
    "Ranged": 25
   },
   "qpReq": null,
+  "qp": 5,
   "prereq": [
    "Biohazard",
    "Plague City"
@@ -5177,6 +5372,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 3,
   "prereq": [],
   "recommendedCombat": 20,
   "enemyMax": 34,
@@ -5196,6 +5392,7 @@ export const QUEST_DATA = [
   "length": "Medium",
   "reqs": {},
   "qpReq": 32,
+  "qp": 1,
   "prereq": [
    "Recruitment Drive",
    "Black Knights' Fortress",
@@ -5230,6 +5427,7 @@ export const QUEST_DATA = [
    "Mining": 40
   },
   "qpReq": null,
+  "qp": 4,
   "prereq": [],
   "recommendedCombat": 35,
   "enemyMax": 68,
@@ -5250,6 +5448,7 @@ export const QUEST_DATA = [
   "length": "Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": 25,
   "enemyMax": null,
@@ -5272,6 +5471,7 @@ export const QUEST_DATA = [
    "Runecraft": 35
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Rune Mysteries"
   ],
@@ -5306,6 +5506,7 @@ export const QUEST_DATA = [
    "Strength": 99
   },
   "qpReq": 180,
+  "qp": 5,
   "prereq": [
    "Defender of Varrock",
    "Shield of Arrav",
@@ -5368,6 +5569,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 4,
   "prereq": [],
   "recommendedCombat": 35,
   "enemyMax": 19,
@@ -5387,6 +5589,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": 1,
@@ -5409,6 +5612,7 @@ export const QUEST_DATA = [
   "length": "Very Short",
   "reqs": {},
   "qpReq": null,
+  "qp": 1,
   "prereq": [],
   "recommendedCombat": null,
   "enemyMax": null,
@@ -5434,6 +5638,7 @@ export const QUEST_DATA = [
    "Ranged": 30
   },
   "qpReq": null,
+  "qp": 1,
   "prereq": [
    "Big Chompy Bird Hunting",
    "Jungle Potion",
