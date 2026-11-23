@@ -2,43 +2,6 @@
   <section class="ps" aria-label="Start a plan">
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
-    <!-- Comparing the two layouts of this page (development, or with ?compare in the address) -->
-    <div v-if="canCompare" class="ps-compare" role="group" aria-label="Page layout">
-      <span>Layout</span>
-      <button type="button" :class="{ on: layout === 'cards' }" :aria-pressed="layout === 'cards'" @click="setLayout('cards')">Three cards</button>
-      <button type="button" :class="{ on: layout === 'classic' }" :aria-pressed="layout === 'classic'" @click="setLayout('classic')">Classic</button>
-    </div>
-
-    <!-- Layout "cards": three ways to start -->
-    <section v-if="layout === 'cards'" class="paths" aria-labelledby="paths-h">
-      <h2 id="paths-h">Where do you want to start?</h2>
-      <div class="paths-grid" role="group" aria-label="Ways to start">
-        <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
-          <template #name-box><slot name="name-box" /></template>
-        </SmartPlanner>
-        <button type="button" class="start-card" aria-haspopup="dialog" @click="showAll = true">
-          <span class="start-top" aria-hidden="true">
-            <span class="start-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span>
-            <span class="start-art"><img v-for="s in PLAN_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
-          </span>
-          <span class="start-eyebrow">Want a proven goal?</span>
-          <h3>Ready-made plan</h3>
-          <p>All skills to 70, max combat, total level goals and more, set up from your stats.</p>
-          <span class="start-state">Browse plans</span>
-        </button>
-        <button type="button" class="start-card" aria-haspopup="dialog" @click="skillOpen = true">
-          <span class="start-top" aria-hidden="true">
-            <span class="start-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg></span>
-            <span class="start-art"><img v-for="s in SKILL_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
-          </span>
-          <span class="start-eyebrow">Know what you want?</span>
-          <h3>Choose a skill</h3>
-          <p>Pick a skill and set your own goal, then fine-tune the route.</p>
-          <span class="start-state">Pick a skill</span>
-        </button>
-      </div>
-    </section>
-
     <!-- Recommended plans: the top three, always shown; every plan is in the Ready-made plan window -->
     <div id="ps-start" class="ps-block">
       <header class="ps-head">
@@ -58,45 +21,29 @@
       <p v-if="canShowAll" class="ps-seemore"><button class="ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">See all ready-made plans</button></p>
     </div>
 
-    <!-- Layout "classic": plans first, then build your own, then the Smart Planner as the third way -->
-    <template v-if="layout === 'classic'">
-      <div class="rp-or"><span>or build your own</span></div>
-      <div id="ps-skill" class="byo">
-        <div class="byo-skills" role="group" aria-label="Start with a skill">
-          <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="$emit('custom', s)">
-            <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
-            <span>{{ s }}</span>
-            <i v-if="levelOf(s) != null" class="byo-lvl" :class="{ maxed: levelOf(s) >= 99 }" :title="`${playerLabel || 'Your'} level ${levelOf(s)}`">{{ levelOf(s) }}</i>
-          </button>
-        </div>
-      </div>
-      <div class="rp-or"><span>or let the Smart Planner decide</span></div>
-      <div class="paths-classic">
-        <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
-          <template #name-box><slot name="name-box" /></template>
-        </SmartPlanner>
-      </div>
-    </template>
-
-    <!-- Choose a skill, in a window -->
-    <Teleport to="body">
-      <div v-if="skillOpen" class="modal-overlay" @click.self="skillOpen = false">
-        <div class="modal-card plans-modal skill-modal" role="dialog" aria-modal="true" aria-labelledby="skill-modal-h">
-          <div class="share-modal-header">
-            <h2 id="skill-modal-h">Choose a skill</h2>
-            <button class="btn-text" type="button" aria-label="Close" @click="skillOpen = false">✕</button>
-          </div>
-          <p class="pm-sub">Pick the skill you want to train, then set your own goal and fine-tune the route.{{ hasPlayer ? ` The number is ${playerLabel}'s level now.` : '' }}</p>
+    <!-- Two ways side by side: build one from a skill, or let the Smart Planner decide -->
+    <div class="ps-split">
+      <section id="ps-skill" class="ps-split-col ps-split-skill" aria-labelledby="ps-skill-h">
+        <h2 id="ps-skill-h" class="ps-split-h">Or build your own</h2>
+        <p class="ps-split-sub">Pick a skill and set your own goal, then fine-tune the route.{{ hasPlayer ? ` The number is ${playerLabel}'s level now.` : '' }}</p>
+        <div class="byo byo-split">
           <div class="byo-skills" role="group" aria-label="Start with a skill">
-            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="pickSkill(s)">
+            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="$emit('custom', s)">
               <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
               <span>{{ s }}</span>
               <i v-if="levelOf(s) != null" class="byo-lvl" :class="{ maxed: levelOf(s) >= 99 }" :title="`${playerLabel || 'Your'} level ${levelOf(s)}`">{{ levelOf(s) }}</i>
             </button>
           </div>
         </div>
-      </div>
-    </Teleport>
+      </section>
+      <section class="ps-split-col ps-split-smart" aria-labelledby="ps-smart-h">
+        <h2 id="ps-smart-h" class="ps-split-h">Or let the Smart Planner decide</h2>
+        <p class="ps-split-sub">Not sure where to start? A few questions and your real levels.</p>
+        <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
+          <template #name-box><slot name="name-box" /></template>
+        </SmartPlanner>
+      </section>
+    </div>
 
     <PlannerPlansModal
       v-if="showAll"
@@ -136,8 +83,7 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, computed, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, ref } from 'vue'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
 import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
@@ -156,49 +102,16 @@ const props = defineProps({
   gpValue: { type: Number, default: 2_000_000 },
 })
 const emit = defineEmits(['use', 'custom', 'smart', 'smart-open'])
-// The little pictures on the two cards that say what each way starts with
-const PLAN_ART = ['Overall', 'Attack', 'Strength', 'Defence']
-const SKILL_ART = ['Mining', 'Fishing', 'Woodcutting', 'Cooking']
-// Ready-made plans and the skill list each open in a window. The links that point at the plans open that window.
-function showPlans() {
-  showAll.value = true
+// The ready-made plans are at the top of the page; the links that point at them scroll there.
+async function showPlans(scroll = false) {
+  if (!scroll) return
+  await nextTick()
+  document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 defineExpose({ showPlans })
 
 // The player's current level in a skill, when a player is chosen
 const levelOf = (skill) => (props.hasPlayer ? props.skills?.[skill]?.level ?? null : null)
-// Two layouts of this page to compare: the three cards (the default) and the classic one (plans, skills, then the Smart Planner).
-// ?layout=classic picks one (and it is remembered in this browser); the switch shows in development or with ?compare.
-const route = useRoute()
-const router = useRouter()
-const LAYOUT_KEY = 'tickgains-planner-start-layout'
-const readLayout = () => {
-  try {
-    return localStorage.getItem(LAYOUT_KEY)
-  } catch {
-    return null
-  }
-}
-const layout = ref(route.query.layout === 'classic' || route.query.layout === 'cards' ? route.query.layout : readLayout() === 'classic' ? 'classic' : 'cards')
-const canCompare = import.meta.env.DEV || route.query.compare !== undefined || route.query.layout !== undefined
-function setLayout(v) {
-  layout.value = v
-  try {
-    localStorage.setItem(LAYOUT_KEY, v)
-  } catch {
-    /* storage unavailable */
-  }
-  router.replace({ query: { ...route.query, layout: v } }).catch(() => {})
-}
-const skillOpen = ref(false)
-function pickSkill(skill) {
-  skillOpen.value = false
-  emit('custom', skill)
-}
-const onKey = (e) => e.key === 'Escape' && skillOpen.value && (skillOpen.value = false)
-onMounted(() => document.addEventListener('keydown', onKey))
-onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
-
 const allCount = computed(() => recommendedPlans(props.skills).length)
 const canShowAll = computed(() => allCount.value > 3)
 const showAll = ref(false)

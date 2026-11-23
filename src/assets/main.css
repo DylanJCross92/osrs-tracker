@@ -6938,3 +6938,13 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .ps-compare button { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
 .ps-compare button.on { border-color: var(--gold); background: rgba(217, 175, 82, 0.14); color: var(--gold-bright); }
 .paths-classic .start-smart { max-width: none; }
+
+/* The start page: build your own and the Smart Planner, side by side */
+.ps-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 22px; margin: 26px 0 8px; align-items: stretch; }
+.ps-split-col { display: flex; flex-direction: column; min-width: 0; }
+.ps-split-h { margin: 0 0 4px; font-size: 1.15rem; }
+.ps-split-sub { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+.ps-split .byo-split { flex: 1; margin: 0; padding: 12px; grid-template-columns: minmax(0, 1fr); }
+.ps-split .byo-split .byo-skills { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+.ps-split-smart .start-smart { flex: 1; cursor: pointer; }
+@media (max-width: 860px) { .ps-split { grid-template-columns: minmax(0, 1fr); } }
