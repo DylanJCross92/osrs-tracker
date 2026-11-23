@@ -233,9 +233,15 @@ watch(
     if (!has) {
       step.value = 0
       furthest.value = 0
+    } else if (step.value === 0) {
+      // A player was just chosen: on to the next question after a short beat, so "Planning for ..." is seen.
+      clearTimeout(advanceTimer)
+      advanceTimer = setTimeout(() => step.value === 0 && props.hasPlayer && go(1), 450)
     }
   },
 )
+let advanceTimer
+onBeforeUnmount(() => clearTimeout(advanceTimer))
 // 1, 2, 3 for the steps of the plan itself (what comes later has no number).
 const phaseNumber = (p) => shown.value.phases.filter((x) => !x.later).indexOf(p) + 1
 const laterLine = (p) => `${p.rows.length} more ${p.rows.length === 1 ? 'skill' : 'skills'}, after this plan.`

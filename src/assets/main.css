@@ -6907,3 +6907,14 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 @media (max-width: 560px) { .spl-gp { grid-template-columns: repeat(2, 1fr); } .spl-gp .coin-stack { transform: scale(0.85); height: 76px; margin-bottom: -6px; } }
 .planner-top.is-start .pt-title { flex: 1 1 100%; min-width: 0; }
 .pt-toprow .pt-live { margin-top: 0; margin-left: auto; }
+
+/* The Smart Planner window keeps its top edge in the same place on every step (it used to re-centre as the content changed) */
+.modal-overlay:has(> .spm) { align-items: flex-start; padding-top: max(16px, 7vh); }
+.modal-card.spm { min-height: min(600px, calc(100vh - max(16px, 7vh) - 16px)); max-height: calc(100vh - max(16px, 7vh) - 16px); display: flex; flex-direction: column; }
+.modal-card.spm .spw-step { flex: 1; }
+.modal-card.spm .spw { flex: 1; display: flex; flex-direction: column; }
+.modal-card.spm .spw-step { flex: 1 0 auto; }
+/* One height on every step; long steps scroll inside, with Back and Continue always in view */
+.modal-card.spm { height: min(700px, calc(100vh - max(16px, 7vh) - 16px)); min-height: 0; }
+.modal-card.spm .spw-nav { position: sticky; bottom: -26px; margin-bottom: -26px; padding-bottom: 26px; background: var(--panel); z-index: 2; }
+@media (max-width: 560px) { .modal-card.spm .spw-nav { bottom: -20px; margin-bottom: -20px; padding-bottom: 20px; } }
