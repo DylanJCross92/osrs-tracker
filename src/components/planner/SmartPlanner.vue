@@ -1,14 +1,16 @@
 <template>
   <div class="path-card path-smart">
-    <span class="path-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
+    <span class="path-top" aria-hidden="true">
+      <span class="path-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
+      </span>
+      <span class="path-art"><img v-for="s in ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
     </span>
     <span class="path-eyebrow">Not sure what to do?</span>
     <h3>Smart Planner</h3>
     <p>Answer a few questions and get a step-by-step plan from your real levels.</p>
     <div class="path-foot">
       <button class="btn btn-primary" type="button" aria-haspopup="dialog" @click="openIt">Open Smart Planner</button>
-      <small>Needs your RuneScape name</small>
     </div>
 
     <!-- The planner itself, in a large window over the page -->
@@ -39,6 +41,9 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import SmartPlannerBody from '@/components/planner/SmartPlannerBody.vue'
 import { track } from '@/utils/analytics'
+import { skillIconSrc } from '@/utils/osrsSkills'
+
+const ART = ['Runecraft', 'Magic', 'Construction', 'Slayer']
 
 // The Smart Planner's card among the planner's three ways to start. "Open Smart Planner" opens the planner itself in a large window; closing
 // the window (or choosing a plan) goes back to the page.

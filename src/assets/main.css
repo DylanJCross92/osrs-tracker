@@ -6869,3 +6869,19 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 @media (max-width: 860px) { .paths-grid { grid-template-columns: 1fr; } .path-card { padding: 14px; } }
 
 .spl-main .spl-why { color: #cfc5ad; }
+
+/* ---------- Imagery on the start cards, goal list, GE pill, name dropdown ---------- */
+.path-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin-bottom: 6px; }
+.path-top .path-icon { margin-bottom: 0; }
+.path-art { display: inline-flex; align-items: center; gap: 2px; padding: 5px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.28); border: 1px solid var(--border); }
+.path-art img { width: 24px; height: 24px; object-fit: contain; image-rendering: pixelated; }
+.spl-choices button.spw-goal { flex-direction: row; align-items: center; gap: 14px; }
+.spw-goal-art { flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 108px; padding: 6px 8px; box-sizing: border-box; border-radius: 12px; background: rgba(0, 0, 0, 0.28); }
+.spw-goal-art img { width: 26px; height: 26px; object-fit: contain; image-rendering: pixelated; }
+.spl-choices button.on .spw-goal-art { background: rgba(240, 201, 118, 0.14); }
+.spw-goal-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pt-toprow .pt-live { margin-left: auto; }
+.pt-toprow .pt-badge, .pt-toprow .gpb { display: inline-flex; align-items: center; height: 30px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
+/* In the Smart Planner window the name suggestions sit in the page flow, so the window grows to hold them instead of cutting them off */
+.spm .suggest-wrap .search-suggest { position: static; box-shadow: none; }
+@media (max-width: 560px) { .spw-goal-art { width: 62px; } .spw-goal-art img:nth-child(n+3) { display: none; } }

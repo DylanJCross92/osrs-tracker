@@ -39,8 +39,9 @@
     <section v-else-if="current === 'goal'" class="spw-step" aria-labelledby="spw-h">
       <h3 id="spw-h">What do you want most?</h3>
       <div class="spl-choices" role="radiogroup" aria-label="Main goal">
-        <button v-for="g in GOALS" :key="g.key" type="button" role="radio" :aria-checked="profile.goal === g.key" :class="{ on: profile.goal === g.key }" @click="set({ goal: g.key }, 'goal')">
-          <b>{{ g.label }}</b><small>{{ g.hint }}</small>
+        <button v-for="g in GOALS" :key="g.key" type="button" role="radio" :aria-checked="profile.goal === g.key" :class="[{ on: profile.goal === g.key }, 'spw-goal']" @click="set({ goal: g.key }, 'goal')">
+          <span class="spw-goal-art" aria-hidden="true"><img v-for="s in GOAL_ART[g.key]" :key="s" :src="skillIconSrc(s)" alt="" width="26" height="26" /></span>
+          <span class="spw-goal-text"><b>{{ g.label }}</b><small>{{ g.hint }}</small></span>
         </button>
       </div>
     </section>
@@ -144,6 +145,14 @@ import { EXPERIENCE, GOALS, GP_LEVELS, recommend } from '@/utils/smartPlanner'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours } from '@/utils/planner'
 import { track } from '@/utils/analytics'
+
+// The skills that stand for each goal, drawn beside it
+const GOAL_ART = {
+  skills: ['Overall'],
+  money: ['Thieving', 'Runecraft', 'Mining'],
+  combat: ['Attack', 'Strength', 'Defence'],
+  quests: ['Magic', 'Slayer', 'Crafting'],
+}
 
 // The Smart Planner, one question at a time: who, a little about you, the goal, time and gp, then the plan (see utils/smartPlanner.js). Each
 // step says what we would start with so far. "Start this plan" hands the answers to the planner, which builds the plan from the player's

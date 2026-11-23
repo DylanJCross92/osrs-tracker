@@ -10,14 +10,20 @@
           <template #name-box><slot name="name-box" /></template>
         </SmartPlanner>
         <button type="button" role="radio" class="path-card" :class="{ on: path === 'plans' }" :aria-checked="path === 'plans'" @click="path = 'plans'">
-          <span class="path-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span>
+          <span class="path-top" aria-hidden="true">
+            <span class="path-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span>
+            <span class="path-art"><img v-for="s in PLAN_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
+          </span>
           <span class="path-eyebrow">Want a proven goal?</span>
           <h3>Ready-made plan</h3>
           <p>All skills to 70, max combat, total level goals and more, set up from your stats.</p>
           <span class="path-state">{{ path === 'plans' ? 'Showing below' : 'Show plans' }}</span>
         </button>
         <button type="button" role="radio" class="path-card" :class="{ on: path === 'skill' }" :aria-checked="path === 'skill'" @click="path = 'skill'">
-          <span class="path-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg></span>
+          <span class="path-top" aria-hidden="true">
+            <span class="path-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg></span>
+            <span class="path-art"><img v-for="s in SKILL_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
+          </span>
           <span class="path-eyebrow">Know what you want?</span>
           <h3>Choose a skill</h3>
           <p>Pick a skill and set your own goal, then fine-tune the route.</p>
@@ -114,6 +120,9 @@ const props = defineProps({
 })
 const emit = defineEmits(['use', 'custom', 'smart', 'smart-open'])
 // Which way of starting is open below the three cards: the ready-made plans to begin with.
+// The little pictures on the two cards that say what each way starts with
+const PLAN_ART = ['Overall', 'Attack', 'Strength', 'Defence']
+const SKILL_ART = ['Mining', 'Fishing', 'Woodcutting', 'Cooking']
 const path = ref('plans')
 // Show the ready-made plans (and scroll to them), for the links that point there.
 async function showPlans(scroll = false) {
