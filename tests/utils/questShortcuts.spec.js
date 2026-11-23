@@ -16,8 +16,8 @@ describe('quest prerequisites', () => {
     expect(withoutQuest(['rune-mysteries', 'enter-the-abyss'], 'temple-of-the-eye')).toEqual(['rune-mysteries', 'enter-the-abyss'])
   })
   it('adds up their time and names the requirements a plan covers', () => {
-    expect(questMinutes(['temple-of-the-eye'])).toBe(20)
-    expect(questMinutes(['temple-of-the-eye'], new Set(['rune-mysteries']))).toBe(15)
+    expect(questMinutes(['temple-of-the-eye'])).toBe(75)
+    expect(questMinutes(['temple-of-the-eye'], new Set(['rune-mysteries']))).toBe(60)
     expect(plannedQuestReqIds([{ quests: ['temple-of-the-eye'] }])).toContain('quest:temple-of-the-eye')
   })
 })
@@ -27,7 +27,7 @@ describe('planGoal with the Runecraft quests', () => {
     const plan = planGoal(rc({ quests: ['temple-of-the-eye'] }))
     expect(plan.questXp).toBe(500 + 1000 + 9210)
     expect(plan.questList.map((x) => x.name)).toEqual(['Rune Mysteries', 'Enter the Abyss', 'Temple of the Eye'])
-    expect(plan.questHours).toBeCloseTo(20 / 60)
+    expect(plan.questHours).toBeCloseTo(75 / 60)
   })
   it('does not count quests that are already finished', () => {
     const plan = planGoal(rc({ quests: ['temple-of-the-eye'], doneQuestIds: ['rune-mysteries', 'enter-the-abyss', 'temple-of-the-eye'] }))

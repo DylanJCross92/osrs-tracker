@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fundingFor, hoursBetween, isFreeQuest, questsFor, unlockFor } from '@/utils/smartReasons'
+import { combatLevel, fundingFor, hoursBetween, isFreeQuest, questsFor, unlockFor } from '@/utils/smartReasons'
 import { skillStates } from '@/utils/recommendedPlans'
 import { xpAtLevel } from '@/utils/planner'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
@@ -33,24 +33,43 @@ describe('unlock levels', () => {
 
 describe('quests worth doing', () => {
   it('gives quests with what they save, what they need, and says when the length is an estimate', () => {
-    const rows = questsFor(at({ all: 40 }), members)
+    const rows = questsFor(at({ all: 40 }), members, new Set(), { minNet: -3 })
     expect(rows.length).toBeGreaterThan(0)
     const r = rows[0]
-    expect(r.net).toBeGreaterThanOrEqual(0.5)
-    expect(r.savedHours).toBeGreaterThan(r.minutes / 60)
-    expect(typeof r.estimated).toBe('boolean')
+    expect(r.net).toBeGreaterThanOrEqual(-3)
+    expect(r.estimated).toBe(true)
+    expect(r.minutes).toBeGreaterThan(0)
+    // only clear wins by default: whatever comes back saves more than it costs
+    for (const w of questsFor(at({ all: 1 }), members)) expect(w.savedHours).toBeGreaterThan(w.minutes / 60)
     expect(r.chain[r.chain.length - 1]).toBe(r.quest.id)
   })
   it('turns a missing level into a requirement, and skips quests already finished', () => {
     const states = at({ all: 40, Magic: 40 })
-    const mage = questsFor(states, members).find((r) => r.quest.id === 'mage-arena-i')
+    const mage = questsFor(states, members, new Set(), { minNet: -3 }).find((r) => r.quest.id === 'mage-arena-i')
     if (mage) expect(mage.unmet).toEqual([{ skill: 'Magic', need: 60, have: 40 }])
-    const ids = questsFor(states, members).map((r) => r.quest.id)
+    const ids = questsFor(states, members, new Set(), { minNet: -3 }).map((r) => r.quest.id)
     const done = new Set(ids)
-    expect(questsFor(states, members, done)).toEqual([])
+    expect(questsFor(states, members, done, { minNet: -3 })).toEqual([])
   })
   it('free-to-play gets free quests only', () => {
-    for (const r of questsFor(at({ all: 40 }), free)) for (const id of r.chain) expect(isFreeQuest(getQuest(id))).toBe(true)
+    for (const r of questsFor(at({ all: 40 }), free, new Set(), { minNet: -3 })) for (const id of r.chain) expect(isFreeQuest(getQuest(id))).toBe(true)
+  })
+})
+
+describe('quests need the combat level to get through them', () => {
+  it('works out the game combat level', () => {
+    expect(combatLevel({})).toBe(3)
+    expect(combatLevel({ Attack: 99, Strength: 99, Defence: 99, Hitpoints: 99, Prayer: 99, Ranged: 99, Magic: 99 })).toBe(126)
+  })
+  it('keeps a low combat account away from Monkey Madness I and Dragon Slayer I, however much they would save', () => {
+    const ids = questsFor(at({ all: 6 }), members, new Set(), { minNet: -100 }).map((r) => r.quest.id)
+    expect(ids).not.toContain('monkey-madness-i')
+    expect(ids).not.toContain('dragon-slayer-i')
+    expect(ids).not.toContain('the-grand-tree')
+  })
+  it('gives each quest a length of at least a few minutes, and Monkey Madness I a few hours', () => {
+    const mm = questsFor(at({ all: 75 }), members, new Set(), { minNet: -100 }).find((r) => r.quest.id === 'monkey-madness-i')
+    expect(mm.minutes).toBeGreaterThanOrEqual(3 * 60)
   })
 })
 

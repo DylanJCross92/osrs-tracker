@@ -11,7 +11,17 @@ import { formatXp } from '@/utils/osrsSkills'
 // train first to pay for the rest, and which quests are worth their time. Pure; every figure comes from the planner's own methods and quests.
 
 /** How long a quest is taken to take when we do not know: a stated estimate, and shown as one. */
-export const ESTIMATED_QUEST_MINUTES = 30
+export const ESTIMATED_QUEST_MINUTES = 60
+
+/** The game's combat level from the seven combat levels (Hitpoints starts at 10). `levels` is { Skill: level }. */
+export function combatLevel(levels) {
+  const l = (s, d = 1) => levels[s] ?? d
+  const base = 0.25 * (l('Defence') + l('Hitpoints', 10) + Math.floor(l('Prayer') / 2))
+  const melee = 0.325 * (l('Attack') + l('Strength'))
+  const ranged = 0.325 * Math.floor(l('Ranged') * 1.5)
+  const magic = 0.325 * Math.floor(l('Magic') * 1.5)
+  return Math.floor(base + Math.max(melee, ranged, magic))
+}
 const MAX_STRETCH_HOURS = 40 // how far one step goes for one skill
 
 const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)
@@ -98,7 +108,7 @@ export function unlockFor(state, profile, done = new Set(), levels = {}) {
  * Quests worth doing (each with whatever it needs first), with what they are worth: { quest, chain, xp, savedHours, minutes, estimated, unmet,
  * reqHours, net }. A quest is worth it when the training time its XP saves beats its own length plus the hours to reach any level it needs.
  */
-export function questsFor(states, profile, done = new Set(), { skills = null } = {}) {
+export function questsFor(states, profile, done = new Set(), { skills = null, minNet = 0.5 } = {}) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
   const rows = []
   for (const q of QUESTS) {
@@ -108,8 +118,9 @@ export function questsFor(states, profile, done = new Set(), { skills = null } =
     if (!profile.members && chain.some((id) => !isFreeQuest(getQuest(id)))) continue
     const xp = {}
     const unmet = []
-    let estimated = false
+    let estimated = true // every length here is a first-timer's estimate, shown as one
     let minutes = 0
+    let combatNeed = 0
     for (const id of chain) {
       const c = getQuest(id)
       for (const [sk, amount] of Object.entries(c.rewards)) xp[sk] = (xp[sk] || 0) + amount
@@ -117,11 +128,8 @@ export function questsFor(states, profile, done = new Set(), { skills = null } =
         const have = byName[sk]?.level ?? 1
         if (have < need && !unmet.some((u) => u.skill === sk && u.need >= need)) unmet.push({ skill: sk, need, have })
       }
-      if (c.minutes) minutes += c.minutes
-      else {
-        minutes += ESTIMATED_QUEST_MINUTES
-        estimated = true
-      }
+      minutes += c.minutes || ESTIMATED_QUEST_MINUTES
+      combatNeed = Math.max(combatNeed, c.combat || 0)
     }
     if (skills && !Object.keys(xp).some((sk) => skills.has(sk))) continue
     if (!profile.members && unmet.some((u) => !F2P_SKILLS.includes(u.skill))) continue
@@ -133,6 +141,11 @@ export function questsFor(states, profile, done = new Set(), { skills = null } =
       else reqHours += h
     }
     if (blocked) continue
+    // Its fights need a combat level: counted with the levels the quest itself asks for first, and left out until the account has it.
+    const levels = { ...levelsOf(states) }
+    for (const u of unmet) levels[u.skill] = Math.max(levels[u.skill] || 1, u.need)
+    const combat = combatLevel(levels)
+    if (combat < combatNeed) continue
     let saved = 0
     for (const [sk, amount] of Object.entries(xp)) {
       const s = byName[sk]
@@ -144,8 +157,8 @@ export function questsFor(states, profile, done = new Set(), { skills = null } =
       saved += Math.min(amount, Math.max(xpAtLevel(99) - s.xp, 0)) / rate
     }
     const net = saved - minutes / 60 - reqHours
-    if (net < 0.5) continue
-    rows.push({ quest: q, chain, xp, savedHours: saved, minutes, estimated, unmet, reqHours, net })
+    if (net < minNet) continue
+    rows.push({ quest: q, chain, xp, savedHours: saved, minutes, estimated, unmet, reqHours, net, combatNeed })
   }
   return rows.sort((a, b) => b.net - a.net || (a.quest.name < b.quest.name ? -1 : 1))
 }

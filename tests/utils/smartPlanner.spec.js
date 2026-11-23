@@ -47,7 +47,7 @@ describe('recommendations', () => {
     expect(q).toBeTruthy()
     const quests = q.rows.filter((x) => x.kind === 'quest')
     expect(quests.length).toBeGreaterThan(0)
-    for (const x of quests) expect(x.reasons.join(' ')).toMatch(/Skips about/)
+    for (const x of quests) expect(x.reasons.join(' ')).toMatch(/Skips about|do it for the quest itself/)
     const needed = q.rows.filter((x) => x.skill && x.reasons.join(' ').startsWith('Needed for'))
     for (const row of needed) expect(row.reasons[0]).toMatch(/skips about .* of training/)
   })
@@ -75,7 +75,7 @@ describe('recommendations', () => {
     expect(a.goals).toEqual(b.goals)
     const fishing = a.goals.find((g) => g.skill === 'Fishing')
     expect(fishing?.currentXp ?? xpAtLevel(60)).toBe(xpAtLevel(60))
-    expect(a.goals.some((g) => g.skill === 'Attack' && g.currentXp === xpAtLevel(45))).toBe(true)
+    for (const g of a.goals) expect(g.currentXp).toBe(xpAtLevel(g.skill === 'Fishing' ? 60 : 45))
   })
 
   it('has summary figures that match the goals', () => {

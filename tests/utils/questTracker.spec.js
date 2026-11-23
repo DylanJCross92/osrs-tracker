@@ -63,6 +63,7 @@ describe('quest progress', () => {
     expect(counted.questXp).toBeGreaterThan(0)
     const skipped = planGoal({ ...goal, doneQuestIds: doneShortcutIds(answers) })
     expect(skipped.questXp).toBe(0)
-    expect(skipped.hours).toBeGreaterThan(counted.hours)
+    expect(counted.questHours).toBeGreaterThan(0)
+    expect(skipped.questHours).toBe(0)
   })
 })

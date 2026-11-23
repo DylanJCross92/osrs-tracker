@@ -204,6 +204,18 @@ const mkGoalFor = (state, targetLevel, profile) => mk(state, targetLevel, profil
  * that opens something much faster, and, when the plan costs a lot, a skill to train first that pays for it. Returns phases (the first is the plan,
  * and a later one is what could come after) or [] when none of these reasons apply.
  */
+/** What a quest row says: what it saves against what it costs (a first-timer's length, so an estimate), and the combat it needs. */
+function questReasons(q) {
+  const cost = q.minutes >= 60 ? hoursText(q.minutes / 60) : `${q.minutes} min`
+  const lines = [
+    q.savedHours * 60 >= q.minutes
+      ? `Skips about ${hoursText(q.savedHours)} of training for about ${cost} if it is your first time (estimated).`
+      : `Takes about ${cost} the first time (estimated). Its XP is only worth about ${hoursText(q.savedHours)} of training, so do it for the quest itself.`,
+  ]
+  if (q.combatNeed >= 20) lines.push(`Its fights need roughly combat level ${q.combatNeed}.`)
+  return lines
+}
+
 function purposePhases(states, profile, settings, done, mode) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
   // Only a few skills left: finishing them is the plan (see skillsPhase), not a search for what opens up.
@@ -221,7 +233,8 @@ function purposePhases(states, profile, settings, done, mode) {
     goals.set(state.skill, g)
   }
   const nQuests = mode === 'quests' ? 6 : 4
-  const picks = questsFor(states, profile, done).slice(0, nQuests)
+  // Asked for quests, they are worth doing for the quest itself even when they take about as long as the training they replace.
+  const picks = questsFor(states, profile, done, { minNet: mode === 'quests' ? -1.2 : 0.5 }).slice(0, nQuests)
 
   // 1. The levels the quests need.
   const questRows = []
@@ -265,7 +278,7 @@ function purposePhases(states, profile, settings, done, mode) {
       rewards: Object.entries(q.xp).map(([sk, x]) => `${x.toLocaleString('en-US')} ${sk} XP`).join(', '),
       hours: q.minutes / 60,
       estimated: q.estimated,
-      reasons: [`Skips about ${hoursText(q.savedHours)} of training for about ${q.minutes >= 60 ? hoursText(q.minutes / 60) : `${q.minutes} min`}${q.estimated ? ' (estimated)' : ''}.`],
+      reasons: questReasons(q),
     })
   }
   // 4. A skill to train first, to pay for the costly ones.
@@ -286,7 +299,7 @@ function purposePhases(states, profile, settings, done, mode) {
 
   const phases = []
   if (fundGoals.length) phases.push({ id: 'fund', title: 'Earn first', why: 'These pay for the costly skills below, so you are not stopping to farm gp later.', goals: fundGoals, keepOrder: true, keepQuests: true })
-  if (questGoals.length || questRows.length) phases.push({ id: 'quests', title: 'Quest shortcuts', why: 'Quests hand out XP for a few minutes of work, and some need a level first.', goals: questGoals, questRows, keepOrder: true, keepQuests: true })
+  if (questGoals.length || questRows.length) phases.push({ id: 'quests', title: 'Quest shortcuts', why: 'Quests hand out XP, and some need a level first. Times are for a first run, not a speedrun.', goals: questGoals, questRows, keepOrder: true, keepQuests: true })
   if (unlockGoals.length) phases.push({ id: 'unlock', title: 'Unlock better training', why: 'Each level is picked because it opens a much faster way to train the skill.', goals: unlockGoals, keepOrder: true, keepQuests: true })
 
   // What could come after: the next level that opens something, from where this plan leaves each skill.
@@ -383,7 +396,7 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
         const g = phases[0].goals.find((x) => x.skill === sk)
         if (g) for (const id of q.chain) if (!(g.quests || []).includes(id)) g.quests = [...(g.quests || []), id]
       }
-      combatQuestRows.push({ kind: 'quest', id: q.quest.id, title: q.quest.name, rewards: Object.entries(q.xp).map(([sk, x]) => `${x.toLocaleString('en-US')} ${sk} XP`).join(', '), hours: q.minutes / 60, estimated: q.estimated, reasons: [`Skips about ${hoursText(q.savedHours)} of training for about ${q.minutes} min${q.estimated ? ' (estimated)' : ''}.`] })
+      combatQuestRows.push({ kind: 'quest', id: q.quest.id, title: q.quest.name, rewards: Object.entries(q.xp).map(([sk, x]) => `${x.toLocaleString('en-US')} ${sk} XP`).join(', '), hours: q.minutes / 60, estimated: q.estimated, reasons: questReasons(q) })
     }
   }
 
@@ -425,7 +438,7 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
     return { id: p.id, title: p.title, why: p.why, later: !!p.later, rows: [...lead, ...rows] }
   })
 
-  if (combatQuestRows.length) outPhases.unshift({ id: 'quests', title: 'Quest shortcuts', why: 'Quests hand out XP for a few minutes of work.', later: false, rows: combatQuestRows })
+  if (combatQuestRows.length) outPhases.unshift({ id: 'quests', title: 'Quest shortcuts', why: 'Quests hand out XP. Times are for a first run, not a speedrun.', later: false, rows: combatQuestRows })
   if (profile.goal === 'quests' && !outPhases.some((p) => p.id === 'quests')) notes.push('No quest in our list would save you time at your levels.')
   const goals = ordered.map(({ why, purpose, ...g }) => g)
   const sum = goals.length ? summarizePlan({ goals, globalStrategy: settings.globalStrategy, gpValue: settings.gpValue, hoursPerDay: settings.hoursPerDay }) : { totalHours: 0, netGp: 0, days: 0 }
