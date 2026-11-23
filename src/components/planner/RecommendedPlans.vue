@@ -14,7 +14,7 @@
         <dl class="rp-meta" :class="{ gp: summaries[r.id].netGp != null }">
           <div><dt>Goals</dt><dd>{{ r.skillCount }} skill{{ r.skillCount === 1 ? '' : 's' }}</dd></div>
           <div><dt>Time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
-          <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : formatHours(summaries[r.id].totalHours) }}</dd></div>
+          <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? formatDays(summaries[r.id].days) : formatHours(summaries[r.id].totalHours) }}</dd></div>
           <div v-if="summaries[r.id].netGp != null" :title="live ? 'Worked out from live Grand Exchange prices, after the 2% tax' : 'An estimate from saved prices'">
             <dt>{{ summaries[r.id].netGp >= 0 ? 'Profit' : 'GP cost' }}</dt>
             <dd :class="summaries[r.id].netGp >= 0 ? 'planner-gain' : 'planner-cost'"><i v-if="live" class="rp-live" aria-hidden="true" />{{ formatGp(summaries[r.id].netGp).replace(/ gp$/, '') }}</dd>
@@ -29,7 +29,7 @@
 <script setup>
 import { computed } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatGp, formatHours } from '@/utils/planner'
+import { formatDays, formatGp, formatHours } from '@/utils/planner'
 import { priceStatus } from '@/utils/priceBook'
 import { summarizePlan } from '@/utils/plannerTools'
 import { featuredPlans, recommendedPlans, suggestedPlans } from '@/utils/recommendedPlans'

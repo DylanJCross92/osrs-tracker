@@ -2,6 +2,8 @@ import { pool } from '../db.js'
 import { achievementDefinitions, MAX_TOTAL_LEVEL } from './milestones.service.js'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
 import { localDay, addDays, diffDays } from '../utils/dates.js'
+import { xpAtLevel } from '../utils/xp.js'
+import { formatXp } from '../utils/format.js'
 
 // Everything here is derived from data TickGains already stores (latest
 // snapshots, snapshot history, the milestones table) and is cached by
@@ -10,20 +12,10 @@ import { localDay, addDays, diffDays } from '../utils/dates.js'
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
 
-// Total xp needed for a level (same formula as the client's osrsSkills.js).
-function xpForLevel(level) {
-  let points = 0
-  let xp = 0
-  for (let l = 1; l < level; l++) {
-    points += Math.floor(l + 300 * 2 ** (l / 7))
-    xp = Math.floor(points / 4)
-  }
-  return xp
-}
-const XP90 = xpForLevel(90)
-const XP99 = xpForLevel(99)
+const XP90 = xpAtLevel(90)
+const XP99 = xpAtLevel(99)
 
-const fmtXp = (n) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `${parseFloat((n / 1e6).toFixed(n >= 1e7 ? 1 : 2))}M` : n >= 1e3 ? `${parseFloat((n / 1e3).toFixed(1))}K` : String(n))
+const fmtXp = formatXp
 
 /** The player summary every featured card shares. */
 function who(p) {
@@ -208,7 +200,7 @@ export async function trending(players, h) {
       score += Math.min(ratio, 5)
       reasons.push({ weight: Math.min(ratio, 5), text: `gaining ${ratio.toFixed(1)}× their usual weekly pace` })
     }
-    if (!reasons.length && d7 > 0) reasons.push({ weight: 0, text: `+${fmtXp(d7)} XP this week` })
+    if (!reasons.length && d7 > 0) reasons.push({ weight: 0, text: `+${fmtXp(d7)} XP in the last 7 days` })
     reasons.sort((x, y) => y.weight - x.weight)
     out.push({ ...who(p), score, d24, d7, reason: reasons.slice(0, 2).map((r) => r.text).join(' · ') })
   }
@@ -289,7 +281,7 @@ export async function pickSpotlight(players, { activity, achievements, improved,
     player = byId.get(i.id)
     headline = `${i.pct}% more XP than their usual week`
     reason = 'Biggest improvement over previous activity'
-    stats = [{ label: 'This week', value: `+${fmtXp(i.currentWeek)}` }, { label: 'Usual week', value: `+${fmtXp(i.previousAvg)}` }]
+    stats = [{ label: 'Last 7 days', value: `+${fmtXp(i.currentWeek)}` }, { label: 'Usual week', value: `+${fmtXp(i.previousAvg)}` }]
   }
 
   const payload = {

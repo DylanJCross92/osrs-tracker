@@ -17,7 +17,7 @@
           <div class="hp-meta">
             <span v-if="r.plan.player?.rsn">For {{ r.plan.player.rsn }}</span>
             <span>{{ r.plan.goals.length }} goal{{ r.plan.goals.length === 1 ? '' : 's' }}</span>
-            <span>{{ formatHours(r.summary.totalHours) }}<template v-if="r.summary.days != null"> · {{ r.summary.days.toLocaleString('en-US') }} days at {{ r.plan.hoursPerDay }} h/day</template></span>
+            <span>{{ formatHours(r.summary.totalHours) }}<template v-if="r.summary.days != null"> · {{ formatDays(r.summary.days) }} at {{ r.plan.hoursPerDay }} h/day</template></span>
             <span>Updated {{ formatRelative(r.plan.updatedAt) }}</span>
           </div>
           <div v-if="r.share && (r.share.stats.views || r.share.stats.uses)" class="hp-stats" :aria-label="`${r.share.stats.views} views, ${r.share.stats.uses} people used this plan`">
@@ -55,7 +55,7 @@ import { useSharedPlans } from '@/composables/useSharedPlans'
 import { useToast } from '@/composables/useToast'
 import { dropProfilePlan } from '@/composables/useProfilePlan'
 import { deletePlan, listSavedPlans, summarizePlan } from '@/utils/plannerTools'
-import { formatHours } from '@/utils/planner'
+import { formatDays, formatHours } from '@/utils/planner'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 

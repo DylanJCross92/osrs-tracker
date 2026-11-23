@@ -10,7 +10,7 @@
         <div><span class="home-preview-label sk sk-w100">Example profile</span><h3 class="sk sk-w140">Player name</h3></div>
       </div>
       <div class="home-preview-stats">
-        <div><span class="sk sk-w60">Overall</span><b class="sk sk-w60">2,277</b></div>
+        <div><span class="sk sk-w60">Overall</span><b class="sk sk-w60">2,376</b></div>
         <div><span class="sk sk-w80">Gained</span><b class="sk sk-w80">+000,000</b></div>
         <div class="wide"><span class="sk sk-w60">Total XP</span><b class="sk sk-w140">000,000,000</b></div>
       </div>
@@ -58,7 +58,7 @@
 
   <!-- Leaderboard: the ranked list -->
   <ol v-else-if="kind === 'leaderboard'" class="disc-board-list lb-list dash-sk" aria-busy="true" aria-label="Loading the leaderboard">
-    <li v-for="n in 14" :key="n" aria-hidden="true"><a><span class="disc-rank sk">{{ n }}</span><span class="disc-board-main"><span class="disc-board-name sk sk-w160">Player name</span><span class="disc-bar"><span class="sk" :style="{ width: `${100 - n * 6}%` }" /></span></span><span class="lb-meta sk sk-w60">2,277</span><span class="disc-board-xp sk sk-w60">+0.0M</span></a></li>
+    <li v-for="n in 14" :key="n" aria-hidden="true"><a><span class="disc-rank sk">{{ n }}</span><span class="disc-board-main"><span class="disc-board-name sk sk-w160">Player name</span><span class="disc-bar"><span class="sk" :style="{ width: `${100 - n * 6}%` }" /></span></span><span class="lb-meta sk sk-w60">2,376</span><span class="disc-board-xp sk sk-w60">+0.0M</span></a></li>
   </ol>
 
   <!-- Items: the price table -->
@@ -101,7 +101,7 @@
         </section>
         <section class="card clan-card">
           <header class="dash-card-head"><h2>Members</h2></header>
-          <ul class="clan-members"><li v-for="n in 5" :key="n" class="clan-member"><span class="clan-avatar sk" /><span class="clan-who"><span class="clan-name sk sk-w140">Player name</span><small class="sk sk-w100">Overall 2,277</small></span></li></ul>
+          <ul class="clan-members"><li v-for="n in 5" :key="n" class="clan-member"><span class="clan-avatar sk" /><span class="clan-who"><span class="clan-name sk sk-w140">Player name</span><small class="sk sk-w100">Overall 2,376</small></span></li></ul>
         </section>
       </div>
       <aside class="clan-side"><section class="card clan-card"><h2>Invite people</h2><p class="sk sk-w80p">Share this link to invite.</p><span class="btn btn-ghost sk sk-w140">Copy invite link</span></section></aside>
@@ -164,9 +164,9 @@
   <template v-else-if="kind === 'compare'">
     <section class="card dash-sk" aria-busy="true" aria-label="Loading both players">
       <div class="sk-vs" aria-hidden="true">
-        <div class="sk-vs-side"><span class="sk sk-avatar" /><b class="sk sk-w120">Player one</b><small class="sk sk-w80">Overall 2,277</small></div>
+        <div class="sk-vs-side"><span class="sk sk-avatar" /><b class="sk sk-w120">Player one</b><small class="sk sk-w80">Overall 2,376</small></div>
         <span class="sk sk-w40">vs</span>
-        <div class="sk-vs-side"><span class="sk sk-avatar" /><b class="sk sk-w120">Player two</b><small class="sk sk-w80">Overall 2,277</small></div>
+        <div class="sk-vs-side"><span class="sk sk-avatar" /><b class="sk sk-w120">Player two</b><small class="sk sk-w80">Overall 2,376</small></div>
       </div>
     </section>
     <section class="card dash-sk" aria-hidden="true">

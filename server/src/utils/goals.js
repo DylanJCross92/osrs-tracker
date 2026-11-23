@@ -1,23 +1,12 @@
 import { SKILL_NAMES } from '../services/osrsHiscores.service.js'
+import { MAX_LEVEL, MAX_XP, xpAtLevel } from './xp.js'
+import { formatXp } from './format.js'
 
 // Public profile goals: a skill and either a level or an XP total. Pure helpers (no database) so they can be tested.
 export const MAX_ACTIVE_GOALS = 6
-export const MAX_XP = 200_000_000
-export const MAX_LEVEL = 126
+export { MAX_XP, MAX_LEVEL, xpAtLevel }
 
-// The game's XP table, built with integer math (level 99 = 13,034,431; level 126 = 188,884,740).
-const XP_TABLE = (() => {
-  const table = [0, 0]
-  let points = 0
-  for (let lvl = 1; lvl < MAX_LEVEL; lvl++) {
-    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
-    table[lvl + 1] = Math.floor(points / 4)
-  }
-  return table
-})()
-export const xpAtLevel = (level) => XP_TABLE[Math.min(Math.max(Math.floor(level), 1), MAX_LEVEL)]
-
-const fmt = (n) => (n >= 1e6 ? `${parseFloat((n / 1e6).toFixed(n >= 1e7 ? 1 : 2))}M` : n >= 1e3 ? `${parseFloat((n / 1e3).toFixed(1))}K` : String(n))
+const fmt = formatXp
 
 /** { skill, type, target } from a request, cleaned, or null when it is not a real goal. */
 export function cleanGoalInput(input) {

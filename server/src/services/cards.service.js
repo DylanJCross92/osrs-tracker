@@ -3,32 +3,22 @@ import { pool } from '../db.js'
 import { getPlayer } from './players.service.js'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
 import { localDay, addDays, diffDays, weekdayShort, APP_TIMEZONE } from '../utils/dates.js'
+import { MAX_XP, xpAtLevel } from '../utils/xp.js'
 
 const DAY_MS = 86_400_000
 
-// Total xp needed to reach a level, via the game's own formula.
-function xpForLevel(level) {
-  let points = 0
-  let xp = 0
-  for (let lvl = 1; lvl < level; lvl++) {
-    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
-    xp = Math.floor(points / 4)
-  }
-  return xp
-}
-const MAX_XP = 200_000_000
 
 /** Progress toward the next level (or the 200M goal once a skill is 99). */
 function nextLevelProgress(xp, level) {
   if (level >= 99) {
     return { nextLabel: '200M XP', xpToNext: Math.max(MAX_XP - xp, 0), progressPct: Math.min(Math.floor((xp / MAX_XP) * 100), 100), goalIs200m: true }
   }
-  const lo = xpForLevel(level)
-  const hi = xpForLevel(level + 1)
+  const lo = xpAtLevel(level)
+  const hi = xpAtLevel(level + 1)
   return { nextLevel: level + 1, nextLabel: `Level ${level + 1}`, xpToNext: Math.max(hi - xp, 0), progressPct: Math.max(0, Math.min(Math.floor(((xp - lo) / (hi - lo)) * 100), 99)) }
 }
 
-// Card timeframes ('week' is the last 7 game days, 6 AM aligned, like the profile's This week). Baselines match the stats table / Player Gains exactly
+// Card timeframes (day, week and month are the current game day, the last 7 and the last 30, 6 AM aligned, like the profile's tiles). Baselines match the stats table / Player Gains exactly
 // (see BASELINE_CUTOFF_SQL in players.service.js): the oldest snapshot inside
 // the window, for 'day' that's the first snapshot since 6 AM,
 // so a card never disagrees with the numbers shown on the profile.
@@ -170,6 +160,8 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
   const player = await getPlayer(playerId)
   if (!player) return null
 
+  // The 6 AM edge the window starts at (the current game day, or the one 6 or 29 days before it).
+  const cutoff = `((date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') - interval '${period === 'day' ? 0 : period === 'week' ? 6 : 29} days' + interval '6 hours') AT TIME ZONE $2)`
   const result = await pool.query(
     `
     WITH latest AS (
@@ -181,7 +173,7 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
       (
         SELECT overall_xp, skills, captured_at
         FROM snapshots
-        WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1) AND ${period === 'day' ? "captured_at < ((date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') + interval '6 hours') AT TIME ZONE $2)" : period === 'week' ? "captured_at < ((date_trunc('day', (now() AT TIME ZONE $2) - interval '6 hours') - interval '6 days' + interval '6 hours') AT TIME ZONE $2)" : "captured_at < now() - ($2::int * interval '1 day')"}
+        WHERE player_id = $1 AND captured_at >= (SELECT created_at - interval '1 minute' FROM players WHERE id = $1) AND captured_at < ${cutoff}
         ORDER BY captured_at DESC LIMIT 1
       )
       UNION ALL
@@ -194,10 +186,11 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
     )
     SELECT latest.overall_xp, latest.overall_level, latest.skills, latest.captured_at,
            baseline.overall_xp AS baseline_overall_xp, baseline.skills AS baseline_skills,
-           baseline.captured_at AS baseline_captured_at
+           baseline.captured_at AS baseline_captured_at,
+           ${cutoff} AS window_start
     FROM latest, baseline
     `,
-    [playerId, period === 'day' || period === 'week' ? APP_TIMEZONE : PERIODS[period].days],
+    [playerId, APP_TIMEZONE],
   )
   if (result.rowCount === 0) return null
 
@@ -207,7 +200,9 @@ export async function getWeeklyCardData(playerId, skill = 'Overall', period = 'w
     displayName: player.displayName,
     skill,
     period,
-    periodStart: row.baseline_captured_at,
+    // Where the window starts: its 6 AM edge, unless the player has not been tracked that long (then their first snapshot). The card's title and range
+    // read from this, so an idle week does not look like eight days.
+    periodStart: new Date(Math.max(new Date(row.baseline_captured_at).getTime(), new Date(row.window_start).getTime())).toISOString(),
     periodEnd: row.captured_at,
     overallXp: Number(row.overall_xp),
     overallLevel: row.overall_level != null ? Number(row.overall_level) : null,

@@ -34,7 +34,7 @@
           <dl class="pm-meta">
             <div><dt>Skills</dt><dd>{{ r.skillCount }}</dd></div>
             <div><dt>Time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
-            <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? `${summaries[r.id].days.toLocaleString('en-US')} days` : formatHours(summaries[r.id].totalHours) }}</dd></div>
+            <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? formatDays(summaries[r.id].days) : formatHours(summaries[r.id].totalHours) }}</dd></div>
           </dl>
           <button class="btn btn-primary pm-use" type="button" @click="$emit('use', r)">Use plan</button>
         </li>
@@ -46,7 +46,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours } from '@/utils/planner'
+import { formatDays, formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
 import { MAX_TOTAL, groupedPlans, recommendedPlans } from '@/utils/recommendedPlans'
 

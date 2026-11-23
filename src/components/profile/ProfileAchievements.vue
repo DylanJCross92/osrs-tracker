@@ -107,7 +107,7 @@ function tip(a) {
 }
 
 const totalRows = computed(() => {
-  const levels = achievements.value.filter((a) => a.type === 'total_level').map((a) => ({ ...a, label: a.value >= 2376 ? `Maxed ${a.value.toLocaleString('en-US')}` : a.value.toLocaleString('en-US') }))
+  const levels = achievements.value.filter((a) => a.type === 'total_level').map((a) => ({ ...a, label: a.value >= SKILL_NAMES.length * 99 ? `Maxed ${a.value.toLocaleString('en-US')}` : a.value.toLocaleString('en-US') }))
   const xp = achievements.value
     .filter((a) => a.type === 'total_xp')
     .map((a) => ({ ...a, label: a.value >= 1e9 ? `${a.value / 1e9}B` : `${a.value / 1e6}M` }))

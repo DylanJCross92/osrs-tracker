@@ -21,7 +21,7 @@
           </div>
         </li>
       </ul>
-      <p class="adm-foot">Worked out from the saved hiscores of every tracked player. The last day runs from 6 AM to 6 AM Eastern.</p>
+      <p class="adm-foot">Worked out from the saved hiscores of every tracked player. The last 24 hours is a rolling day; the 7 and 30 days count game days, which run from 6 AM to 6 AM Eastern, like the bars above.</p>
     </div>
   </div>
 </template>
@@ -38,9 +38,9 @@ const props = defineProps({ players: { type: Array, required: true } })
 const emit = defineEmits(['close'])
 
 const PERIODS = [
-  { key: 'day', label: 'Last day', note: 'since 6 AM Eastern', days: 1 },
-  { key: 'week', label: '7 days', note: 'the last week', days: 7 },
-  { key: 'month', label: '30 days', note: 'the last month', days: 30 },
+  { key: 'h24', label: 'Last 24 hours', note: 'rolling, as on the Discover tile', days: 1 },
+  { key: 'week', label: '7 days', note: 'the last 7 game days', days: 7 },
+  { key: 'month', label: '30 days', note: 'the last 30 game days', days: 30 },
 ]
 const rows = computed(() =>
   PERIODS.map((p) => {

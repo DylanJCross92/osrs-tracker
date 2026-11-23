@@ -345,10 +345,20 @@ export function formatGp(gp) {
   const abs = Math.abs(gp)
   const sign = gp < 0 ? '-' : '+'
   if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B gp`
-  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M gp`
-  if (abs >= 1e3) return `${sign}${Math.round(abs / 1e3)}K gp`
+  if (abs >= 1e6 - 500) {
+    const m = (abs / 1e6).toFixed(1)
+    // 999,950K and up round to a million, so it is written as one
+    return Number(m) >= 1000 ? `${sign}${(abs / 1e9).toFixed(2)}B gp` : `${sign}${m}M gp`
+  }
+  if (abs >= 1e3) {
+    const k = Math.round(abs / 1e3)
+    return k >= 1000 ? `${sign}${(abs / 1e6).toFixed(1)}M gp` : `${sign}${k}K gp`
+  }
   return `${sign}${abs} gp`
 }
+
+/** "1 day", "12 days". */
+export const formatDays = (n) => `${Number(n).toLocaleString('en-US')} ${Number(n) === 1 ? 'day' : 'days'}`
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
 // Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.

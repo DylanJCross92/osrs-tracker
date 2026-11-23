@@ -14,7 +14,7 @@
 
       <p v-if="error" class="planner-error" role="alert">{{ error }}</p>
       <ul v-else-if="!data" class="adm-list" aria-busy="true" aria-label="Loading players">
-        <li v-for="n in 6" :key="n" class="adm-row dash-sk" aria-hidden="true"><span class="sk adm-av" /><span class="adm-main"><b class="sk sk-w140">Player name</b><small class="sk sk-w100">Overall 2,277</small></span><span class="sk sk-w60">3h ago</span></li>
+        <li v-for="n in 6" :key="n" class="adm-row dash-sk" aria-hidden="true"><span class="sk adm-av" /><span class="adm-main"><b class="sk sk-w140">Player name</b><small class="sk sk-w100">Overall 2,376</small></span><span class="sk sk-w60">3h ago</span></li>
       </ul>
       <ul v-else class="adm-list">
         <li v-for="p in data.players" :key="p.username">

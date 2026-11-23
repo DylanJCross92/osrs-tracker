@@ -102,13 +102,13 @@ function mapSnapshotRow(row) {
 // newest one before the cutoff is still the current state at that moment), or
 // the very first snapshot ever if the player wasn't tracked yet,
 // "day" runs from 6:00 AM to 6:00 AM in the app timezone, not a
-// rolling 24h window; "h24" and "month" are plain rolling windows. "week" is the last 7 game days (the current game day and the six
-// before it, so it starts at a 6 AM edge), the same window as the profile's This week, so every "this week" number agrees.
+// rolling 24h window; "h24" is a plain rolling window. "week" and "month" are the last 7 and the last 30 game days (the current game day and
+// the days before it, so they start at a 6 AM edge), the same windows as the profile's This week and 30 days, so every number agrees.
 const BASELINE_CUTOFF_SQL = {
   day: `(date_trunc('day', (now() AT TIME ZONE $1) - interval '6 hours') + interval '6 hours') AT TIME ZONE $1`,
   h24: `now() - interval '24 hours'`,
   week: `(date_trunc('day', (now() AT TIME ZONE $1) - interval '6 hours') - interval '6 days' + interval '6 hours') AT TIME ZONE $1`,
-  month: `now() - interval '30 days'`,
+  month: `(date_trunc('day', (now() AT TIME ZONE $1) - interval '6 hours') - interval '29 days' + interval '6 hours') AT TIME ZONE $1`,
 }
 
 // Snapshots dated before the player was added are sparse Wise Old Man imports

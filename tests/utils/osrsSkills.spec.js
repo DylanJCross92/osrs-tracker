@@ -78,6 +78,22 @@ describe('xpGain', () => {
   })
 })
 
+describe('xpGain over the last 30 game days', () => {
+  const NOW = Date.UTC(2026, 10, 23, 14, 54)
+  const at = (iso, xp) => ({ capturedAt: new Date(iso).toISOString(), overallXp: xp, skills: {} })
+  // The window starts at 6 AM Eastern (11:00 UTC) on Tue 24 Oct, 29 days before the current game day began, not 30 x 24 hours back.
+  const snaps = [at('2026-10-20T00:00:00Z', 100), at('2026-10-24T02:00:00Z', 400), at('2026-10-25T20:00:00Z', 900), at('2026-11-20T19:00:00Z', 1500)]
+  it('counts from the last snapshot before the 6 AM edge thirty game days back', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(NOW)
+    try {
+      expect(xpGain(snaps, 'Overall', 'month')).toBe(1100)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('xpGain over the last 7 game days', () => {
   // Monday 23 Nov 2026, 9:54 AM Eastern. The window starts at 6 AM Eastern on Tue 17 Nov (11:00 UTC), not 7 x 24 hours back.
   const NOW = Date.UTC(2026, 10, 23, 14, 54)

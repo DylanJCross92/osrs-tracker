@@ -6,6 +6,7 @@ import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import { pixelIconDataUri, skillIconDataUri } from './skillIcons.service.js'
 import { dayCount, formatRange } from '../utils/dates.js'
+import { formatDays, formatGp, formatHours, formatXp } from '../utils/format.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fontsDir = path.join(__dirname, '../assets/fonts')
@@ -30,15 +31,8 @@ function image(src, width, height) {
   return { type: 'img', props: { src, width, height, style: { width, height } } }
 }
 
-/** "4.2M" / "12.3K" / "850", no decimals under 1K. */
-export function formatXp(xp) {
-  const n = Number(xp) || 0
-  const abs = Math.abs(n)
-  if (abs >= 1_000_000_000) return `${parseFloat((n / 1_000_000_000).toFixed(2))}B`
-  if (abs >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2))}M`
-  if (abs >= 1_000) return `${parseFloat((n / 1_000).toFixed(1))}K`
-  return String(Math.round(n))
-}
+// The same compact XP as the site (utils/format.js), re-exported for the previews that use it.
+export { formatXp }
 
 const COLORS = {
   green: '#7cb869',
@@ -985,13 +979,8 @@ export async function renderProfileCardPng(data) {
 
 // --- Shared plan card (what a pasted plan link unfurls into) -----------------------------------------------------------
 
-const planHours = (h) => (h == null ? '-' : h >= 100 ? `${Math.round(h).toLocaleString('en-US')} h` : `${parseFloat(h.toFixed(1))} h`)
-const planGp = (gp) => {
-  if (gp == null) return 'No GP data'
-  const abs = Math.abs(gp)
-  const n = abs >= 1e9 ? `${parseFloat((abs / 1e9).toFixed(2))}B` : abs >= 1e6 ? `${parseFloat((abs / 1e6).toFixed(1))}M` : abs >= 1e3 ? `${parseFloat((abs / 1e3).toFixed(1))}K` : String(abs)
-  return `${gp >= 0 ? '+' : '-'}${n} gp`
-}
+const planHours = formatHours
+const planGp = formatGp
 const clip = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 
 async function buildPlanCardTree({ name, rsn, mode, summary, plan }) {

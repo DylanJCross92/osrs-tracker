@@ -77,13 +77,20 @@ export function skillIconSrc(skill) {
   return `/icons/skills/${SKILL_ICON_FILES[skill]}.gif`
 }
 
-/** 3_746_000_000 -> "3.75B", 4_200_000 -> "4.2M", 12_000 -> "12K", 850 -> "850". Trailing zeros are dropped. */
+/** 3_746_000_000 -> "3.75B", 4_200_000 -> "4.2M", 12_000 -> "12K", 850 -> "850". Trailing zeros are dropped; a value that rounds up to the next unit uses it. */
 export function formatXp(xp) {
   const n = Number(xp) || 0
   const abs = Math.abs(n)
-  if (abs >= 1_000_000_000) return `${parseFloat((n / 1_000_000_000).toFixed(2))}B`
-  if (abs >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(abs >= 10_000_000 ? 1 : 2))}M`
-  if (abs >= 1_000) return `${parseFloat((n / 1_000).toFixed(1))}K`
+  const trim = (v, digits) => parseFloat(v.toFixed(digits))
+  if (abs >= 1_000_000_000) return `${trim(n / 1_000_000_000, 2)}B`
+  if (abs >= 1_000_000) {
+    const v = trim(n / 1_000_000, abs >= 10_000_000 ? 1 : 2)
+    return Math.abs(v) >= 1000 ? `${trim(n / 1_000_000_000, 2)}B` : `${v}M`
+  }
+  if (abs >= 1_000) {
+    const v = trim(n / 1_000, 1)
+    return Math.abs(v) >= 1000 ? `${trim(n / 1_000_000, 2)}M` : `${v}K`
+  }
   return String(n)
 }
 
@@ -104,20 +111,6 @@ export function levelForSkill(snapshot, skill) {
   return snapshot.skills?.[skill]?.level ?? 1
 }
 
-const xpForLevelCache = [0, 0]
-/** Total xp required to reach a given level (1-99), via the game's own formula. */
-export function xpForLevel(level) {
-  if (xpForLevelCache[level] != null) return xpForLevelCache[level]
-  let points = 0
-  let xp = 0
-  for (let lvl = 1; lvl < level; lvl++) {
-    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
-    xp = Math.floor(points / 4)
-    if (xpForLevelCache[lvl + 1] == null) xpForLevelCache[lvl + 1] = xp
-  }
-  return xp
-}
-
 export function rankForSkill(snapshot, skill) {
   if (skill === 'Overall') return snapshot.overallRank
   return snapshot.skills?.[skill]?.rank ?? null
@@ -134,12 +127,12 @@ const PERIODS = {
  * or the very first snapshot if the player hasn't been tracked that long. Snapshots are only saved when
  * xp changes, so the newest earlier one is still the current state at that moment. Callers should pass
  * only snapshots TickGains tracked itself: sparse imported history (months apart) is not a valid window
- * start. "day" runs from 6:00 AM Eastern to the next 6:00 AM Eastern; "week" is the last 7 game days (starting at a 6 AM edge); "month" is a rolling window.
+ * start. "day" runs from 6:00 AM Eastern to the next 6:00 AM Eastern; "week" is the last 7 game days and "month" the last 30 (each starting at a 6 AM edge).
  */
 function baselineSnapshot(snapshots, period) {
   if (period === 'all') return snapshots[0]
   // "week" is the last 7 game days (it starts at a 6 AM edge, like the profile's This week and the server's weekly gains).
-  const cutoff = period === 'day' ? startOfGameDay() : period === 'week' ? startOfGameDay(Date.now() - 6 * 86_400_000) : Date.now() - PERIODS[period]
+  const cutoff = period === 'day' ? startOfGameDay() : period === 'week' ? startOfGameDay(Date.now() - 6 * 86_400_000) : period === 'month' ? startOfGameDay(Date.now() - 29 * 86_400_000) : Date.now() - PERIODS[period]
   let baseline = snapshots[0]
   for (const s of snapshots) {
     if (new Date(s.capturedAt).getTime() < cutoff) baseline = s

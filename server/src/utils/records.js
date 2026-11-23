@@ -5,19 +5,14 @@
 // history imported from before the player was added is far apart in time and would turn a whole gap into one "day".
 // A "day" is the 6 AM to 6 AM Eastern game day used everywhere else on the site.
 import { localDay, addDays, diffDays } from './dates.js'
+import { formatXp } from './format.js'
 
 export const WEEK_DAYS = 7
 export const MONTH_DAYS = 30
 // A record needs a little history behind it to mean something as a "record".
 const FRESH_MIN_TRACKED_DAYS = 5
 
-/** "4.2M" / "12.3K" / "850" (same shortening as formatXp in the card renderer and the site). */
-function shortXp(xp) {
-  const n = Number(xp) || 0
-  if (n >= 1_000_000) return `${parseFloat((n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2))}M`
-  if (n >= 1_000) return `${parseFloat((n / 1_000).toFixed(1))}K`
-  return String(Math.round(n))
-}
+const shortXp = formatXp
 
 /** The record in one phrase, used for share text and link previews: "3.79M XP in a single day". */
 export function recordHeadline(r) {

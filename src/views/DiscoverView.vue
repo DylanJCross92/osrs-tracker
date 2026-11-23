@@ -12,7 +12,7 @@
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
             <span><b>{{ players.length.toLocaleString('en-US') }}</b><small>players</small></span>
           </component>
-          <button type="button" class="disc-stat-tile is-action" aria-label="Show the XP gained on the site over the last day, 7 days and 30 days" @click="xpOpen = true; track('discover_xp_total_open')">
+          <button type="button" class="disc-stat-tile is-action" aria-label="Show the XP gained on the site over the last 24 hours, 7 days and 30 days" @click="xpOpen = true; track('discover_xp_total_open')">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
             <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? '· 24 hours' : '· 7 days' }}</small></span>
           </button>
@@ -158,7 +158,7 @@
         <ol v-if="improvedList.length" class="disc-rank-list">
           <li v-for="(t, i) in improvedList" :key="t.id"><RouterLink :to="profileTo(t.username)">
             <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" :claimed="t.claimed" /></span><small>+{{ formatXp(t.currentWeek) }} this week vs. {{ formatXp(t.previousAvg) }} usual</small></span>
+            <span class="disc-board-main"><span class="disc-board-name">{{ t.displayName }}<PlayerBadge :label="t.badge" :claimed="t.claimed" /></span><small>+{{ formatXp(t.currentWeek) }} in the last 7 days vs. {{ formatXp(t.previousAvg) }} usual</small></span>
             <span class="disc-board-xp">+{{ t.pct }}%</span>
           </RouterLink></li>
         </ol>
@@ -168,7 +168,7 @@
             It compares the last 7 days with each player's previous four-week weekly average, so a player needs about five weeks of tracking history.
             Right now <b>{{ insights.improvedMeta?.withHistory ?? 0 }} of {{ insights.improvedMeta?.total ?? players.length }}</b> tracked players have that much.
           </p>
-          <p>To qualify: at least {{ formatXp(insights.improvedMeta?.minWeek || 250000) }} XP this week, a usual week of {{ formatXp(insights.improvedMeta?.minUsual || 25000) }}+, and {{ insights.improvedMeta?.minPct || 25 }}% or more above it.</p>
+          <p>To qualify: at least {{ formatXp(insights.improvedMeta?.minWeek || 250000) }} XP in the last 7 days, a usual week of {{ formatXp(insights.improvedMeta?.minUsual || 25000) }}+, and {{ insights.improvedMeta?.minPct || 25 }}% or more above it.</p>
         </div>
       </section>
     </div>
@@ -341,6 +341,7 @@ import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { skillIconSrc, formatXp, SKILL_NAMES } from '@/utils/osrsSkills'
+import { xpAtLevel } from '@/utils/planner'
 import { formatRelative } from '@/utils/time'
 import { track } from '@/utils/analytics'
 
@@ -604,17 +605,8 @@ watch(players, (list) => {
   if (top) exSkill.value = top[0]
 })
 const SKILL_XP_STEPS = [10_000_000, 50_000_000, 100_000_000, 200_000_000]
-const xpForLvl = (level) => {
-  let points = 0
-  let xp = 0
-  for (let l = 1; l < level; l++) {
-    points += Math.floor(l + 300 * 2 ** (l / 7))
-    xp = Math.floor(points / 4)
-  }
-  return xp
-}
-const XP99 = xpForLvl(99)
-const XP90 = xpForLvl(90)
+const XP99 = xpAtLevel(99)
+const XP90 = xpAtLevel(90)
 function nextMilestone(level, xp) {
   const steps = [
     { label: 'Level 90', xp: XP90 },

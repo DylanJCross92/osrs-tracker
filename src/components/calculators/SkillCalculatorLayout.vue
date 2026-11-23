@@ -291,7 +291,8 @@ const intParam = (v, lo, hi) => {
 }
 const strParam = (v) => (typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : '')
 
-const currentXp = ref(intParam(q.currentXp, 0, MAX_XP) ?? (props.goalPage ? xpAtLevel(props.goalPage.from) : 0))
+// A new account has 10 Hitpoints (1,154 XP), not 1: the plain Hitpoints calculator starts there, as the goal pages do.
+const currentXp = ref(intParam(q.currentXp, 0, MAX_XP) ?? (props.goalPage ? xpAtLevel(props.goalPage.from) : skill === 'Hitpoints' ? xpAtLevel(10) : 0))
 const targetMode = ref('level')
 const targetLevel = ref(props.goalPage ? props.goalPage.to : 99)
 const targetXpInput = ref(xpAtLevel(targetLevel.value))

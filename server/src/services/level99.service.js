@@ -1,8 +1,9 @@
 import { pool } from '../db.js'
 import { getLatestSnapshot } from './players.service.js'
 import { SKILL_NAMES } from './osrsHiscores.service.js'
+import { XP_99 as XP_99_TOTAL } from '../utils/xp.js'
 
-const XP_99 = 13_034_431
+const XP_99 = XP_99_TOTAL
 
 /** The skill as the game writes it ("agility" -> "Agility"), or null when it is not one. */
 export const matchSkill = (raw) => SKILL_NAMES.find((n) => n.toLowerCase() === String(raw || '').trim().toLowerCase()) || null
