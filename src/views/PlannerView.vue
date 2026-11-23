@@ -204,7 +204,7 @@ import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
-import { planFromProfile } from '@/utils/smartPlanner'
+import { GOALS, planFromProfile } from '@/utils/smartPlanner'
 import { describeProfile } from '@/utils/smartProfile'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
@@ -1101,7 +1101,9 @@ function useRecommended(rec) {
 
 // "Start this plan" in the Smart Planner: the answers become settings, and the goals are worked out from the player's stats right now.
 function useSmartPlan(plan) {
-  keepCurrentPlanBefore('Smart plan')
+  // Named for what was asked for: "Make money (Smart Planner)"
+  const name = `${GOALS.find((g) => g.key === plan.profile.goal)?.label || 'Smart plan'} (Smart Planner)`
+  keepCurrentPlanBefore(name)
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
@@ -1112,13 +1114,13 @@ function useSmartPlan(plan) {
   goals.value = plan.goals
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
-  currentPlanName.value = 'Smart plan'
-  template.value = { slug: '', name: 'Smart plan', rsn: '', smart: plan.profile }
+  currentPlanName.value = name
+  template.value = { slug: '', name, rsn: '', smart: plan.profile }
   smartProfile.value = plan.profile
   templatePending.value = !player.value?.latest
   expanded.value = new Set()
   track('planner_smart_used', { goal: plan.profile.goal, goals: goals.value.length, hasPlayer: !!player.value?.latest })
-  afterCreate('Smart plan')
+  afterCreate(name)
 }
 async function startSmart(profile) {
   await loadTyped()
