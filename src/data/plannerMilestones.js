@@ -25,6 +25,9 @@ export const LEVEL_STEPS = [30, 40, 50, 60, 70, 80, 90, 99]
 export const START_LEVEL = { new: 30, returning: 50, veteran: 70 }
 
 // The combat ladder: the levels that open up the next tier of gear and prayers. `members` steps are hidden from free-to-play players.
+// Checked against the OSRS Wiki's pages (23 Nov 2026): rune scimitar 40 Attack, dragon scimitar 60 Attack (and Monkey Madness I), dragon chainbody
+// 60 Defence, Protect from Melee 43 Prayer, rune crossbow 61 Ranged, abyssal whip 70 Attack, black d'hide body 70 Ranged (and 40 Defence), Piety 70
+// Prayer and 70 Defence, abyssal tentacle 75 Attack, toxic blowpipe 75 Ranged. Barrows armour at 70 Defence is from the same guides, not re-read.
 export const COMBAT_TIERS = [
   {
     level: 40,
@@ -39,7 +42,7 @@ export const COMBAT_TIERS = [
     level: 60,
     title: 'Dragon tier',
     goals: [
-      { skill: 'Attack', level: 60, why: 'Wield dragon weapons.', members: true },
+      { skill: 'Attack', level: 60, why: 'Wield dragon weapons (the dragon scimitar also needs Monkey Madness I).', members: true },
       { skill: 'Strength', level: 60, why: 'Hit harder with everything you wield.', members: true },
       { skill: 'Defence', level: 60, why: 'Wear dragon armour.', members: true },
       { skill: 'Prayer', level: 43, why: 'Protect from Melee.', members: true },
@@ -53,8 +56,8 @@ export const COMBAT_TIERS = [
       { skill: 'Attack', level: 70, why: 'Wield an abyssal whip and Barrows weapons.', members: true },
       { skill: 'Strength', level: 70, why: 'Hit harder with everything you wield.', members: true },
       { skill: 'Defence', level: 70, why: 'Wear Barrows armour.', members: true },
-      { skill: 'Prayer', level: 70, why: 'Unlock Piety, with 70 Defence.', members: true },
-      { skill: 'Ranged', level: 70, why: 'Wear black dragonhide armour.', members: true },
+      { skill: 'Prayer', level: 70, why: 'Unlock Piety, with 70 Defence (and the Knight Waves Training Ground miniquest).', members: true },
+      { skill: 'Ranged', level: 70, why: 'Wear black dragonhide armour (with 40 Defence).', members: true },
     ],
   },
   {

@@ -9,14 +9,10 @@
 //   unlock     an area, spellbook, guild, technique or other unlock, confirmed by the player
 //   note       a recommendation or detail that is shown but not confirmable
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { QUEST_LIST } from '@/data/questList'
 
-const QUEST_NAMES = [
-  'Children of the Sun', 'Monkey Madness II', 'Monkey Madness I', 'Ghosts Ahoy', 'Dwarf Cannon', 'Perilous Moons', 'Sins of the Father',
-  'Bone Voyage', 'Troubled Tortugans', 'The Blood Moon Rises', 'Barbarian Training', 'Swan Song', 'Tai Bwo Wannai Trio', 'Regicide',
-  'Pandemonium', "Eagles' Peak", 'Song of the Elves', 'A Kingdom Divided', 'Lunar Diplomacy', 'Sleeping Giants', 'Dragon Slayer II',
-  'Temple of the Eye', 'Lost City', 'Troll Stronghold', 'Creature of Fenkenstrain', 'Death to the Dorgeshuun', 'Dream Mentor',
-  'Druidic Ritual', 'Fishing Contest', 'Vale Totems',
-]
+// Every quest we know (data/questList.js), so a quest named in a method's requirement text is a quest and not an "unlock".
+const QUEST_NAMES = QUEST_LIST.map((q) => q.name)
 const norm = (s) => String(s).toLowerCase().replace(/[^a-z0-9 ']/g, ' ').replace(/\s+/g, ' ').trim()
 const QUEST_LOOKUP = new Map(QUEST_NAMES.map((n) => [norm(n), n]))
 

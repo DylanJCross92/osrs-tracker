@@ -60,7 +60,8 @@ const options = computed(() => {
   return questsForSkill(props.skill)
     .filter((quest) => !done.has(quest.id))
     .filter((quest) => quest.rewards[props.skill] <= remaining || props.modelValue.includes(quest.id))
-    .slice(0, 6)
+    // The biggest rewards are looked at (there are many quests now), then the ones you can do and that save the most come first.
+    .slice(0, 14)
     .map((quest) => {
       const xp = quest.rewards[props.skill]
       const need = quest.reqs[props.skill]
@@ -80,6 +81,8 @@ const options = computed(() => {
         chainNames: before.map((id) => getQuest(id).name),
       }
     })
+    .sort((a, b) => Number(a.locked) - Number(b.locked) || b.hoursSaved - a.hoursSaved)
+    .slice(0, 6)
 })
 
 function markDone(quest) {

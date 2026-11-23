@@ -1,7 +1,7 @@
 // Quests the player has finished, read from their answers about requirements (one store for everything: the quest tracker
 // on the account page, "I have this" on a method's requirements, and "already done" on a quest shortcut).
 import { QUEST_LIST } from '@/data/questList'
-import { QUESTS } from '@/data/quests'
+import { ALL_QUESTS } from '@/data/quests'
 import { questSlug } from '@/utils/questSlug'
 
 /** Slugs of quests answered "have". A partial-progress answer is not a finished quest. */
@@ -13,10 +13,11 @@ export function completedQuestSlugs(confirmations = {}) {
   return out
 }
 
-/** Ids of the XP-shortcut quests (see data/quests.js) that are already finished, so their rewards are not counted twice. */
+/** Ids of the quests (see data/quests.js) that are already finished, so their rewards are not counted twice. */
 export function doneShortcutIds(confirmations = {}) {
   const done = completedQuestSlugs(confirmations)
-  return QUESTS.filter((q) => done.has(questSlug(q.name))).map((q) => q.id)
+  // Every quest we know, not only the ones with rewards: a quest that only had to come first is finished too.
+  return ALL_QUESTS.filter((q) => done.has(questSlug(q.name))).map((q) => q.id)
 }
 
 /** Totals for the tracker: how many of the known quests are marked done, overall and by type. */

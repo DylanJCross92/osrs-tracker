@@ -27,7 +27,7 @@ const MAX_STRETCH_HOURS = 40 // how far one step goes for one skill
 
 const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)
 const f2pIds = (skill) => methodsForSkill(skill).filter((m) => F2P_METHOD_IDS.has(m.id)).map((m) => m.id)
-export const isFreeQuest = (quest) => questBySlug(questSlug(quest.name))?.type === 'F'
+export const isFreeQuest = (quest) => quest.members === false || questBySlug(questSlug(quest.name))?.type === 'F'
 const gpShort = (n) => formatGp(Math.round(n)).replace(/^\+/, '').replace(/ gp$/, '')
 const eligible = (skill, profile) => profile.members || F2P_SKILLS.includes(skill)
 

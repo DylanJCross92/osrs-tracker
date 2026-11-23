@@ -138,6 +138,8 @@ const RAW = [
   ["Biohazard", 'M'],
   ["Tower of Life", 'M'],
   ["Rag and Bone Man II", 'M'],
+  ["Rag and Bone Man III", 'M'],
+  ["A New Leaf", 'M'],
   ["Land of the Goblins", 'M'],
   ["While Guthix Sleeps", 'M'],
   ["Zogre Flesh Eaters", 'M'],
@@ -212,6 +214,8 @@ const RAW = [
   ["His Faithful Servants", 'MQ'],
   ["Vale Totems", 'MQ'],
   ["The Fractured Archive", 'MQ'],
+  ["Knight Waves", 'MQ'],
+  ["Natural history quiz", 'MQ'],
 ]
 
 export const QUEST_TYPES = { F: 'Free', M: 'Members', MQ: 'Miniquest' }

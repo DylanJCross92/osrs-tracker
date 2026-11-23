@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { plannedQuestReqIds, questChain, questMinutes, withPrerequisites, withoutQuest } from '@/data/quests'
+import { getQuest, plannedQuestReqIds, questChain, questMinutes, withPrerequisites, withoutQuest } from '@/data/quests'
 import { methodAvailability } from '@/utils/requirements'
 import { getMethod } from '@/data/trainingMethods'
 import { AUTO_BALANCED, AUTO_FAST, planGoal, suggestedQuests, xpAtLevel } from '@/utils/planner'
@@ -16,8 +16,9 @@ describe('quest prerequisites', () => {
     expect(withoutQuest(['rune-mysteries', 'enter-the-abyss'], 'temple-of-the-eye')).toEqual(['rune-mysteries', 'enter-the-abyss'])
   })
   it('adds up their time and names the requirements a plan covers', () => {
-    expect(questMinutes(['temple-of-the-eye'])).toBe(75)
-    expect(questMinutes(['temple-of-the-eye'], new Set(['rune-mysteries']))).toBe(60)
+    const mins = (...ids) => ids.reduce((sum, id) => sum + getQuest(id).minutes, 0)
+    expect(questMinutes(['temple-of-the-eye'])).toBe(mins('rune-mysteries', 'enter-the-abyss', 'temple-of-the-eye'))
+    expect(questMinutes(['temple-of-the-eye'], new Set(['rune-mysteries']))).toBe(mins('enter-the-abyss', 'temple-of-the-eye'))
     expect(plannedQuestReqIds([{ quests: ['temple-of-the-eye'] }])).toContain('quest:temple-of-the-eye')
   })
 })
@@ -27,7 +28,7 @@ describe('planGoal with the Runecraft quests', () => {
     const plan = planGoal(rc({ quests: ['temple-of-the-eye'] }))
     expect(plan.questXp).toBe(500 + 1000 + 9210)
     expect(plan.questList.map((x) => x.name)).toEqual(['Rune Mysteries', 'Enter the Abyss', 'Temple of the Eye'])
-    expect(plan.questHours).toBeCloseTo(75 / 60)
+    expect(plan.questHours).toBeCloseTo((getQuest('rune-mysteries').minutes + getQuest('enter-the-abyss').minutes + getQuest('temple-of-the-eye').minutes) / 60)
   })
   it('does not count quests that are already finished', () => {
     const plan = planGoal(rc({ quests: ['temple-of-the-eye'], doneQuestIds: ['rune-mysteries', 'enter-the-abyss', 'temple-of-the-eye'] }))
