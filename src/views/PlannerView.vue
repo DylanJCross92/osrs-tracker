@@ -8,10 +8,9 @@
       <section class="card planner-top is-start">
         <div class="pt-head">
           <div class="pt-title">
-            <span class="pt-badge">Account Planner</span>
+            <div class="pt-toprow"><span class="pt-badge">Account Planner</span><GePriceBadge class="pt-live" /></div>
             <h1>How long until 99, and what will it cost?</h1>
-            <p>Enter your RuneScape name: the fastest route, the time it takes and the cost, from your real stats and live Grand Exchange prices.</p>
-            <GePriceBadge class="pt-live" />
+            <p>Enter your RuneScape name for the fastest route, the time and the cost, from your real stats and live Grand Exchange prices.</p>
           </div>
         </div>
         <PlannerPlayerBox
@@ -32,7 +31,7 @@
           <template #hint>
             <p class="pt-hint pt-hint-start">
               <template v-if="lookingUp">Loading stats…</template>
-              <template v-else>No sign-up required · Or <a href="#ps-start" @click.prevent="scrollToStart">start without a username</a></template>
+              <template v-else>No sign-up required · <a href="#ps-start" @click.prevent="scrollToStart">Browse ready-made plans without a name</a></template>
             </p>
           </template>
         </PlannerPlayerBox>
@@ -1113,6 +1112,8 @@ function useSmartPlan(plan) {
 }
 async function startSmart(profile) {
   await loadTyped()
+  // The Smart Planner is built on the player's real levels, so it does not start without them.
+  if (!player.value?.latest) return showToast('The Smart Planner needs your RuneScape name to make a plan that fits you.')
   const plan = planFromProfile(profile, player.value?.latest?.skills || null)
   if (!plan.goals.length) return showToast('Nothing to plan for those answers. Change one and try again.')
   useSmartPlan(plan)

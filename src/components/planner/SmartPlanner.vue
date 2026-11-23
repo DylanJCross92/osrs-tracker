@@ -7,7 +7,7 @@
       <div class="spl-title">
         <span class="spl-eyebrow">Tailored to you</span>
         <h2 id="spl-h">Smart Planner</h2>
-        <p>Not sure what to work on? Answer a few questions and get a step-by-step plan.</p>
+        <p>A step-by-step plan from your real levels. <b>Needs your RuneScape name.</b></p>
       </div>
       <button class="btn btn-primary spl-toggle" type="button" aria-haspopup="dialog" @click="openIt">Open Smart Planner</button>
     </header>
@@ -23,7 +23,7 @@
             <div class="spl-title">
               <span class="spl-eyebrow">Tailored to you</span>
               <h2 id="spm-h">Smart Planner</h2>
-              <p>Answer a few questions and get a step-by-step plan. It changes as you answer.</p>
+              <p>A few questions and your real levels make a step-by-step plan.</p>
             </div>
             <button ref="closeBtn" type="button" aria-label="Close" @click="close">✕</button>
           </header>

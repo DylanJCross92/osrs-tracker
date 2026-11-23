@@ -1,4 +1,4 @@
-import { F2P_SKILLS, F2P_METHOD_IDS, LEVEL_TIERS, COMBAT_TIERS } from '@/data/plannerMilestones'
+import { F2P_SKILLS, F2P_METHOD_IDS, LEVEL_STEPS, START_LEVEL, COMBAT_TIERS } from '@/data/plannerMilestones'
 import { methodsForSkill } from '@/data/trainingMethods'
 import { questBySlug } from '@/data/questList'
 import { getQuest } from '@/data/quests'
@@ -69,29 +69,40 @@ function tierGoals(states, tierLevel, profile) {
   return goals
 }
 
-/** The next "bring everything up to N" tier that still has something to do, for the levels in `states`. */
-function skillsPhase(states, profile) {
-  const tiers = LEVEL_TIERS[profile.experience]
-  for (const t of tiers) {
-    const goals = tierGoals(states, t, profile)
-    if (goals.length) return { id: `tier-${t}`, title: `Bring everything up to level ${t}`, why: t === tiers[0] ? 'A solid base makes every later skill easier.' : '', goals }
+/**
+ * The next set of levels to work on. With stats to go on it is the first "bring everything up to N" step that still has several skills
+ * below it (a few skills left are simply finished off to 99); with none, how experienced the player says they are decides where to start.
+ */
+function skillsPhase(states, profile, hasStats) {
+  const eligible = states.filter((s) => profile.members || F2P_SKILLS.includes(s.skill))
+  const below = (t) => eligible.filter((s) => s.level < reachable(s.skill, t, profile)).length
+  const left = below(99)
+  if (!left) return null
+  if (left <= 3) {
+    return { id: 'finish', title: left === 1 ? 'Finish your last skill' : 'Finish your last skills', why: 'Everything else is further along, so these are what is left to take to 99.', goals: tierGoals(states, 99, profile) }
   }
-  return null
+  const floor = hasStats ? LEVEL_STEPS[0] : START_LEVEL[profile.experience]
+  for (const t of LEVEL_STEPS) {
+    if (t < floor || below(t) < 4) continue
+    if (t === 99) return { id: 'tier-99', title: 'Take everything to 99', why: 'The long road, one skill at a time.', goals: tierGoals(states, 99, profile) }
+    return { id: `tier-${t}`, title: `Bring everything up to level ${t}`, why: t === LEVEL_STEPS[0] || t === floor ? 'A solid base makes every later skill easier.' : '', goals: tierGoals(states, t, profile) }
+  }
+  return { id: 'tier-99', title: 'Take everything to 99', why: 'The long road, one skill at a time.', goals: tierGoals(states, 99, profile) }
 }
 
-/** The next tier of the combat ladder with something left to do, from the starting tier for how experienced the player is. */
-function combatPhase(states, profile) {
+/** The next tier of the combat ladder with something left to do (with stats the first one still ahead; without, from the starting tier). */
+function combatPhase(states, profile, hasStats) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
-  const startIndex = { new: 0, returning: 1, veteran: 2 }[profile.experience]
+  const startIndex = hasStats ? 0 : { new: 0, returning: 1, veteran: 2 }[profile.experience]
   for (const tier of COMBAT_TIERS.slice(startIndex)) {
     const goals = []
     for (const g of tier.goals) {
       if (!profile.members && g.members) continue
       const s = byName[g.skill]
       const to = reachable(g.skill, g.level, profile)
-      if (s && s.level < to) goals.push({ ...mk(s, to, profile), why: [g.why] })
+      if (s && s.level < to) goals.push({ ...mk(s, to, profile), why: g.why ? [g.why] : [] })
     }
-    if (goals.length) return { id: `combat-${tier.level}`, title: tier.title, why: `Level ${tier.level} and up opens the next tier of gear.`, goals }
+    if (goals.length) return { id: `combat-${tier.level}`, title: tier.title, why: tier.why || `Level ${tier.level} and up opens the next tier of gear.`, goals }
   }
   return null
 }
@@ -105,7 +116,34 @@ function bestGpAt(skill, level, allowed) {
   return best
 }
 
-function moneyPhase(states, profile) {
+const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)
+const gpShortText = (n) => formatGp(n).replace(/^\+/, '').replace(/ gp$/, '')
+
+/** The best-paying methods the player can already do: train that skill with that method for the next stretch. */
+function moneyNowPhase(states, profile) {
+  const best = []
+  for (const s of states) {
+    if (!profile.members && !F2P_SKILLS.includes(s.skill)) continue
+    if (s.level >= 99) continue
+    const allowed = profile.members ? null : new Set(f2pIds(s.skill))
+    let top = null
+    for (const m of methodsForSkill(s.skill)) {
+      if (allowed && !allowed.has(m.id)) continue
+      if (m.minLevel > s.level || (m.maxLevel != null && s.level > m.maxLevel) || !(m.gpPerHour > 0) || isTrick(m)) continue
+      if (!top || m.gpPerHour > top.gpPerHour) top = m
+    }
+    if (top) best.push({ s, m: top })
+  }
+  best.sort((a, b) => b.m.gpPerHour - a.m.gpPerHour || (a.s.skill < b.s.skill ? -1 : 1))
+  const goals = best.slice(0, 3).map(({ s, m }) => {
+    const to = reachable(s.skill, Math.min(99, s.level + 10), profile)
+    return { ...mk(s, to, profile), methodId: m.id, why: [`${m.name}: about ${gpShortText(m.gpPerHour)} gp an hour while you train.`] }
+  }).filter((g) => g.targetXp > g.currentXp)
+  return goals.length ? { id: 'money-now', title: 'Make money while you train', why: 'The best-paying methods you can already do. Check each one’s requirements before you start.', goals } : null
+}
+
+/** The levels that unlock a much better gp-an-hour method. */
+function moneyUnlockPhase(states, profile) {
   const rows = []
   for (const s of states) {
     if (!profile.members && !F2P_SKILLS.includes(s.skill)) continue
@@ -114,8 +152,7 @@ function moneyPhase(states, profile) {
     let best = null
     for (const m of methodsForSkill(s.skill)) {
       if (allowed && !allowed.has(m.id)) continue
-      // Tick-manipulation methods are a technique of their own, not something to recommend to a typical player.
-      if (m.minLevel <= s.level || m.gpPerHour == null || m.gpPerHour - now < 150_000 || /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)) continue
+      if (m.minLevel <= s.level || m.gpPerHour == null || m.gpPerHour - now < 150_000 || isTrick(m)) continue
       if (!best || m.gpPerHour > best.m.gpPerHour) best = { m }
     }
     if (!best) continue
@@ -124,11 +161,11 @@ function moneyPhase(states, profile) {
     const goal = mk(s, to, profile)
     const hours = planGoal({ ...goal, methodId: AUTO_FAST }).hours
     const gain = best.m.gpPerHour - now
-    rows.push({ goal: { ...goal, why: [`Unlocks ${best.m.name}, about ${formatGp(best.m.gpPerHour).replace(/^\+/, '').replace(/ gp$/, '')} gp an hour.`] }, score: gain / Math.max(hours || 1, 0.5) })
+    rows.push({ goal: { ...goal, why: [`Unlocks ${best.m.name}, about ${gpShortText(best.m.gpPerHour)} gp an hour.`] }, score: gain / Math.max(hours || 1, 0.5) })
   }
   rows.sort((a, b) => b.score - a.score || (a.goal.skill < b.goal.skill ? -1 : 1))
   const goals = rows.slice(0, 5).map((r) => r.goal)
-  return goals.length ? { id: 'money', title: 'Levels that unlock better money', why: 'Each of these opens a method that makes much more gp an hour.', goals } : null
+  return goals.length ? { id: 'money-unlock', title: 'Levels that unlock better money', why: 'Each of these opens a method that makes much more gp an hour.', goals } : null
 }
 
 // --- putting it together ----------------------------------------------------------------------------------------------------------
@@ -153,13 +190,14 @@ export function recommend(rawProfile, skills) {
   const profile = cleanProfile(rawProfile)
   const states = skillStates(skills)
   const settings = settingsFor(profile)
-  const next = (kind, from) => (kind === 'combat' ? combatPhase(from, profile) : kind === 'money' ? moneyPhase(from, profile) : skillsPhase(from, profile))
+  const hasStats = !!skills
+  const next = (kind, from, i) => (kind === 'combat' ? combatPhase(from, profile, hasStats) : kind === 'money' ? (i === 0 ? moneyNowPhase(from, profile) : moneyUnlockPhase(from, profile)) : skillsPhase(from, profile, hasStats))
   const build = (kind) => {
     const out = []
     let virtual = states
     // The next phase starts where this one ends, so its rows read "50 to 60" and not "20 to 60".
-    for (let i = 0; i < (kind === 'money' ? 1 : 2); i++) {
-      const p = next(kind, virtual)
+    for (let i = 0; i < 2; i++) {
+      const p = next(kind, virtual, i)
       if (!p) break
       out.push({ ...p, later: i > 0 })
       virtual = virtual.map((s) => {
@@ -171,10 +209,16 @@ export function recommend(rawProfile, skills) {
   }
   let phases = build(profile.goal)
   const notes = []
-  // Nothing in the chosen kind of plan is left to do (or, for money, nothing unlocks more): fall back to the levels, then to the big goals.
+  // Nothing in the chosen kind of plan is left to do: say so, and show the next levels to work on instead of an empty list.
   if (!phases.length && profile.goal !== 'skills') {
     phases = build('skills')
-    if (phases.length) notes.push('Nothing left in that kind of plan for your levels, so these are the next levels to work on.')
+    notes.push(
+      {
+        combat: "You've finished the combat ladder. Here is what's next instead.",
+        money: "None of the money methods we know pay more than what you can already do. Here is what's next instead.",
+        quests: 'No quick XP quest would help at your levels. Here are the next levels to work on.',
+      }[profile.goal],
+    )
   }
   if (!phases.length) {
     const big = recommendedPlans(skills).find((p) => p.kind !== 'total') || recommendedPlans(skills)[0]
@@ -190,6 +234,18 @@ export function recommend(rawProfile, skills) {
 
   // Quests that save time on each goal (members: any short XP quest; free: only free ones).
   for (const p of phases) for (const g of p.goals) g.quests = questsOf(g, settings, profile)
+  // "Quests and unlocks": the quests worth doing come first, as a step of their own (their XP is already counted in the goals).
+  let questRows = []
+  if (profile.goal === 'quests' && phases[0]) {
+    const seen = new Set()
+    for (const g of phases[0].goals) for (const id of g.quests) {
+      const q = getQuest(id)
+      if (!q || seen.has(id)) continue
+      seen.add(id)
+      questRows.push({ kind: 'quest', id, title: q.name, rewards: Object.entries(q.rewards).map(([skill, xp]) => `${xp.toLocaleString('en-US')} ${skill} XP`).join(', '), hours: (q.minutes || 0) / 60 })
+    }
+    if (!questRows.length) notes.push('No quick XP quest would help at your levels, so these are the levels to work on.')
+  }
 
   // Within a phase, the order that helps the most (Fishing before Cooking and so on).
   const ordered = []
@@ -216,6 +272,7 @@ export function recommend(rawProfile, skills) {
     return { id: p.id, title: p.title, why: p.why, later: !!p.later, rows }
   })
 
+  if (questRows.length) outPhases.unshift({ id: 'quests', title: 'Quests worth doing first', why: 'Each hands out a lump of XP that skips hours of training.', later: false, rows: questRows })
   const goals = ordered.map(({ why, ...g }) => g)
   const sum = goals.length ? summarizePlan({ goals, globalStrategy: settings.globalStrategy, gpValue: settings.gpValue, hoursPerDay: settings.hoursPerDay }) : { totalHours: 0, netGp: 0, days: 0 }
   return { profile, settings, phases: outPhases, notes, goals, totals: { goals: goals.length, hours: sum.totalHours, days: sum.days, netGp: sum.netGp }, empty: !goals.length }

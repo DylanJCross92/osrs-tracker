@@ -23,13 +23,25 @@ describe('answers', () => {
 })
 
 describe('recommendations', () => {
-  it('starts a new player on small tiers and a veteran on big ones', () => {
+  it('with no stats, starts a new player on small tiers and a veteran on big ones', () => {
+    expect(recommend({ experience: 'new' }, null).phases[0].title).toContain('30')
+    expect(recommend({ experience: 'returning' }, null).phases[0].title).toContain('50')
+    expect(recommend({ experience: 'veteran' }, null).phases[0].title).toContain('70')
+  })
+
+  it('with stats, goes by the levels, not by what the player says about themselves', () => {
     const base = skills({ all: 30 })
-    const rn = recommend({ experience: 'new' }, base)
-    const rv = recommend({ experience: 'veteran' }, base)
-    expect(rn.phases[0].title).toContain('40')
-    expect(rv.phases[0].title).toContain('70')
-    expect(rn.goals.every((g) => g.targetXp === xpAtLevel(40) || g.targetXp === xpAtLevel(50))).toBe(true)
+    const a = recommend({ experience: 'new' }, base)
+    const b = recommend({ experience: 'veteran' }, base)
+    expect(a.phases[0].title).toContain('40')
+    expect(b.phases[0].title).toBe(a.phases[0].title)
+  })
+
+  it('finishes the last few skills straight to 99 instead of climbing tiers', () => {
+    const r = recommend({}, skills({ all: 99, Sailing: 1 }))
+    expect(r.phases[0].title).toMatch(/Finish your last skill/)
+    expect(r.goals).toHaveLength(1)
+    expect(r.goals[0]).toMatchObject({ skill: 'Sailing', targetXp: xpAtLevel(99) })
   })
 
   it('is the same every time, and every goal starts from the real XP', () => {
@@ -74,6 +86,37 @@ describe('recommendations', () => {
     expect(r.goals.length).toBeGreaterThan(0)
   })
 
+  it('say so, and show the next levels, when the chosen kind of plan has nothing left', () => {
+    const maxed = skills({ all: 99, Sailing: 40 })
+    for (const goal of ['combat', 'money', 'quests']) {
+      const r = recommend({ goal }, maxed)
+      expect(r.goals.length).toBeGreaterThan(0)
+      expect(r.phases[0].title).toMatch(/Finish your last skill/)
+      expect(r.notes.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('money: methods you can do now come first, then the levels that unlock more', () => {
+    const r = recommend({ goal: 'money' }, skills({ all: 60 }))
+    expect(r.phases[0].id).toBe('money-now')
+    const now = r.goals.filter((g) => g.methodId !== 'global')
+    expect(now.length).toBeGreaterThan(0)
+    expect(now.length).toBeLessThanOrEqual(3)
+    expect(r.phases[0].rows[0].reasons.join(' ')).toMatch(/gp an hour/)
+    if (r.phases[1]) expect(r.phases[1].later).toBe(true)
+  })
+
+  it('quests: the worthwhile quests are a step of their own, ahead of the levels', () => {
+    const r = recommend({ goal: 'quests' }, null)
+    const q = r.phases.find((p) => p.id === 'quests')
+    if (q) {
+      expect(r.phases[0].id).toBe('quests')
+      expect(q.rows[0]).toMatchObject({ kind: 'quest' })
+      expect(q.rows[0].rewards).toMatch(/XP/)
+    }
+    expect(r.goals.length).toBeGreaterThan(0)
+  })
+
   it('a maxed player gets the next big goal, not an empty list', () => {
     const r = recommend({}, skills({ all: 99 }))
     expect(r.goals.length).toBeGreaterThan(0)
@@ -83,7 +126,7 @@ describe('recommendations', () => {
 
 describe('phases and the plan', () => {
   it('the plan is the first phase only, one goal per skill, and the next phase starts where it ends', () => {
-    const r = recommend({ experience: 'returning' }, skills({ all: 20 }))
+    const r = recommend({ experience: 'returning' }, null)
     expect(r.phases.length).toBe(2)
     expect(r.phases[0].later).toBe(false)
     expect(r.phases[1].later).toBe(true)

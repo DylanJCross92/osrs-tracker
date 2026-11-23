@@ -19,12 +19,10 @@ export const F2P_METHOD_IDS = new Set([
   'runecraft-early', 'runecraft-tiaras',
 ])
 
-// "Bring everything up to N": the levels a player works through, depending on how experienced they say they are.
-export const LEVEL_TIERS = {
-  new: [30, 40, 50, 60],
-  returning: [50, 60, 70, 80],
-  veteran: [70, 80, 90, 99],
-}
+// "Bring everything up to N": the levels a player works through. With stats to go on, the planner picks the first of these that still has
+// several skills below it; with none (no name), how experienced the player says they are decides where to start.
+export const LEVEL_STEPS = [30, 40, 50, 60, 70, 80, 90, 99]
+export const START_LEVEL = { new: 30, returning: 50, veteran: 70 }
 
 // The combat ladder: the levels that open up the next tier of gear and prayers. `members` steps are hidden from free-to-play players.
 export const COMBAT_TIERS = [
@@ -66,5 +64,11 @@ export const COMBAT_TIERS = [
       { skill: 'Attack', level: 75, why: 'Wield an abyssal tentacle.', members: true },
       { skill: 'Ranged', level: 75, why: 'Use a toxic blowpipe.', members: true },
     ],
+  },
+  {
+    level: 99,
+    title: 'Max your combat',
+    why: 'Higher combat levels hit harder, hit more often and survive longer at every boss.',
+    goals: ['Attack', 'Strength', 'Defence', 'Hitpoints', 'Ranged', 'Prayer', 'Magic'].map((skill) => ({ skill, level: 99, why: '', members: false })),
   },
 ]
