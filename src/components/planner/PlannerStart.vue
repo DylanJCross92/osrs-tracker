@@ -2,8 +2,15 @@
   <section class="ps" aria-label="Start a plan">
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
-    <!-- Three ways to start -->
-    <section class="paths" aria-labelledby="paths-h">
+    <!-- Comparing the two layouts of this page (development, or with ?compare in the address) -->
+    <div v-if="canCompare" class="ps-compare" role="group" aria-label="Page layout">
+      <span>Layout</span>
+      <button type="button" :class="{ on: layout === 'cards' }" :aria-pressed="layout === 'cards'" @click="setLayout('cards')">Three cards</button>
+      <button type="button" :class="{ on: layout === 'classic' }" :aria-pressed="layout === 'classic'" @click="setLayout('classic')">Classic</button>
+    </div>
+
+    <!-- Layout "cards": three ways to start -->
+    <section v-if="layout === 'cards'" class="paths" aria-labelledby="paths-h">
       <h2 id="paths-h">Where do you want to start?</h2>
       <div class="paths-grid" role="group" aria-label="Ways to start">
         <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
@@ -50,6 +57,26 @@
       />
       <p v-if="canShowAll" class="ps-seemore"><button class="ps-all-toggle" type="button" aria-haspopup="dialog" @click="showAll = true">See all ready-made plans</button></p>
     </div>
+
+    <!-- Layout "classic": plans first, then build your own, then the Smart Planner as the third way -->
+    <template v-if="layout === 'classic'">
+      <div class="rp-or"><span>or build your own</span></div>
+      <div id="ps-skill" class="byo">
+        <div class="byo-skills" role="group" aria-label="Start with a skill">
+          <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="$emit('custom', s)">
+            <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
+            <span>{{ s }}</span>
+            <i v-if="levelOf(s) != null" class="byo-lvl" :class="{ maxed: levelOf(s) >= 99 }" :title="`${playerLabel || 'Your'} level ${levelOf(s)}`">{{ levelOf(s) }}</i>
+          </button>
+        </div>
+      </div>
+      <div class="rp-or"><span>or let the Smart Planner decide</span></div>
+      <div class="paths-classic">
+        <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
+          <template #name-box><slot name="name-box" /></template>
+        </SmartPlanner>
+      </div>
+    </template>
 
     <!-- Choose a skill, in a window -->
     <Teleport to="body">
@@ -110,6 +137,7 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
 import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
@@ -139,6 +167,29 @@ defineExpose({ showPlans })
 
 // The player's current level in a skill, when a player is chosen
 const levelOf = (skill) => (props.hasPlayer ? props.skills?.[skill]?.level ?? null : null)
+// Two layouts of this page to compare: the three cards (the default) and the classic one (plans, skills, then the Smart Planner).
+// ?layout=classic picks one (and it is remembered in this browser); the switch shows in development or with ?compare.
+const route = useRoute()
+const router = useRouter()
+const LAYOUT_KEY = 'tickgains-planner-start-layout'
+const readLayout = () => {
+  try {
+    return localStorage.getItem(LAYOUT_KEY)
+  } catch {
+    return null
+  }
+}
+const layout = ref(route.query.layout === 'classic' || route.query.layout === 'cards' ? route.query.layout : readLayout() === 'classic' ? 'classic' : 'cards')
+const canCompare = import.meta.env.DEV || route.query.compare !== undefined || route.query.layout !== undefined
+function setLayout(v) {
+  layout.value = v
+  try {
+    localStorage.setItem(LAYOUT_KEY, v)
+  } catch {
+    /* storage unavailable */
+  }
+  router.replace({ query: { ...route.query, layout: v } }).catch(() => {})
+}
 const skillOpen = ref(false)
 function pickSkill(skill) {
   skillOpen.value = false
