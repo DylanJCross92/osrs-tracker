@@ -9,33 +9,30 @@
       </ol>
     </nav>
 
-    <!-- 1: who -->
+    <!-- 1: you (the player, then what kind of account) -->
     <section v-if="current === 'who'" class="spw-step" aria-labelledby="spw-h">
       <h3 id="spw-h">{{ hasPlayer ? `Planning for ${playerLabel || 'you'}` : 'Enter your RuneScape name' }}</h3>
       <p v-if="!hasPlayer" class="spw-sub">The Smart Planner uses your real levels, so it needs your name.</p>
       <slot name="name-box" />
+      <template v-if="hasPlayer">
+        <fieldset class="spl-ask">
+          <legend>Free-to-play or members?</legend>
+          <div class="spl-choices two" role="radiogroup" aria-label="Membership">
+            <button type="button" role="radio" :aria-checked="profile.members" :class="{ on: profile.members }" @click="set({ members: true }, 'members')"><b>Members</b><small>Every skill and method</small></button>
+            <button type="button" role="radio" :aria-checked="!profile.members" :class="{ on: !profile.members }" @click="set({ members: false }, 'members')"><b>Free-to-play</b><small>The free skills only</small></button>
+          </div>
+        </fieldset>
+        <fieldset class="spl-ask">
+          <legend>Main account or ironman?</legend>
+          <div class="spl-choices two" role="radiogroup" aria-label="Account type">
+            <button type="button" role="radio" :aria-checked="!profile.iron" :class="{ on: !profile.iron }" @click="set({ iron: false }, 'account')"><b>Main account</b><small>You can buy and sell</small></button>
+            <button type="button" role="radio" :aria-checked="profile.iron" :class="{ on: profile.iron }" @click="set({ iron: true }, 'account')"><b>Ironman</b><small>You gather everything yourself</small></button>
+          </div>
+        </fieldset>
+      </template>
     </section>
 
-    <!-- 2: about you -->
-    <section v-else-if="current === 'about'" class="spw-step" aria-labelledby="spw-h">
-      <h3 id="spw-h">A little about you</h3>
-      <fieldset class="spl-ask">
-        <legend>Free-to-play or members?</legend>
-        <div class="spl-choices two" role="radiogroup" aria-label="Membership">
-          <button type="button" role="radio" :aria-checked="profile.members" :class="{ on: profile.members }" @click="set({ members: true }, 'members')"><b>Members</b><small>Every skill and method</small></button>
-          <button type="button" role="radio" :aria-checked="!profile.members" :class="{ on: !profile.members }" @click="set({ members: false }, 'members')"><b>Free-to-play</b><small>The free skills only</small></button>
-        </div>
-      </fieldset>
-      <fieldset class="spl-ask">
-        <legend>Main account or ironman?</legend>
-        <div class="spl-choices two" role="radiogroup" aria-label="Account type">
-          <button type="button" role="radio" :aria-checked="!profile.iron" :class="{ on: !profile.iron }" @click="set({ iron: false }, 'account')"><b>Main account</b><small>You can buy and sell</small></button>
-          <button type="button" role="radio" :aria-checked="profile.iron" :class="{ on: profile.iron }" @click="set({ iron: true }, 'account')"><b>Ironman</b><small>You gather everything yourself</small></button>
-        </div>
-      </fieldset>
-    </section>
-
-    <!-- 3: the goal -->
+    <!-- 2: the goal -->
     <section v-else-if="current === 'goal'" class="spw-step" aria-labelledby="spw-h">
       <h3 id="spw-h">What do you want most?</h3>
       <div class="spl-choices" role="radiogroup" aria-label="Main goal">
@@ -46,7 +43,7 @@
       </div>
     </section>
 
-    <!-- 4: time and gp -->
+    <!-- 3: time and gp -->
     <section v-else-if="current === 'time'" class="spw-step" aria-labelledby="spw-h">
       <h3 id="spw-h">How much time and gp do you have?</h3>
       <fieldset class="spl-ask">
@@ -71,7 +68,7 @@
       </fieldset>
     </section>
 
-    <!-- 5: the plan -->
+    <!-- 4: the plan -->
     <section v-else class="spw-step spw-result" aria-labelledby="spw-h" aria-live="polite">
       <h3 id="spw-h">Your plan</h3>
       <ul class="spw-chips" aria-label="Your answers">
@@ -128,7 +125,7 @@
     </section>
 
     <!-- the first thing we would do, so far (the recommendation, along the way) -->
-    <p v-if="current !== 'plan' && current !== 'who' && hasPlayer && teaser" class="spw-teaser" aria-live="polite"><span aria-hidden="true">✦</span> So far we would start with <b>{{ teaser }}</b>.</p>
+    <p v-if="current !== 'plan' && hasPlayer && teaser" class="spw-teaser" aria-live="polite"><span aria-hidden="true">✦</span> So far we would start with <b>{{ teaser }}</b>.</p>
 
     <footer class="spw-nav">
       <button v-if="step > 0" class="btn btn-ghost" type="button" @click="go(step - 1)">Back</button>
@@ -170,15 +167,13 @@ const emit = defineEmits(['start', 'ready-made'])
 
 const STEPS = [
   { key: 'who', label: 'You' },
-  { key: 'about', label: 'About you' },
   { key: 'goal', label: 'Goal' },
   { key: 'time', label: 'Time and gp' },
   { key: 'plan', label: 'Your plan' },
 ]
 const SHOW_ROWS = 8
 const { profile, answer } = usePlannerProfile()
-// With a player already loaded the name question is answered; it can still be changed from the first step.
-const step = ref(props.hasPlayer ? 1 : 0)
+const step = ref(0)
 const furthest = ref(step.value)
 const current = computed(() => STEPS[step.value].key)
 function go(i) {
@@ -233,15 +228,9 @@ watch(
     if (!has) {
       step.value = 0
       furthest.value = 0
-    } else if (step.value === 0) {
-      // A player was just chosen: on to the next question after a short beat, so "Planning for ..." is seen.
-      clearTimeout(advanceTimer)
-      advanceTimer = setTimeout(() => step.value === 0 && props.hasPlayer && go(1), 450)
     }
   },
 )
-let advanceTimer
-onBeforeUnmount(() => clearTimeout(advanceTimer))
 // 1, 2, 3 for the steps of the plan itself (what comes later has no number).
 const phaseNumber = (p) => shown.value.phases.filter((x) => !x.later).indexOf(p) + 1
 const laterLine = (p) => `${p.rows.length} more ${p.rows.length === 1 ? 'skill' : 'skills'}, after this plan.`
