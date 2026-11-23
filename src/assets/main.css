@@ -6927,3 +6927,5 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .spw-step .ppb { margin: 6px 0 22px; }
 .spw-step .spw-sub { margin-bottom: 14px; }
 .spw-step > h3 { margin-bottom: 14px; }
+.path-smart { cursor: pointer; transition: border-color 0.12s, transform 0.12s; }
+.path-smart:hover { border-color: var(--border-strong); transform: translateY(-1px); }
