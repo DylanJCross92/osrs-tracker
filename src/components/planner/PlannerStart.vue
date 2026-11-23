@@ -16,25 +16,25 @@
         <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="showPlans(true)" @open-change="(open) => $emit('smart-open', open)">
           <template #name-box><slot name="name-box" /></template>
         </SmartPlanner>
-        <button type="button" class="path-card" aria-haspopup="dialog" @click="showAll = true">
-          <span class="path-top" aria-hidden="true">
-            <span class="path-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span>
-            <span class="path-art"><img v-for="s in PLAN_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
+        <button type="button" class="start-card" aria-haspopup="dialog" @click="showAll = true">
+          <span class="start-top" aria-hidden="true">
+            <span class="start-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 8h8M8 12h8M8 16h5" /></svg></span>
+            <span class="start-art"><img v-for="s in PLAN_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
           </span>
-          <span class="path-eyebrow">Want a proven goal?</span>
+          <span class="start-eyebrow">Want a proven goal?</span>
           <h3>Ready-made plan</h3>
           <p>All skills to 70, max combat, total level goals and more, set up from your stats.</p>
-          <span class="path-state">Browse plans</span>
+          <span class="start-state">Browse plans</span>
         </button>
-        <button type="button" class="path-card" aria-haspopup="dialog" @click="skillOpen = true">
-          <span class="path-top" aria-hidden="true">
-            <span class="path-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg></span>
-            <span class="path-art"><img v-for="s in SKILL_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
+        <button type="button" class="start-card" aria-haspopup="dialog" @click="skillOpen = true">
+          <span class="start-top" aria-hidden="true">
+            <span class="start-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg></span>
+            <span class="start-art"><img v-for="s in SKILL_ART" :key="s" :src="skillIconSrc(s)" alt="" width="24" height="24" /></span>
           </span>
-          <span class="path-eyebrow">Know what you want?</span>
+          <span class="start-eyebrow">Know what you want?</span>
           <h3>Choose a skill</h3>
           <p>Pick a skill and set your own goal, then fine-tune the route.</p>
-          <span class="path-state">Pick a skill</span>
+          <span class="start-state">Pick a skill</span>
         </button>
       </div>
     </section>
