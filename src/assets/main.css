@@ -6885,3 +6885,13 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 /* In the Smart Planner window the name suggestions sit in the page flow, so the window grows to hold them instead of cutting them off */
 .spm .suggest-wrap .search-suggest { position: static; box-shadow: none; }
 @media (max-width: 560px) { .spw-goal-art { width: 62px; } .spw-goal-art img:nth-child(n+3) { display: none; } }
+
+/* The plans page: an empty card first in the grid starts a new plan */
+.po-new { display: flex; }
+.po-new-link { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 220px; padding: 20px; border: 2px dashed var(--border-strong); border-radius: 14px; color: var(--muted); text-align: center; text-decoration: none; transition: border-color 0.12s, background 0.12s, color 0.12s; }
+.po-new-link b { color: var(--text); font-size: 1.1rem; }
+.po-new-link small { max-width: 220px; font-size: 0.82rem; line-height: 1.4; }
+.po-new-plus { display: grid; place-items: center; width: 52px; height: 52px; margin-bottom: 4px; border-radius: 50%; background: rgba(240, 201, 118, 0.12); color: var(--gold-bright); }
+.po-new-link:hover, .po-new-link:focus-visible { border-color: var(--gold); background: rgba(240, 201, 118, 0.05); text-decoration: none; }
+.po-new-link:hover b { color: var(--gold-bright); }
+@media (max-width: 560px) { .po-new-link { min-height: 120px; flex-direction: row; gap: 14px; text-align: left; justify-content: flex-start; } .po-new-link .po-new-plus { margin: 0; flex: none; } .po-new-link small { display: none; } }

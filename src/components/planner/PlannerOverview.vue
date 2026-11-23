@@ -5,12 +5,16 @@
         <h1 id="po-h">Account Planner</h1>
         <p class="pgh-sub">Open a plan to see your training path, or start a new one.</p>
       </div>
-      <div class="pgh-actions">
-        <RouterLink class="btn btn-primary" :to="{ name: 'plannerNew' }">+ New plan</RouterLink>
-      </div>
     </header>
 
     <ul class="po-grid">
+      <li class="po-new">
+        <RouterLink class="po-new-link" :to="{ name: 'plannerNew' }">
+          <span class="po-new-plus" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg></span>
+          <b>New plan</b>
+          <small>Start from a ready-made plan, a skill or the Smart Planner</small>
+        </RouterLink>
+      </li>
       <li v-for="p in rows" :key="p.id" class="po-card">
         <RouterLink class="po-main" :to="{ name: 'plannerPlan', params: { id: p.id } }" :aria-label="`Open ${p.name}`">
           <span class="po-title">
