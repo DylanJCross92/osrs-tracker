@@ -48,12 +48,13 @@ defineProps({
   hasPlayer: { type: Boolean, default: false },
   playerLabel: { type: String, default: '' },
 })
-const emit = defineEmits(['start', 'ready-made'])
+const emit = defineEmits(['start', 'ready-made', 'open-change'])
 
 const open = ref(false)
 const closeBtn = ref(null)
 const onKey = (e) => e.key === 'Escape' && close()
 watch(open, async (on) => {
+  emit('open-change', on)
   if (on) {
     document.addEventListener('keydown', onKey)
     await nextTick()

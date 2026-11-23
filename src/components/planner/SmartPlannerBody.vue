@@ -11,11 +11,9 @@
 
     <!-- 1: who -->
     <section v-if="current === 'who'" class="spw-step" aria-labelledby="spw-h">
-      <h3 id="spw-h">Enter your RuneScape name</h3>
-      <p class="spw-sub">The Smart Planner is built on your real levels, so it needs your name to make a plan that fits you. Type it and press Enter.</p>
+      <h3 id="spw-h">{{ hasPlayer ? `Planning for ${playerLabel || 'you'}` : 'Enter your RuneScape name' }}</h3>
+      <p v-if="!hasPlayer" class="spw-sub">The Smart Planner uses your real levels, so it needs your name.</p>
       <slot name="name-box" />
-      <p v-if="hasPlayer" class="spl-fits" role="status">Using {{ playerLabel || 'your' }}{{ playerLabel ? "'s" : '' }} levels. You can continue.</p>
-      <p v-else class="spw-need" role="status">Add your name above to continue.</p>
     </section>
 
     <!-- 2: about you -->
@@ -126,7 +124,7 @@
     </section>
 
     <!-- the first thing we would do, so far (the recommendation, along the way) -->
-    <p v-if="current !== 'plan' && teaser" class="spw-teaser" aria-live="polite"><span aria-hidden="true">✦</span> So far we would start with <b>{{ teaser }}</b>.</p>
+    <p v-if="current !== 'plan' && current !== 'who' && hasPlayer && teaser" class="spw-teaser" aria-live="polite"><span aria-hidden="true">✦</span> So far we would start with <b>{{ teaser }}</b>.</p>
 
     <footer class="spw-nav">
       <button v-if="step > 0" class="btn btn-ghost" type="button" @click="go(step - 1)">Back</button>

@@ -3,7 +3,7 @@
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
     <!-- The Smart Planner: a few questions and the steps they lead to -->
-    <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="scrollToReadyMade">
+    <SmartPlanner :skills="skills" :has-player="hasPlayer" :player-label="playerLabel" @start="(profile) => $emit('smart', profile)" @ready-made="scrollToReadyMade" @open-change="(open) => $emit('smart-open', open)">
       <template #name-box><slot name="name-box" /></template>
     </SmartPlanner>
 
@@ -94,7 +94,7 @@ const props = defineProps({
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
 })
-const emit = defineEmits(['use', 'custom', 'smart'])
+const emit = defineEmits(['use', 'custom', 'smart', 'smart-open'])
 const scrollToReadyMade = () => document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
 const allCount = computed(() => recommendedPlans(props.skills).length)

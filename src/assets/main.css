@@ -6800,7 +6800,7 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .spw-progress li.on button { color: var(--gold-bright); border-color: rgba(217, 175, 82, 0.5); background: rgba(217, 175, 82, 0.1); }
 .spw-progress li.on button span { background: var(--gold); border-color: var(--gold); color: var(--gold-ink); }
 .spw-progress li.done button span { border-color: var(--gold); color: var(--gold-bright); }
-.spw-step { min-height: 300px; }
+.spw-step { min-height: 220px; }
 .spw-step h3 { margin: 0 0 6px; font-size: 1.35rem; }
 .spw-sub { margin: 0 0 16px; color: var(--muted); }
 .spw-skip { margin: 12px 0 0; color: var(--muted); font-size: 0.88rem; }
@@ -6844,3 +6844,5 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 .spm-head .spl-spark { width: 40px; height: 40px; border-radius: 12px; }
 .spm-head h2 { font-size: 1.4rem; }
 @media (max-width: 640px) { .planner .planner-top.is-start { padding: 14px; } .planner-top.is-start .pt-title h1 { font-size: 1.3rem; } }
+
+.spw-step .ppb { margin-top: 6px; }

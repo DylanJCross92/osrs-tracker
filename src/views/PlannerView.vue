@@ -14,13 +14,14 @@
           </div>
         </div>
         <PlannerPlayerBox
-          v-model:username="username"
+          :username="smartOpen ? '' : username"
           :player="player"
           :editing="editingPlayer"
           :looking-up="lookingUp"
-          :lookup-error="lookupError"
-          :suggestions="suggestions"
-          :show-recent="searchFocused && !username.trim()"
+          :lookup-error="smartOpen ? '' : lookupError"
+          :suggestions="smartOpen ? [] : suggestions"
+          @update:username="(v) => !smartOpen && (username = v)"
+          :show-recent="searchFocused && !smartOpen && !username.trim()"
           @submit="loadPlayer({ typed: true })"
           @change="startChangePlayer"
           @cancel="editingPlayer = false"
@@ -47,6 +48,7 @@
         @use="startFromPlan"
         @custom="startCustom"
         @smart="startSmart"
+        @smart-open="(open) => (smartOpen = open)"
       >
         <!-- The same name box as at the top of the page, for the Smart Planner window that covers it -->
         <template #name-box>
@@ -57,13 +59,13 @@
             :looking-up="lookingUp"
             :lookup-error="lookupError"
             :suggestions="suggestions"
-            :show-recent="searchFocused && !username.trim()"
+            :show-recent="smartFocused && !username.trim()"
             @submit="loadPlayer({ typed: true })"
             @change="startChangePlayer"
             @cancel="editingPlayer = false"
             @pick="pickSuggestion"
-            @focus="searchFocused = true"
-            @blur="onSearchBlur"
+            @focus="smartFocused = true"
+            @blur="onSmartBlur"
           />
         </template>
       </PlannerStart>
@@ -313,6 +315,9 @@ function startChangePlayer() {
 }
 
 const searchFocused = ref(false)
+// The Smart Planner window has a name box of its own: its focus is kept apart, and while it is open the box behind it stays quiet.
+const smartFocused = ref(false)
+const smartOpen = ref(false)
 // Typeahead: partial, case-insensitive matches among already-tracked players.
 const suggestions = ref([])
 let suggestTimer = null
@@ -334,6 +339,10 @@ watch(username, (q) => {
 })
 // Leaving the box with a name in it loads that player, so stats arrive without a button. Clicking a suggestion or a plan is handled
 // by its own click (a load already under way is waited for, never started twice).
+function onSmartBlur() {
+  smartFocused.value = false
+  if (!goals.value.length && !player.value && username.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && loadTyped(), 150)
+}
 function onSearchBlur() {
   searchFocused.value = false
   if (!goals.value.length && !player.value && username.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && loadTyped(), 150)
