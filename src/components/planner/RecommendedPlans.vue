@@ -5,7 +5,7 @@
     <ul v-else class="rp-grid">
       <li v-for="r in shown" :key="r.id" class="rp-card" :class="`kind-${r.kind}`">
         <span class="rp-kicker">{{ KIND_LABELS[r.kind] }}</span>
-        <h3>{{ r.title }}</h3>
+        <h3><button class="rp-open" type="button" aria-haspopup="dialog" :title="`See what is in ${r.title}`" @click="preview = r">{{ r.title }}</button></h3>
         <p class="rp-desc">{{ r.description }}</p>
         <div class="rp-icons" aria-hidden="true">
           <img v-for="g in r.goals.slice(0, MAX_ICONS)" :key="g.skill" :src="skillIconSrc(g.skill)" :alt="g.skill" width="20" height="20" :title="g.skill" />
@@ -23,11 +23,13 @@
         <button class="btn btn-primary rp-use" type="button" @click="$emit('use', r)">Use this plan</button>
       </li>
     </ul>
+    <PlanPreviewModal v-if="preview" :plan="preview" :has-player="hasPlayer" :player-label="playerLabel" :hours-per-day="hoursPerDay" :global-strategy="globalStrategy" :gp-value="gpValue" @close="preview = null" @use="(r) => { preview = null; $emit('use', r) }" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import PlanPreviewModal from '@/components/planner/PlanPreviewModal.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours } from '@/utils/planner'
 import { priceStatus } from '@/utils/priceBook'
@@ -44,6 +46,7 @@ const props = defineProps({
   // The player's hiscores skills ({ Mining: { xp, level } }), or null before one is loaded.
   skills: { type: Object, default: null },
   hasPlayer: { type: Boolean, default: false },
+  playerLabel: { type: String, default: '' },
   hoursPerDay: { type: Number, default: 2 },
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
@@ -52,6 +55,7 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
 })
 defineEmits(['use'])
+const preview = ref(null)
 
 // True once the Grand Exchange prices have loaded, so the gp figure on each card is the live one.
 const live = computed(() => priceStatus.value.loaded && !priceStatus.value.stale)

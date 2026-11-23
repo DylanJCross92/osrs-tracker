@@ -13,6 +13,7 @@
         featured
         :skills="skills"
         :has-player="hasPlayer"
+        :player-label="playerLabel"
         :hours-per-day="hoursPerDay"
         :global-strategy="globalStrategy"
         :gp-value="gpValue"
