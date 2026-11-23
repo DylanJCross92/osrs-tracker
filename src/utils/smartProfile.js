@@ -9,6 +9,8 @@ export const GOALS = [
   { key: 'money', label: 'Make money', hint: 'The levels that unlock better gp per hour' },
   { key: 'combat', label: 'Combat and bossing', hint: 'The levels behind each tier of gear and prayers' },
   { key: 'quests', label: 'Quests and unlocks', hint: 'Quest shortcuts first, then the levels they lead to' },
+  { key: 'afk', label: 'AFK training', hint: 'Relaxed methods you can leave running with little attention' },
+  { key: 'hardcore', label: 'Hardcore skilling', hint: 'The fastest hands-on methods: Runecraft, Agility, Mining and more' },
 ]
 export const EXPERIENCE = [
   { key: 'new', label: 'New', hint: 'Small steps first' },

@@ -64,6 +64,8 @@ describe('planner profile (the Smart Planner answers)', () => {
   })
   it('ignores an unknown choice and a value that is not an object', () => {
     expect(sanitizeUserData({ plannerProfile: { value: { goal: 'nope', gp: 'lots', experience: 'god', hours: 99 } } }).plannerProfile.value).toEqual({ hours: 12 })
+    expect(sanitizeUserData({ plannerProfile: { value: { goal: 'afk' } } }).plannerProfile.value.goal).toBe('afk')
+    expect(sanitizeUserData({ plannerProfile: { value: { goal: 'hardcore' } } }).plannerProfile.value.goal).toBe('hardcore')
     expect(sanitizeUserData({ plannerProfile: { value: 'x' } }).plannerProfile).toBeUndefined()
     expect(sanitizeUserData({ plannerProfile: { value: [1] } }).plannerProfile).toBeUndefined()
   })

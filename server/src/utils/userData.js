@@ -60,7 +60,7 @@ function cleanSet(list) {
 }
 
 // The answers to the Smart Planner's questions (see utils/smartPlanner.js): a small fixed set of choices, nothing free-form.
-const PLANNER_GOALS = ['skills', 'money', 'combat', 'quests']
+const PLANNER_GOALS = ['skills', 'money', 'combat', 'quests', 'afk', 'hardcore']
 const PLANNER_GP = ['low', 'some', 'good', 'rich']
 const PLANNER_EXPERIENCE = ['new', 'returning', 'veteran']
 function cleanPlannerProfile(v) {

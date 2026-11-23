@@ -7,6 +7,7 @@ import { resolveGoal, summarizePlan } from '@/utils/plannerTools'
 import { skillStates, recommendedPlans } from '@/utils/recommendedPlans'
 import { smartOrder } from '@/utils/smartOrder'
 import { SYNERGIES } from '@/data/skillSynergies'
+import { formatXp } from '@/utils/osrsSkills'
 import { canUseMethod, fundingFor, levelsOf, questsFor, unlockFor } from '@/utils/smartReasons'
 import { GOALS, EXPERIENCE, GP_LEVELS, DEFAULT_PROFILE, cleanProfile } from '@/utils/smartProfile'
 
@@ -170,6 +171,58 @@ function moneyUnlockPhase(states, profile, done = new Set()) {
   rows.sort((a, b) => b.score - a.score || (a.goal.skill < b.goal.skill ? -1 : 1))
   const goals = rows.slice(0, 5).map((r) => r.goal)
   return goals.length ? { id: 'money-unlock', title: 'Levels that unlock better money', why: 'Each of these opens a method that makes much more gp an hour.', goals } : null
+}
+
+// --- AFK training and hardcore skilling ------------------------------------------------------------------------------------------
+
+/** The skills where the fastest training is the hands-on kind (see the "intensity" of each method in data/trainingMethods.js). */
+export const HARDCORE_SKILLS = ['Runecraft', 'Agility', 'Mining', 'Thieving', 'Hunter', 'Fishing', 'Woodcutting', 'Firemaking', 'Smithing']
+const INTENSITY_KINDS = {
+  afk: { levels: ['AFK', 'Low'], hours: 30, id: 'afk', title: 'AFK training', why: 'Methods that need little attention, so you can train while doing something else.' },
+  hardcore: { levels: ['High', 'Medium'], hours: 40, id: 'hardcore', title: 'Hardcore skilling', why: 'The fastest hands-on methods in the skills that reward effort most: Runecraft, Agility, Mining and the like.' },
+}
+const TIERS = [...LEVEL_STEPS]
+
+/** How far up a skill the given methods carry a player who is at `level` (the level they get to, with no gaps). */
+function coverTo(methods, level) {
+  let l = level
+  while (l < 99 && methods.some((m) => m.minLevel <= l && (m.maxLevel == null || l <= m.maxLevel))) l++
+  return l
+}
+
+/** One stretch of AFK or hardcore training: per skill, the next level its methods of that kind carry the player to (within about a day's training). */
+function intensityPhase(states, profile, done, kind) {
+  const cfg = INTENSITY_KINDS[kind]
+  const levels = levelsOf(states)
+  const rows = []
+  for (const s of states) {
+    if (s.level >= 99) continue
+    if (!profile.members && !F2P_SKILLS.includes(s.skill)) continue
+    if (kind === 'hardcore' && !HARDCORE_SKILLS.includes(s.skill)) continue
+    const f2p = profile.members ? null : new Set(f2pIds(s.skill))
+    const methods = methodsForSkill(s.skill).filter((m) => cfg.levels.includes(m.intensity) && !(f2p && !f2p.has(m.id)) && canUseMethod(m, { ...levels, [s.skill]: 99 }, done))
+    if (!methods.length) continue
+    const cap = reachable(s.skill, coverTo(methods, s.level), profile)
+    if (cap <= s.level) continue
+    const here = methods.filter((m) => m.minLevel <= s.level && (m.maxLevel == null || s.level <= m.maxLevel))
+    const top = here.reduce((a, m) => (!a || m.xpPerHour > a.xpPerHour ? m : a), null)
+    if (!top) continue
+    const allowedMethodIds = methods.map((m) => m.id)
+    const goalFor = (to) => ({ ...mk(s, to, profile), allowedMethodIds })
+    const candidates = [...new Set([...TIERS.filter((t) => t > s.level && t <= cap), cap])].sort((a, b) => a - b)
+    let pick = candidates[0]
+    for (const t of [...candidates].reverse()) {
+      if (planGoal(resolveGoal(goalFor(t), AUTO_FAST, 0)).hours <= cfg.hours) {
+        pick = t
+        break
+      }
+    }
+    const feel = top.intensity === 'AFK' ? 'with almost no attention' : top.intensity === 'Low' ? 'with little effort' : 'hands-on'
+    rows.push({ goal: { ...goalFor(pick), why: [`${top.name}: about ${formatXp(top.xpPerHour)} xp an hour, ${feel}.`] }, rate: top.xpPerHour, skill: s.skill })
+  }
+  rows.sort((a, b) => b.rate - a.rate || (a.skill < b.skill ? -1 : 1))
+  const goals = rows.slice(0, kind === 'hardcore' ? 9 : 8).map((r) => r.goal)
+  return goals.length ? { id: cfg.id, title: cfg.title, why: cfg.why, goals } : null
 }
 
 // --- reasons: why each step is in the plan ---------------------------------------------------------------------------------------
@@ -343,7 +396,7 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   const settings = settingsFor(profile)
   const hasStats = !!skills
   const doneSet = done instanceof Set ? done : new Set(done)
-  const next = (kind, from, i) => (kind === 'combat' ? combatPhase(from, profile, hasStats) : kind === 'money' ? (i === 0 ? moneyNowPhase(from, profile, doneSet) : moneyUnlockPhase(from, profile, doneSet)) : skillsPhase(from, profile, hasStats))
+  const next = (kind, from, i) => (kind === 'afk' || kind === 'hardcore' ? intensityPhase(from, profile, doneSet, kind) : kind === 'combat' ? combatPhase(from, profile, hasStats) : kind === 'money' ? (i === 0 ? moneyNowPhase(from, profile, doneSet) : moneyUnlockPhase(from, profile, doneSet)) : skillsPhase(from, profile, hasStats))
   const build = (kind) => {
     const out = []
     let virtual = states
@@ -372,6 +425,8 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
       {
         combat: "You've finished the combat ladder. Here is what's next instead.",
         money: "None of the money methods we know pay more than what you can already do. Here is what's next instead.",
+        afk: "We don't have an AFK method that takes you further. Here is what's next instead.",
+        hardcore: "We don't have a faster hands-on method for you right now. Here is what's next instead.",
       }[profile.goal],
     )
   }

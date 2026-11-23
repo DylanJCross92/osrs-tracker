@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { cleanProfile, DEFAULT_PROFILE, f2pCap, planFromProfile, recommend, settingsFor } from '@/utils/smartPlanner'
+import { cleanProfile, DEFAULT_PROFILE, f2pCap, HARDCORE_SKILLS, planFromProfile, recommend, settingsFor } from '@/utils/smartPlanner'
+import { methodsForSkill } from '@/data/trainingMethods'
 import { xpAtLevel } from '@/utils/planner'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { F2P_SKILLS } from '@/data/plannerMilestones'
@@ -181,5 +182,40 @@ describe('starting a plan', () => {
     expect(p.goals.length).toBeGreaterThan(0)
     expect(p.goals[0]).toHaveProperty('currentXp')
     expect(p.profile.experience).toBe('new')
+  })
+})
+
+describe('AFK training and hardcore skilling', () => {
+  it('AFK plans only train with AFK or low-effort methods, and say which', () => {
+    const r = recommend({ goal: 'afk' }, skills({ all: 30 }))
+    expect(r.goals.length).toBeGreaterThan(0)
+    expect(r.phases[0].title).toBe('AFK training')
+    for (const g of r.goals) {
+      expect(g.allowedMethodIds.length).toBeGreaterThan(0)
+      for (const id of g.allowedMethodIds) expect(['AFK', 'Low']).toContain(methodsForSkill(g.skill).find((m) => m.id === id).intensity)
+    }
+    for (const row of r.phases[0].rows) expect(row.reasons.join(' ')).toMatch(/xp an hour/)
+  })
+  it('hardcore plans are the hands-on skills, with Medium or High intensity methods', () => {
+    const r = recommend({ goal: 'hardcore' }, skills({ all: 30 }))
+    expect(r.phases[0].title).toBe('Hardcore skilling')
+    const names = r.goals.map((g) => g.skill)
+    expect(names.length).toBeGreaterThan(2)
+    for (const n of names) expect(HARDCORE_SKILLS).toContain(n)
+    expect(names).toEqual(expect.arrayContaining(['Runecraft', 'Agility', 'Mining']))
+    for (const g of r.goals) for (const id of g.allowedMethodIds) expect(['High', 'Medium']).toContain(methodsForSkill(g.skill).find((m) => m.id === id).intensity)
+  })
+  it('keeps free-to-play to the free skills, and a plan with a target above the current level', () => {
+    for (const goal of ['afk', 'hardcore']) {
+      const r = recommend({ goal, members: false }, skills({ all: 20 }))
+      for (const g of r.goals) {
+        expect(F2P_SKILLS).toContain(g.skill)
+        expect(g.targetXp).toBeGreaterThan(g.currentXp)
+      }
+    }
+  })
+  it('answers with these goals are kept as they are', () => {
+    expect(cleanProfile({ goal: 'afk' }).goal).toBe('afk')
+    expect(cleanProfile({ goal: 'hardcore' }).goal).toBe('hardcore')
   })
 })
