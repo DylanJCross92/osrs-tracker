@@ -88,7 +88,7 @@
     <template v-else>
       <PlannerHero :name="currentPlanName || 'My training plan'" :back-to="{ name: 'planner' }" :player="player" :strategy-label="strategyName" :hours-per-day="hoursPerDay" :goal-count="goals.length" :tailored="tailoredText" @settings="openSettings()">
         <template #actions><PlannerSavedPlans v-bind="savedPlansProps" hide-switcher v-on="savedPlansOn" /></template>
-        <template #summary><PlannerFinishLine v-if="!progress" :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="scrollToPath" /></template>
+        <template #summary><PlannerFinishLine v-if="!progress" :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="scrollToPath" @see-skill="goToSkill" /></template>
         <div v-if="scratch && !currentPlanId && goals.length" class="callout callout-unsaved" role="status">
           <div class="callout-text">
             <b>This plan is not saved yet</b>
@@ -788,6 +788,18 @@ const finishInfo = computed(() => {
   }
 })
 const strategyName = computed(() => STRATEGY_LABELS[globalStrategy.value] || 'Fastest')
+// A block of the finish-line bar was clicked: scroll to that skill in the training route and mark its card for a moment.
+let markTimer = 0
+function goToSkill(skill) {
+  const el = document.getElementById(`path-${skill.toLowerCase()}`)
+  if (!el) return scrollToPath()
+  pathOpen.value = skill
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  clearTimeout(markTimer)
+  markTimer = setTimeout(() => {
+    if (pathOpen.value === skill) pathOpen.value = ''
+  }, 2500)
+}
 function scrollToPath() {
   document.getElementById('plan-path')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }

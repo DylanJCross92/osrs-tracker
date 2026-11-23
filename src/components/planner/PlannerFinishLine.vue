@@ -16,8 +16,8 @@
     </div>
 
     <div v-if="timeline.totalHours > 0" ref="trackEl" class="fl-track">
-      <div class="fl-bar" :class="{ labelled, 'has-tip': !!tip }" @pointerleave="tip = null" role="img" :aria-label="`The plan is ${formatHours(timeline.totalHours)} of training: ${summary}`">
-        <i v-for="e in segments" :key="e.skill" :class="[`cat-${e.category}`, { 'is-on': tip && tip.e.skill === e.skill }]" :style="{ flexGrow: e.hours }" tabindex="0" @pointerenter="showTip(e, $event)" @pointermove="moveTip($event)" @focus="showTip(e, $event)" @blur="tip = null">
+      <div class="fl-bar" :class="{ labelled, 'has-tip': !!tip }" @pointerleave="tip = null" role="group" :aria-label="`The plan is ${formatHours(timeline.totalHours)} of training: ${summary}`">
+        <i v-for="e in segments" :key="e.skill" :class="[`cat-${e.category}`, { 'is-on': tip && tip.e.skill === e.skill }]" :style="{ flexGrow: e.hours }" tabindex="0" @pointerenter="showTip(e, $event)" @pointermove="moveTip($event)" role="button" :aria-label="`Go to ${e.skill} in the training route`" @click="$emit('see-skill', e.skill)" @keydown.enter.prevent="$emit('see-skill', e.skill)" @keydown.space.prevent="$emit('see-skill', e.skill)" @focus="showTip(e, $event)" @blur="tip = null">
           <template v-if="labelled">
             <img :src="skillIconSrc(e.skill)" alt="" width="18" height="18" />
             <span>{{ e.skill }}<small>{{ formatHours(e.hours) }}</small></span>
@@ -52,7 +52,7 @@ const props = defineProps({
   timeline: { type: Object, required: true },
   hoursPerDay: { type: Number, required: true },
 })
-defineEmits(['see-route'])
+defineEmits(['see-route', 'see-skill'])
 
 // A small box over the bar saying what is being trained in the block the pointer is on.
 const TIP_ROOM = 260 // px the tooltip needs above the bar (its height and the sticky header)
