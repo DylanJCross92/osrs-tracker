@@ -6714,7 +6714,11 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 
 /* ---------- The Smart Planner (start page) ---------- */
 .spl { margin-bottom: 28px; }
-.spl-head { display: flex; align-items: center; gap: 16px; padding: 20px 22px; margin-bottom: 14px; border-radius: 18px; border: 1px solid rgba(201, 182, 255, 0.22);
+.spl.open .spl-head { margin-bottom: 14px; }
+.spl-title { flex: 1; }
+.spl-toggle { flex: none; }
+@media (max-width: 560px) { .spl-head { flex-wrap: wrap; } .spl-toggle { width: 100%; } }
+.spl-head { display: flex; align-items: center; gap: 16px; padding: 20px 22px; margin-bottom: 0; border-radius: 18px; border: 1px solid rgba(201, 182, 255, 0.22);
   background: radial-gradient(130% 160% at 0% 0%, rgba(167, 139, 250, 0.26), transparent 58%), radial-gradient(100% 140% at 100% 0%, rgba(240, 201, 118, 0.2), transparent 62%), rgba(255, 255, 255, 0.02); }
 .spl-spark { position: relative; flex: none; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; color: #1b1508; background: linear-gradient(135deg, #f9e3a8, #c9b6ff); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset, 0 6px 26px rgba(167, 139, 250, 0.45); }
 .spl-spark::after { content: ''; position: absolute; inset: -7px; border-radius: 21px; border: 1px solid rgba(201, 182, 255, 0.35); animation: smo-halo 3.2s ease-in-out infinite; }

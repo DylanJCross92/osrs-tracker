@@ -32,7 +32,7 @@
           <template #hint>
             <p class="pt-hint pt-hint-start">
               <template v-if="lookingUp">Loading stats…</template>
-              <template v-else>No sign-up required · Or <a href="#ps-smart" @click.prevent="scrollToStart">start without a username</a></template>
+              <template v-else>No sign-up required · Or <a href="#ps-start" @click.prevent="scrollToStart">start without a username</a></template>
             </p>
           </template>
         </PlannerPlayerBox>
@@ -1301,7 +1301,7 @@ async function startCustom(skill) {
   openAdd(skill)
 }
 function scrollToStart() {
-  document.getElementById('ps-smart')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 // --- Persistence ----------------------------------------------------------------------

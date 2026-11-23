@@ -8,7 +8,7 @@
     <!-- Recommended plans: three to begin with, the rest on request -->
     <div id="ps-start" class="ps-block">
       <header class="ps-head">
-        <h2>Or start from a ready-made plan</h2>
+        <h2>Start from a recommended plan</h2>
       </header>
       <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ hasPlayer ? `${playerLabel}'s` : 'your' }} stats{{ hasPlayer ? '' : ' (every skill starts from level 1 until you add your name)' }}. Change anything afterwards.</p>
       <RecommendedPlans
