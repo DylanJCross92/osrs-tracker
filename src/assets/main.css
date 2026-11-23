@@ -6846,3 +6846,24 @@ a.mat-item:hover { color: var(--gold-bright); text-decoration: none; }
 @media (max-width: 640px) { .planner .planner-top.is-start { padding: 14px; } .planner-top.is-start .pt-title h1 { font-size: 1.3rem; } }
 
 .spw-step .ppb { margin-top: 6px; }
+
+/* ---------- The three ways to start ---------- */
+.paths { margin: 4px 0 22px; }
+.paths > h2 { margin: 0 0 10px; font-size: 1.05rem; }
+.paths-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.path-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 16px 16px 14px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.12s, background 0.12s, transform 0.12s; }
+button.path-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.path-card.on { border-color: var(--gold); background: linear-gradient(160deg, rgba(240, 201, 118, 0.1), transparent 60%), var(--panel); }
+.path-card h3 { margin: 0; font-size: 1.15rem; }
+.path-card p { margin: 2px 0 0; color: var(--muted); font-size: 0.88rem; line-height: 1.4; }
+.path-icon { display: grid; place-items: center; width: 40px; height: 40px; margin-bottom: 6px; border-radius: 12px; background: rgba(240, 201, 118, 0.12); color: var(--gold-bright); }
+.path-eyebrow { color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.path-state { margin-top: auto; padding-top: 10px; color: var(--gold-bright); font-size: 0.84rem; font-weight: 600; }
+.path-card.on .path-state::before { content: '✓ '; }
+.path-smart { cursor: default; border-color: rgba(201, 182, 255, 0.3); background: radial-gradient(130% 120% at 0% 0%, rgba(167, 139, 250, 0.2), transparent 60%), radial-gradient(100% 100% at 100% 0%, rgba(240, 201, 118, 0.12), transparent 62%), var(--panel); }
+.path-smart .path-icon { color: #1b1508; background: linear-gradient(135deg, #f9e3a8, #c9b6ff); box-shadow: 0 4px 16px rgba(167, 139, 250, 0.35); }
+.path-smart .path-eyebrow { color: #d8c8ff; }
+.path-smart h3 { background: linear-gradient(95deg, #fbe7ad 10%, #e6dcff 60%, #c9b6ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.path-foot { margin-top: auto; padding-top: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.path-foot small { color: #c9b6ff; font-size: 0.78rem; font-weight: 600; }
+@media (max-width: 860px) { .paths-grid { grid-template-columns: 1fr; } .path-card { padding: 14px; } }

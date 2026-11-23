@@ -39,6 +39,7 @@
       </section>
 
       <PlannerStart
+        ref="startRef"
         :skills="player?.latest?.skills || null"
         :has-player="!!player?.latest"
         :player-label="player?.displayName || ''"
@@ -1329,8 +1330,10 @@ async function startCustom(skill) {
   await loadTyped()
   openAdd(skill)
 }
+const startRef = ref(null)
 function scrollToStart() {
-  document.getElementById('ps-start')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  // The ready-made plans, wherever the page was left.
+  startRef.value?.showPlans(true)
 }
 
 // --- Persistence ----------------------------------------------------------------------
