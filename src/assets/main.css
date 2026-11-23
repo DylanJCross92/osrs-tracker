@@ -6882,8 +6882,8 @@ button.path-card:hover { border-color: var(--border-strong); transform: translat
 .spw-goal-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 .pt-toprow .pt-live { margin-left: auto; }
 .pt-toprow .pt-badge, .pt-toprow .gpb { display: inline-flex; align-items: center; height: 30px; padding-top: 0; padding-bottom: 0; box-sizing: border-box; }
-/* In the Smart Planner window the name suggestions sit in the page flow, so the window grows to hold them instead of cutting them off */
-.spm .suggest-wrap .search-suggest { position: static; box-shadow: none; }
+/* In the Smart Planner window the name suggestions float over the empty space under the box (the window has one fixed height), so nothing moves */
+.spm .suggest-wrap .search-suggest { z-index: 60; max-height: 340px; overflow-y: auto; }
 @media (max-width: 560px) { .spw-goal-art { width: 62px; } .spw-goal-art img:nth-child(n+3) { display: none; } }
 
 /* The plans page: an empty card first in the grid starts a new plan */
