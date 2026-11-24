@@ -66,6 +66,7 @@
                   <h4>You need</h4>
                   <SkillReqGrid :skills="r.info?.reqs || {}" :levels="levels" :combat="r.info && !r.info.combatGuess ? r.info.combat : null" :qp="r.info?.qpReq || 0" />
                   <div v-if="r.prereq.length" class="trk-chips"><span class="trk-lead">Finish first</span><QuestChip v-for="p in r.prereq" :key="p" :name="p" /></div>
+                  <PlanLevels v-if="!r.done" :req="questReq(r)" kind="quest" :name="`${r.name} levels`" />
                   <p v-if="!hasNeeds(r)" class="trk-none">{{ r.info ? 'Nothing to meet: you can start it now.' : 'Requirements are not listed yet.' }}</p>
                 </section>
                 <section class="trk-block">
@@ -117,11 +118,13 @@ import { levelAtXp, xpAtLevel } from '@/utils/planner'
 import { questSlug } from '@/utils/questSlug'
 import { unlocksFor } from '@/utils/trackerUnlocks'
 import { shortfalls } from '@/utils/trackerSuggestions'
+import { questRequirements } from '@/utils/requirementPlan'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { track } from '@/utils/analytics'
 import QuestChip from '@/components/tracker/QuestChip.vue'
 import TrackerSearch from '@/components/tracker/TrackerSearch.vue'
 import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
+import PlanLevels from '@/components/tracker/PlanLevels.vue'
 import MethodCards from '@/components/tracker/MethodCards.vue'
 
 const props = defineProps({ focus: { type: Object, default: null } })
@@ -136,6 +139,8 @@ const sort = ref('az')
 const open = ref(new Set())
 const flashSlug = ref('')
 
+// The levels to train before this quest, with what the quests it needs first ask for.
+const questReq = (r) => questRequirements(r.slug, confirmations.value)
 const hasNeeds = (r) => !!(r.info && (Object.keys(r.info.reqs).length || r.info.qpReq || r.prereq.length || (r.info.combat && !r.info.combatGuess)))
 const timeText = (r) => {
   const m = LENGTH_MINUTES[r.info.length]

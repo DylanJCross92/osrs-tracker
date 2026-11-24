@@ -7340,3 +7340,9 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .trk-sugg-badges i.is-done { color: #0f1a0b; background: #8fd277; border-color: #8fd277; }
 .trk-sugg-badges i.is-ready { color: #9fd48a; border-color: rgba(120, 190, 100, 0.6); }
 .trk-sugg-badges i.is-locked { color: #e6b872; border-color: rgba(230, 184, 114, 0.55); }
+
+/* Plan the levels a quest or diary tier needs */
+.trk-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 10px 0 4px; }
+.trk-plan .btn { display: inline-flex; align-items: center; gap: 8px; }
+.trk-plan-note { flex: 1 1 240px; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
+.trk-plan-done { margin: 0; color: #9fd48a; font-size: 0.86rem; }

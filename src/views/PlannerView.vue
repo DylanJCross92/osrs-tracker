@@ -1489,6 +1489,8 @@ async function restoreFromQuery() {
   // A link made by Share carries the plan and nothing about who made it: opened as a shared plan.
   const fromShare = q.from === 'share' && typeof q.u !== 'string'
   applyRestored(restored, false)
+  // A plan opened from the quest and diary tracker comes with a name ("Legends' Quest levels"), kept until it is saved.
+  if (typeof q.name === 'string' && q.name.trim() && !fromShare && goals.value.length) currentPlanName.value = q.name.trim().slice(0, 60)
   if (fromShare && goals.value.length) {
     template.value = { slug: '', name: 'Shared plan', rsn: '' }
     templatePending.value = true

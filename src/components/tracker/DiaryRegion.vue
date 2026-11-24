@@ -36,6 +36,7 @@
             <QuestChip v-for="q in current.quests" :key="q.name" :name="q.name" />
             <QuestChip v-for="q in current.partial" :key="`p-${q.name}`" :name="q.name" partial />
           </div>
+          <PlanLevels v-if="!isDone(current)" :req="tierReq" kind="diary" :name="`${current.name} levels`" />
           <p v-if="!hasNeeds" class="trk-none">Nothing to meet: you can start this tier now.</p>
           <p class="trk-note">Skill boosts count unless the Wiki says otherwise.<template v-if="current.key !== 'easy'"> The tier before it has to be done first.</template></p>
         </section>
@@ -75,8 +76,10 @@ import { unlocksFor } from '@/utils/trackerUnlocks'
 import { track } from '@/utils/analytics'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { shortfalls } from '@/utils/trackerSuggestions'
+import { diaryRequirements } from '@/utils/requirementPlan'
 import QuestChip from '@/components/tracker/QuestChip.vue'
 import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
+import PlanLevels from '@/components/tracker/PlanLevels.vue'
 import MethodCards from '@/components/tracker/MethodCards.vue'
 
 const props = defineProps({ region: { type: Object, required: true }, focus: { type: Object, default: null } })
@@ -95,6 +98,7 @@ const nextTier = computed(() => props.region.tiers.find((t) => !isDone(t)) || nu
 const nextId = computed(() => nextTier.value?.id || '')
 // With a player's levels: the next tier's skill levels are all met (the quests it needs are checked in its details).
 const nextReady = computed(() => !!levels.value && !!nextTier.value && shortfalls(nextTier.value.skills, levels.value).length === 0)
+const tierReq = computed(() => diaryRequirements(current.value.id, confirmations.value))
 const hasNeeds = computed(() => {
   const t = current.value
   return !!(Object.keys(t.skills).length || t.combat || t.qp || t.allQuests || t.quests.length || t.partial.length || t.other.length)
