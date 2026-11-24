@@ -41,6 +41,7 @@
           <div v-if="choices.length > 1" class="dash-switch" role="group" aria-label="Which profile">
             <button v-for="c in choices" :key="c.username" type="button" class="dash-switch-btn" :class="{ on: current?.username === c.username }" :aria-pressed="current?.username === c.username" @click="pick(c.username)">{{ c.displayName }}</button>
           </div>
+          <button v-if="!profiles.length && me" class="btn-text dash-notme" type="button" title="Forget this player in this browser" @click="notMe">Not you?</button>
           <button v-if="player" class="dash-refresh" :class="{ 'is-busy': refreshing, 'is-done': synced }" type="button" :disabled="refreshing" title="Pull your latest hiscores" @click="refresh">
             <svg v-if="synced" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5" /></svg>
             <svg v-else class="dash-refresh-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8" /><path d="M21 3v5h-5" /></svg>
@@ -48,6 +49,9 @@
           </button>
         </div>
       </header>
+
+      <!-- A player nobody owns yet: what claiming gives, and the way to do it -->
+      <ClaimTeaser v-if="!profiles.length && current" :username="current.username" :display-name="current.displayName" variant="card" />
 
       <div class="dash-grid">
         <div class="dash-main">
@@ -122,8 +126,8 @@
           <!-- Goals -->
           <TrackerLink place="dashboard" variant="side" />
           <DashSkeleton v-if="current && firstLoad" kind="goals" />
-          <!-- Goals come from a plan shown on a claimed profile, so they are for signed-in owners -->
-          <section v-else-if="current && loggedIn" class="card dash-card" aria-labelledby="dash-goals-h">
+          <!-- Goals come from a plan shown on a claimed profile: for anyone else the card is there, locked, saying what unlocks it -->
+          <section v-else-if="current && profiles.length" class="card dash-card" aria-labelledby="dash-goals-h">
             <header class="dash-card-head">
               <h2 id="dash-goals-h">Goals</h2>
               <RouterLink v-if="shownGoals.length" class="dash-more" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'goals' } }">All goals →</RouterLink>
@@ -147,6 +151,7 @@
               </li>
             </ul>
           </section>
+          <ClaimTeaser v-else-if="current" class="card dash-card" :username="current.username" :display-name="current.displayName" variant="goals" />
         </aside>
       </div>
     </template>
@@ -162,6 +167,7 @@ import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
+import ClaimTeaser from '@/components/dashboard/ClaimTeaser.vue'
 import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashWelcome from '@/components/dashboard/DashWelcome.vue'
@@ -196,10 +202,15 @@ setPageMeta({ title: 'Your dashboard', description: 'Your week, goals and plans 
 const router = useRouter()
 const store = usePlayersStore()
 const { profiles, profilesReady, loggedIn } = useAuth()
-const { me } = useRivals()
+const { me, clearMe } = useRivals()
 const { following } = useFollowing()
 const { confirmations, respect } = useRequirements()
 
+// "Not you?": forget the saved player in this browser (the home page goes back to the welcome page).
+function notMe() {
+  clearMe()
+  track('dashboard_not_me')
+}
 const sameName = (a, b) => String(a || '').toLowerCase() === String(b || '').toLowerCase()
 onMounted(() => {
   if (!store.loaded) store.loadPlayers().catch(() => {})

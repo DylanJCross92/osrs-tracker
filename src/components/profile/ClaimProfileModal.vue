@@ -8,7 +8,8 @@
 
       <!-- Not signed in -->
       <template v-if="!loggedIn">
-        <p class="claim-lead">Claiming proves that <b>{{ displayName }}</b> is your RuneScape account and makes you its owner on TickGains. You need a TickGains account first.</p>
+        <p class="claim-lead">Claiming proves that <b>{{ displayName }}</b> is your RuneScape account and makes you its owner on TickGains. You need a TickGains account first, and it is free.</p>
+        <ul class="claim-benefits"><li v-for="b in CLAIM_BENEFITS" :key="b.key"><span aria-hidden="true">✓</span><span><b>{{ b.title }}</b> {{ b.text }}</span></li></ul>
         <div class="claim-actions">
           <RouterLink class="btn btn-primary" :to="{ name: 'login', query: { next } }" @click="$emit('close')">Log in</RouterLink>
           <RouterLink class="btn btn-ghost" :to="{ name: 'signup', query: { next } }" @click="$emit('close')">Create an account</RouterLink>
@@ -47,7 +48,8 @@
 
       <!-- Not started yet -->
       <template v-else>
-        <p class="claim-lead">Claim <b>{{ displayName }}</b> to become its owner on TickGains and unlock owner features as we add them.</p>
+        <p class="claim-lead">Claim <b>{{ displayName }}</b> to become its owner on TickGains.</p>
+        <ul class="claim-benefits"><li v-for="b in CLAIM_BENEFITS" :key="b.key"><span aria-hidden="true">✓</span><span><b>{{ b.title }}</b> {{ b.text }}</span></li></ul>
         <ol class="claim-steps">
           <li>Start the claim to get a short code.</li>
           <li>Send that code in game to <b class="claim-contact">{{ state.contact }}</b> from {{ displayName }}.</li>
@@ -64,6 +66,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import ClaimAvailability from '@/components/profile/ClaimAvailability.vue'
+import { CLAIM_BENEFITS } from '@/data/claimBenefits'
 import { ApiError } from '@/api/client'
 import { claimsApi } from '@/api/claims'
 import { refreshNotifications } from '@/composables/useAuth'

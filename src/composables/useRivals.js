@@ -45,6 +45,10 @@ export function useRivals() {
     // You are not your own rival.
     rivals.value = rivals.value.filter((r) => !same(r, me.value))
   }
+  /** Quietly makes a player the visitor's own, but only when none is set yet: used where the page asked for "your name". */
+  function adoptMe(name) {
+    if (!me.value && String(name || '').trim()) setMe(name)
+  }
   function clearMe() {
     me.value = ''
   }
@@ -59,5 +63,5 @@ export function useRivals() {
     rivals.value = rivals.value.filter((r) => !same(r, name))
   }
 
-  return { me, rivals, isMe, isRival, setMe, clearMe, addRival, removeRival }
+  return { me, rivals, isMe, isRival, setMe, adoptMe, clearMe, addRival, removeRival }
 }

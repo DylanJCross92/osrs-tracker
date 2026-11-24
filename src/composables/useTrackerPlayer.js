@@ -32,7 +32,7 @@ let started = false
 
 export function useTrackerPlayer() {
   const store = usePlayersStore()
-  const { me } = useRivals()
+  const { me, adoptMe } = useRivals()
 
   async function load(raw, { typed = false } = {}) {
     const wanted = String(raw || '').trim()
@@ -54,6 +54,8 @@ export function useTrackerPlayer() {
       name.value = found.displayName
       write(found.displayName)
       if (typed) {
+        // The box asked for "your OSRS name", so the first one typed becomes the visitor's player (the dashboard is about them).
+        adoptMe(found.displayName)
         recordRecent(found)
         track('tracker_player_loaded')
       }

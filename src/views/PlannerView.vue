@@ -244,7 +244,6 @@ import { recommendedPlans } from '@/utils/recommendedPlans'
 import SharePlanModal from '@/components/planner/SharePlanModal.vue'
 import { sharedPlansApi } from '@/api/sharedPlans'
 import { recordPlanEvent } from '@/utils/planEvents'
-import { useRivals } from '@/composables/useRivals'
 import { useAuth, waitForAuth } from '@/composables/useAuth'
 import { dropProfilePlan, useProfilePlan } from '@/composables/useProfilePlan'
 import { useRequirements } from '@/composables/useRequirements'
@@ -257,6 +256,7 @@ import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
 import { recordRecent } from '@/composables/useRecentPlayers'
+import { useRivals } from '@/composables/useRivals'
 import { useToast } from '@/composables/useToast'
 import { setPageMeta } from '@/utils/pageMeta'
 import { track } from '@/utils/analytics'
@@ -463,7 +463,11 @@ async function loadPlayer({ typed = false } = {}) {
     const previous = player.value
     player.value = found
     if (ownsLoadedProfile.value) rememberOwnProfile(found.username)
-    if (typed) recordRecent(found)
+    if (typed) {
+      recordRecent(found)
+      // The planner's box asks for "your username": the first one typed becomes the visitor's player, so the dashboard is about them.
+      adoptMe(found.displayName)
+    }
     username.value = found.displayName
     editingPlayer.value = false
     if (templatePending.value) personalizeTemplate()
@@ -488,6 +492,7 @@ async function loadPlayer({ typed = false } = {}) {
   }
 }
 
+const { adoptMe } = useRivals()
 const playerXp = (skill) => player.value?.latest?.skills?.[skill]?.xp ?? null
 
 // --- Plan state ---------------------------------------------------------------
