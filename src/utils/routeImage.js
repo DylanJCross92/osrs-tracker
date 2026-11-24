@@ -183,11 +183,11 @@ export async function drawRouteImage({ skill, startLevel, endLevel, segments, to
 }
 
 /** Downloads the picture. Where the device offers a share sheet with files (phones), that opens instead. */
-export async function saveRouteImage(blob, fileName, { share = true } = {}) {
+export async function saveRouteImage(blob, fileName, { share = true, title = 'My training route' } = {}) {
   const file = new File([blob], fileName, { type: 'image/png' })
   if (share && navigator.canShare?.({ files: [file] })) {
     try {
-      await navigator.share({ files: [file], title: 'My training route' })
+      await navigator.share({ files: [file], title })
       return 'shared'
     } catch (err) {
       if (err?.name === 'AbortError') return 'cancelled'

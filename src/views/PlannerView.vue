@@ -148,6 +148,8 @@
         :hours-per-day="hoursPerDay"
         :projection="shownProjection"
         :series="series"
+        :plan-name="currentPlanName"
+        :player-name="player?.displayName || ''"
         :focus="focusIdx >= 0 ? focusSkill : ''"
         @focus="(skill) => (focusSkill = skill)"
         @rebase="refreshFromPlayer"

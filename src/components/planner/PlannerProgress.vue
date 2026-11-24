@@ -37,7 +37,7 @@
       </div>
     </div>
 
-    <PlannerPaceChart v-if="series && !view.complete" :series="series" />
+    <PlannerPaceChart v-if="series && !view.complete" :series="series" :export-info="exportInfo" />
 
     <!-- One slice per skill, as wide as it takes to train, filled as it gets done -->
     <div class="pc-seg-wrap">
@@ -102,6 +102,9 @@ const props = defineProps({
   readonly: { type: Boolean, default: false },
   // The skill being looked at on its own ('' for the whole plan).
   focus: { type: String, default: '' },
+  // The plan's name and the player it is for, for the heading of the saved picture of the chart.
+  planName: { type: String, default: '' },
+  playerName: { type: String, default: '' },
 })
 defineEmits(['rebase', 'focus'])
 
@@ -202,5 +205,20 @@ const badge = computed(() => {
   if (!sc) return null
   const amount = amountText(props.progress.aheadDays)
   return { kind: sc, text: sc === 'ahead' ? `${amount} ahead of schedule` : sc === 'behind' ? `${amount} behind schedule` : 'On schedule' }
+})
+
+// The heading and numbers of the picture the chart can be saved as: the same ones shown above the chart, for the whole plan.
+const exportInfo = computed(() => {
+  if (props.readonly || !props.series) return null
+  const p = props.progress.timePct * 100
+  return {
+    title: props.planName || 'Training plan',
+    subtitle: [props.playerName, `${props.hoursPerDay} h/day`].filter(Boolean).join('  ·  '),
+    finishText: props.finish?.dateText || '',
+    untilText: props.finish?.untilText || '',
+    pctText: `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`,
+    badge: badge.value,
+    xpText: `${formatNum(props.progress.gainedXp)} XP gained · ${formatNum(props.progress.remainingXp)} left`,
+  }
 })
 </script>
