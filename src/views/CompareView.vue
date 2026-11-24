@@ -36,7 +36,7 @@
           <button type="button" :aria-label="`Unfollow ${r}`" @click="unfollow(r)">×</button>
         </span>
       </div>
-      <p v-else-if="!hasNames" class="cmp-hint">Follow a player after comparing and they will show up here next time, and on the homepage. Your list is kept in this browser<template v-if="!loggedIn">. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create an account</RouterLink> to keep them on every device.</template><template v-else> and saved to your account.</template></p>
+      <p v-else-if="!hasNames" class="cmp-hint">Follow a player after comparing and they will show up here next time, and on the homepage. <template v-if="!loggedIn">Following needs a free account: <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">create one</RouterLink> or <RouterLink :to="{ name: 'login', query: { next: route.fullPath } }">log in</RouterLink>.</template><template v-else>Your list is saved to your account.</template></p>
 
       <div v-if="!hasNames && suggestedPairs.length" class="cmp-rivals">
         <span class="cmp-rivals-label">Try a matchup</span>
@@ -583,6 +583,8 @@ function iAm(name) {
 }
 async function toggleRival(name) {
   const now = await toggleFollowing(name)
+  // null: the visitor was asked to sign in, nothing changed.
+  if (now === null) return
   showToast(now ? `Following ${name}.` : `Unfollowed ${name}.`)
   track(now ? 'follow' : 'unfollow', { source: 'compare' })
 }

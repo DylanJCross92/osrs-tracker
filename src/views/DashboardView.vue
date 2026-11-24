@@ -117,7 +117,7 @@
           <FollowingStrip v-if="following.length" />
           <section v-else class="card dash-card">
             <h2>Following</h2>
-            <p class="dash-empty">Follow players to see their gains and milestones here. Open any profile and press Follow.</p>
+            <p class="dash-empty">Follow players to see their gains and milestones here. Open any profile and press Follow<template v-if="!loggedIn"> (it needs a free account: <RouterLink :to="{ name: 'signup', query: { next: '/' } }">create one</RouterLink> or <RouterLink :to="{ name: 'login', query: { next: '/' } }">log in</RouterLink>)</template>.</p>
             <RouterLink class="btn btn-ghost" :to="{ name: 'discover' }">Find players</RouterLink>
           </section>
           <DashWatchlist />

@@ -24,6 +24,7 @@ export const RELEASE_NOTES = [
       { kind: 'improved', text: 'The planner remembers how many hours a day you play. Change it once and every new plan starts with it, and it follows your account to every device.' },
       { kind: 'new', text: 'A quest and Achievement Diary tracker, open to everyone with no account: tick off every quest and all 48 diary tiers, see your quest points, what each one needs and gives, and which training methods it opens up. There is a Quests link in the main menu, and the planner points to it.' },
       { kind: 'new', text: 'The tracker suggests what to do next in the Smart Planner style: the quests and diary tiers that open the most for you, each with a plain reason. Add your name to see only what you can start now.' },
+      { kind: 'improved', text: 'Following a player now needs a free account, and says so: pressing Follow signed out explains it and offers to sign up or log in.' },
       { kind: 'improved', text: 'Signed out, the tracker now says plainly that progress is kept in this browser only, and a free account keeps it on every device.' },
       { kind: 'improved', text: 'The planner now counts a method as ready when you have the diary tier or the quests behind an item it needs, and the quest tracker lists the quests worth doing next.' },
       { kind: 'fixed', text: 'Gemstone Crab no longer shows one flat 40K xp an hour for every level. It now rises with your level and gear, from about 40K to 100K an hour for a strong account.' },

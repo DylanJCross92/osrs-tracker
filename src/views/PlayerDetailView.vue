@@ -20,9 +20,10 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" /></svg>
             Customize
           </button>
-          <button v-if="player && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" @click="toggleFollow">
+          <button v-if="player && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" :title="loggedIn || isFollowing(player.displayName) ? '' : 'Following needs a free account'" @click="toggleFollow">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1.1 8.7 3 5 6.4 5c2 0 3.4 1.1 4.2 2.4h2.8C14.2 6.1 15.6 5 17.6 5 21 5 22.9 8.7 21.3 11.9 19 16.4 12 21 12 21z" /></svg>
             {{ isFollowing(player.displayName) ? 'Following' : 'Follow' }}
+            <svg v-if="!loggedIn && !isFollowing(player.displayName)" class="btn-lock" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Needs a free account"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
           </button>
           <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
@@ -494,6 +495,8 @@ async function toggleFollow() {
   const name = player.value?.displayName
   if (!name) return
   const now = await toggleFollowing(name)
+  // null: the visitor was asked to sign in, nothing changed.
+  if (now === null) return
   track(now ? 'follow' : 'unfollow', { source: 'profile' })
   loadFollowCounts()
 }

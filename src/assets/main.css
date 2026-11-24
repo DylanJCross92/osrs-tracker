@@ -7508,3 +7508,7 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .claim-benefits li > span:first-child { flex: none; display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(143, 210, 119, 0.18); color: #8fd277; font-size: 0.74rem; font-weight: 800; margin-top: 1px; }
 .claim-benefits b { color: var(--text); }
 @media (max-width: 820px) { .ct-list { grid-template-columns: 1fr; } }
+
+.btn-lock { margin-left: 2px; opacity: 0.7; }
+.sip { width: min(480px, calc(100vw - 24px)); }
+.sip-text { margin: 0 0 10px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }

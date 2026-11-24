@@ -51,6 +51,7 @@
     <GuestSaveBar @visible="(v) => (saveBar = v)" />
     <FeedbackWidget />
     <ToastHost />
+    <SignInPrompt />
     <ItemModal v-if="modalSlug" :slug="modalSlug" @close="closeItemModal" />
   </div>
 </template>
@@ -61,6 +62,7 @@ import { DISCORD_URL } from '@/config'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
+import SignInPrompt from '@/components/SignInPrompt.vue'
 import ItemModal from '@/components/ItemModal.vue'
 import { closeItemModal, modalSlug } from '@/composables/useItemModal'
 import FeedbackWidget from '@/components/FeedbackWidget.vue'
