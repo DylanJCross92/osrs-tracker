@@ -69,7 +69,7 @@
       </div>
 
       <div class="calc-strategy">
-        <AccountTypeToggle v-model="members" label="Account" />
+        <AccountTypeToggle v-model="members" v-model:iron="iron" label="Account" />
       </div>
       <p v-if="!members && !hasFreeRoute" class="acct-note" role="status">We have no free-to-play route for {{ skill }} yet, so it is worked out with members methods.</p>
 
@@ -92,8 +92,8 @@
         </template>
       </div>
       <p v-if="method" class="planner-hint">
-        {{ method.description }} · {{ method.intensity }} intensity ·
-        <GpTip :method="method">{{ method.gpPerHour == null ? 'no GP data' : `${formatGp(method.gpPerHour)}/h` }}</GpTip>
+        {{ method.description }} · {{ method.intensity }} intensity<span class="gp-figure"> ·
+        <GpTip :method="method">{{ method.gpPerHour == null ? 'no GP data' : `${formatGp(method.gpPerHour)}/h` }}</GpTip></span>
         <template v-if="method.requirements"> · Needs: {{ method.requirements }}</template>
       </p>
       <details v-if="methods.length > 2" class="planner-all-methods calc-filter" :open="filterOpen" @toggle="filterOpen = $event.target.open">
@@ -122,7 +122,7 @@
         <div class="plan-tiles">
           <div class="plan-tile"><span>XP remaining</span><b>{{ formatNum(plan.remainingXp) }}</b><small v-if="plan.questXp">{{ formatNum(plan.questXp) }} covered by quests</small></div>
           <div class="plan-tile"><span>Estimated time</span><b>{{ formatHours(plan.hours) }}</b><small>{{ levelAtXp(currentXpNum, true) }} → {{ levelAtXp(targetXpNum, true) }}</small></div>
-          <div class="plan-tile">
+          <div class="plan-tile gp-figure">
             <span>Estimated GP</span>
             <b :class="gpClass(plan.netGp)">{{ plan.netGp == null ? 'No GP data' : formatGp(plan.netGp) }}</b>
             <small v-if="plan.gpPartial" class="gp-incomplete">Incomplete: some steps are unpriced</small>
@@ -144,12 +144,13 @@
           <button class="btn btn-primary" type="button" @click="copyLink">Copy link</button>
           <button class="btn btn-ghost" type="button" @click="addToPlanner">Add to Account Planner</button>
         </div>
-        <p class="planner-hint">
+        <p v-if="ironModeRef" class="planner-hint">Time is an approximate estimate from community rates. It does not include the time to gather the supplies below.</p>
+        <p class="planner-hint gp-figure">
           GP and time are approximate estimates from community rates, net of supplies and loot.
           <template v-if="priceStatus.loaded">Methods that use or make items with a Grand Exchange price are worked out from live prices<template v-if="priceStatus.updatedAt"> (updated {{ ago(priceStatus.updatedAt) }})</template>, after the 2% tax; the others use saved estimates.</template>
           <template v-else>Prices come from the planner's catalog.</template>
         </p>
-        <p v-if="priceStatus.loaded" class="planner-hint"><PriceBasisToggle /></p>
+        <p v-if="priceStatus.loaded" class="planner-hint gp-figure"><PriceBasisToggle /></p>
       </template>
       <p v-else class="empty-hint">{{ inputError ? 'Fix the goal above to see your results.' : 'You have already reached this target. Pick a higher goal.' }}</p>
     </section>
@@ -222,7 +223,8 @@
 
 <script setup>
 import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
-import { useAccountType } from '@/composables/useAccountType'
+import { ironModeRef, ironPref, useAccountType } from '@/composables/useAccountType'
+import { ironStrategy } from '@/utils/ironman'
 import { freeMethodIds } from '@/utils/membership'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -305,7 +307,7 @@ const targetMode = ref('level')
 const targetLevel = ref(props.goalPage ? props.goalPage.to : 99)
 const targetXpInput = ref(xpAtLevel(targetLevel.value))
 const hoursPerDay = ref(intParam(q.hours, 1, 24) ?? 2)
-const strategy = ref(AUTO_FAST)
+const strategy = ref(ironPref() ? ironStrategy(AUTO_FAST) : AUTO_FAST)
 const methodChoice = ref('strategy')
 const customXp = ref(intParam(q.rate, 1, 10_000_000) ?? 50000)
 const customGp = ref(intParam(q.gp, 0, 1_000_000_000))
@@ -380,8 +382,16 @@ const inputError = computed(() => {
 
 // --- Methods and calculation (the Account Planner's engine) ---
 // Free-to-play or members, the same everywhere on the site (see useAccountType.js). Free-to-play keeps the free methods only (for a skill that has some).
-const { members: membersRef, setMembersPref } = useAccountType()
+const { members: membersRef, iron: ironRef, setMembersPref, setIronPref } = useAccountType()
 const members = computed({ get: () => membersRef.value, set: (v) => setMembersPref(v) })
+// An ironman gathers what it needs: the cheapest route leads, and making gp is not offered.
+const iron = computed({
+  get: () => ironRef.value,
+  set: (v) => {
+    setIronPref(v)
+    if (v) setStrategy(ironStrategy(strategy.value))
+  },
+})
 const freeIds = freeMethodIds(skill)
 const hasFreeRoute = freeIds.length > 0
 const freeOnly = computed(() => !members.value && hasFreeRoute)
@@ -389,7 +399,7 @@ const methods = computed(() => relevantMethods(skill, levelAtXp(currentXpNum.val
 const method = computed(() => (isAuto(resolvedId.value) || resolvedId.value === 'custom' ? null : getMethod(resolvedId.value)))
 const methodRoutes = computed(() => [{ value: 'strategy', label: `Best route (${STRATEGY_LABELS[strategy.value]})`, sub: 'Picks the best method at every level' }])
 // The Profitable strategy only appears when something can actually make gp between your levels.
-const STRATEGIES = computed(() => (hasProfit.value ? [...BASE_STRATEGIES, AUTO_PROFIT] : BASE_STRATEGIES))
+const STRATEGIES = computed(() => (hasProfit.value && !ironRef.value ? [...BASE_STRATEGIES, AUTO_PROFIT] : BASE_STRATEGIES))
 const hasProfit = computed(() => profitableMethods(skill, levelAtXp(currentXpNum.value, true), levelAtXp(targetXpNum.value, true)).length > 0)
 const resolvedId = computed(() => (methodChoice.value === 'strategy' ? strategy.value : methodChoice.value))
 const goal = computed(() => ({
@@ -466,7 +476,7 @@ const extras = computed(() => {
   const out = []
   if (!p || !(p.hours > 0)) return out
   out.push({ label: 'Average XP per hour', value: formatNum(p.remainingXp / p.hours) })
-  if (p.netGp != null) out.push({ label: 'Average GP per hour', value: formatGp(p.netGp / p.hours), cls: gpClass(p.netGp) })
+  if (p.netGp != null && !ironModeRef.value) out.push({ label: 'Average GP per hour', value: formatGp(p.netGp / p.hours), cls: gpClass(p.netGp) })
   if (hasMaterials.value && materials.value.actions > 0) out.push({ label: 'Actions required', value: formatNum(materials.value.actions) })
   if (laps.value.length && lapData.value.complete) out.push({ label: 'Laps required', value: formatNum(laps.value.reduce((a, l) => a + l.laps, 0)) })
   return out

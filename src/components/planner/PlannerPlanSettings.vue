@@ -40,6 +40,16 @@
               <small>Only free methods, from the wiki's free-to-play guides.</small>
             </button>
           </div>
+          <div class="pset-strategies is-two pset-iron" role="radiogroup" aria-label="Main account or ironman">
+            <button type="button" role="radio" :aria-checked="!draftIron" :class="{ on: !draftIron }" @click="draftIron = false">
+              <b>Main account</b>
+              <small>You can buy and sell on the Grand Exchange.</small>
+            </button>
+            <button type="button" role="radio" :aria-checked="draftIron" :class="{ on: draftIron }" @click="setIron(true)">
+              <b>Ironman</b>
+              <small>You gather everything yourself: gp is left out and the cheapest routes lead.</small>
+            </button>
+          </div>
           <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
             We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
           </p>
@@ -79,6 +89,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillsWithoutFreeRoute } from '@/utils/membership'
+import { ironStrategy } from '@/utils/ironman'
 
 // The settings that belong to the whole plan, not one skill: its name, the strategy, how long you play, and who it is for.
 // Name, strategy and hours are edited as a draft and only reach the plan when Save is pressed; closing the window throws them away.
@@ -91,6 +102,7 @@ const props = defineProps({
   maxHours: { type: Number, default: 24 },
   // Free-to-play or members, and the skills in the plan (to say which ones a free player has no route for).
   members: { type: Boolean, default: true },
+  iron: { type: Boolean, default: false },
   goalSkills: { type: Array, default: () => [] },
   // Only for a plan for a profile you own: { on, other, willSave, byDefault }. Shows the option to make this plan the goal on that profile.
   profile: { type: Object, default: null },
@@ -100,6 +112,12 @@ const draftName = ref(props.name)
 const draftStrategy = ref(props.strategy)
 const draftHours = ref(props.hoursPerDay)
 const draftMembers = ref(props.members)
+const draftIron = ref(props.iron)
+// Choosing ironman also moves a strategy that assumes buying (fastest, profit) to cheapest, the way an ironman plays.
+function setIron(on) {
+  draftIron.value = on
+  if (on) draftStrategy.value = ironStrategy(draftStrategy.value)
+}
 const noFreeRoute = computed(() => skillsWithoutFreeRoute(props.goalSkills.map((skill) => ({ skill }))))
 const draftProfile = ref(!!props.profile?.on || !!props.profile?.byDefault)
 const profileHint = computed(() => {
@@ -114,7 +132,7 @@ function setHours(v) {
 // How far along the slider is (0.5 to 12 hours), to colour the track up to the handle.
 const fill = computed(() => ((Math.min(Math.max(draftHours.value, 0.5), 12) - 0.5) / 11.5) * 100)
 function save() {
-  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value })
+  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value, iron: draftIron.value })
 }
 function cancel() {
   emit('close')

@@ -51,7 +51,7 @@
       <section class="agm-route" aria-label="Your route">
         <div class="agm-route-head">
           <h3>Your route</h3>
-          <AccountTypeToggle v-model="draftMembers" />
+          <AccountTypeToggle v-model="draftMembers" v-model:iron="draftIron" @update:iron="onIron" />
           <div class="range-tabs agm-strategy" role="group" aria-label="Training strategy">
             <button v-for="s in STRATEGIES" :key="s" type="button" :class="{ active: strategy === s }" :aria-pressed="strategy === s" :title="STRATEGY_HINTS[s]" @click="setStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
           </div>
@@ -69,7 +69,7 @@
           <div class="agm-total" role="status">
             <span><b>{{ formatNum(preview.remainingXp) }}</b> xp</span>
             <span><b>{{ formatHours(preview.hours) }}</b></span>
-            <span v-if="preview.netGp != null" :class="preview.netGp >= 0 ? 'planner-gain' : 'planner-cost'"><b>{{ formatGp(preview.netGp) }}</b></span>
+            <span v-if="preview.netGp != null" class="gp-figure" :class="preview.netGp >= 0 ? 'planner-gain' : 'planner-cost'"><b>{{ formatGp(preview.netGp) }}</b></span>
           </div>
         </template>
         <p v-else class="agm-route-help">Pick a target above your current level to see the route.</p>
@@ -87,6 +87,7 @@
 <script setup>
 import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
 import { applyMembership, freeMethodIds } from '@/utils/membership'
+import { ironStrategy } from '@/utils/ironman'
 import { computed, reactive, ref } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
@@ -106,6 +107,7 @@ const props = defineProps({
   doneQuestIds: { type: Array, default: () => [] },
   // Free-to-play or members, as the plan has it now (changed here, it applies to the whole plan when the goal is added).
   members: { type: Boolean, default: true },
+  iron: { type: Boolean, default: false },
 })
 const emit = defineEmits(['add', 'close'])
 
@@ -117,6 +119,11 @@ const STRATEGY_HINTS = {
 }
 
 const draftMembers = ref(props.members)
+const draftIron = ref(props.iron)
+// An ironman's route starts from the cheapest: fastest and profit assume buying.
+function onIron(on) {
+  if (on) setStrategy(ironStrategy(strategy.value))
+}
 const hasFreeRoute = computed(() => freeMethodIds(form.skill).length > 0)
 
 const taken = computed(() => new Set(props.existingSkills))
@@ -214,6 +221,6 @@ function submit() {
   }
   const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [...suggested.value] }
   if (form.overrides.length) goal.overrides = form.overrides.map((o) => ({ ...o }))
-  emit('add', applyMembership([goal], draftMembers.value)[0], draftMembers.value)
+  emit('add', applyMembership([goal], draftMembers.value)[0], draftMembers.value, draftIron.value)
 }
 </script>

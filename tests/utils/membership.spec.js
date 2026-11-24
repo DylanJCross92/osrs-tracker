@@ -49,3 +49,29 @@ describe('free-to-play plans', () => {
     expect(planFingerprint(free)).not.toBe(planFingerprint(mem))
   })
 })
+
+describe('ironman accounts', () => {
+  it('moves a strategy that assumes buying to cheapest, and offers no making-gp strategy', async () => {
+    const { ironStrategy, ironStrategies } = await import('@/utils/ironman')
+    expect(ironStrategy('auto-fast')).toBe('auto-cheap')
+    expect(ironStrategy('auto-profit')).toBe('auto-cheap')
+    expect(ironStrategy('auto-balanced')).toBe('auto-balanced')
+    expect(ironStrategy('auto-cheap')).toBe('auto-cheap')
+    expect(ironStrategies(['auto-fast', 'auto-cheap', 'auto-profit'])).toEqual(['auto-fast', 'auto-cheap'])
+  })
+
+  it('is kept in the address, a saved plan and what makes two plans the same', () => {
+    const base = { username: '', hoursPerDay: 2, goals: [goal('Smithing')], strategy: AUTO_FAST, gpValue: 2_000_000, budget: null, statsAt: null }
+    expect(encodePlan({ ...base, iron: true }).get('i')).toBe('1')
+    expect(encodePlan(base).has('i')).toBe(false)
+    expect(decodePlan(Object.fromEntries(encodePlan({ ...base, iron: true })), SKILL_NAMES).iron).toBe(true)
+    expect(decodePlan(Object.fromEntries(encodePlan(base)), SKILL_NAMES).iron).toBe(false)
+    const state = { rsn: '', playerId: null, statsAt: null, globalStrategy: AUTO_FAST, gpValue: 2_000_000, budget: null, hoursPerDay: 2, goals: [goal('Smithing')] }
+    const iron = snapshotPlan({ ...state, iron: true }, 'Iron plan')
+    const main = snapshotPlan(state, 'Main plan')
+    expect(iron.iron).toBe(true)
+    expect('iron' in main).toBe(false)
+    expect(validatePlan(iron).plan.iron).toBe(true)
+    expect(planFingerprint(iron)).not.toBe(planFingerprint(main))
+  })
+})

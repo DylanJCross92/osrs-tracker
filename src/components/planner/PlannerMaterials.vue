@@ -1,38 +1,39 @@
 <template>
   <div v-if="data.rows.length || notes.length || itemFree" class="planner-materials">
     <div class="mat-head">
-      <h4 class="goal-section-title">{{ title }}</h4>
-      <div v-if="data.rows.length" class="mat-badges">
+      <h4 class="goal-section-title">{{ ironModeRef ? 'Supplies to gather' : title }}</h4>
+      <div v-if="data.rows.length" class="mat-badges gp-figure">
         <GePriceBadge />
         <PriceBasisToggle />
       </div>
     </div>
-    <p v-if="itemFree" class="planner-hint">This route uses no items you have to bring, so there is nothing to buy.</p>
+    <p v-if="itemFree" class="planner-hint">{{ ironModeRef ? 'This route uses no items you have to bring, so there is nothing to gather.' : 'This route uses no items you have to bring, so there is nothing to buy.' }}</p>
+    <p v-if="ironModeRef && data.rows.length" class="planner-hint">The items to gather yourself for this route, with how many. Gathering them takes time too, which the hours above do not include.</p>
     <div v-if="data.rows.length" class="mat-scroll-x">
       <table class="mat-table">
         <thead>
-          <tr><th>Item</th><th class="num">Needed</th><th class="mat-op" aria-hidden="true" /><th class="num mat-each">Price each</th><th class="mat-op" aria-hidden="true" /><th class="num">Cost</th></tr>
+          <tr><th>Item</th><th class="num">Needed</th><th class="mat-op gp-figure" aria-hidden="true" /><th class="num mat-each gp-figure">Price each</th><th class="mat-op gp-figure" aria-hidden="true" /><th class="num gp-figure">Cost</th></tr>
         </thead>
         <tbody>
           <tr v-for="t in totals" :key="t.name">
             <td>
               <component :is="t.slug ? 'RouterLink' : 'span'" class="mat-item" :to="t.slug ? { name: 'item', params: { slug: t.slug } } : undefined" :title="t.slug ? `${t.name}: see its Grand Exchange price and history` : undefined" @click.capture="t.slug && onItemLinkClick($event, t.slug, 'materials')">
-                <img :src="iconSrc(t.name)" alt="" width="26" height="26" loading="lazy" @error="hide" /><span>{{ t.name }}<small v-if="t.each != null" class="mat-sub">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }} × {{ gpText(t.each) }} gp</small></span>
+                <img :src="iconSrc(t.name)" alt="" width="26" height="26" loading="lazy" @error="hide" /><span>{{ t.name }}<small v-if="t.each != null" class="mat-sub gp-figure">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }} × {{ gpText(t.each) }} gp</small></span>
               </component>
             </td>
             <td class="num">{{ t.approx ? "~" : "" }}{{ formatNum(t.qty) }}</td>
-            <td class="mat-op" aria-hidden="true">{{ t.each == null ? '' : '×' }}</td>
-            <td class="num mat-each">{{ t.each == null ? '-' : `${gpText(t.each)} gp` }}</td>
-            <td class="mat-op" aria-hidden="true">{{ t.each == null ? '' : '=' }}</td>
-            <td class="num mat-cost"><b v-if="t.cost != null">{{ gpText(t.cost) }} gp</b><span v-else class="mat-none" title="This item has no Grand Exchange price right now">no price</span></td>
+            <td class="mat-op gp-figure" aria-hidden="true">{{ t.each == null ? '' : '×' }}</td>
+            <td class="num mat-each gp-figure">{{ t.each == null ? '-' : `${gpText(t.each)} gp` }}</td>
+            <td class="mat-op gp-figure" aria-hidden="true">{{ t.each == null ? '' : '=' }}</td>
+            <td class="num mat-cost gp-figure"><b v-if="t.cost != null">{{ gpText(t.cost) }} gp</b><span v-else class="mat-none" title="This item has no Grand Exchange price right now">no price</span></td>
           </tr>
         </tbody>
         <tfoot v-if="priced.total != null">
           <tr>
             <td class="mat-total-label">Total<small v-if="priced.missing"> ({{ priced.missing }} {{ priced.missing === 1 ? 'item has' : 'items have' }} no price and {{ priced.missing === 1 ? 'is' : 'are' }} not counted)</small></td>
             <td class="num mat-total-qty">{{ totalItems.approx ? "~" : "" }}{{ formatNum(totalItems.qty) }}</td>
-            <td class="mat-op" /><td class="mat-each" /><td class="mat-op" />
-            <td class="num"><b>{{ gpText(priced.total) }} gp</b></td>
+            <td class="mat-op gp-figure" /><td class="mat-each gp-figure" /><td class="mat-op gp-figure" />
+            <td class="num gp-figure"><b>{{ gpText(priced.total) }} gp</b></td>
           </tr>
         </tfoot>
       </table>
@@ -41,7 +42,7 @@
       <summary>Materials for each level</summary>
       <div class="planner-table-scroll mat-scroll">
         <table class="planner-table">
-          <thead><tr><th>To reach</th><th>Materials</th><th class="num">Cost</th><th>Method</th></tr></thead>
+          <thead><tr><th>To reach</th><th>Materials</th><th class="num gp-figure">Cost</th><th>Method</th></tr></thead>
           <tbody>
             <tr v-for="r in data.rows" :key="r.level + r.method">
               <td>Level {{ r.level }}</td>
@@ -50,7 +51,7 @@
                   <img :src="iconSrc(it.name)" :alt="it.name" width="22" height="22" loading="lazy" @error="hide" />{{ formatNum(it.qty) }} {{ it.name }}
                 </span>
               </td>
-              <td class="num mat-cost">{{ rowCost(r) == null ? '-' : `${gpText(rowCost(r))} gp` }}</td>
+              <td class="num mat-cost gp-figure">{{ rowCost(r) == null ? '-' : `${gpText(rowCost(r))} gp` }}</td>
               <td class="planner-table-note">{{ r.method }}</td>
             </tr>
           </tbody>
@@ -59,11 +60,12 @@
     </details>
     <p v-for="n in notes" :key="n" class="planner-hint mat-note">{{ n }}</p>
     <p v-if="totals.some((t) => t.approx)" class="planner-hint">~ marks amounts that are estimates, because the xp for each item depends on what you make.</p>
-    <p v-if="data.rows.length" class="planner-hint">{{ priceBasis === 'instant' ? 'Prices are what you pay buying at once, from the latest Grand Exchange trades on the OSRS Wiki.' : 'Prices are the middle of the latest Grand Exchange buy and sell price, from the OSRS Wiki.' }} Quantities assume no burns, failures or lost items, and tools and gear are not listed. Item icons come from the OSRS Wiki.</p>
+    <p v-if="data.rows.length" class="planner-hint"><span class="gp-figure">{{ priceBasis === 'instant' ? 'Prices are what you pay buying at once, from the latest Grand Exchange trades on the OSRS Wiki.' : 'Prices are the middle of the latest Grand Exchange buy and sell price, from the OSRS Wiki.' }} </span>Quantities assume no burns, failures or lost items, and tools and gear are not listed. Item icons come from the OSRS Wiki.</p>
   </div>
 </template>
 
 <script setup>
+import { ironModeRef } from '@/composables/useAccountType'
 import { computed } from 'vue'
 import { materialsForPlan } from '@/utils/plannerTools'
 import { formatNum } from '@/utils/planner'

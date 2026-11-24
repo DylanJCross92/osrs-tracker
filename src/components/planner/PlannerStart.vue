@@ -70,7 +70,7 @@
       </div>
       <dl class="ps-example-totals">
         <div><dt>Time</dt><dd>{{ formatHours(example.totalHours) }}</dd></div>
-        <div v-if="example.netGp != null"><dt>{{ example.netGp >= 0 ? 'Profit' : 'GP cost' }}</dt><dd :class="example.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(example.netGp) }}</dd></div>
+        <div v-if="example.netGp != null" class="gp-figure"><dt>{{ example.netGp >= 0 ? 'Profit' : 'GP cost' }}</dt><dd :class="example.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(example.netGp) }}</dd></div>
         <div v-if="example.days != null"><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ example.days.toLocaleString('en-US') }} day{{ example.days === 1 ? '' : 's' }}</dd></div>
       </dl>
       <ul class="ps-example-rows">

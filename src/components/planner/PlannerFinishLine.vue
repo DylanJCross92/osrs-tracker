@@ -29,7 +29,7 @@
         <span class="fl-tip-line">{{ formatHours(tip.e.hours) }} of training<template v-if="tip.e.hours && hoursPerDay"> · about {{ Math.max(1, Math.round(tip.e.hours / hoursPerDay)) }} day{{ Math.round(tip.e.hours / hoursPerDay) > 1 ? 's' : '' }}</template></span>
         <span v-if="tip.e.startDate && tip.e.endDate" class="fl-tip-line">{{ shortDate(tip.e.startDate) }} to {{ shortDate(tip.e.endDate) }}</span>
         <span v-if="tip.e.xp > 0" class="fl-tip-stat fl-tip-xp"><span>XP gained</span><b>+{{ formatXp(tip.e.xp) }}</b></span>
-        <span v-if="tip.e.netGp != null && tip.e.netGp !== 0" class="fl-tip-stat" :class="tip.e.netGp >= 0 ? 'fl-tip-gain' : 'fl-tip-cost'"><span>{{ tip.e.netGp >= 0 ? 'Profit' : 'Cost' }}</span><b>{{ formatGp(tip.e.netGp).replace(/ gp$/, '') }} gp</b></span>
+        <span v-if="tip.e.netGp != null && tip.e.netGp !== 0" class="fl-tip-stat gp-figure" :class="tip.e.netGp >= 0 ? 'fl-tip-gain' : 'fl-tip-cost'"><span>{{ tip.e.netGp >= 0 ? 'Profit' : 'Cost' }}</span><b>{{ formatGp(tip.e.netGp).replace(/ gp$/, '') }} gp</b></span>
         <span class="fl-tip-cat">{{ categoryLabel(tip.e.category) }}</span>
       </div>
       <div class="fl-ends"><span>Today</span><span>{{ dateText }}</span></div>

@@ -2,7 +2,7 @@ import { ref, watch } from 'vue'
 import { cleanProfile, DEFAULT_PROFILE } from '@/utils/smartPlanner'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
 import { playHours, usePlayHours } from '@/composables/usePlayHours'
-import { membersPref, useAccountType } from '@/composables/useAccountType'
+import { ironPref, membersPref, useAccountType } from '@/composables/useAccountType'
 
 // The answers to the Smart Planner's questions. Kept in this browser and, when signed in, in the account (see utils/accountData.js), so a
 // returning player finds them as they left them. `touched` is whether anything was ever answered (until then the steps are for a typical player).
@@ -19,7 +19,7 @@ function read() {
 
 const saved = read()
 // Never answered: the hours start as the last amount chosen on a plan's settings.
-const profile = ref(cleanProfile(saved ? saved : { hours: Math.min(12, playHours()), members: membersPref() }))
+const profile = ref(cleanProfile(saved ? saved : { hours: Math.min(12, playHours()), members: membersPref(), iron: ironPref() }))
 const touched = ref(!!saved && Object.keys(saved).length > 0)
 
 watch(
@@ -52,6 +52,7 @@ export function usePlannerProfile() {
     if (patch.hours != null) usePlayHours().setPlayHours(patch.hours)
     // So is free-to-play or members: every planner and calculator starts from it.
     if (patch.members != null) useAccountType().setMembersPref(patch.members)
+    if (patch.iron != null) useAccountType().setIronPref(patch.iron)
     profile.value = cleanProfile({ ...profile.value, ...patch })
     touched.value = true
   }

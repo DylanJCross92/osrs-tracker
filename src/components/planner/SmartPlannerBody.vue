@@ -36,7 +36,7 @@
     <section v-else-if="current === 'goal'" class="spw-step" aria-labelledby="spw-h">
       <h3 id="spw-h">What do you want most?</h3>
       <div class="spl-choices" role="radiogroup" aria-label="Main goal">
-        <button v-for="g in GOALS" :key="g.key" type="button" role="radio" :aria-checked="profile.goal === g.key" :class="[{ on: profile.goal === g.key }, 'spw-goal']" @click="set({ goal: g.key }, 'goal')">
+        <button v-for="g in goalChoices" :key="g.key" type="button" role="radio" :aria-checked="profile.goal === g.key" :class="[{ on: profile.goal === g.key }, 'spw-goal']" @click="set({ goal: g.key }, 'goal')">
           <span class="spw-goal-art" aria-hidden="true"><img v-for="s in GOAL_ART[g.key]" :key="s" :src="s.startsWith('/') ? s : skillIconSrc(s)" alt="" width="26" height="26" /></span>
           <span class="spw-goal-text"><b>{{ g.label }}</b><small>{{ g.hint }}</small></span>
         </button>
@@ -57,7 +57,8 @@
           </div>
         </div>
       </fieldset>
-      <fieldset class="spl-ask">
+      <!-- An ironman cannot buy anything, so there is no gp to ask about -->
+      <fieldset v-if="!profile.iron" class="spl-ask">
         <legend>Gp you can spend</legend>
         <div class="spl-gp" role="radiogroup" aria-label="Starting gp">
           <button v-for="(g, i) in GP_LEVELS" :key="g.key" type="button" role="radio" :aria-checked="profile.gp === g.key" :class="{ on: profile.gp === g.key }" @click="set({ gp: g.key }, 'gp')">
@@ -75,7 +76,7 @@
         <li><button type="button" @click="go(0)">{{ playerLabel || 'Your levels' }}<small>change</small></button></li>
         <li><button type="button" @click="go(1)">{{ profile.members ? 'Members' : 'Free-to-play' }}{{ profile.iron ? ' · Ironman' : '' }}</button></li>
         <li><button type="button" @click="go(2)">{{ goalLabel }}</button></li>
-        <li><button type="button" @click="go(3)">{{ profile.hours }} h a day · {{ gpLabel }}</button></li>
+        <li><button type="button" @click="go(3)">{{ profile.hours }} h a day{{ profile.iron ? '' : ` · ${gpLabel}` }}</button></li>
       </ul>
 
       <div v-if="thinking" class="spl-think" aria-hidden="true">
@@ -105,7 +106,7 @@
                 </div>
                 <div class="spl-fig">
                   <b>{{ r.hours == null ? '-' : formatHours(r.hours) }}</b>
-                  <small v-if="r.netGp != null && Math.abs(r.netGp) >= 1000" :class="r.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ gpShort(r.netGp) }}</small>
+                  <small v-if="r.netGp != null && Math.abs(r.netGp) >= 1000" class="gp-figure" :class="r.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ gpShort(r.netGp) }}</small>
                 </div>
               </template>
             </li>
@@ -114,7 +115,7 @@
         </section>
 
         <p v-for="n in shown.notes" :key="n" class="spl-note">{{ n }}</p>
-        <p v-if="shown.profile.iron" class="spl-note">Costs use Grand Exchange prices. As an ironman you gather these supplies yourself, so read gp as the value of what you gather.</p>
+        <p v-if="shown.profile.iron" class="spl-note">As an ironman you gather what these routes use yourself, so the cheapest routes lead and gp is left out. The plan's supplies list shows what to gather.</p>
         <p v-if="shown.profile.goal === 'money' && !shown.empty" class="spl-note">Check each method's requirements before you start; the plan lists them.</p>
         <details v-if="!shown.empty" class="spl-checks">
           <summary>What this plan assumed, and what it left out</summary>
@@ -135,7 +136,7 @@
         <p v-if="!shown.empty" class="spl-sum">
           <b>{{ shown.totals.goals }}</b> goal{{ shown.totals.goals === 1 ? '' : 's' }} · about <b>{{ formatHours(shown.totals.hours) }}</b>
           <template v-if="shown.totals.days"> · <b>{{ shown.totals.days.toLocaleString('en-US') }}</b> day{{ shown.totals.days === 1 ? '' : 's' }} at {{ shown.settings.hoursPerDay }} h/day</template>
-          <template v-if="shown.totals.netGp != null && Math.abs(shown.totals.netGp) >= 1000"> · <b :class="shown.totals.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ gpShort(shown.totals.netGp) }}</b></template>
+          <template v-if="shown.totals.netGp != null && Math.abs(shown.totals.netGp) >= 1000 && !shown.profile.iron"> · <b :class="shown.totals.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ gpShort(shown.totals.netGp) }}</b></template>
         </p>
         <p v-if="!shown.empty" class="spl-report"><button class="btn-text" type="button" @click="reportOpen = true">This plan looks wrong</button></p>
       </template>
@@ -210,6 +211,8 @@ const fill = computed(() => ((profile.value.hours - 0.5) / 11.5) * 100)
 const gpShort = (n) => formatGp(Math.round(n)).replace(/ gp$/, '')
 // "Make money" reads as "make money" mid-sentence, but a title that opens with an acronym ("AFK training") keeps its capitals
 const lower = (t) => (/^[A-Z]{2}/.test(t) ? t : `${t.charAt(0).toLowerCase()}${t.slice(1)}`)
+// "Make money" is not offered to an ironman (nothing can be sold).
+const goalChoices = computed(() => GOALS.filter((g) => !(profile.value.iron && g.key === 'money')))
 const goalLabel = computed(() => GOALS.find((g) => g.key === profile.value.goal)?.label || '')
 const gpLabel = computed(() => GP_LEVELS.find((g) => g.key === profile.value.gp)?.label || '')
 

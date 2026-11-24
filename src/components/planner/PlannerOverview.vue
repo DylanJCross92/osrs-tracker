@@ -35,7 +35,7 @@
           <dl class="po-stats">
             <div><dt>Time</dt><dd>{{ formatHours(p.summary.totalHours) }}<small v-if="progress[p.id]" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${formatHours(progress[p.id].hoursLeft)} left` : 'Nothing left' }}</small></dd></div>
             <div><dt>At {{ p.hours }} h/day</dt><dd>{{ p.summary.days == null ? '-' : formatDays(p.summary.days) }}<small v-if="progress[p.id] && progress[p.id].daysLeft != null" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${progress[p.id].daysLeft.toLocaleString('en-US')} ${progress[p.id].daysLeft === 1 ? 'day' : 'days'} left` : 'Nothing left' }}</small></dd></div>
-            <div v-if="p.summary.netGp != null"><dt>{{ p.summary.netGp >= 0 ? 'Profit' : 'GP cost' }}</dt><dd :class="p.summary.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(p.summary.netGp) }}</dd></div>
+            <div v-if="p.summary.netGp != null" class="gp-figure"><dt>{{ p.summary.netGp >= 0 ? 'Profit' : 'GP cost' }}</dt><dd :class="p.summary.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(p.summary.netGp) }}</dd></div>
           </dl>
         </RouterLink>
         <div class="po-menu" :class="{ open: menuFor === p.id }">

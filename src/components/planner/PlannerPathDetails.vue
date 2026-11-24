@@ -5,7 +5,7 @@
       <span class="pd-title">Materials, quests and requirements</span>
       <span class="pd-sum">
         <span v-if="mats.rows.length" class="pd-chip" :class="{ 'is-live': cost != null }" :title="cost != null ? 'Cost at live Grand Exchange prices' : 'Items needed'">
-          <i v-if="cost != null" class="gpb-dot" aria-hidden="true" />{{ mats.totals.length }} {{ mats.totals.length === 1 ? 'material' : 'materials' }}<template v-if="cost != null"> · {{ gpText(cost) }} gp</template>
+          <i v-if="cost != null" class="gpb-dot gp-figure" aria-hidden="true" />{{ mats.totals.length }} {{ mats.totals.length === 1 ? (ironModeRef ? 'supply' : 'material') : (ironModeRef ? 'supplies' : 'materials') }}<span v-if="cost != null" class="gp-figure"> · {{ gpText(cost) }} gp</span>
         </span>
         <span v-if="plan.questList?.length" class="pd-chip">{{ plan.questList.length }} {{ plan.questList.length === 1 ? 'quest' : 'quests' }}</span>
         <span v-else-if="quests.options.length" class="pd-chip" title="Quests that would give free xp in this skill">{{ quests.options.length }} {{ quests.options.length === 1 ? 'quest' : 'quests' }} to consider</span>
@@ -61,6 +61,7 @@
 </template>
 
 <script setup>
+import { ironModeRef } from '@/composables/useAccountType'
 import { computed, ref } from 'vue'
 import PlannerMaterials from '@/components/planner/PlannerMaterials.vue'
 import RequirementList from '@/components/planner/RequirementList.vue'

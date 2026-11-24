@@ -41,8 +41,8 @@
           </label>
         </div>
         <p v-if="method" class="se-hint">
-          {{ method.description }} · {{ method.intensity }} intensity ·
-          <GpTip :method="method">{{ method.gpPerHour == null ? 'no GP data' : `${formatGp(method.gpPerHour)}/h` }}</GpTip>
+          {{ method.description }} · {{ method.intensity }} intensity<span class="gp-figure"> ·
+          <GpTip :method="method">{{ method.gpPerHour == null ? 'no GP data' : `${formatGp(method.gpPerHour)}/h` }}</GpTip></span>
         </p>
         <button v-if="isOverride" class="btn-text" type="button" @click="$emit('patch', { methodId: GLOBAL_STRATEGY })">Use the plan's strategy again</button>
       </section>

@@ -29,14 +29,14 @@
           <small>At <select v-model.number="hoursPerDay" class="qp-hpd" aria-label="Hours played per day"><option v-for="h in HPD" :key="h" :value="h">{{ h }} h</option></select> a day</small>
           <b>{{ days == null ? '-' : days === 0 ? 'Done' : `${days} ${days === 1 ? 'day' : 'days'}` }}</b>
         </div>
-        <div class="qp-tile"><small>Net GP</small><b :class="gpClass(plan.netGp)">{{ plan.netGp == null ? 'No GP data' : formatGp(plan.netGp) }}</b></div>
+        <div class="qp-tile gp-figure"><small>Net GP</small><b :class="gpClass(plan.netGp)">{{ plan.netGp == null ? 'No GP data' : formatGp(plan.netGp) }}</b></div>
       </div>
 
       <!-- Route -->
-      <div class="qp-account"><AccountTypeToggle v-model="members" label="Account" /></div>
+      <div class="qp-account"><AccountTypeToggle v-model="members" v-model:iron="iron" label="Account" /></div>
       <p v-if="!members && !hasFreeRoute" class="acct-note" role="status">We have no free-to-play route for {{ skill }} yet, so it is worked out with members methods.</p>
       <div class="qp-strategies" role="tablist" aria-label="Route">
-        <button v-for="s in STRATEGIES" :key="s.key" type="button" role="tab" :aria-selected="strategy === s.key" class="qp-tab" :class="{ active: strategy === s.key }" @click="setStrategy(s.key)">{{ s.label }}</button>
+        <button v-for="s in shownStrategies" :key="s.key" type="button" role="tab" :aria-selected="strategy === s.key" class="qp-tab" :class="{ active: strategy === s.key }" @click="setStrategy(s.key)">{{ s.label }}</button>
       </div>
       <p class="qp-strategy-note">{{ STRATEGIES.find((s) => s.key === strategy).note }}</p>
       <PlannerRoute :segments="plan.segments" />
@@ -48,13 +48,13 @@
         <div class="planner-table-scroll">
           <table class="planner-table">
             <caption class="sr-only">{{ skill }} training methods for this goal</caption>
-            <thead><tr><th>Method</th><th class="num">XP per hour</th><th class="num">Time</th><th class="num">Net GP</th></tr></thead>
+            <thead><tr><th>Method</th><th class="num">XP per hour</th><th class="num">Time</th><th class="num gp-figure">Net GP</th></tr></thead>
             <tbody>
               <tr v-for="r in methodRows" :key="r.method.id">
                 <td>{{ r.method.name }}</td>
                 <td class="num">{{ formatNum(r.method.xpPerHour) }}</td>
                 <td class="num">{{ formatHours(r.plan.hours) }}</td>
-                <td class="num" :class="gpClass(r.plan.netGp)">{{ r.plan.netGp == null ? 'No GP data' : formatGp(r.plan.netGp) }}</td>
+                <td class="num gp-figure" :class="gpClass(r.plan.netGp)">{{ r.plan.netGp == null ? 'No GP data' : formatGp(r.plan.netGp) }}</td>
               </tr>
             </tbody>
           </table>
@@ -67,7 +67,8 @@
 
 <script setup>
 import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
-import { useAccountType } from '@/composables/useAccountType'
+import { ironPref, useAccountType } from '@/composables/useAccountType'
+import { ironStrategy } from '@/utils/ironman'
 import { freeMethodIds } from '@/utils/membership'
 import { computed, ref, watch } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
@@ -97,7 +98,7 @@ const MILESTONE_LEVELS = [50, 60, 70, 75, 80, 85, 90, 92, 95, 99]
 const MILESTONE_XP = [10_000_000, 25_000_000, 50_000_000, 100_000_000, 200_000_000]
 
 const hoursPerDay = ref(2)
-const strategy = ref(AUTO_FAST)
+const strategy = ref(ironPref() ? ironStrategy(AUTO_FAST) : AUTO_FAST)
 const sel = ref('')
 const customLevel = ref(null)
 
@@ -127,6 +128,8 @@ const active = computed(() => {
   if (sel.value === 'custom') return { key: 'custom', targetXp: customTarget.value }
   return options.value.find((o) => o.key === sel.value) || options.value[0] || { key: '', targetXp: null }
 })
+// Making gp is not a goal for an ironman, so that route is not offered.
+const shownStrategies = computed(() => (ironRef.value ? STRATEGIES.filter((s) => s.key !== AUTO_PROFIT) : STRATEGIES))
 const hasTarget = computed(() => active.value.targetXp != null && active.value.targetXp > props.xp)
 
 function pick(key) {
@@ -146,8 +149,15 @@ watch(() => [props.skill, props.username], () => {
 })
 
 // Free-to-play or members, the same everywhere on the site (see useAccountType.js).
-const { members: membersRef, setMembersPref } = useAccountType()
+const { members: membersRef, iron: ironRef, setMembersPref, setIronPref } = useAccountType()
 const members = computed({ get: () => membersRef.value, set: (v) => setMembersPref(v) })
+const iron = computed({
+  get: () => ironRef.value,
+  set: (v) => {
+    setIronPref(v)
+    if (v) setStrategy(ironStrategy(strategy.value))
+  },
+})
 const freeIds = computed(() => freeMethodIds(props.skill))
 const hasFreeRoute = computed(() => freeIds.value.length > 0)
 const freeOnly = computed(() => !members.value && hasFreeRoute.value)

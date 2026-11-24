@@ -73,8 +73,11 @@ import AccountMenu from '@/components/AccountMenu.vue'
 import { initAuth, useAuth } from '@/composables/useAuth'
 import { startVisitorPlans } from '@/utils/visitorPlans'
 import { initModalScrollLock } from '@/utils/modalScrollLock'
+import { ironModeRef } from '@/composables/useAccountType'
 
 const route = useRoute()
+// An ironman's pages leave gp figures out (see utils/ironman.js): the class on the page is what hides them.
+watch(ironModeRef, (on) => document.documentElement.classList.toggle('iron-mode', on), { immediate: true })
 // Whether the signed-out save bar is showing, so the page leaves room for it at the bottom.
 const saveBar = ref(false)
 // The item popup closes when the page changes underneath it.

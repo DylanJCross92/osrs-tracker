@@ -7,7 +7,7 @@
       </span>
       <span v-if="current.method" class="mpick-trigger-stats">
         <span>{{ formatNum(current.method.xpPerHour) }} xp/h</span>
-        <span :class="gpClass(current.method.gpPerHour)">{{ gpText(current.method.gpPerHour) }}</span>
+        <span class="gp-figure" :class="gpClass(current.method.gpPerHour)">{{ gpText(current.method.gpPerHour) }}</span>
       </span>
       <span class="mpick-caret" aria-hidden="true">▾</span>
     </button>
@@ -55,7 +55,7 @@
               <small>XP/hr</small>{{ formatNum(m.xpPerHour) }}
               <span class="mpick-bar"><span :style="{ width: `${(m.xpPerHour / maxXp) * 100}%` }" /></span>
             </span>
-            <span class="mpick-cell mpick-gp" :class="gpClass(m.gpPerHour)">
+            <span class="mpick-cell mpick-gp gp-figure" :class="gpClass(m.gpPerHour)">
               <small>GP/hr</small>{{ gpText(m.gpPerHour) }}
               <span v-if="m.gpPerHour != null" class="mpick-bar" :class="m.gpPerHour >= 0 ? 'pos' : 'neg'"><span :style="{ width: `${(Math.abs(m.gpPerHour) / maxGp) * 100}%` }" /></span>
             </span>

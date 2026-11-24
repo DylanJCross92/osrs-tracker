@@ -7565,3 +7565,7 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .acct-label { color: var(--muted); font-size: 0.82rem; }
 .acct-note { margin: 6px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
 .qp-account { margin: 0 0 8px; }
+
+/* An ironman's page leaves gp figures out: they are things to buy and sell, which an ironman cannot do. */
+html.iron-mode .gp-figure { display: none !important; }
+.acct-toggle .range-tabs + .range-tabs { margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--border-strong, var(--border)); }

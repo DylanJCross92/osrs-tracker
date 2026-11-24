@@ -403,7 +403,8 @@ function purposePhases(states, profile, settings, done, mode, sink = {}) {
   // 4. A skill to train first, to pay for the costly ones.
   const planOf = (g) => planGoal(resolveGoal(g, settings.globalStrategy, settings.gpValue))
   const spenders = [...goals.values()].map((g) => ({ skill: g.skill, netGp: planOf(g).netGp }))
-  const funds = fundingFor(states, profile, spenders, new Set(goals.keys()))
+  // An ironman cannot buy anything, so there is no gp to earn first.
+  const funds = profile.iron ? [] : fundingFor(states, profile, spenders, new Set(goals.keys()))
   const fundGoals = funds.map((f) => ({ ...mkGoalFor(byName[f.skill], f.to, profile), methodId: AUTO_PROFIT, why: [f.reason], purpose: 'fund', quests: [] }))
 
   const all = [...goals.values()]

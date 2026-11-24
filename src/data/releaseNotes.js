@@ -12,6 +12,7 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-24',
     items: [
+      { kind: 'new', text: 'Ironman accounts: pick Ironman next to Members and Free-to-play (plan settings, the add-goal window, every skill calculator, the quick planner and the Smart Planner) and it is remembered everywhere. An ironman\'s pages leave gp out, start from the cheapest routes, offer no make-money strategy or goal, and show the materials list as Supplies to gather.' },
       { kind: 'new', text: 'Free-to-play or members is a switch everywhere you plan: the plan settings, the add-skill-goal window, every skill calculator, the quick planner on a profile and the Smart Planner. A free-to-play route uses free methods only (from the wiki\'s free-to-play guides), says which skills it has no free route for, and your choice is remembered for every new plan, in your account too.' },
       { kind: 'new', text: 'Share your plan\'s progress: a Share button in the corner of the progress card opens a window with a clean picture of the pace chart (plan name, finish date, how complete it is, your progress and pace) to download, copy or post, plus a link to the plan.' },
       { kind: 'new', text: 'The dashboard now names your next quest: the one that does the most for the plan you are working on (a quest your route leans on, or one whose XP your plan would otherwise train for), or the best thing to do next. Press it and the tracker opens on that quest.' },

@@ -32,13 +32,16 @@ export function cleanProfile(raw) {
   const r = raw && typeof raw === 'object' ? raw : {}
   const pick = (value, list, fallback) => (list.some((o) => o.key === value) ? value : fallback)
   const hours = Number(r.hours)
+  const iron = typeof r.iron === 'boolean' ? r.iron : DEFAULT_PROFILE.iron
+  // Making money is not something an ironman does (nothing can be sold), so that goal becomes the plain skills plan.
+  const goal = pick(r.goal, GOALS, DEFAULT_PROFILE.goal)
   return {
     members: typeof r.members === 'boolean' ? r.members : DEFAULT_PROFILE.members,
-    goal: pick(r.goal, GOALS, DEFAULT_PROFILE.goal),
+    goal: iron && goal === 'money' ? DEFAULT_PROFILE.goal : goal,
     hours: Number.isFinite(hours) ? Math.min(12, Math.max(0.5, Math.round(hours * 2) / 2)) : DEFAULT_PROFILE.hours,
     gp: pick(r.gp, GP_LEVELS, DEFAULT_PROFILE.gp),
     experience: pick(r.experience, EXPERIENCE, DEFAULT_PROFILE.experience),
-    iron: typeof r.iron === 'boolean' ? r.iron : DEFAULT_PROFILE.iron,
+    iron,
   }
 }
 

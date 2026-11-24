@@ -15,7 +15,7 @@
           <div><dt>Goals</dt><dd>{{ r.skillCount }} skill{{ r.skillCount === 1 ? '' : 's' }}</dd></div>
           <div><dt>Time</dt><dd>{{ formatHours(summaries[r.id].totalHours) }}</dd></div>
           <div><dt>At {{ hoursPerDay }} h/day</dt><dd>{{ summaries[r.id].days != null ? formatDays(summaries[r.id].days) : formatHours(summaries[r.id].totalHours) }}</dd></div>
-          <div v-if="summaries[r.id].netGp != null" :title="live ? 'Worked out from live Grand Exchange prices, after the 2% tax' : 'An estimate from saved prices'">
+          <div v-if="summaries[r.id].netGp != null" class="gp-figure" :title="live ? 'Worked out from live Grand Exchange prices, after the 2% tax' : 'An estimate from saved prices'">
             <dt>{{ summaries[r.id].netGp >= 0 ? 'Profit' : 'GP cost' }}</dt>
             <dd :class="summaries[r.id].netGp >= 0 ? 'planner-gain' : 'planner-cost'"><i v-if="live" class="rp-live" aria-hidden="true" />{{ formatGp(summaries[r.id].netGp).replace(/ gp$/, '') }}</dd>
           </div>

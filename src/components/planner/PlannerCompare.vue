@@ -7,13 +7,13 @@
     <div class="planner-table-scroll">
       <table class="planner-table">
         <thead>
-          <tr><th>Strategy</th><th class="num">Hours</th><th class="num">Net GP</th><th>vs. selected</th><th /></tr>
+          <tr><th>Strategy</th><th class="num">Hours</th><th class="num gp-figure">Net GP</th><th>vs. selected</th><th /></tr>
         </thead>
         <tbody>
           <tr v-for="row in rows" :key="row.id" :class="{ current: row.id === selectedId }">
             <td>{{ row.label }}</td>
             <td class="num">{{ formatHours(row.plan.hours) }}</td>
-            <td class="num" :class="gpClass(row.plan.netGp)">{{ row.plan.netGp == null ? 'No GP data' : formatGp(row.plan.netGp) }}</td>
+            <td class="num gp-figure" :class="gpClass(row.plan.netGp)">{{ row.plan.netGp == null ? 'No GP data' : formatGp(row.plan.netGp) }}</td>
             <td class="planner-table-note">
               <template v-if="row.id === selectedId">Selected</template>
               <template v-else-if="row.diff">
@@ -34,7 +34,7 @@
       <div v-if="open && methodRows.length" class="planner-table-scroll">
         <table class="planner-table">
           <thead>
-            <tr><th>Method</th><th class="num">Hours</th><th class="num">Route net GP</th><th class="num">Method GP/hr</th><th>vs. selected</th><th /></tr>
+            <tr><th>Method</th><th class="num">Hours</th><th class="num gp-figure">Route net GP</th><th class="num gp-figure">Method GP/hr</th><th>vs. selected</th><th /></tr>
           </thead>
           <tbody>
             <tr v-for="row in methodRows" :key="row.method.id" :class="{ current: row.method.id === selectedId }">
@@ -42,8 +42,8 @@
                 <small v-if="hasOtherSteps(row.plan)" class="planner-compare-includes" title="The route uses other methods to unlock or follow this one, so route GP can differ from this method's own rate.">+ other methods in route</small>
               </td>
               <td class="num">{{ formatHours(row.plan.hours) }}</td>
-              <td class="num" :class="gpClass(row.plan.netGp)"><GpTip :method="row.method" :hours="row.plan.hours">{{ row.plan.netGp == null ? 'No GP data' : formatGp(row.plan.netGp) }}</GpTip></td>
-              <td class="num" :class="gpClass(row.method.gpPerHour)">{{ row.method.gpPerHour == null ? 'No GP data' : row.method.gpPerHour === 0 ? 'Break-even' : `${formatGp(row.method.gpPerHour)}/h` }}</td>
+              <td class="num gp-figure" :class="gpClass(row.plan.netGp)"><GpTip :method="row.method" :hours="row.plan.hours">{{ row.plan.netGp == null ? 'No GP data' : formatGp(row.plan.netGp) }}</GpTip></td>
+              <td class="num gp-figure" :class="gpClass(row.method.gpPerHour)">{{ row.method.gpPerHour == null ? 'No GP data' : row.method.gpPerHour === 0 ? 'Break-even' : `${formatGp(row.method.gpPerHour)}/h` }}</td>
               <td class="planner-table-note">
                 <template v-if="row.method.id === selectedId">Selected</template>
                 <template v-else-if="row.diff"><span>{{ row.diff.time }}</span> <span :class="row.diff.gpGood === true ? 'planner-gain' : row.diff.gpGood === false ? 'planner-cost' : ''">{{ row.diff.gp }}</span></template>

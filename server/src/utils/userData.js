@@ -67,6 +67,7 @@ function cleanPlannerProfile(v) {
   if (!isObj(v)) return null
   const out = {}
   if (typeof v.members === 'boolean') out.members = v.members
+  if (typeof v.iron === 'boolean') out.iron = v.iron
   if (PLANNER_GOALS.includes(v.goal)) out.goal = v.goal
   if (Number.isFinite(Number(v.hours))) out.hours = Math.min(12, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
   if (PLANNER_GP.includes(v.gp)) out.gp = v.gp
@@ -75,7 +76,7 @@ function cleanPlannerProfile(v) {
   return out
 }
 
-// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24) and whether they are free-to-play or a member, used for every new plan.
+// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24) and whether they are free-to-play or a member and whether they are an ironman, used for every new plan.
 function cleanPlannerPrefs(v) {
   if (!isObj(v)) return null
   const out = {}

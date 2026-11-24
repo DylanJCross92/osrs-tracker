@@ -198,7 +198,7 @@
     </template>
 
     <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -218,7 +218,7 @@
       </template>
     </PlannerPlanSettings>
     <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
-    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" @add="addGoalFrom" @close="showAdd = false" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" :iron="iron" @add="addGoalFrom" @close="showAdd = false" />
   </div>
 </template>
 
@@ -284,7 +284,8 @@ import {
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
 import { applyMembership } from '@/utils/membership'
-import { membersPref, useAccountType } from '@/composables/useAccountType'
+import { ironPref, membersPref, setIronMode, useAccountType } from '@/composables/useAccountType'
+import { ironStrategy } from '@/utils/ironman'
 import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
 import {
@@ -506,9 +507,19 @@ const goals = ref([])
 const { playHours, setPlayHours } = usePlayHours()
 const hoursPerDay = ref(playHours())
 // Free-to-play (false) or members: a free-to-play plan trains with free methods only (see utils/membership.js).
-const { setMembersPref } = useAccountType()
+const { setMembersPref, setIronPref } = useAccountType()
 // A new plan starts with the account type last chosen anywhere on the site.
 const members = ref(membersPref())
+// An ironman plan leaves gp out and starts from the cheapest routes (see utils/ironman.js). What is on screen follows the plan open now.
+const iron = ref(ironPref())
+watch(iron, (v) => setIronMode(v), { immediate: true })
+onBeforeUnmount(() => setIronMode(null))
+function setIron(value) {
+  iron.value = value === true
+  setIronPref(iron.value)
+  if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
+  track('planner_ironman', { iron: iron.value })
+}
 function setMembers(value) {
   members.value = value !== false
   setMembersPref(members.value)
@@ -530,7 +541,7 @@ function setHours(v) {
   // A choice made here is remembered for every new plan (and, signed in, on every device).
   setPlayHours(hoursPerDay.value)
 }
-const globalStrategy = ref(AUTO_FAST)
+const globalStrategy = ref(ironPref() ? ironStrategy(AUTO_FAST) : AUTO_FAST)
 const gpValue = ref(DEFAULT_GP_VALUE)
 const statsAt = ref(null)
 const calcAt = ref(new Date())
@@ -791,9 +802,10 @@ function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
 }
-async function saveSettings({ name, strategy, hours, profile, members: wantMembers }) {
+async function saveSettings({ name, strategy, hours, profile, members: wantMembers, iron: wantIron }) {
   closeSettings()
   if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
+  if (wantIron !== undefined && wantIron !== iron.value) setIron(wantIron)
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
     currentPlanName.value = name.slice(0, 60)
@@ -862,8 +874,9 @@ function openAdd(skill) {
   track('planner_add_goal_open')
 }
 // The add-goal window can also change free-to-play or members, which is a setting of the whole plan.
-function addGoalFrom(goal, wantMembers) {
+function addGoalFrom(goal, wantMembers, wantIron) {
   if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
+  if (wantIron !== undefined && wantIron !== iron.value) setIron(wantIron)
   addGoal(goal)
 }
 function addGoal(goal) {
@@ -991,7 +1004,7 @@ function gpClass(gp) {
 
 // --- Share ------------------------------------------------------------------------
 function planState() {
-  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value }
+  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value, iron: iron.value }
 }
 // --- Saved plans (browser storage) ---------------------------------------------------
 const savedPlans = ref(listSavedPlans())
@@ -1044,6 +1057,7 @@ function currentSnapshotState() {
     budget: null,
     hoursPerDay: hoursPerDay.value,
     members: members.value,
+    iron: iron.value,
     smart: smartProfile.value,
     goals: goals.value,
   }
@@ -1158,6 +1172,8 @@ function keepCurrentPlanBefore(name) {
 function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
   members.value = membersPref()
+  iron.value = ironPref()
+  if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   unsavedShareId.value = ''
   tab.value = 'overview'
@@ -1192,6 +1208,7 @@ function useSmartPlan(plan) {
   goalFilter.value = 'all'
   // The settings first: everything that works the plan out (the order, the totals) reads them.
   members.value = plan.profile ? plan.profile.members !== false : plan.members !== false
+  iron.value = plan.profile ? plan.profile.iron === true : plan.iron === true
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1254,7 +1271,7 @@ async function loadTemplate(slug) {
 
 // The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
 const paceShareLink = computed(() => {
-  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value })
+  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value })
   params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`
 })
@@ -1290,6 +1307,7 @@ function applyPlan(plan) {
   unsavedShareId.value = ''
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests], ...(g.overrides ? { overrides: g.overrides.map((o) => ({ ...o })) } : {}) }))
   members.value = plan.members !== false
+  iron.value = plan.iron === true
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1323,6 +1341,8 @@ async function loadSaved(stored, { silent = false } = {}) {
 // A blank planner with no plan picked: play with the calculators, share what you put together, save it only if you want to.
 function startNew() {
   members.value = membersPref()
+  iron.value = ironPref()
+  if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   goals.value = []
   currentPlanId.value = ''
@@ -1445,7 +1465,7 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, members, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
+  [goals, hoursPerDay, members, iron, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
   () => {
     calcAt.value = new Date()
     const state = planState()
@@ -1540,6 +1560,7 @@ const overviewProgress = computed(() => {
 // --- Opening what the address asks for ---------------------------------------------
 function applyRestored(restored, keepScratch) {
   members.value = restored.members !== false
+  iron.value = restored.iron === true
   goals.value = applyMembership(restored.goals || [], members.value)
   hoursPerDay.value = restored.hoursPerDay || 2
   username.value = restored.username || ''

@@ -268,3 +268,17 @@ describe('plans that make sense to follow', () => {
     expect(r.notes.join(' ')).not.toMatch(/routes for[^.]*(Prayer|Cooking|Smithing)/)
   })
 })
+
+describe('ironman plans', () => {
+  const base = { members: true, hours: 2, gp: 'good', experience: 'returning', iron: true }
+  it('never offers making money, and has no "earn first" step (nothing can be sold)', () => {
+    expect(cleanProfile({ iron: true, goal: 'money' }).goal).toBe('skills')
+    for (const goal of ['skills', 'quests', 'combat']) {
+      const r = recommend({ ...base, goal }, skills({ all: 50, Hitpoints: 55 }))
+      expect(r.phases.some((p) => p.id === 'fund'), goal).toBe(false)
+    }
+  })
+  it('starts from the cheapest routes', () => {
+    expect(settingsFor(cleanProfile({ iron: true, gp: 'rich' })).globalStrategy).toBe('auto-cheap')
+  })
+})
