@@ -7526,3 +7526,6 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .cb.is-max { color: #1b1508; background: linear-gradient(135deg, #fbe7ad, #e0a94a); border-color: #fff1c4; box-shadow: 0 2px 8px rgba(224, 169, 74, 0.55), 0 0 0 2px rgba(255, 241, 196, 0.25); }
 .cb.is-sm { font-size: 0.62rem; padding: 0 5px 0 4px; bottom: -7px; }
 .cb.is-sm .cb-ico { width: 8px; height: 8px; }
+
+/* Wraps a small avatar frame so the combat badge can hang off it (the frame itself clips). */
+.cb-wrap { position: relative; display: inline-flex; flex: none; margin-bottom: 7px; }

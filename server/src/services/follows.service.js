@@ -1,5 +1,6 @@
 import { pool } from '../db.js'
 import { listPlayers } from './players.service.js'
+import { combatLevelFromSkills } from '../utils/combat.js'
 import { achievementDefinitions } from './milestones.service.js'
 import { addNotification, ownerOfPlayer } from './inbox.service.js'
 
@@ -128,6 +129,7 @@ export async function getFollowingFeed(rawNames) {
         badge: p.badge,
         claimed: p.claimed,
         overallLevel: p.latest?.overallLevel ?? null,
+        combatLevel: combatLevelFromSkills(p.latest?.skills),
         // Total XP now, so a returning visitor can be told what changed since they last looked.
         overallXp: p.latest?.overallXp ?? null,
         dayGain: p.gains?.day?.xp > 0 ? p.gains.day.xp : 0,

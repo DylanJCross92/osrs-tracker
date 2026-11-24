@@ -12,10 +12,12 @@ import { computed } from 'vue'
 import { combatLevel, MAX_COMBAT_LEVEL } from '@/utils/combat'
 
 // A player's combat level as a small badge that hangs off the bottom of their picture. Put it inside a positioned wrapper next to the avatar frame (the
-// frame itself clips, so the badge cannot live inside it). `skills` is the hiscores snapshot: { Attack: { level }, ... }.
-const props = defineProps({ skills: { type: Object, default: null }, size: { type: String, default: 'md' } })
+// frame itself clips, so the badge cannot live inside it). Give either `skills` (the hiscores snapshot: { Attack: { level }, ... }) or a ready `level`.
+const props = defineProps({ skills: { type: Object, default: null }, level: { type: Number, default: 0 }, size: { type: String, default: 'md' } })
 
 const level = computed(() => {
+  // A level worked out elsewhere (the feeds send it ready made) wins over the skills.
+  if (props.level > 0) return props.level
   const s = props.skills
   if (!s || typeof s !== 'object') return 0
   const levels = {}

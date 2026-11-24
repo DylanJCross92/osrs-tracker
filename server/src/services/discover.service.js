@@ -3,6 +3,7 @@ import { listPlayers } from './players.service.js'
 import { achievementDefinitions } from './milestones.service.js'
 import { buildInsights } from './discoverInsights.service.js'
 import { recordTopGainer, getTopGainerStats } from './topGainers.service.js'
+import { combatLevelFromSkills } from '../utils/combat.js'
 import { pickTopGainer } from '../utils/topGainers.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
 
@@ -36,6 +37,7 @@ function compact(p) {
     badge: p.badge,
     claimed: p.claimed,
     overallLevel: l?.overallLevel ?? null,
+    combatLevel: combatLevelFromSkills(l?.skills),
     overallXp: l?.overallXp ?? null,
     overallRank: l?.overallRank ?? null,
     capturedAt: l?.capturedAt ?? null,

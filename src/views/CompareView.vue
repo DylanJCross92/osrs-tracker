@@ -60,7 +60,7 @@
           <section class="card cmp-head">
             <div class="cmp-head-grid">
               <div v-for="s in [sideA, sideB]" :key="s.key" class="cmp-player" :class="{ 'is-lead': leader === s.key }">
-                <span class="cmp-avatar" aria-hidden="true"><PlayerAvatar :name="s.player.username" /></span>
+                <span class="cb-wrap"><span class="cmp-avatar" aria-hidden="true"><PlayerAvatar :name="s.player.username" /></span><CombatBadge :skills="s.latest?.skills" size="sm" /></span>
                 <RouterLink class="cmp-name" :to="{ name: 'playerDetail', params: { username: s.player.username } }">{{ s.player.displayName }}</RouterLink>
                 <span class="cmp-meta"><OverallLevel :level="s.latest.overallLevel" /> · {{ formatXp(s.latest.overallXp) }} XP</span>
                 <span v-if="leader === s.key" class="cmp-crown">Ahead {{ periodPhrase }}</span>
@@ -116,6 +116,7 @@
 
 <script setup>
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import CombatBadge from '@/components/CombatBadge.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'

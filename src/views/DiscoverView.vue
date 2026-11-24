@@ -57,7 +57,7 @@
       <RouterLink v-if="spotlight" :to="profileTo(spotlight.p.username)" class="disc-spot">
         <span class="disc-spot-label"><span class="disc-live-dot" /> Top gainer {{ spotlight.period === 'h24' ? '· last 24 hours' : spotlight.period === 'week' ? 'this week' : 'this month' }}</span>
         <span class="disc-spot-top">
-          <span class="disc-spot-avatar" aria-hidden="true"><PlayerAvatar :name="spotlight.p.username" /></span>
+          <span class="cb-wrap"><span class="disc-spot-avatar" aria-hidden="true"><PlayerAvatar :name="spotlight.p.username" /></span><CombatBadge :level="spotlight.p.combatLevel || 0" /></span>
           <span class="disc-spot-name">{{ spotlight.p.displayName }}<PlayerBadge :label="spotlight.p.badge" :claimed="spotlight.p.claimed" /></span>
         </span>
         <span class="disc-spot-xp">+{{ spotlight.xp.toLocaleString('en-US') }} <small>XP</small></span>
@@ -183,7 +183,7 @@
         <div class="disc-spotlights">
           <RouterLink v-for="sp in spotlights" :key="sp.period" :to="profileTo(sp.p.username)" class="disc-spotlight">
             <span class="disc-spotlight-reason">{{ sp.label }}</span>
-            <span class="disc-spotlight-name"><span class="disc-spotlight-avatar" aria-hidden="true"><PlayerAvatar :name="sp.p.username" /></span>{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" :claimed="sp.p.claimed" /></span>
+            <span class="disc-spotlight-name"><span class="cb-wrap"><span class="disc-spotlight-avatar" aria-hidden="true"><PlayerAvatar :name="sp.p.username" /></span><CombatBadge :level="sp.p.combatLevel || 0" size="sm" /></span>{{ sp.p.displayName }}<PlayerBadge :label="sp.p.badge" :claimed="sp.p.claimed" /></span>
             <span class="disc-spotlight-headline">
               +{{ sp.xp.toLocaleString('en-US') }} XP {{ sp.period === 'day' ? 'today' : 'this week' }}
             </span>
@@ -326,6 +326,7 @@ import AdminRecentPlayersModal from '@/components/admin/AdminRecentPlayersModal.
 import SiteXpModal from '@/components/SiteXpModal.vue'
 import { useAuth } from '@/composables/useAuth'
 import PageSkeleton from '@/components/PageSkeleton.vue'
+import CombatBadge from '@/components/CombatBadge.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'

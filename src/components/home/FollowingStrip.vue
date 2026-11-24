@@ -27,7 +27,7 @@
     <ul v-else class="fol-list">
       <li v-for="p in shownPlayers" :key="p.username">
         <RouterLink class="fol-card" :to="{ name: 'playerDetail', params: { username: p.username } }">
-          <span class="fol-avatar" aria-hidden="true"><PlayerAvatar :name="p.username" /></span>
+          <span class="cb-wrap"><span class="fol-avatar" aria-hidden="true"><PlayerAvatar :name="p.username" /></span><CombatBadge :level="p.combatLevel || 0" size="sm" /></span>
           <span class="fol-main">
             <span class="fol-name">{{ p.displayName }}<PlayerBadge :label="p.badge" :claimed="p.claimed" /></span>
             <small v-if="p.latest" class="fol-event">{{ p.latest.title }} · {{ ago(p.latest.at) }}</small>
@@ -48,6 +48,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
+import CombatBadge from '@/components/CombatBadge.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
