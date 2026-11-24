@@ -14,8 +14,8 @@ function build() {
     const key = baseId(id)
     if (!byId.has(key)) byId.set(key, new Map())
     const names = byId.get(key)
-    if (!names.has(method.name)) names.set(method.name, new Set())
-    names.get(method.name).add(method.skill)
+    if (!names.has(method.name)) names.set(method.name, { skills: new Set(), method })
+    names.get(method.name).skills.add(method.skill)
   }
   for (const method of TRAINING_METHODS) {
     for (const req of requirementsFor(method)) {
@@ -27,10 +27,11 @@ function build() {
   for (const [id, names] of byId) {
     index.set(
       id,
-      [...names].map(([name, skills]) => {
+      [...names].map(([name, { skills, method }]) => {
         const list = [...skills]
         const melee = MELEE.every((s) => list.includes(s))
-        return { name, skills: list, text: `${melee ? 'Melee' : list.join(', ')}: ${name}` }
+        // `method` is one of the methods of that name (the first skill listed), for its icon and rates.
+        return { name, skills: list, melee, method, text: `${melee ? 'Melee' : list.join(', ')}: ${name}` }
       }),
     )
   }

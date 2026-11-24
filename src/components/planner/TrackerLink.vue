@@ -4,6 +4,7 @@
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" /></svg>
     </span>
     <div class="ptl-text">
+      <span class="ptl-eyebrow">Quest and diary tracker</span>
       <b>{{ headline }}</b>
       <span>{{ sub }}</span>
     </div>
@@ -36,5 +37,5 @@ const sub = computed(() => {
   if (none.value) return `Mark them once and every method that needs them is counted as ready, finished quest XP is never counted twice, and you get suggestions for what to do next.${keep}`
   return `The planner is using them for every plan. Keep them up to date as you play.${keep}`
 })
-const cta = computed(() => (none.value ? 'Open the tracker' : props.unconfirmed > 0 ? 'Review in the tracker' : 'Open the tracker'))
+const cta = computed(() => (props.unconfirmed > 0 ? 'Review in the quest tracker' : 'Open the quest and diary tracker'))
 </script>

@@ -56,27 +56,38 @@
               </button>
             </div>
 
-            <div v-if="open.has(r.slug)" class="trk-detail">
-              <div v-if="r.needs.length || r.info?.qpReq || r.prereq.length" class="trk-block">
-                <h4>Needs</h4>
-                <ul class="trk-skills">
-                  <li v-for="n in r.needsList" :key="n.text" :class="{ short: n.short }">{{ n.text }}<small v-if="n.short"> (you are {{ n.have }})</small></li>
-                  <li v-if="r.info?.qpReq">{{ r.info.qpReq }} quest points</li>
-                </ul>
-                <div v-if="r.prereq.length" class="trk-chips"><span class="trk-lead">Quests first</span><QuestChip v-for="p in r.prereq" :key="p" :name="p" /></div>
+            <div v-if="open.has(r.slug)" class="trk-detail trk-qd">
+              <div class="trk-facts">
+                <span v-if="r.info?.difficulty" class="trk-fact"><i class="trk-dot" :class="`d-${r.info.difficulty.toLowerCase()}`" aria-hidden="true" />{{ r.info.difficulty }}<small>Difficulty</small></span>
+                <span v-if="r.info?.length" class="trk-fact"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>{{ timeText(r) }}<small>{{ r.info.length }}</small></span>
+                <span v-if="r.info?.qp" class="trk-fact"><b class="trk-qp" aria-hidden="true">QP</b>{{ r.info.qp }}<small>Quest point{{ r.info.qp === 1 ? '' : 's' }}</small></span>
+                <span class="trk-fact">{{ r.type === 'F' ? 'Free-to-play' : r.type === 'MQ' ? 'Miniquest' : 'Members' }}</span>
               </div>
-              <div v-if="r.xp || r.info?.qp || r.info?.lamps?.length" class="trk-block">
-                <h4>Gives</h4>
-                <p>
-                  <template v-if="r.info?.qp">{{ r.info.qp }} quest point{{ r.info.qp === 1 ? '' : 's' }}. </template>
-                  <template v-if="r.xp">{{ r.xpText }}. </template>
-                  <template v-if="r.info?.lamps?.length">Also an XP lamp (its skill is your choice, not counted).</template>
-                </p>
+
+              <div class="trk-cols">
+                <section v-if="hasNeeds(r)" class="trk-block">
+                  <h4>You need</h4>
+                  <SkillReqGrid :skills="r.info?.reqs || {}" :levels="levels" :combat="r.info && !r.info.combatGuess ? r.info.combat : null" :qp="r.info?.qpReq || 0" />
+                  <div v-if="r.prereq.length" class="trk-chips"><span class="trk-lead">Finish first</span><QuestChip v-for="p in r.prereq" :key="p" :name="p" /></div>
+                </section>
+                <section v-if="r.xp || r.info?.qp || r.info?.lamps?.length" class="trk-block">
+                  <h4>You get</h4>
+                  <ul v-if="r.xp" class="trk-gets">
+                    <li v-for="g in gets(r)" :key="g.skill">
+                      <img :src="skillIconSrc(g.skill)" :alt="g.skill" width="22" height="22" />
+                      <span class="trk-gets-main"><b>{{ formatXp(g.xp) }} XP</b><small>{{ g.skill }}</small></span>
+                      <i class="trk-gets-bar" aria-hidden="true"><s :style="{ width: `${g.pct}%` }" /></i>
+                    </li>
+                  </ul>
+                  <p v-if="r.info?.lamps?.length" class="trk-lamp"><span aria-hidden="true">✦</span> Also an XP lamp. Its skill is your choice, so it is not counted in plans.</p>
+                  <p v-if="!r.xp && !r.info?.lamps?.length" class="trk-lamp">No XP. Worth {{ r.info?.qp }} quest point{{ r.info?.qp === 1 ? '' : 's' }}.</p>
+                </section>
               </div>
-              <div v-if="r.unlocks.length" class="trk-block">
+
+              <section v-if="r.unlocks.length" class="trk-block">
                 <h4>Opens in the planner</h4>
-                <ul class="trk-opens"><li v-for="u in r.unlocks" :key="u.text">{{ u.text }}</li></ul>
-              </div>
+                <MethodCards :unlocks="r.unlocks" />
+              </section>
               <p v-if="r.info?.url" class="trk-wiki"><a :href="r.info.url" target="_blank" rel="noopener">{{ r.name }} on the OSRS Wiki</a></p>
             </div>
           </li>
@@ -100,9 +111,11 @@ import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { questSlug } from '@/utils/questSlug'
 import { unlocksFor } from '@/utils/trackerUnlocks'
 import { shortfalls } from '@/utils/trackerSuggestions'
-import { formatXp } from '@/utils/osrsSkills'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { track } from '@/utils/analytics'
 import QuestChip from '@/components/tracker/QuestChip.vue'
+import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
+import MethodCards from '@/components/tracker/MethodCards.vue'
 
 const props = defineProps({ focus: { type: Object, default: null } })
 const emit = defineEmits(['focused'])
@@ -116,6 +129,17 @@ const sort = ref('az')
 const open = ref(new Set())
 const flashSlug = ref('')
 
+const hasNeeds = (r) => !!(r.info && (Object.keys(r.info.reqs).length || r.info.qpReq || r.prereq.length || (r.info.combat && !r.info.combatGuess)))
+const timeText = (r) => {
+  const m = LENGTH_MINUTES[r.info.length]
+  return m >= 60 ? `About ${m / 60 === Math.floor(m / 60) ? m / 60 : (m / 60).toFixed(1)} h` : `About ${m} min`
+}
+// The skills a quest gives XP in, biggest first, each with how big it is next to the biggest.
+const gets = (r) => {
+  const list = Object.entries(r.info.rewards).map(([skill, xp]) => ({ skill, xp })).sort((a, b) => b.xp - a.xp)
+  const top = list[0]?.xp || 1
+  return list.map((g) => ({ ...g, pct: Math.max(8, Math.round((g.xp / top) * 100)) }))
+}
 const xpOf = (info) => (info ? Object.values(info.rewards).reduce((s, n) => s + n, 0) : 0)
 const xpText = (info) => (info ? Object.entries(info.rewards).map(([k, v]) => `${formatXp(v)} ${k}`).join(', ') : '')
 // Quest ids in data/quests.js are the slug of the name, except three old ones; the tracker's own slug always comes from the name.
@@ -138,8 +162,7 @@ const rows = computed(() =>
     const ready = levels.value && r.info && !r.info.incomplete ? (gaps.length || firstUndone.length ? 'locked' : 'ready') : null
     const lockText = [gaps.length ? gaps.map((g) => `${g.need} ${g.skill} (you are ${g.have})`).join(', ') : '', firstUndone.length ? `Quests first: ${firstUndone.map((id) => getQuest(id).name).join(', ')}` : ''].filter(Boolean).join('. ')
     const lockShort = gaps.length ? `${gaps[0].need} ${gaps[0].skill}${gaps.length > 1 ? ` +${gaps.length - 1}` : ''}` : 'a quest first'
-    const needsList = r.needs.map(([skill, level]) => ({ text: `${level} ${skill}`, short: gaps.some((g) => g.skill === skill), have: levels.value?.[skill] }))
-    return { ...r, done, state: confirmations.value[r.id] || null, ready, lockText, lockShort, needsList }
+    return { ...r, done, state: confirmations.value[r.id] || null, ready, lockText, lockShort }
   }),
 )
 

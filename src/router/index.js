@@ -126,6 +126,8 @@ export function createAppRouter() {
       if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
       // Opening or closing a skill inside the same plan changes the address but not the page position.
       if (to.params.id && to.params.id === from.params.id) return false
+      // The quest and diary tracker keeps its place when its Quests / Diaries tab changes (the tab is in the address).
+      if (to.name === 'quests' && from.name === 'quests') return false
       return { top: 0 }
     },
   })

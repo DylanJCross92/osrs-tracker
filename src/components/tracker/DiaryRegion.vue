@@ -13,46 +13,51 @@
       <button type="button" class="trk-more" :aria-expanded="open" @click="open = !open">{{ open ? 'Hide details' : 'See requirements and rewards' }}<svg :class="{ open }" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg></button>
     </div>
 
-    <div v-if="open" class="trk-detail">
-      <div class="range-tabs" role="tablist" :aria-label="`${region.name} tier`">
-        <button v-for="t in region.tiers" :key="t.key" type="button" role="tab" :aria-selected="tier === t.key" :class="{ active: tier === t.key }" @click="tier = t.key">{{ t.label }}</button>
+    <div v-if="open" class="trk-detail trk-dd">
+      <div class="trk-ttabs" role="tablist" :aria-label="`${region.name} tier`">
+        <button v-for="t in region.tiers" :key="t.key" type="button" role="tab" :aria-selected="tier === t.key" :class="{ active: tier === t.key, done: isDone(t) }" @click="tier = t.key">
+          <svg v-if="isDone(t)" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>{{ t.label }}
+        </button>
       </div>
 
-      <div class="trk-block">
-        <h4>Needs</h4>
-        <ul class="trk-skills">
-          <li v-for="(level, skill) in current.skills" :key="skill" :class="{ short: levels && (levels[skill] ?? 1) < level }">{{ level }} {{ skill }}<small v-if="levels && (levels[skill] ?? 1) < level"> (you are {{ levels[skill] ?? 1 }})</small></li>
-          <li v-if="current.combat">Combat level {{ current.combat }}</li>
-          <li v-if="current.qp">{{ current.qp }} quest points</li>
-          <li v-if="current.allQuests">Every quest</li>
-          <li v-for="o in current.other" :key="o">{{ o }}</li>
-          <li v-if="!Object.keys(current.skills).length && !current.combat && !current.qp && !current.allQuests && !current.quests.length && !current.other.length" class="trk-none">No skill requirements</li>
-        </ul>
-        <div v-if="current.quests.length || current.partial.length" class="trk-chips">
-          <span class="trk-lead">Quests</span>
-          <QuestChip v-for="q in current.quests" :key="q.name" :name="q.name" />
-          <QuestChip v-for="q in current.partial" :key="`p-${q.name}`" :name="q.name" partial />
-        </div>
-        <p class="trk-note">Skill levels can be reached with a boost unless the Wiki says otherwise.<template v-if="current.key !== 'easy'"> The tier before it has to be done first, so ticking it also ticks the tiers below.</template></p>
+      <div class="trk-facts">
+        <span class="trk-fact"><b class="trk-qp" aria-hidden="true">✓</b>{{ current.tasks.length }}<small>Tasks</small></span>
+        <span v-if="lamp" class="trk-fact is-lamp"><b class="trk-qp" aria-hidden="true">✦</b>{{ lamp.xp }} XP<small>Lamp, level {{ lamp.level }}+</small></span>
+        <span v-if="current.rewards.length" class="trk-fact"><b class="trk-qp" aria-hidden="true">★</b>{{ current.rewards.length }}<small>Reward{{ current.rewards.length === 1 ? '' : 's' }}</small></span>
+        <span v-if="unlocks.length" class="trk-fact is-open"><b class="trk-qp" aria-hidden="true">↗</b>{{ unlocks.length }}<small>Planner method{{ unlocks.length === 1 ? '' : 's' }}</small></span>
       </div>
 
-      <div v-if="current.rewards.length" class="trk-block">
-        <h4>Rewards</h4>
-        <ul class="trk-rewards">
-          <li v-for="(r, i) in current.rewards" :key="i">
-            {{ r.text }}
-            <ul v-if="r.details.length"><li v-for="(d, j) in r.details" :key="j">{{ d }}</li></ul>
-          </li>
-        </ul>
+      <div class="trk-cols">
+        <section class="trk-block">
+          <h4>You need</h4>
+          <SkillReqGrid :skills="current.skills" :levels="levels" :combat="current.combat" :qp="current.qp" :notes="notes" />
+          <div v-if="current.quests.length || current.partial.length" class="trk-chips">
+            <span class="trk-lead">Quests</span>
+            <QuestChip v-for="q in current.quests" :key="q.name" :name="q.name" />
+            <QuestChip v-for="q in current.partial" :key="`p-${q.name}`" :name="q.name" partial />
+          </div>
+          <p v-if="!hasNeeds" class="trk-none">Nothing to meet: you can start this tier now.</p>
+          <p class="trk-note">Skill boosts count unless the Wiki says otherwise.<template v-if="current.key !== 'easy'"> The tier before it has to be done first.</template></p>
+        </section>
+
+        <section v-if="cards.length" class="trk-block">
+          <h4>You get</h4>
+          <ul class="trk-rewcards">
+            <li v-for="(c, i) in cards" :key="i" :class="`is-${c.kind}`">
+              <span class="trk-rewcards-ico" aria-hidden="true">{{ c.kind === 'lamp' ? '✦' : '◆' }}</span>
+              <span class="trk-rewcards-main"><b>{{ c.title }}</b><small v-if="c.sub">{{ c.sub }}</small></span>
+            </li>
+          </ul>
+        </section>
       </div>
 
-      <div v-if="unlocks.length" class="trk-block">
+      <section v-if="unlocks.length" class="trk-block">
         <h4>Opens in the planner</h4>
-        <p>{{ unlocks.map((u) => u.text).join(', ') }}.</p>
-      </div>
+        <MethodCards :unlocks="unlocks" />
+      </section>
 
       <details v-if="current.tasks.length" class="trk-tasks">
-        <summary>{{ current.tasks.length }} tasks</summary>
+        <summary>All {{ current.tasks.length }} tasks</summary>
         <ol>
           <li v-for="(t, i) in current.tasks" :key="i">{{ t }}</li>
         </ol>
@@ -71,6 +76,8 @@ import { track } from '@/utils/analytics'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { shortfalls } from '@/utils/trackerSuggestions'
 import QuestChip from '@/components/tracker/QuestChip.vue'
+import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
+import MethodCards from '@/components/tracker/MethodCards.vue'
 
 const props = defineProps({ region: { type: Object, required: true }, focus: { type: Object, default: null } })
 const emit = defineEmits(['focused'])
@@ -88,6 +95,25 @@ const nextTier = computed(() => props.region.tiers.find((t) => !isDone(t)) || nu
 const nextId = computed(() => nextTier.value?.id || '')
 // With a player's levels: the next tier's skill levels are all met (the quests it needs are checked in its details).
 const nextReady = computed(() => !!levels.value && !!nextTier.value && shortfalls(nextTier.value.skills, levels.value).length === 0)
+const hasNeeds = computed(() => {
+  const t = current.value
+  return !!(Object.keys(t.skills).length || t.combat || t.qp || t.allQuests || t.quests.length || t.partial.length || t.other.length)
+})
+const notes = computed(() => [...(current.value.allQuests ? ['Every quest'] : []), ...current.value.other])
+// The antique lamp a tier gives, read from its reward text ("Antique lamp worth 5,000 experience in any skill of at least level 30").
+const LAMP = /antique lamp worth ([\d,]+) experience in any skill of (?:at least level (\d+)|any level)/i
+const lamp = computed(() => {
+  const r = current.value.rewards.find((x) => LAMP.test(x.text))
+  const m = r?.text.match(LAMP)
+  return m ? { xp: m[1], level: m[2] || '1' } : null
+})
+// Rewards as short cards: the lamp as "XP lamp", the rest by name with a line or two of what they do.
+const cards = computed(() =>
+  current.value.rewards.map((r) => {
+    if (LAMP.test(r.text)) return { kind: 'lamp', title: `XP lamp: ${lamp.value?.xp ?? ''} XP`, sub: `Any skill, level ${lamp.value?.level}+` }
+    return { kind: 'item', title: r.text.replace(/\s*\([^)]*\)\s*$/, ''), sub: r.details.slice(0, 2).join('. ') }
+  }),
+)
 const flash = ref(false)
 // A suggestion's "Details": open this region on that tier and bring it into view.
 watch(
