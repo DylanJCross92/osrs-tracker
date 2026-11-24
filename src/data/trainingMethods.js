@@ -47,7 +47,12 @@ export const TRAINING_METHODS = [
   // --- Melee (Attack / Strength / Defence) ---
   ...melee('crabs', 'Rock / Ammonite Crabs', 1, 35000, 0, 'AFK', 'Fight low-defence crabs for long, low-effort stretches.', '', 69),
   ...melee('sand-crabs', 'Sand Crabs', 40, 40000, 0, 'AFK', 'AFK crabs in Zeah with a very reliable reset.', 'Zeah access', 79),
-  ...melee('gemstone-crab', 'Gemstone Crab', 30, 40000, 0, 'AFK', 'The premier idle method: a crab with huge HP that needs no food.', 'Children of the Sun'),
+  // The Wiki gives no hourly rate for the Gemstone Crab. It has no defence and never runs out of HP, so xp/hr is just your damage per hour at 3.5 xp a point
+  // (87.5% of the usual 4), and that grows with Strength and gear. Worked out from the max-hit formula at three typical set-ups (about 40K with
+  // rune gear and potions around level 40-50, about 60K at 65 with a good weapon, 100K+ at 75-99 with Piety and strong melee gear).
+  ...melee('gemstone-crab', 'Gemstone Crab', 30, 40000, 0, 'AFK', 'The premier idle method: a crab with huge HP that needs no food. Xp grows with your Strength and gear.', 'Children of the Sun', 54),
+  ...melee('gemstone-crab-mid', 'Gemstone Crab (good gear)', 55, 60000, 0, 'AFK', 'The same idle crab with a good weapon and potions. Xp grows with your max hit.', 'Children of the Sun', 74),
+  ...melee('gemstone-crab-high', 'Gemstone Crab (Piety, strong gear)', 75, 100000, 0, 'AFK', 'Idle crab with Piety and top melee gear: 75K to 110K an hour, up to about 130K at 99.', 'Children of the Sun'),
   ...melee('nmz', 'Nightmare Zone (absorptions)', 60, 50000, -250000, 'AFK', 'The most AFK combat method: fight bosses in NMZ with absorption potions.', 'Quest requirements for NMZ access'),
   ...melee('slayer', 'Slayer tasks', 50, 40000, 250000, 'Medium', 'Combat xp plus task loot that usually covers supplies.', 'Slayer Master access'),
   ...melee('sulphur-naguas', 'Sulphur Naguas', 55, 100000, 250000, 'Medium', 'Fast melee xp in Neypotzli with decent profit from noted ore and runes.', 'Partial Perilous Moons, 43 Prayer'),

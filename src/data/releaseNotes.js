@@ -12,6 +12,7 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-23',
     items: [
+      { kind: 'fixed', text: 'Gemstone Crab no longer shows one flat 40K xp an hour for every level. It now rises with your level and gear, from about 40K to 100K an hour for a strong account.' },
       { kind: 'new', text: 'The planner now shows which quests give an item or unlock a method needs (Goldsmith gauntlets come from Family Crest, Ancient Magicks from Desert Treasure I). Tick the quest off there and it counts everywhere.' },
       { kind: 'new', text: 'Smart Planner quest advice now comes from the OSRS Wiki: 174 quests with their real rewards, requirements, lengths and the combat level each one needs.' },
       { kind: 'new', text: 'Smart Planner plans stay inside the gp you said you can spend, and say so when a plan had to be trimmed to fit.' },
