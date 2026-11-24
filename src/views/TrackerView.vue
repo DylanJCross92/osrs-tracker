@@ -1,8 +1,23 @@
 <template>
   <article class="trk-page">
     <header class="trk-head">
-      <h1>Quest and diary tracker</h1>
-      <p>Tick off the quests and Achievement Diary tiers you have finished. The Account Planner uses them: a method that needs a quest, a diary or an item they give is counted as ready, and a quest's XP is not counted twice. No account needed to start.</p>
+      <span class="trk-eyebrow">Quests and Achievement Diaries</span>
+      <h1>Track what you have done. Let the planner use it.</h1>
+      <p class="trk-lede">Tick off your quests and diary tiers once. TickGains then knows which training methods you can use, skips XP you have already taken, and suggests what to do next. No account needed to start.</p>
+      <ul class="trk-uses" aria-label="How your progress is used">
+        <li>
+          <span class="trk-uses-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
+          <span><b>Methods marked ready</b><small>Gauntlets, Ancient Magicks, diary perks and more are counted once their quests and tiers are done.</small></span>
+        </li>
+        <li>
+          <span class="trk-uses-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" /></svg></span>
+          <span><b>Plans that skip what you did</b><small>Quest XP is never counted twice, and the Smart Planner leaves finished quests out.</small></span>
+        </li>
+        <li>
+          <span class="trk-uses-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /></svg></span>
+          <span><b>A next step, always</b><small>The suggestions below rank what is left by what it opens up for you.</small></span>
+        </li>
+      </ul>
     </header>
     <TrackerPanel v-model:tab="tab" />
   </article>
@@ -16,7 +31,7 @@ import TrackerPanel from '@/components/tracker/TrackerPanel.vue'
 
 setPageMeta({
   title: 'OSRS Quest and Achievement Diary Tracker',
-  description: 'Free Old School RuneScape quest tracker and Achievement Diary checklist: tick off every quest and diary tier, see the quest points you have, and which training methods they open up in the account planner.',
+  description: 'Free Old School RuneScape quest tracker and Achievement Diary checklist: tick off every quest and diary tier, see your quest points, and get suggestions for what to do next and which training methods they open up in the account planner.',
   path: '/quests',
 })
 

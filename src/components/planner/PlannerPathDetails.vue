@@ -47,7 +47,7 @@
       </section>
 
       <section v-if="routeMethods.length" class="pd-sec">
-        <h4 class="goal-section-title">Requirements</h4>
+        <h4 class="goal-section-title">Requirements <RouterLink class="pd-track" :to="{ name: 'quests' }">Tick off quests and diaries in the tracker</RouterLink></h4>
         <div v-for="a in routeMethods" :key="a.method.id" class="goal-req-method" :class="`is-${a.state}`">
           <div class="goal-req-head">
             <b>{{ a.method.name }}</b>

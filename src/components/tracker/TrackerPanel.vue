@@ -1,51 +1,49 @@
 <template>
   <div class="trk">
-    <p v-if="loggedIn" class="trk-save is-saved">Saved to your account, so it follows you to every device and the Account Planner uses it for every plan.</p>
-    <p v-else class="trk-save">
-      Saved in this browser only. <RouterLink :to="{ name: 'signup', query: { next: '/quests' } }" @click="track('tracker_signup_click')">Create a free account</RouterLink> to keep your quests and diaries on every device and have the Account Planner use them for every plan. Already have one? <RouterLink :to="{ name: 'login', query: { next: '/quests' } }">Log in</RouterLink>.
-    </p>
+    <TrackerSaveBanner place="panel" />
 
-    <dl class="trk-sum">
-      <div>
-        <dt>Quests</dt>
-        <dd><b>{{ questStats.done }}</b> of {{ questStats.total }}</dd>
-        <i class="trk-bar" role="progressbar" :aria-valuenow="questStats.done" aria-valuemin="0" :aria-valuemax="questStats.total" aria-label="Quests done"><s :style="{ width: questStats.pct * 100 + '%' }" /></i>
-      </div>
-      <div>
-        <dt>Quest points</dt>
-        <dd><b>{{ qp.have }}</b> of {{ qp.total }}</dd>
-        <i class="trk-bar" role="progressbar" :aria-valuenow="qp.have" aria-valuemin="0" :aria-valuemax="qp.total" aria-label="Quest points"><s :style="{ width: (qp.total ? (qp.have / qp.total) * 100 : 0) + '%' }" /></i>
-      </div>
-      <div>
-        <dt>Diary tiers</dt>
-        <dd><b>{{ diaryStats.done }}</b> of {{ diaryStats.total }}</dd>
-        <i class="trk-bar" role="progressbar" :aria-valuenow="diaryStats.done" aria-valuemin="0" :aria-valuemax="diaryStats.total" aria-label="Diary tiers done"><s :style="{ width: diaryStats.pct * 100 + '%' }" /></i>
-      </div>
-    </dl>
-
-    <div class="range-tabs trk-tabs" role="tablist" aria-label="Tracker">
-      <button type="button" role="tab" :aria-selected="tab === 'quests'" :class="{ active: tab === 'quests' }" @click="$emit('update:tab', 'quests')">Quests</button>
-      <button type="button" role="tab" :aria-selected="tab === 'diaries'" :class="{ active: tab === 'diaries' }" @click="$emit('update:tab', 'diaries')">Achievement diaries</button>
+    <div class="trk-sum">
+      <TrackerRing :value="questStats.done" :total="questStats.total" label="Quests" :sub="`${Math.floor(questStats.pct * 100)}% complete`" />
+      <TrackerRing :value="qp.have" :total="qp.total" label="Quest points" :sub="qp.have >= qp.total ? 'Quest cape ready' : `${qp.total - qp.have} to go`" />
+      <TrackerRing :value="diaryStats.done" :total="diaryStats.total" label="Diary tiers" :sub="diaryStats.cape ? 'Diary cape ready' : `${diaryStats.elites} of 12 Elite done`" />
     </div>
 
-    <QuestsTab v-if="tab === 'quests'" />
-    <DiariesTab v-else />
+    <TrackerSuggest @focus="onFocus" />
+
+    <div class="trk-tabs" role="tablist" aria-label="Tracker">
+      <button type="button" role="tab" :aria-selected="tab === 'quests'" :class="{ active: tab === 'quests' }" @click="$emit('update:tab', 'quests')">Quests <small>{{ questStats.done }}/{{ questStats.total }}</small></button>
+      <button type="button" role="tab" :aria-selected="tab === 'diaries'" :class="{ active: tab === 'diaries' }" @click="$emit('update:tab', 'diaries')">Achievement diaries <small>{{ diaryStats.done }}/{{ diaryStats.total }}</small></button>
+    </div>
+
+    <QuestsTab v-if="tab === 'quests'" :focus="focusTarget" @focused="focusTarget = null" />
+    <DiariesTab v-else :focus="focusTarget" @focused="focusTarget = null" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRequirements } from '@/composables/useRequirements'
-import { useAuth } from '@/composables/useAuth'
 import { questPoints } from '@/utils/questProgress'
 import { track } from '@/utils/analytics'
+import TrackerSaveBanner from '@/components/tracker/TrackerSaveBanner.vue'
+import TrackerRing from '@/components/tracker/TrackerRing.vue'
+import TrackerSuggest from '@/components/tracker/TrackerSuggest.vue'
 import QuestsTab from '@/components/tracker/QuestsTab.vue'
 import DiariesTab from '@/components/tracker/DiariesTab.vue'
 
-defineProps({ tab: { type: String, default: 'quests' } })
-defineEmits(['update:tab'])
+const props = defineProps({ tab: { type: String, default: 'quests' } })
+const emit = defineEmits(['update:tab'])
 
 const { questStats, diaryStats, confirmations } = useRequirements()
-const { loggedIn } = useAuth()
 const qp = computed(() => questPoints(confirmations.value))
+
+// "Details" on a suggestion: go to that quest or diary below, open it and scroll to it.
+const focusTarget = ref(null)
+async function onFocus(s) {
+  track('tracker_suggestion_details', { kind: s.kind })
+  const want = s.kind === 'diary' ? 'diaries' : 'quests'
+  // The tab it belongs to picks this up as soon as it is on screen (straight away if it already is).
+  if (props.tab !== want) emit('update:tab', want)
+  focusTarget.value = { ...s, at: Date.now() }
+}
 </script>

@@ -47,6 +47,8 @@
       </section>
     </div>
 
+    <TrackerLink class="ps-tracker" place="start" />
+
     <PlannerPlansModal
       v-if="showAll"
       :skills="skills"
@@ -90,6 +92,7 @@ import { computed, nextTick, ref } from 'vue'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
 import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
+import TrackerLink from '@/components/planner/TrackerLink.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
 import { formatGp, formatHours, levelAtXp, planGoal } from '@/utils/planner'
 import { resolveGoal } from '@/utils/plannerTools'

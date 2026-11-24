@@ -113,6 +113,7 @@
         <p v-if="!loggedIn && currentPlanId && !(template && templatePending)" class="ps-account" role="status">
           Saved in this browser. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create a free account</RouterLink> to keep it on every device and track your progress.
         </p>
+        <TrackerLink v-if="goals.length" :unconfirmed="routeIssues.blocked + routeIssues.unconfirmed" place="plan" />
         <p v-if="routeIssues.blocked" class="gb-alert" role="status">
           <span>⚠ {{ routeIssues.blocked }} skill{{ routeIssues.blocked === 1 ? '' : 's' }} use a method you may be missing a requirement for.</span>
           <button class="btn-text" type="button" @click="reviewRequirements">Review requirements</button>
@@ -233,6 +234,7 @@ import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
 import { TRAINING_METHODS } from '@/data/trainingMethods'
+import TrackerLink from '@/components/planner/TrackerLink.vue'
 import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
