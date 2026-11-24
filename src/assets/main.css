@@ -7237,9 +7237,9 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 @media (prefers-reduced-motion: reduce) { .trk-pick, .trk-detail { animation: none; } }
 
 /* A pointer from the planner to the quest and diary tracker */
-.ptl { display: flex; align-items: center; gap: 14px; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(201, 182, 255, 0.3); background: linear-gradient(100deg, rgba(167, 139, 250, 0.16), rgba(240, 201, 118, 0.07) 80%); }
+.ptl { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; border: 1px solid rgba(201, 182, 255, 0.3); background: linear-gradient(100deg, rgba(167, 139, 250, 0.16), rgba(240, 201, 118, 0.07) 80%); }
 .ptl-ico { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; color: #1b1508; background: linear-gradient(135deg, #f9e3a8, #c9b6ff); }
-.ptl-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 0.86rem; line-height: 1.4; }
+.ptl-text { flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 1px; font-size: 0.86rem; line-height: 1.4; }
 .ptl-text b { font-size: 0.95rem; }
 .ptl-text .ptl-eyebrow { color: #d8c8ff; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
 .ptl-text span { color: var(--muted); }
@@ -7478,3 +7478,8 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 @media (max-width: 520px) { body:has(.gsb) .fb { bottom: calc(54px + env(safe-area-inset-bottom)); } }
 .has-save-bar { padding-bottom: 46px; }
+
+/* In a narrow column (the dashboard's side): the words beside the icon, the button under them across the width */
+.ptl.is-side { align-items: flex-start; }
+.ptl.is-side .ptl-text { flex: 1 1 calc(100% - 56px); }
+.ptl.is-side .btn { flex: 1 1 100%; text-align: center; white-space: normal; }

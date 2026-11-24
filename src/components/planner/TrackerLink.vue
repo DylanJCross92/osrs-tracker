@@ -15,14 +15,12 @@
 <script setup>
 import { computed } from 'vue'
 import { useRequirements } from '@/composables/useRequirements'
-import { useAuth } from '@/composables/useAuth'
 import { track } from '@/utils/analytics'
 
 // A pointer from the planner to the quest and diary tracker, worded for where the person is: a plan with parts that depend on something they have
 // not confirmed, nothing marked yet, or a tracker already in use. `unconfirmed` is how many skills in the plan use a method with an open requirement.
 const props = defineProps({ unconfirmed: { type: Number, default: 0 }, place: { type: String, default: 'planner' }, variant: { type: String, default: 'bar' } })
 const { questStats, diaryStats } = useRequirements()
-const { loggedIn } = useAuth()
 
 const none = computed(() => questStats.value.done === 0 && diaryStats.value.done === 0)
 const prominent = computed(() => props.unconfirmed > 0 || none.value)
@@ -32,7 +30,8 @@ const headline = computed(() => {
   return `${questStats.value.done} quest${questStats.value.done === 1 ? '' : 's'} and ${diaryStats.value.done} diary tier${diaryStats.value.done === 1 ? '' : 's'} marked as done`
 })
 const sub = computed(() => {
-  const keep = loggedIn.value ? '' : ' It is kept in this browser; a free account keeps it everywhere.'
+  // (Where it is kept is said by the bar at the bottom of the screen for someone not signed in.)
+  const keep = ''
   if (props.unconfirmed > 0) return `Tick what you have finished and the planner counts those methods as ready.${keep}`
   if (none.value) return `Mark them once and every method that needs them is counted as ready, finished quest XP is never counted twice, and you get suggestions for what to do next.${keep}`
   return `The planner is using them for every plan. Keep them up to date as you play.${keep}`

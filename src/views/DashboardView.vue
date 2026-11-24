@@ -120,7 +120,7 @@
           <DashSkeleton v-if="current && firstLoad" kind="milestones" />
           <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
-          <TrackerLink place="dashboard" />
+          <TrackerLink place="dashboard" variant="side" />
           <DashSkeleton v-if="current && firstLoad" kind="goals" />
           <!-- Goals come from a plan shown on a claimed profile, so they are for signed-in owners -->
           <section v-else-if="current && loggedIn" class="card dash-card" aria-labelledby="dash-goals-h">
