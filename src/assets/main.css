@@ -7288,6 +7288,11 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 
 .trk-gets { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
 .trk-gets li { display: grid; grid-template-columns: 22px minmax(90px, 140px) 1fr; align-items: center; gap: 10px; }
+.trk-gets-right { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.trk-gets-lvl { color: var(--muted); font-size: 0.78rem; }
+.trk-gets-lvl b { color: var(--text); }
+.trk-gets-lvl em { font-style: normal; font-weight: 700; color: #9fd48a; margin-left: 4px; }
+.trk-gets-lvl.up { color: var(--text); }
 .trk-gets img { image-rendering: pixelated; }
 .trk-gets-main { display: flex; flex-direction: column; line-height: 1.2; }
 .trk-gets-main b { font-size: 0.98rem; color: #9fd48a; font-variant-numeric: tabular-nums; }

@@ -49,7 +49,7 @@
                 <i v-if="!r.done && r.ready === 'locked'" class="trk-tag is-locked" :title="r.lockText">Needs {{ r.lockShort }}</i>
                 <i v-else-if="!r.done && r.ready === 'ready'" class="trk-tag is-ready">Ready</i>
                 <i v-if="r.unlocks.length" class="trk-tag is-unlock" :title="r.unlocks.map((u) => u.text).join(', ')">Opens {{ r.unlocks.length }}</i>
-                <i v-if="r.xp" class="trk-tag is-xp" :title="r.xpText">{{ formatXp(r.xp) }} XP</i>
+                <i v-if="r.xp" class="trk-tag is-xp" :title="r.gain ? `${r.xpText}. Takes you up ${r.gain} level${r.gain === 1 ? '' : 's'}.` : r.xpText">{{ formatXp(r.xp) }} XP<template v-if="r.gain && !r.done"> · +{{ r.gain }} lvl</template></i>
               </span>
               <button type="button" class="trk-chev" :class="{ open: open.has(r.slug) }" :aria-label="open.has(r.slug) ? 'Hide details' : 'Show details'" tabindex="-1" @click="flip(r.slug)">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
@@ -76,7 +76,14 @@
                     <li v-for="g in gets(r)" :key="g.skill">
                       <img :src="skillIconSrc(g.skill)" :alt="g.skill" width="22" height="22" />
                       <span class="trk-gets-main"><b>{{ formatXp(g.xp) }} XP</b><small>{{ g.skill }}</small></span>
-                      <i class="trk-gets-bar" aria-hidden="true"><s :style="{ width: `${g.pct}%` }" /></i>
+                      <span class="trk-gets-right">
+                        <i class="trk-gets-bar" aria-hidden="true"><s :style="{ width: `${g.pct}%` }" /></i>
+                        <span v-if="g.change" class="trk-gets-lvl" :class="{ up: g.change.gain > 0 }">
+                          <template v-if="g.change.gain > 0">Level {{ g.change.from }} <span aria-hidden="true">→</span> <b>{{ g.change.to }}</b> <em>+{{ g.change.gain }} level{{ g.change.gain === 1 ? '' : 's' }}</em></template>
+                          <template v-else-if="g.change.to >= 99">Level {{ g.change.from }}, already maxed</template>
+                          <template v-else>Level {{ g.change.from }}, {{ g.change.pct }}% to {{ g.change.to + 1 }}</template>
+                        </span>
+                      </span>
                     </li>
                   </ul>
                   <p v-if="r.info?.lamps?.length" class="trk-lamp"><span aria-hidden="true">✦</span> Also an XP lamp. Its skill is your choice, so it is not counted in plans.</p>
@@ -108,6 +115,7 @@ import { QUEST_LIST, QUEST_TYPES } from '@/data/questList'
 import { LENGTH_MINUTES, getQuest } from '@/data/quests'
 import { useRequirements } from '@/composables/useRequirements'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
+import { levelAtXp, xpAtLevel } from '@/utils/planner'
 import { questSlug } from '@/utils/questSlug'
 import { unlocksFor } from '@/utils/trackerUnlocks'
 import { shortfalls } from '@/utils/trackerSuggestions'
@@ -120,7 +128,7 @@ import MethodCards from '@/components/tracker/MethodCards.vue'
 const props = defineProps({ focus: { type: Object, default: null } })
 const emit = defineEmits(['focused'])
 const { confirmations, setQuestDone, setMany } = useRequirements()
-const { levels } = useTrackerPlayer()
+const { levels, xp: playerXp } = useTrackerPlayer()
 
 const search = ref('')
 const status = ref('all')
@@ -135,11 +143,24 @@ const timeText = (r) => {
   return m >= 60 ? `About ${m / 60 === Math.floor(m / 60) ? m / 60 : (m / 60).toFixed(1)} h` : `About ${m} min`
 }
 // The skills a quest gives XP in, biggest first, each with how big it is next to the biggest.
+// With a player's XP: the level they are at and the level the reward takes them to.
+const levelChange = (skill, reward) => {
+  const have = playerXp.value?.[skill]
+  if (have == null) return null
+  const from = levelAtXp(have, true)
+  const to = levelAtXp(have + reward, true)
+  // How far through the level you would be after the reward (for when it does not reach the next one).
+  const after = have + reward
+  const span = to >= 99 ? 0 : xpAtLevel(to + 1) - xpAtLevel(to)
+  return { from, to, gain: to - from, pct: span ? Math.round(((after - xpAtLevel(to)) / span) * 100) : 100 }
+}
 const gets = (r) => {
   const list = Object.entries(r.info.rewards).map(([skill, xp]) => ({ skill, xp })).sort((a, b) => b.xp - a.xp)
   const top = list[0]?.xp || 1
-  return list.map((g) => ({ ...g, pct: Math.max(8, Math.round((g.xp / top) * 100)) }))
+  return list.map((g) => ({ ...g, pct: Math.max(8, Math.round((g.xp / top) * 100)), change: levelChange(g.skill, g.xp) }))
 }
+// Levels a whole quest would give across its skills (0 without a player).
+const levelsGained = (info) => (info && playerXp.value ? Object.entries(info.rewards).reduce((sum, [skill, reward]) => sum + (levelChange(skill, reward)?.gain || 0), 0) : 0)
 const xpOf = (info) => (info ? Object.values(info.rewards).reduce((s, n) => s + n, 0) : 0)
 const xpText = (info) => (info ? Object.entries(info.rewards).map(([k, v]) => `${formatXp(v)} ${k}`).join(', ') : '')
 // Quest ids in data/quests.js are the slug of the name, except three old ones; the tracker's own slug always comes from the name.
@@ -162,7 +183,7 @@ const rows = computed(() =>
     const ready = levels.value && r.info && !r.info.incomplete ? (gaps.length || firstUndone.length ? 'locked' : 'ready') : null
     const lockText = [gaps.length ? gaps.map((g) => `${g.need} ${g.skill} (you are ${g.have})`).join(', ') : '', firstUndone.length ? `Quests first: ${firstUndone.map((id) => getQuest(id).name).join(', ')}` : ''].filter(Boolean).join('. ')
     const lockShort = gaps.length ? `${gaps[0].need} ${gaps[0].skill}${gaps.length > 1 ? ` +${gaps.length - 1}` : ''}` : 'a quest first'
-    return { ...r, done, state: confirmations.value[r.id] || null, ready, lockText, lockShort }
+    return { ...r, done, state: confirmations.value[r.id] || null, ready, lockText, lockShort, gain: levelsGained(r.info) }
   }),
 )
 

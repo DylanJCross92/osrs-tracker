@@ -83,5 +83,13 @@ export function useTrackerPlayer() {
     for (const s of SKILL_NAMES) if (Number.isFinite(skills[s]?.level)) out[s] = skills[s].level
     return Object.keys(out).length ? out : null
   })
-  return { player, name, loading, error, levels, load, clear }
+  // Their total XP in each skill, to work out the levels a reward would give.
+  const xp = computed(() => {
+    const skills = player.value?.latest?.skills
+    if (!skills) return null
+    const out = {}
+    for (const s of SKILL_NAMES) if (Number.isFinite(skills[s]?.xp)) out[s] = skills[s].xp
+    return Object.keys(out).length ? out : null
+  })
+  return { player, name, loading, error, levels, xp, load, clear }
 }
