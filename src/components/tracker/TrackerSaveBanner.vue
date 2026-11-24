@@ -12,13 +12,14 @@
       <RouterLink class="btn-text" :to="{ name: 'login', query: { next: '/quests' } }" @click="track('tracker_login_click', { place: place })">Log in</RouterLink>
     </div>
   </aside>
-  <aside v-else class="trk-banner is-saved" role="status" aria-label="Where your progress is saved">
+  <!-- Signed in: nothing to say unless saving to the account is failing. -->
+  <aside v-else-if="syncState === 'error'" class="trk-banner is-saved" role="status" aria-label="Where your progress is saved">
     <span class="trk-banner-ico" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
     </span>
     <div class="trk-banner-text">
-      <b>{{ syncState === 'error' ? 'Could not reach your account just now' : syncState === 'saving' ? 'Saving to your account…' : 'Saved to your account' }}</b>
-      <span>{{ syncState === 'error' ? 'Your changes are kept in this browser and will sync when the connection is back.' : 'It follows you to every device, and the Account Planner and Smart Planner use it in every plan.' }}</span>
+      <b>Could not reach your account just now</b>
+      <span>Your changes are kept in this browser and will sync when the connection is back.</span>
     </div>
   </aside>
 </template>
