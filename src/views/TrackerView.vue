@@ -6,7 +6,8 @@
         <p class="pgh-sub">Tick off what you have done once. The planner uses it, skips XP you already took, and suggests what to do next. No account needed to start.</p>
       </div>
     </header>
-    <div class="trk-head">
+    <!-- The three tips are for someone who has not used the tracker yet; once a quest or diary is ticked they go away. -->
+    <div v-if="!inUse" class="trk-head">
       <ul class="trk-uses" aria-label="How your progress is used">
         <li>
           <span class="trk-uses-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
@@ -30,6 +31,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { setPageMeta } from '@/utils/pageMeta'
+import { useRequirements } from '@/composables/useRequirements'
 import TrackerPanel from '@/components/tracker/TrackerPanel.vue'
 
 setPageMeta({
@@ -37,6 +39,9 @@ setPageMeta({
   description: 'Free Old School RuneScape quest tracker and Achievement Diary checklist: tick off every quest and diary tier, see your quest points, and get suggestions for what to do next and which training methods they open up in the account planner.',
   path: '/quests',
 })
+
+const { questStats, diaryStats } = useRequirements()
+const inUse = computed(() => questStats.value.done > 0 || diaryStats.value.done > 0)
 
 const route = useRoute()
 const router = useRouter()
