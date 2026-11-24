@@ -1,16 +1,27 @@
 <template>
-  <section class="trk-smart" aria-labelledby="trk-smart-h">
-    <header class="trk-smart-head">
+  <section class="trk-smart" :class="{ 'is-open': open }" aria-labelledby="trk-smart-h">
+    <!-- One compact row that opens the suggestions: the full list below stays in view. -->
+    <button class="trk-smart-head" type="button" :aria-expanded="open" aria-controls="trk-smart-body" @click="flip">
       <span class="spl-spark" aria-hidden="true">
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 17l.7 1.8 1.8.7-1.8.7L19 22l-.7-1.8-1.8-.7 1.8-.7z" /></svg>
       </span>
-      <div class="trk-smart-title">
-        <span class="spl-eyebrow">Picked for you <span class="beta-tag" title="Still being tuned: check a suggestion before you rely on it">Beta</span></span>
-        <h2 id="trk-smart-h">What to do next</h2>
-        <p>{{ basis }}</p>
-      </div>
-    </header>
+      <span class="trk-smart-title">
+        <span class="trk-smart-line">
+          <span class="spl-eyebrow">Picked for you <span class="beta-tag" title="Still being tuned: check a suggestion before you rely on it">Beta</span></span>
+          <span id="trk-smart-h" class="trk-smart-h2">What to do next</span>
+        </span>
+        <span v-if="!open" class="trk-smart-peek">
+          <template v-if="list.length"><b>{{ list[0].name }}</b><template v-for="s in list.slice(1, 3)" :key="s.key"> · {{ s.name }}</template><template v-if="list.length > 3"> and {{ list.length - 3 }} more</template></template>
+          <template v-else>Nothing more to suggest right now</template>
+        </span>
+        <span v-else class="trk-smart-peek">{{ basis }}</span>
+      </span>
+      <span class="trk-smart-cta">{{ open ? 'Hide' : 'Show suggestions' }}
+        <svg :class="{ open }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+      </span>
+    </button>
 
+    <div v-if="open" id="trk-smart-body" class="trk-smart-body">
     <!-- The same name box as everywhere else on the site: recent players, typeahead of tracked players, and a name we do not know yet is added in one go. -->
     <div class="trk-who">
       <PlannerPlayerBox
@@ -61,6 +72,7 @@
       Ranked by what each one opens in the planner, the XP it gives and how long it takes.
       <template v-if="!levels">Without your levels these cannot be checked against what you can do yet.</template>
     </p>
+    </div>
   </section>
 </template>
 
@@ -78,6 +90,26 @@ import { track } from '@/utils/analytics'
 defineEmits(['focus'])
 const { confirmations, setQuestDone, setDiaryDone } = useRequirements()
 const { player, levels, loading, error, load, clear } = useTrackerPlayer()
+
+// Closed to start with, so the full list is in view; the choice is remembered in this browser.
+const KEY = 'tickgains-tracker-smart-open'
+const read = () => {
+  try {
+    return localStorage.getItem(KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const open = ref(read())
+function flip() {
+  open.value = !open.value
+  try {
+    localStorage.setItem(KEY, open.value ? '1' : '0')
+  } catch {
+    /* storage unavailable */
+  }
+  track('tracker_suggestions_toggled', { open: open.value })
+}
 
 const typed = ref('')
 const focused = ref(false)
