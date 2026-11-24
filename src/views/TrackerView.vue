@@ -1,5 +1,5 @@
 <template>
-  <article class="trk-page" :class="{ 'has-bar': !loggedIn }">
+  <article class="trk-page">
     <header class="pgh">
       <div class="pgh-title">
         <h1>Quest and diary tracker</h1>
@@ -32,7 +32,6 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { setPageMeta } from '@/utils/pageMeta'
 import { useRequirements } from '@/composables/useRequirements'
-import { useAuth } from '@/composables/useAuth'
 import TrackerPanel from '@/components/tracker/TrackerPanel.vue'
 
 setPageMeta({
@@ -42,7 +41,6 @@ setPageMeta({
 })
 
 const { questStats, diaryStats } = useRequirements()
-const { loggedIn } = useAuth()
 const inUse = computed(() => questStats.value.done > 0 || diaryStats.value.done > 0)
 
 const route = useRoute()

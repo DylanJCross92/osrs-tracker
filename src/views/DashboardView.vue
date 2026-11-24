@@ -49,9 +49,6 @@
         </div>
       </header>
 
-      <!-- Not signed in: say what is kept in this browser and how to make it last -->
-      <GuestKeepCard place="dashboard" />
-
       <div class="dash-grid">
         <div class="dash-main">
           <!-- Your week -->
@@ -164,7 +161,6 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
-import GuestKeepCard from '@/components/guest/GuestKeepCard.vue'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
 import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import OverallLevel from '@/components/OverallLevel.vue'

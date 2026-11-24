@@ -1,5 +1,5 @@
 <template>
-  <div id="appShell">
+  <div id="appShell" :class="{ 'has-save-bar': saveBar }">
     <header class="app-topbar">
       <div class="app-topbar-inner">
         <RouterLink :to="{ name: 'players' }" class="app-logo">
@@ -48,6 +48,7 @@
       </div>
       <p class="app-footer-note">TickGains is a fan-made tool and is not affiliated with or endorsed by Jagex Ltd. Old School RuneScape is a trademark of Jagex Ltd.</p>
     </footer>
+    <GuestSaveBar @visible="(v) => (saveBar = v)" />
     <FeedbackWidget />
     <ToastHost />
     <ItemModal v-if="modalSlug" :slug="modalSlug" @close="closeItemModal" />
@@ -57,12 +58,13 @@
 <script setup>
 import { track } from '@/utils/analytics'
 import { DISCORD_URL } from '@/config'
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ToastHost from '@/components/ToastHost.vue'
 import ItemModal from '@/components/ItemModal.vue'
 import { closeItemModal, modalSlug } from '@/composables/useItemModal'
 import FeedbackWidget from '@/components/FeedbackWidget.vue'
+import GuestSaveBar from '@/components/guest/GuestSaveBar.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import EmailSignup from '@/components/EmailSignup.vue'
 import AccountMenu from '@/components/AccountMenu.vue'
@@ -71,6 +73,8 @@ import { startVisitorPlans } from '@/utils/visitorPlans'
 import { initModalScrollLock } from '@/utils/modalScrollLock'
 
 const route = useRoute()
+// Whether the signed-out save bar is showing, so the page leaves room for it at the bottom.
+const saveBar = ref(false)
 // The item popup closes when the page changes underneath it.
 watch(() => route.fullPath, closeItemModal)
 const { loggedIn } = useAuth()

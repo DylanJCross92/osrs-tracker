@@ -1,7 +1,5 @@
 <template>
   <div class="trk">
-    <TrackerSaveBanner place="panel" />
-
     <div class="trk-sum">
       <TrackerRing :value="questStats.done" :total="questStats.total" label="Quests" :sub="`${Math.floor(questStats.pct * 100)}% complete`" />
       <TrackerRing :value="qp.have" :total="qp.total" label="Quest points" :sub="qp.have >= qp.total ? 'Quest cape ready' : `${qp.total - qp.have} to go`" />
@@ -25,7 +23,6 @@ import { computed, ref } from 'vue'
 import { useRequirements } from '@/composables/useRequirements'
 import { questPoints } from '@/utils/questProgress'
 import { track } from '@/utils/analytics'
-import TrackerSaveBanner from '@/components/tracker/TrackerSaveBanner.vue'
 import TrackerRing from '@/components/tracker/TrackerRing.vue'
 import TrackerSuggest from '@/components/tracker/TrackerSuggest.vue'
 import QuestsTab from '@/components/tracker/QuestsTab.vue'
