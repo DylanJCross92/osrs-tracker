@@ -1,18 +1,15 @@
 <template>
-  <aside v-if="!loggedIn" class="trk-banner is-guest" role="status" aria-label="Where your progress is saved">
-    <span class="trk-banner-ico" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+  <!-- Signed out: a slim bar fixed to the bottom of the screen, always in view, so it never takes room from the page -->
+  <aside v-if="!loggedIn" class="trk-bar" role="status" aria-label="Where your progress is saved">
+    <span class="trk-bar-ico" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
     </span>
-    <div class="trk-banner-text">
-      <b>Saved in this browser only</b>
-      <span>Clear your browser data, use private mode or switch device and this progress is gone. A free account keeps it safe, syncs it to every device and lets the Account Planner use it in every plan.</span>
+    <p class="trk-bar-text"><b><span class="trk-bar-long">Saved in this browser only.</span><span class="trk-bar-short">Saved here only</span></b> <span>Clearing it or switching device loses your progress.</span></p>
+    <div class="trk-bar-cta">
+      <button class="trk-bar-link" type="button" title="Copies a link that brings back your quests, diaries and plans on any device" @click="copySessionLink('tracker')">Copy link<span class="trk-bar-more"> to save</span></button>
+      <RouterLink class="trk-bar-link" :to="{ name: 'login', query: { next: '/quests' } }" @click="track('tracker_login_click', { place: place })">Log in</RouterLink>
+      <RouterLink class="btn btn-primary" :to="{ name: 'signup', query: { next: '/quests' } }" @click="track('tracker_signup_click', { place: place })">Create <span class="trk-bar-more">free </span>account</RouterLink>
     </div>
-    <div class="trk-banner-cta">
-      <RouterLink class="btn btn-primary" :to="{ name: 'signup', query: { next: '/quests' } }" @click="track('tracker_signup_click', { place: place })">Create a free account</RouterLink>
-      <RouterLink class="btn-text" :to="{ name: 'login', query: { next: '/quests' } }" @click="track('tracker_login_click', { place: place })">Log in</RouterLink>
-      <button class="btn-text" type="button" title="Copies a link that brings back your quests, diaries and plans on any device" @click="copySessionLink('tracker')">Copy link to save session</button>
-    </div>
-
   </aside>
   <!-- Signed in: nothing to say unless saving to the account is failing. -->
   <aside v-else-if="syncState === 'error'" class="trk-banner is-saved" role="status" aria-label="Where your progress is saved">
