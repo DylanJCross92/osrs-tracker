@@ -1,16 +1,12 @@
 <template>
   <aside v-if="show" class="gsb" role="status" aria-label="Your data is only saved in this browser">
-    <span class="gsb-ico" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
-    </span>
     <p class="gsb-text">
-      <b><span class="gsb-long">{{ summary }} saved in this browser only.</span><span class="gsb-short">Saved here only</span></b>
-      <span>Clearing it or switching device loses it.</span>
+      <span class="gsb-long">{{ summary }} saved in this browser only</span>
+      <span class="gsb-short">Saved here only</span>
     </p>
     <div class="gsb-cta">
-      <button class="gsb-link" type="button" title="Copies a link that brings back everything you saved, on any device" @click="copySessionLink('bar')">Copy link<span class="gsb-more"> to save</span></button>
-      <RouterLink class="gsb-link gsb-login" :to="{ name: 'login', query: { next: route.fullPath } }" @click="track('guest_bar_login')">Log in</RouterLink>
-      <RouterLink class="btn btn-primary" :to="{ name: 'signup', query: { next: route.fullPath } }" @click="track('guest_bar_signup')">Create <span class="gsb-more">free </span>account</RouterLink>
+      <button class="gsb-link" type="button" title="Copies a link that brings back everything you saved, on any device" @click="copySessionLink('bar')">Copy link</button>
+      <RouterLink class="btn btn-primary" :to="{ name: 'signup', query: { next: route.fullPath } }" @click="track('guest_bar_signup')">Create account</RouterLink>
     </div>
   </aside>
 </template>
