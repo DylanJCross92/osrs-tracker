@@ -8,6 +8,7 @@
 // ctx: { levels: { Skill: level } | null, planned: { Skill: targetLevel }, plannedQuests: [requirementId], confirmations: { requirementId: 'have' | 'missing' } }
 // plannedQuests are quests the plan itself does first (a chosen quest shortcut), which cover a method that needs them.
 import { requirementsFor } from '@/data/methodRequirements'
+import { diaryAnswer } from '@/data/diaryIds'
 
 export const MET = 'met'
 export const UNMET = 'unmet'
@@ -19,6 +20,8 @@ const fullQuestId = (req) => (req.kind === 'quest' && req.partial ? req.id.repla
 
 /** The player's own answer for a requirement: 'have', 'missing' or null. Confirming a whole quest also covers a partial one. */
 export function confirmationFor(req, confirmations = {}) {
+  // A diary tier is also done when a higher tier of the region is, and the diary cape when every Elite tier is.
+  if (req.kind === 'diary') return diaryAnswer(req.id, confirmations)
   const own = confirmations[req.id]
   if (own === 'have' || own === 'missing') return own
   const full = fullQuestId(req)

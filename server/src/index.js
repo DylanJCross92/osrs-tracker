@@ -181,6 +181,7 @@ app.get('/sitemap.xml', async (req, res) => {
     // The Grand Exchange pages (about 4,500 items, well under the 50,000 a sitemap file may list).
     ...items.slugs.map((slug) => ({ path: `/items/${slug}`, changefreq: 'daily', priority: '0.4', lastmod: items.updatedAt ? items.updatedAt.slice(0, 10) : undefined })),
     { path: '/about', changefreq: 'monthly', priority: '0.3' },
+    { path: '/quests', changefreq: 'monthly', priority: '0.5' },
     { path: '/release-notes', changefreq: 'weekly', priority: '0.3' },
     { path: '/contact', changefreq: 'monthly', priority: '0.3' },
     { path: '/privacy', changefreq: 'yearly', priority: '0.2' },
@@ -497,6 +498,15 @@ if (distExists) {
       path: '/contact',
       h1: 'Contact TickGains',
       paragraphs: ['Found a bug, have an idea, or want a tracked username removed? Join the TickGains Discord or use the feedback button on any page.'],
+    }),
+  )
+  app.get('/quests', (req, res) =>
+    plainPage(res, {
+      title: 'OSRS Quest and Achievement Diary Tracker | TickGains',
+      description: 'Free Old School RuneScape quest tracker and Achievement Diary checklist: tick off every quest and diary tier, see your quest points, and which training methods they open up in the account planner.',
+      path: '/quests',
+      h1: 'OSRS quest and Achievement Diary tracker',
+      paragraphs: ['Tick off every Old School RuneScape quest, miniquest and Achievement Diary tier you have finished. See your quest points, what each quest needs and gives, and which training methods they open up in the TickGains account planner. No account needed; sign up free to keep it on every device.'],
     }),
   )
   app.get('/release-notes', (req, res) =>

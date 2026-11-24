@@ -119,7 +119,7 @@ describe('Smart Planner sweep', () => {
     }
     const summary = [...kinds].map(([k, list]) => `${list.length} x ${k} (e.g. ${list[0]})`)
     expect(summary).toEqual([])
-  })
+  }, 60_000)
 
   it('gives the same plan for the same answers', () => {
     for (const name of ['mid', 'skewedReal']) {

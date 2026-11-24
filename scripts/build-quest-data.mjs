@@ -250,6 +250,12 @@ async function addQuest(name, entry, support = false) {
   }
 }
 for (const [name, entry] of xp) await addQuest(name, entry)
+// Every quest and miniquest on the tracker's list (src/data/questList.js), also those that give no set experience: the tracker shows their quest
+// points, length and what they need. They are kept as "support" entries, so the planner never offers them as a shortcut.
+const listSource = fs.readFileSync(path.join(here, '..', 'src', 'data', 'questList.js'), 'utf8')
+for (const m of listSource.matchAll(/\[\s*"((?:[^"\\]|\\.)*)"\s*,\s*'(F|M|MQ)'\s*\]/g)) {
+  await addQuest(m[1].replace(/\\"/g, '"'), { members: m[2] !== 'F', miniquest: m[2] === 'MQ', rewards: {}, lamps: [] }, true)
+}
 // Everything a quest needs finished first, and what those need, down to the start.
 for (let i = 0; i < out.length; i++) for (const pre of out[i].prereq) await addQuest(pre, null, true)
 // A prerequisite that turns out not to be a quest (a mention of Kudos, a transport system) is dropped, from the list and from what needs it.

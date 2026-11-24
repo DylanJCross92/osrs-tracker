@@ -35,7 +35,7 @@ const reason = (req) => requirementReason(req, props.methodName)
 const ICONS = { [MET]: '✓', [UNMET]: '✗', [UNKNOWN]: '?', [PLANNED]: '↗', info: 'i' }
 const KINDS = { skill: 'level', quest: 'quest', diary: 'diary', equipment: 'item', unlock: 'unlock', note: 'note' }
 
-const { confirmations, setAnswer } = useRequirements()
+const { confirmations, setAnswer, setDiaryDone } = useRequirements()
 const ctx = inject(plannerRequirementContext, null)
 
 // The quests that give an item or unlock, each tickable here the same way as in the quest tracker (the answer is saved under the quest's own id).
@@ -48,7 +48,10 @@ const isConfirmable = (req) => req.kind !== 'skill' && req.kind !== 'note'
 const answer = (req) => confirmationFor(req, confirmations.value)
 function choose(req, value) {
   // Pressing the answer that is already chosen goes back to "not sure".
-  setAnswer(req.id, answer(req) === value ? null : value)
+  const next = answer(req) === value ? null : value
+  // A diary tier needs the ones below it, so "I have this" ticks them too (the same as in the tracker).
+  if (req.kind === 'diary' && next !== 'missing') setDiaryDone(req.id, next === 'have')
+  else setAnswer(req.id, next)
 }
 function stateText(item) {
   const { req, status } = item

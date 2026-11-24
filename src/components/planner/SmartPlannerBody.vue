@@ -122,7 +122,7 @@
             <li>Combat level {{ shown.assumed.combat }}, worked out from your levels.</li>
             <li>{{ shown.assumed.members ? 'Members' : 'Free-to-play' }}{{ shown.assumed.iron ? ', ironman' : '' }}.</li>
             <li v-if="shown.assumed.doneQuests">{{ shown.assumed.doneQuests }} quest{{ shown.assumed.doneQuests === 1 ? '' : 's' }} you marked finished in the planner are left out.</li>
-            <li v-else>No quests are marked finished, so any of them could be suggested. Mark the ones you have done in the planner's quest tracker.</li>
+            <li v-else>No quests are marked finished, so any of them could be suggested. Mark the ones you have done in the <RouterLink :to="{ name: 'quests' }">quest and diary tracker</RouterLink>.</li>
             <li>Quest lengths are for a first run, not a speedrun, and rates are approximate.</li>
           </ul>
           <template v-if="shown.skippedQuests.length">

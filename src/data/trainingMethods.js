@@ -216,7 +216,7 @@ export const TRAINING_METHODS = [
   // --- Cooking ---
   m('Cooking', 'early', 'Shrimp, trout & salmon', 1, 50000, 0, 'Low', 'Cook low-level fish on a range.', '', 29),
   m('Cooking', 'bake-pie', 'Bake Pie (Lunar)', 10, 147000, -1500000, 'Low', 'Lunar spell that also trains Magic. Every pie loses money.', 'Lunar Diplomacy'),
-  m('Cooking', 'karambwan', 'Karambwans (Hosidius, AFK)', 30, 190000, 110000, 'Low', 'Cook raw karambwan at the Hosidius kitchen for steady xp and profit.', 'Tai Bwo Wannai Trio, Hosidius kitchen'),
+  m('Cooking', 'karambwan', 'Karambwans (Hosidius, AFK)', 30, 190000, 110000, 'Low', 'Cook raw karambwan at the Hosidius kitchen for steady xp and profit.', 'Tai Bwo Wannai Trio, Easy Kourend & Kebos Diary'),
   m('Cooking', 'swordfish', 'Swordfish & lobsters (Hosidius)', 40, 100000, -30000, 'Low', 'Cook mid-level fish on the Hosidius range.', 'Cooking gauntlets', 79),
   m('Cooking', 'monkfish', 'Monkfish (Hosidius)', 62, 140000, 20000, 'Low', 'Cook monkfish on the Hosidius range.', 'Cooking gauntlets'),
   m('Cooking', 'wines', 'Jugs of wine', 68, 470000, -191000, 'Medium', 'Make wines in bulk for very fast, cheap xp.', '', null, true),

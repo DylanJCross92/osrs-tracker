@@ -32,3 +32,17 @@ export function questStats(confirmations = {}) {
   const count = by.F.done + by.M.done + by.MQ.done
   return { done: count, total, pct: total ? count / total : 0, by }
 }
+
+/** Quest points earned from the quests marked done, and the most the known quests give (miniquests give none here unless the Wiki lists them). */
+export function questPoints(confirmations = {}) {
+  const done = completedQuestSlugs(confirmations)
+  let have = 0
+  let total = 0
+  for (const q of QUEST_LIST) {
+    const info = ALL_QUESTS.find((x) => questSlug(x.name) === q.slug)
+    const qp = info?.qp || 0
+    total += qp
+    if (done.has(q.slug)) have += qp
+  }
+  return { have, total }
+}

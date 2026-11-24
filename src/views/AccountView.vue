@@ -31,7 +31,10 @@
           <AccountOverview v-if="tab === 'overview'" :profiles="profiles" :unread="unread" @go="goTo" />
           <AccountPlans v-else-if="tab === 'plans'" />
           <AccountGoals v-else-if="tab === 'goals'" :key="activeProfile.username" :profile="activeProfile" />
-          <QuestTracker v-else-if="tab === 'quests'" />
+          <section v-else-if="tab === 'quests'" class="trk-embed">
+            <div class="acc-title"><h2>Quests and diaries</h2><RouterLink class="btn-text" :to="{ name: 'quests' }">Open as a page</RouterLink></div>
+            <TrackerPanel v-model:tab="trackerTab" />
+          </section>
           <ProfileRecords v-else-if="tab === 'records'" :key="activeProfile.username" :player="activeProfile" />
           <AccountNotifications v-else-if="tab === 'notifications'" @unread="onUnread" />
 
@@ -103,7 +106,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ChangePasswordModal from '@/components/ChangePasswordModal.vue'
 import RoleBadges from '@/components/RoleBadges.vue'
-import QuestTracker from '@/components/QuestTracker.vue'
+import TrackerPanel from '@/components/tracker/TrackerPanel.vue'
 import AccountOverview from '@/components/account/AccountOverview.vue'
 import AccountPlans from '@/components/account/AccountPlans.vue'
 import AccountGoals from '@/components/account/AccountGoals.vue'
@@ -145,6 +148,7 @@ const KEYS = TABS.map((t) => t.key)
 // The section lives in the address (?tab=quests), and an old #quests link still lands on the quest tracker.
 const fromRoute = () => (KEYS.includes(route.query.tab) ? route.query.tab : route.hash === '#quests' ? 'quests' : 'overview')
 const tab = ref(fromRoute())
+const trackerTab = ref('quests')
 watch(() => [route.query.tab, route.hash], () => (tab.value = fromRoute()))
 function setTab(key) {
   tab.value = key

@@ -22,8 +22,8 @@
     </p>
     <small class="planner-quests-note">
       Rewards are the fixed XP listed on the OSRS Wiki, so check each quest's full requirements first.
-      <RouterLink v-if="loggedIn" :to="{ name: 'account', hash: '#quests' }">Open your quest tracker</RouterLink>
-      <RouterLink v-else :to="{ name: 'login', query: { next: '/account' } }">Log in to save your finished quests to your account</RouterLink>
+      <RouterLink :to="{ name: 'quests' }">Open your quest and diary tracker</RouterLink>
+      <template v-if="!loggedIn"> <RouterLink :to="{ name: 'signup', query: { next: '/quests' } }">Create a free account</RouterLink> to keep them on every device.</template>
     </small>
   </div>
 </template>
