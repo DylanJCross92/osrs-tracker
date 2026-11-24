@@ -3,7 +3,7 @@ import { TRAINING_METHODS } from '@/data/trainingMethods'
 import { requirementsFor } from '@/data/methodRequirements'
 import { REQUIREMENT_QUESTS } from '@/data/requirementQuests'
 import { QUEST_LIST } from '@/data/questList'
-import { MET, UNKNOWN, methodAvailability, questsBehind, requirementStatus } from '@/utils/requirements'
+import { MET, UNKNOWN, methodAvailability, questsBehind, requirementStatus, routeFlag } from '@/utils/requirements'
 
 const all = TRAINING_METHODS.flatMap((m) => requirementsFor(m).map((r) => ({ m, r })))
 const find = (id) => all.find((x) => x.r.id === id)
@@ -51,5 +51,22 @@ describe('quests behind items and unlocks', () => {
     const m = TRAINING_METHODS.find((x) => x.id === 'smithing-blast-gold')
     const a = methodAvailability(m, { confirmations: { 'quest:family-crest': 'have', 'equipment:goldsmith-gauntlets': 'have', 'quest:the-giant-dwarf': 'have' } })
     expect(a.unmet).toEqual([])
+  })
+})
+
+describe('the marker on a route step', () => {
+  const furnace = TRAINING_METHODS.find((m) => m.id === 'smithing-blast-gold')
+  it('lists what is open, missing first, with the quest behind an item', () => {
+    const flag = routeFlag(furnace, { confirmations: { 'equipment:goldsmith-gauntlets': 'missing' } })
+    expect(flag.state).toBe('blocked')
+    expect(flag.items[0].req.id).toBe('equipment:goldsmith-gauntlets')
+    const open = routeFlag(furnace, { confirmations: {} })
+    expect(open.state).toBe('unconfirmed')
+    expect(open.items.find((i) => i.req.id === 'equipment:goldsmith-gauntlets').req.quests[0].label).toBe('Family Crest')
+  })
+  it('is null when everything is confirmed or the method needs nothing', () => {
+    const all = Object.fromEntries(requirementsFor(furnace).map((r) => [r.id, 'have']))
+    expect(routeFlag(furnace, { confirmations: all })).toBeNull()
+    expect(routeFlag(TRAINING_METHODS.find((m) => !m.requirements), { confirmations: {} })).toBeNull()
   })
 })

@@ -22,7 +22,7 @@
       <span class="planner-step-levels">{{ seg.startLevel }} → {{ seg.endLevel }}</span>
       <span class="planner-step-name">
         <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="20" height="20" loading="lazy" />{{ seg.method ? seg.method.name : 'No catalog method' }}
-        <i v-if="flag(seg)" class="route-req" :class="`is-${flag(seg).state}`" :title="flag(seg).text">{{ flag(seg).state === 'blocked' ? '⚠' : '?' }}</i>
+        <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
         <em v-if="seg.kind === 'manual'">your pick for these levels</em>
         <em v-else-if="seg.kind === 'main'">your chosen method</em>
         <em v-else-if="seg.kind === 'prep'">to unlock it</em>
@@ -74,7 +74,8 @@
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import MethodPicker from '@/components/planner/MethodPicker.vue'
-import { methodAvailability, unmetText } from '@/utils/requirements'
+import { routeFlag } from '@/utils/requirements'
+import RouteReqTip from '@/components/planner/RouteReqTip.vue'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { methodsForSkill } from '@/data/trainingMethods'
 import { methodIconSrc } from '@/data/methodIcons'
@@ -169,12 +170,6 @@ function choose(seg, id) {
 
 const reqCtx = inject(plannerRequirementContext, null)
 // A marker next to a step whose method has a missing or unconfirmed requirement.
-function flag(seg) {
-  if (!seg.method?.requirements || !reqCtx) return null
-  const a = methodAvailability(seg.method, reqCtx.value)
-  if (a.state === 'blocked') return { state: 'blocked', text: `Missing requirement: ${unmetText(a)}` }
-  if (a.state === 'unconfirmed') return { state: 'unconfirmed', text: 'Some requirements are not confirmed yet' }
-  return null
-}
+const flag = (seg) => routeFlag(seg.method, reqCtx?.value)
 const gpClass = (gp) => (gp == null ? '' : gp >= 0 ? 'planner-gain' : 'planner-cost')
 </script>

@@ -7,7 +7,7 @@
         <b>{{ showSkill ? `${step.skill} ` : '' }}<em>{{ step.seg.startLevel }} → {{ step.seg.endLevel }}</em></b>
         <span class="prs-method">
           <img v-if="icon" class="route-ico" :src="icon" alt="" width="20" height="20" loading="lazy" />{{ step.seg.method ? step.seg.method.name : 'No catalog method' }}
-          <i v-if="flag" class="route-req" :class="`is-${flag.state}`" :title="flag.text">{{ flag.state === 'blocked' ? '⚠' : '?' }}</i>
+          <RouteReqTip v-if="flag" :flag="flag" />
         </span>
       </span>
       <span class="prs-stats">
@@ -50,7 +50,8 @@ import GpTip from '@/components/planner/GpTip.vue'
 import { isLive } from '@/utils/methodPricing'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
-import { methodAvailability, unmetText } from '@/utils/requirements'
+import { methodAvailability, routeFlag } from '@/utils/requirements'
+import RouteReqTip from '@/components/planner/RouteReqTip.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { methodIconSrc } from '@/data/methodIcons'
 import { formatGp, formatHours, formatNum } from '@/utils/planner'
@@ -66,13 +67,7 @@ defineEmits(['toggle', 'open-goal'])
 const STATE_TEXT = { blocked: 'Requirement missing', unconfirmed: 'Needs confirming', planned: 'Your plan covers it', available: 'Requirements met' }
 const reqCtx = inject(plannerRequirementContext, null)
 const avail = computed(() => (props.step.seg.method?.requirements && reqCtx ? methodAvailability(props.step.seg.method, reqCtx.value) : null))
-const flag = computed(() => {
-  const a = avail.value
-  if (!a) return null
-  if (a.state === 'blocked') return { state: 'blocked', text: `Missing requirement: ${unmetText(a)}` }
-  if (a.state === 'unconfirmed') return { state: 'unconfirmed', text: 'Some requirements are not confirmed yet' }
-  return null
-})
+const flag = computed(() => routeFlag(props.step.seg.method, reqCtx?.value))
 const icon = computed(() => methodIconSrc(props.step.seg.method))
 const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 </script>

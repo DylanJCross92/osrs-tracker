@@ -111,3 +111,17 @@ export function cleanConfirmations(raw) {
   }
   return out
 }
+
+/**
+ * The marker for a step in a route whose method has a missing or unconfirmed requirement, or null when there is nothing to flag.
+ * { state: 'blocked' | 'unconfirmed', text, items }: `items` are the requirements still open (missing first, then not confirmed, then what the plan trains).
+ */
+export function routeFlag(method, ctx) {
+  if (!method?.requirements || !ctx) return null
+  const a = methodAvailability(method, ctx)
+  if (a.state !== 'blocked' && a.state !== 'unconfirmed') return null
+  const items = [...a.unmet, ...a.unknown, ...a.planned]
+  return a.state === 'blocked'
+    ? { state: 'blocked', text: `Missing requirement: ${unmetText(a)}`, method: method.name, items }
+    : { state: 'unconfirmed', text: 'Some requirements are not confirmed yet', method: method.name, items }
+}
