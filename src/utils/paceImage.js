@@ -145,14 +145,6 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
       ctx.fillText(badge.text, x0 + 16, y + 69)
     }
   }
-  if (xpText) {
-    ctx.textAlign = 'right'
-    ctx.fillStyle = C.muted
-    ctx.font = `500 22px ${family}`
-    ctx.fillText(xpText, W - PAD, y + 66)
-    ctx.textAlign = 'left'
-  }
-
   // The chart
   const area = { left: PAD + 64, top: 372, width: W - PAD * 2 - 64 - 14, height: 300 }
   const geo = chartGeometry(series, area)
@@ -202,13 +194,13 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
     ctx.strokeStyle = 'rgba(236,228,211,0.45)'
     ctx.setLineDash([4, 5])
     ctx.beginPath()
-    ctx.moveTo(geo.todayX, area.top)
+    ctx.moveTo(geo.todayX, area.top - 22)
     ctx.lineTo(geo.todayX, area.top + area.height)
     ctx.stroke()
     ctx.setLineDash([])
     ctx.fillStyle = C.muted
     ctx.textAlign = geo.todayX > area.left + area.width * 0.85 ? 'right' : 'center'
-    ctx.fillText('Today', geo.todayX, area.top - 8)
+    ctx.fillText('Today', geo.todayX, area.top - 30)
     ctx.textAlign = 'left'
   }
   const path = (pts) => {
@@ -268,7 +260,12 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.fillRect(PAD, H - 64, W - PAD * 2, 2)
   ctx.fillStyle = C.muted
   ctx.font = `500 20px ${family}`
-  ctx.fillText('Progress is measured from the stats the plan started with', PAD, H - 26)
+  ctx.fillText('Measured from the stats the plan started with', PAD, H - 26)
+  if (xpText) {
+    ctx.textAlign = 'right'
+    ctx.fillText(xpText, W - PAD, H - 26)
+    ctx.textAlign = 'left'
+  }
 
   return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the picture.'))), 'image/png'))
 }
