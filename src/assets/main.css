@@ -7403,3 +7403,52 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
   .trk-banner-text { font-size: 0.84rem; }
 }
 @media (max-width: 640px) { .trk-hint { display: none; } }
+
+/* Back up or move guest data */
+.gb-modal.modal-card { width: min(560px, calc(100vw - 24px)); max-width: none; }
+.gb-page { max-width: 640px; }
+.gb { display: grid; gap: 14px; }
+.gb-pane { display: grid; gap: 12px; }
+.gb-lead { margin: 0; color: var(--muted); font-size: 0.92rem; line-height: 1.5; }
+.gb-has { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.gb-has li { padding: 3px 12px; border-radius: 999px; border: 1px solid var(--border); font-size: 0.86rem; color: var(--muted); }
+.gb-has b { color: var(--gold-bright); }
+.gb-field { display: grid; gap: 6px; }
+.gb-field span { font-size: 0.84rem; font-weight: 600; }
+.gb-field textarea { width: 100%; resize: vertical; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: rgba(0, 0, 0, 0.25); color: var(--text); font: 0.78rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.gb-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.gb-actions small { flex: 1 1 100%; color: var(--muted); font-size: 0.76rem; }
+.gb-note { margin: 0; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
+.gb-empty { margin: 0; color: var(--muted); }
+.gb-error { margin: 0; color: #e58a7c; font-size: 0.86rem; }
+.gb-found { display: grid; gap: 10px; padding: 12px 0 0; border-top: 1px solid var(--border); }
+.gb-found p { margin: 0; }
+.gb-account { margin: 4px 0 0; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.84rem; }
+.gb-account a { color: var(--gold-bright); font-weight: 600; }
+
+/* Not signed in: what is kept in this browser and how to make it last */
+.gk { display: flex; align-items: flex-start; gap: 16px; margin: 0 0 16px; padding: 14px 18px; border-radius: 14px; border: 1px solid rgba(240, 190, 90, 0.5); background: linear-gradient(100deg, rgba(240, 190, 90, 0.14), rgba(240, 190, 90, 0.03) 70%); }
+.gk-ico { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #1b1508; background: linear-gradient(135deg, #f9e3a8, #e0a94a); }
+.gk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 0.88rem; line-height: 1.45; }
+.gk-main > b { color: #f6d98a; font-size: 1rem; }
+.gk-main > span { color: var(--muted); }
+.gk-tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 4px; }
+.gk-link { background: none; border: 0; padding: 0; color: var(--gold-bright); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; text-align: left; }
+.gk-link:hover { text-decoration: underline; }
+.gk-ok { color: #9fd48a; font-size: 0.84rem; }
+.gk-tip { margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.05); color: var(--text); font-size: 0.82rem; }
+.gk-tip b { color: var(--gold-bright); }
+.gk-cta { flex: none; display: flex; align-items: center; gap: 14px; align-self: center; }
+@media (max-width: 760px) { .gk { flex-wrap: wrap; padding: 12px 14px; gap: 10px; } .gk-cta { width: 100%; } .gk-cta .btn { flex: 1; text-align: center; } }
+
+/* Following: since you were last here */
+.fol-since { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(201, 182, 255, 0.35); background: linear-gradient(100deg, rgba(167, 139, 250, 0.14), rgba(240, 201, 118, 0.05)); }
+.fol-since-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.fol-since-head .btn-text { white-space: nowrap; }
+.fol-since-head b { font-size: 0.9rem; }
+.fol-since-head small { color: var(--muted); flex: 1; }
+.fol-since ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: 0.86rem; }
+.fol-since li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.fol-since a { color: var(--text); font-weight: 600; }
+.fol-since-gain { color: #9fd48a; font-weight: 600; }
+.fol-since em { font-style: normal; color: var(--gold-bright); font-size: 0.78rem; font-weight: 700; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(217, 175, 82, 0.5); }

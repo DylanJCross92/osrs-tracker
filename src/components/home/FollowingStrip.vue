@@ -6,6 +6,22 @@
       <RouterLink class="fol-more" :to="{ name: 'compare' }">Compare players →</RouterLink>
     </header>
 
+    <!-- A returning visitor (signed in or not): what changed for these players since they last looked -->
+    <div v-if="since && !gotIt" class="fol-since">
+      <div class="fol-since-head">
+        <b>Since you were last here</b>
+        <small>{{ awayText(since.since) }}</small>
+        <button class="btn-text" type="button" @click="gotIt = true">Got it</button>
+      </div>
+      <ul>
+        <li v-for="r in since.rows.slice(0, 4)" :key="r.username">
+          <RouterLink :to="{ name: 'playerDetail', params: { username: r.username } }">{{ r.displayName }}</RouterLink>
+          <span v-if="r.gain" class="fol-since-gain">+{{ formatXp(r.gain) }} XP</span>
+          <em v-for="m in r.milestones" :key="m">{{ m }}</em>
+        </li>
+      </ul>
+    </div>
+
     <p v-if="!players.length" class="fol-empty">None of the players you follow have data yet.</p>
 
     <ul v-else class="fol-list">
@@ -38,10 +54,12 @@ import PlayerBadge from '@/components/PlayerBadge.vue'
 import { followsApi } from '@/api/follows'
 import { useFollowing } from '@/composables/useFollowing'
 import { formatXp } from '@/utils/osrsSkills'
+import { awayText, readVisit, sinceLastVisit, writeVisit, xpMap } from '@/utils/lastVisit'
 
 // The players you follow, with today's gain and their latest milestone. Hidden until you follow someone.
 const { following } = useFollowing()
 const players = ref([])
+const events = ref([])
 // Starts loading when there is anyone to load, so the skeleton shows from the first paint.
 const loading = ref(following.value.length > 0)
 const shown = computed(() => following.value.length > 0)
@@ -49,6 +67,27 @@ const shown = computed(() => following.value.length > 0)
 const LIMIT = 6
 const showAll = ref(false)
 const shownPlayers = computed(() => (showAll.value ? players.value : players.value.slice(0, LIMIT)))
+
+// What the visitor saw last time, read once when the page opens (before this visit overwrites it), so "since you were last here" is measured from then.
+// The same baseline holds for the whole visit, even if the page is reloaded in it (the stored time moves on with every look).
+const BASE_KEY = 'tickgains-visit-baseline'
+function baseline() {
+  try {
+    const kept = JSON.parse(sessionStorage.getItem(BASE_KEY) || 'null')
+    if (kept) return kept
+    const fresh = readVisit()
+    if (fresh) sessionStorage.setItem(BASE_KEY, JSON.stringify(fresh))
+    return fresh
+  } catch {
+    return readVisit()
+  }
+}
+const earlier = baseline()
+const remember = (list) => {
+  writeVisit({ at: Date.now(), xp: xpMap(list) })
+}
+const gotIt = ref(false)
+const since = computed(() => sinceLastVisit(earlier, players.value, events.value))
 
 let stamp = 0
 // quiet: a refresh of what is already shown, so no loading state.
@@ -62,7 +101,11 @@ async function load({ quiet = false } = {}) {
   if (!quiet) loading.value = true
   try {
     const res = await followsApi.feed(names)
-    if (id === stamp) players.value = res.players
+    if (id === stamp) {
+      players.value = res.players
+      events.value = res.events || []
+      remember(res.players)
+    }
   } catch {
     // The strip simply stays as it was.
   } finally {

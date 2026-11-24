@@ -16,6 +16,7 @@ const routes = [
     component: () => import('@/views/HomeGate.vue'),
   },
   { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
+  { path: '/restore', name: 'restore', component: () => import('@/views/RestoreView.vue') },
   { path: '/quests', name: 'quests', component: () => import('@/views/TrackerView.vue') },
   { path: '/release-notes', name: 'releaseNotes', component: () => import('@/views/ReleaseNotesView.vue') },
   { path: '/privacy', name: 'privacy', component: () => import('@/views/PrivacyView.vue') },
@@ -123,7 +124,8 @@ export function createAppRouter() {
     routes,
     scrollBehavior(to, from) {
       // Footer links like /#features scroll to their section (below the sticky nav).
-      if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' }
+      // (A restore link carries a save code after the #, which is not an element to scroll to.)
+      if (to.hash && to.name !== 'restore') return { el: to.hash, top: 80, behavior: 'smooth' }
       // Opening or closing a skill inside the same plan changes the address but not the page position.
       if (to.params.id && to.params.id === from.params.id) return false
       // The quest and diary tracker keeps its place when its Quests / Diaries tab changes (the tab is in the address).

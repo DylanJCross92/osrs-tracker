@@ -24,6 +24,10 @@
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1.1 8.7 3 5 6.4 5c2 0 3.4 1.1 4.2 2.4h2.8C14.2 6.1 15.6 5 17.6 5 21 5 22.9 8.7 21.3 11.9 19 16.4 12 21 12 21z" /></svg>
             {{ isFollowing(player.displayName) ? 'Following' : 'Follow' }}
           </button>
+          <button v-if="player && !isProfileOwner && !profiles.length" class="btn btn-ghost" :class="{ 'is-following': isMine }" type="button" :aria-pressed="isMine" :title="isMine ? 'Saved in this browser as your player. Click to undo.' : 'Save this as your player in this browser: the home page becomes your dashboard'" @click="toggleMe">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6" /></svg>
+            {{ isMine ? 'This is you' : 'This is me' }}
+          </button>
           <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
             {{ claim.mine === 'pending' ? 'Finish claim' : 'Claim' }}
@@ -379,7 +383,7 @@ watch(
 )
 
 // Compare opens against your saved name when you have one (and this is not you), otherwise with this player first.
-const { me: myName } = useRivals()
+const { me: myName, setMe, clearMe } = useRivals()
 const compareLink = computed(() => {
   const name = player.value?.username || usernameParam.value
   const mine = myName.value
@@ -497,6 +501,19 @@ async function toggleFollow() {
   track(now ? 'follow' : 'unfollow', { source: 'profile' })
   loadFollowCounts()
 }
+// "This is me": no account needed. The player is remembered in this browser and the home page becomes their dashboard.
+const isMine = computed(() => !!player.value && String(myName.value).toLowerCase() === player.value.username.toLowerCase())
+function toggleMe() {
+  if (!player.value) return
+  if (isMine.value) {
+    clearMe()
+    showToast(`${player.value.displayName} is no longer saved as you.`)
+  } else {
+    setMe(player.value.displayName)
+    showToast(`Saved ${player.value.displayName} as you. The home page is now your dashboard.`)
+  }
+  track(isMine.value ? 'profile_set_me' : 'profile_clear_me')
+}
 // How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)
 // What the owner added to this profile (bio, status, links, hidden tabs). Visitors get it too.
@@ -561,7 +578,7 @@ watch(
   { immediate: true },
 )
 const claimOpen = ref(false)
-const { loggedIn } = useAuth()
+const { loggedIn, profiles } = useAuth()
 function openClaim() {
   claimOpen.value = true
   track('claim_open', { signed_in: loggedIn.value })

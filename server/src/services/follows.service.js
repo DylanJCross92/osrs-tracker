@@ -128,6 +128,8 @@ export async function getFollowingFeed(rawNames) {
         badge: p.badge,
         claimed: p.claimed,
         overallLevel: p.latest?.overallLevel ?? null,
+        // Total XP now, so a returning visitor can be told what changed since they last looked.
+        overallXp: p.latest?.overallXp ?? null,
         dayGain: p.gains?.day?.xp > 0 ? p.gains.day.xp : 0,
         weekGain: p.gains?.week?.xp > 0 ? p.gains.week.xp : 0,
         topSkill: p.gains?.week?.topSkill ?? null,

@@ -7,6 +7,9 @@
       </div>
     </header>
 
+    <!-- Plans saved in this browser only: say so, and how to keep them -->
+    <GuestKeepCard place="planner" :always="false" />
+
     <ul class="po-grid">
       <li class="po-new">
         <RouterLink class="po-new-link" :to="{ name: 'plannerNew' }">
@@ -75,6 +78,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
+import GuestKeepCard from '@/components/guest/GuestKeepCard.vue'
 import { formatDays, formatGp, formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
 import { useProfilePlansFor } from '@/composables/useProfilePlan'

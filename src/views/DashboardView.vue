@@ -49,6 +49,9 @@
         </div>
       </header>
 
+      <!-- Not signed in: say what is kept in this browser and how to make it last -->
+      <GuestKeepCard place="dashboard" />
+
       <div class="dash-grid">
         <div class="dash-main">
           <!-- Your week -->
@@ -120,8 +123,10 @@
           <DashSkeleton v-if="current && firstLoad" kind="milestones" />
           <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
+          <TrackerLink place="dashboard" />
           <DashSkeleton v-if="current && firstLoad" kind="goals" />
-          <section v-else-if="current" class="card dash-card" aria-labelledby="dash-goals-h">
+          <!-- Goals come from a plan shown on a claimed profile, so they are for signed-in owners -->
+          <section v-else-if="current && loggedIn" class="card dash-card" aria-labelledby="dash-goals-h">
             <header class="dash-card-head">
               <h2 id="dash-goals-h">Goals</h2>
               <RouterLink v-if="shownGoals.length" class="dash-more" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'goals' } }">All goals →</RouterLink>
@@ -159,6 +164,8 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
+import GuestKeepCard from '@/components/guest/GuestKeepCard.vue'
+import TrackerLink from '@/components/planner/TrackerLink.vue'
 import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashWelcome from '@/components/dashboard/DashWelcome.vue'
@@ -192,7 +199,7 @@ setPageMeta({ title: 'Your dashboard', description: 'Your week, goals and plans 
 
 const router = useRouter()
 const store = usePlayersStore()
-const { profiles, profilesReady } = useAuth()
+const { profiles, profilesReady, loggedIn } = useAuth()
 const { me } = useRivals()
 const { following } = useFollowing()
 const { confirmations, respect } = useRequirements()
