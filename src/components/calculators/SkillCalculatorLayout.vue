@@ -69,6 +69,11 @@
       </div>
 
       <div class="calc-strategy">
+        <AccountTypeToggle v-model="members" label="Account" />
+      </div>
+      <p v-if="!members && !hasFreeRoute" class="acct-note" role="status">We have no free-to-play route for {{ skill }} yet, so it is worked out with members methods.</p>
+
+      <div class="calc-strategy">
         <span class="strategy-label">Training strategy</span>
         <div class="range-tabs strategy-tabs" role="group" aria-label="Training strategy">
           <button v-for="st in STRATEGIES" :key="st" type="button" :class="{ active: methodChoice === 'strategy' && strategy === st }" :title="STRATEGY_HINTS[st]" @click="setStrategy(st)">{{ TAB_LABELS[st] }}</button>
@@ -216,6 +221,9 @@
 </template>
 
 <script setup>
+import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
+import { useAccountType } from '@/composables/useAccountType'
+import { freeMethodIds } from '@/utils/membership'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NumberInput from '@/components/NumberInput.vue'
@@ -371,7 +379,13 @@ const inputError = computed(() => {
 })
 
 // --- Methods and calculation (the Account Planner's engine) ---
-const methods = computed(() => relevantMethods(skill, levelAtXp(currentXpNum.value, true), levelAtXp(targetXpNum.value, true)))
+// Free-to-play or members, the same everywhere on the site (see useAccountType.js). Free-to-play keeps the free methods only (for a skill that has some).
+const { members: membersRef, setMembersPref } = useAccountType()
+const members = computed({ get: () => membersRef.value, set: (v) => setMembersPref(v) })
+const freeIds = freeMethodIds(skill)
+const hasFreeRoute = freeIds.length > 0
+const freeOnly = computed(() => !members.value && hasFreeRoute)
+const methods = computed(() => relevantMethods(skill, levelAtXp(currentXpNum.value, true), levelAtXp(targetXpNum.value, true)).filter((m) => !freeOnly.value || freeIds.includes(m.id)))
 const method = computed(() => (isAuto(resolvedId.value) || resolvedId.value === 'custom' ? null : getMethod(resolvedId.value)))
 const methodRoutes = computed(() => [{ value: 'strategy', label: `Best route (${STRATEGY_LABELS[strategy.value]})`, sub: 'Picks the best method at every level' }])
 // The Profitable strategy only appears when something can actually make gp between your levels.
@@ -392,7 +406,12 @@ const goal = computed(() => ({
 }))
 const allCount = allSkillMethods.length
 const allowedCount = computed(() => allCount - excluded.value.size)
-const allowedIds = computed(() => (excluded.value.size ? allSkillMethods.filter((m) => !excluded.value.has(m.id)).map((m) => m.id) : null))
+const allowedIds = computed(() => {
+  const kept = excluded.value.size ? allSkillMethods.filter((m) => !excluded.value.has(m.id)).map((m) => m.id) : null
+  if (!freeOnly.value) return kept
+  const free = kept ? kept.filter((id) => freeIds.includes(id)) : freeIds
+  return free.length ? free : freeIds
+})
 const presets = METHOD_PRESETS[skill] || []
 function toggleMethod(id) {
   const next = new Set(excluded.value)

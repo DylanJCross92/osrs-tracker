@@ -218,7 +218,7 @@
       </template>
     </PlannerPlanSettings>
     <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
-    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" @add="addGoal" @close="showAdd = false" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" @add="addGoalFrom" @close="showAdd = false" />
   </div>
 </template>
 
@@ -284,6 +284,7 @@ import {
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
 import { applyMembership } from '@/utils/membership'
+import { membersPref, useAccountType } from '@/composables/useAccountType'
 import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
 import {
@@ -505,9 +506,12 @@ const goals = ref([])
 const { playHours, setPlayHours } = usePlayHours()
 const hoursPerDay = ref(playHours())
 // Free-to-play (false) or members: a free-to-play plan trains with free methods only (see utils/membership.js).
-const members = ref(true)
+const { setMembersPref } = useAccountType()
+// A new plan starts with the account type last chosen anywhere on the site.
+const members = ref(membersPref())
 function setMembers(value) {
   members.value = value !== false
+  setMembersPref(members.value)
   goals.value = applyMembership(goals.value, members.value)
   track('planner_members', { members: members.value })
 }
@@ -857,6 +861,11 @@ function openAdd(skill) {
   showAdd.value = true
   track('planner_add_goal_open')
 }
+// The add-goal window can also change free-to-play or members, which is a setting of the whole plan.
+function addGoalFrom(goal, wantMembers) {
+  if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
+  addGoal(goal)
+}
 function addGoal(goal) {
   if (goals.value.some((g) => g.skill === goal.skill)) return
   const first = !goals.value.length
@@ -1093,7 +1102,7 @@ function personalizeTemplate() {
   // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
   if (template.value?.recommendedId) {
     const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
-    if (rec) goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals
+    if (rec) goals.value = applyMembership(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals, members.value)
     else goals.value = []
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
@@ -1148,13 +1157,13 @@ function keepCurrentPlanBefore(name) {
 // `save: false` opens the plan on /planner/new without saving it: nothing is kept until they press Save plan.
 function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
-  members.value = true
+  members.value = membersPref()
   hoursPerDay.value = playHours()
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
   // A new plan starts in the suggested order (see utils/smartOrder.js), tailored to the player's stats.
-  goals.value = smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals
+  goals.value = applyMembership(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals, members.value)
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)
@@ -1313,7 +1322,7 @@ async function loadSaved(stored, { silent = false } = {}) {
 }
 // A blank planner with no plan picked: play with the calculators, share what you put together, save it only if you want to.
 function startNew() {
-  members.value = true
+  members.value = membersPref()
   hoursPerDay.value = playHours()
   goals.value = []
   currentPlanId.value = ''

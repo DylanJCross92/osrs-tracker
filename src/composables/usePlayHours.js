@@ -35,7 +35,14 @@ export function usePlayHours() {
     if (hours == null || hours === chosen.value) return chosen.value
     chosen.value = hours
     try {
-      localStorage.setItem(KEY, JSON.stringify({ hours }))
+      let other = {}
+      try {
+        const raw = JSON.parse(localStorage.getItem(KEY) || 'null')
+        if (raw && typeof raw === 'object' && !Array.isArray(raw)) other = raw
+      } catch {
+        /* none yet */
+      }
+      localStorage.setItem(KEY, JSON.stringify({ ...other, hours }))
     } catch {
       /* storage unavailable */
     }

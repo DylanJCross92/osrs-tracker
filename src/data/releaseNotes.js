@@ -12,7 +12,7 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-24',
     items: [
-      { kind: 'new', text: 'Plan settings now ask whether you are free-to-play or a member. A free-to-play plan trains with free methods only (from the wiki\'s free-to-play guides), says which skills it has no free route for, and the choice is kept in saved plans, shared links and your account.' },
+      { kind: 'new', text: 'Free-to-play or members is a switch everywhere you plan: the plan settings, the add-skill-goal window, every skill calculator, the quick planner on a profile and the Smart Planner. A free-to-play route uses free methods only (from the wiki\'s free-to-play guides), says which skills it has no free route for, and your choice is remembered for every new plan, in your account too.' },
       { kind: 'new', text: 'Share your plan\'s progress: a Share button in the corner of the progress card opens a window with a clean picture of the pace chart (plan name, finish date, how complete it is, your progress and pace) to download, copy or post, plus a link to the plan.' },
       { kind: 'new', text: 'The dashboard now names your next quest: the one that does the most for the plan you are working on (a quest your route leans on, or one whose XP your plan would otherwise train for), or the best thing to do next. Press it and the tracker opens on that quest.' },
       { kind: 'new', text: 'Combat level badge: every profile, dashboard and top-gainer card now shows the player\'s combat level under their picture, in gold at 100 and up.' },

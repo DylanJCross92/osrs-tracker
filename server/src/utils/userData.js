@@ -75,11 +75,12 @@ function cleanPlannerProfile(v) {
   return out
 }
 
-// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24), used for every new plan.
+// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24) and whether they are free-to-play or a member, used for every new plan.
 function cleanPlannerPrefs(v) {
   if (!isObj(v)) return null
   const out = {}
   if (Number.isFinite(Number(v.hours))) out.hours = Math.min(24, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
+  if (typeof v.members === 'boolean') out.members = v.members
   return out
 }
 

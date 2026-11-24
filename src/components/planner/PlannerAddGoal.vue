@@ -51,11 +51,13 @@
       <section class="agm-route" aria-label="Your route">
         <div class="agm-route-head">
           <h3>Your route</h3>
+          <AccountTypeToggle v-model="draftMembers" />
           <div class="range-tabs agm-strategy" role="group" aria-label="Training strategy">
             <button v-for="s in STRATEGIES" :key="s" type="button" :class="{ active: strategy === s }" :aria-pressed="strategy === s" :title="STRATEGY_HINTS[s]" @click="setStrategy(s)">{{ STRATEGY_LABELS[s] }}</button>
           </div>
         </div>
 
+        <p v-if="!draftMembers && !hasFreeRoute" class="acct-note" role="status">We have no free-to-play route for {{ form.skill }} yet, so it is worked out with members methods.</p>
         <template v-if="preview">
           <p class="agm-route-help">The best method for each set of levels, {{ STRATEGY_LABELS[strategy].toLowerCase() }}. Press <b>Choose method</b> on any step to see the options and pick your own.</p>
           <PlannerRoute :segments="preview.segments" :quests="preview.questList" :skill="form.skill" @set="setRange" />
@@ -83,6 +85,8 @@
 </template>
 
 <script setup>
+import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
+import { applyMembership, freeMethodIds } from '@/utils/membership'
 import { computed, reactive, ref } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
@@ -100,6 +104,8 @@ const props = defineProps({
   // Methods the planner skips and quests already finished, so the route here matches the one the goal will get.
   blockedMethodIds: { type: Array, default: () => [] },
   doneQuestIds: { type: Array, default: () => [] },
+  // Free-to-play or members, as the plan has it now (changed here, it applies to the whole plan when the goal is added).
+  members: { type: Boolean, default: true },
 })
 const emit = defineEmits(['add', 'close'])
 
@@ -109,6 +115,9 @@ const STRATEGY_HINTS = {
   [AUTO_CHEAP]: 'Minimises net gp spent, even if it is slower.',
   [AUTO_BALANCED]: 'A middle ground between speed and cost.',
 }
+
+const draftMembers = ref(props.members)
+const hasFreeRoute = computed(() => freeMethodIds(form.skill).length > 0)
 
 const taken = computed(() => new Set(props.existingSkills))
 const firstFree = SKILL_NAMES.find((s) => !props.existingSkills.includes(s)) || SKILL_NAMES[0]
@@ -176,7 +185,8 @@ const baseGoal = computed(() => {
   const cur = Math.min(Math.max(Math.floor(form.currentXp || 0), 0), MAX_XP)
   if (targetXp.value <= cur) return null
   const id = strategy.value
-  return resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue)
+  const goal = resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue)
+  return applyMembership([goal], draftMembers.value)[0]
 })
 const suggested = computed(() => (baseGoal.value ? suggestedQuests(baseGoal.value) : []))
 const preview = computed(() => (baseGoal.value ? planGoal({ ...baseGoal.value, quests: suggested.value }) : null))
@@ -204,6 +214,6 @@ function submit() {
   }
   const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [...suggested.value] }
   if (form.overrides.length) goal.overrides = form.overrides.map((o) => ({ ...o }))
-  emit('add', goal)
+  emit('add', applyMembership([goal], draftMembers.value)[0], draftMembers.value)
 }
 </script>

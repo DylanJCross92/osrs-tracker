@@ -33,6 +33,8 @@
       </div>
 
       <!-- Route -->
+      <div class="qp-account"><AccountTypeToggle v-model="members" label="Account" /></div>
+      <p v-if="!members && !hasFreeRoute" class="acct-note" role="status">We have no free-to-play route for {{ skill }} yet, so it is worked out with members methods.</p>
       <div class="qp-strategies" role="tablist" aria-label="Route">
         <button v-for="s in STRATEGIES" :key="s.key" type="button" role="tab" :aria-selected="strategy === s.key" class="qp-tab" :class="{ active: strategy === s.key }" @click="setStrategy(s.key)">{{ s.label }}</button>
       </div>
@@ -64,6 +66,9 @@
 </template>
 
 <script setup>
+import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
+import { useAccountType } from '@/composables/useAccountType'
+import { freeMethodIds } from '@/utils/membership'
 import { computed, ref, watch } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_PROFIT, MAX_XP, compareMethods, encodePlan, formatGp, formatHours, formatNum, levelAtXp, planGoal, xpAtLevel } from '@/utils/planner'
@@ -140,16 +145,22 @@ watch(() => [props.skill, props.username], () => {
   strategy.value = AUTO_FAST
 })
 
-const goal = computed(() => ({ skill: props.skill, currentXp: props.xp, targetXp: active.value.targetXp || 0 }))
+// Free-to-play or members, the same everywhere on the site (see useAccountType.js).
+const { members: membersRef, setMembersPref } = useAccountType()
+const members = computed({ get: () => membersRef.value, set: (v) => setMembersPref(v) })
+const freeIds = computed(() => freeMethodIds(props.skill))
+const hasFreeRoute = computed(() => freeIds.value.length > 0)
+const freeOnly = computed(() => !members.value && hasFreeRoute.value)
+const goal = computed(() => ({ skill: props.skill, currentXp: props.xp, targetXp: active.value.targetXp || 0, ...(freeOnly.value ? { allowedMethodIds: freeIds.value } : {}) }))
 const plan = computed(() => (hasTarget.value ? planGoal({ ...goal.value, methodId: strategy.value }) : null))
 const days = computed(() => (plan.value?.hours == null ? null : plan.value.hours === 0 ? 0 : Math.ceil(plan.value.hours / hoursPerDay.value)))
 // Each catalog method on its own (with a fastest climb up to it), quickest first.
-const methodRows = computed(() => (hasTarget.value ? compareMethods(goal.value).slice(0, 8) : []))
+const methodRows = computed(() => (hasTarget.value ? compareMethods(goal.value).filter((r) => !freeOnly.value || freeIds.value.includes(r.method.id)).slice(0, 8) : []))
 
 const plannerQuery = computed(() => {
   const target = active.value.targetXp
   if (!target || target <= props.xp) return props.username ? { u: props.username } : {}
-  const params = encodePlan({ username: props.username, hoursPerDay: hoursPerDay.value, goals: [{ skill: props.skill, currentXp: props.xp, targetXp: target, methodId: strategy.value, customXpPerHour: 0 }] })
+  const params = encodePlan({ username: props.username, hoursPerDay: hoursPerDay.value, goals: [{ skill: props.skill, currentXp: props.xp, targetXp: target, methodId: strategy.value, customXpPerHour: 0 }], members: members.value })
   return Object.fromEntries(params)
 })
 
