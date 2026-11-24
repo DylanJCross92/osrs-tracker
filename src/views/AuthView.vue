@@ -175,8 +175,13 @@ async function submit() {
       track('login')
     } else if (props.mode === 'signup') {
       const res = await signUp({ email: email.value, password: password.value, confirmPassword: confirmPassword.value, newsletter: newsletter.value, website: website.value })
-      pending.value = { email: res.email, emailSent: res.emailSent }
       track('sign_up_started', { method: 'email', newsletter: newsletter.value })
+      // Signed in already (local development only): straight on, with no "check your email" step.
+      if (res.signedIn) {
+        router.replace(destination())
+        return
+      }
+      pending.value = { email: res.email, emailSent: res.emailSent }
       if (res.emailSent) startCooldown()
       nextTick(() => window.scrollTo({ top: 0, behavior: 'smooth' }))
       return

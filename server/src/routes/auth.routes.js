@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { sendMail, mailConfigured } from '../utils/mailer.js'
+import { skipsEmailConfirmation } from '../utils/localSignup.js'
 import { renderEmail } from '../utils/emailTemplate.js'
 import { hasRole } from '../utils/roles.js'
 import { linkVisitor, noteActivity, recordLogin } from '../services/events.service.js'
@@ -120,7 +121,7 @@ function linkBrowser(req, user, opts) {
   linkVisitor(vid, user.id, opts).catch(() => {})
 }
 
-// Creating an account does not log you in: the email has to be confirmed first (see /verify and /login).
+// Creating an account does not log you in: the email has to be confirmed first (see /verify and /login). The exception is a developer's own machine.
 authRouter.post(
   '/signup',
   signupLimiter,
@@ -135,6 +136,14 @@ authRouter.post(
     countUsers()
       .then((total) => notifyNewAccount({ email: user.email, total }))
       .catch(() => {})
+    // On localhost nothing can be emailed, so the account is confirmed and signed in here and now (as the link in the email would do).
+    if (skipsEmailConfirmation(req)) {
+      const { user: confirmed, newsletter } = await verifyEmail(token)
+      setSession(res, await createSession(confirmed.id))
+      recordLogin(confirmed, 'signup_local', req.headers)
+      if (newsletter) subscribe(confirmed.email, 'signup', { notify: false }).catch(() => {})
+      return res.status(201).json({ pending: false, signedIn: true, user: confirmed, email: confirmed.email })
+    }
     const emailSent = await sendVerification({ email: user.email, token })
     res.status(201).json({ pending: true, email: user.email, emailSent })
   }),

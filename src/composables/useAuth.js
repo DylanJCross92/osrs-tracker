@@ -180,7 +180,10 @@ export function initAuth() {
 
 /** Creates the account. It does not sign anyone in: the email has to be confirmed first. Returns { email, emailSent }. */
 export async function signUp({ email, password, confirmPassword, newsletter, website }) {
-  return authApi.signup({ email, password, confirmPassword, newsletter, website, settings: snapshot() })
+  const res = await authApi.signup({ email, password, confirmPassword, newsletter, website, settings: snapshot() })
+  // On a developer's own machine the server confirms the account and signs it in at once (no email can be sent there).
+  if (res.signedIn && res.user) await setUser(res.user)
+  return res
 }
 
 /** Uses the link from the confirmation email, which also signs the person in. */
