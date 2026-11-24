@@ -10,6 +10,15 @@ export const KINDS = { new: 'New', improved: 'Improved', fixed: 'Fixed' }
 
 export const RELEASE_NOTES = [
   {
+    date: '2026-11-24',
+    items: [
+      { kind: 'new', text: 'No account needed for a dashboard: press "This is me" on your profile and the home page becomes your dashboard in this browser.' },
+      { kind: 'new', text: 'Move your data without an account: a save code (or restore link) carries your plans, quests, diaries, followed players and hours to another device.' },
+      { kind: 'new', text: 'Following now tells you what changed since you were last here, such as XP gained and new 99s, signed in or not.' },
+      { kind: 'improved', text: 'Signed out, the site now says what is saved in this browser, how to keep it (an account, a save code, the browser\'s keep-it switch, the home screen on iPhone) and what would lose it.' },
+    ],
+  },
+  {
     date: '2026-11-23',
     items: [
       { kind: 'improved', text: 'The planner remembers how many hours a day you play. Change it once and every new plan starts with it, and it follows your account to every device.' },
