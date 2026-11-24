@@ -93,11 +93,15 @@ function skillsPhase(states, profile, hasStats) {
   return { id: 'tier-99', title: 'Take everything to 99', why: 'The long road, one skill at a time.', goals: tierGoals(states, 99, profile) }
 }
 
+/** A combat step shorter than this (hours of fast training) is folded together with the tier after it, so a plan never opens with "Ranged 60 to 61". */
+const MIN_COMBAT_STEP_HOURS = 3
+
 /** The next tier of the combat ladder with something left to do (with stats the first one still ahead; without, from the starting tier). */
 function combatPhase(states, profile, hasStats) {
   const byName = Object.fromEntries(states.map((s) => [s.skill, s]))
   const startIndex = hasStats ? 0 : { new: 0, returning: 1, veteran: 2 }[profile.experience]
-  for (const tier of COMBAT_TIERS.slice(startIndex)) {
+  const tiers = COMBAT_TIERS.slice(startIndex)
+  const goalsOf = (tier) => {
     const goals = []
     for (const g of tier.goals) {
       if (!profile.members && g.members) continue
@@ -105,7 +109,28 @@ function combatPhase(states, profile, hasStats) {
       const to = reachable(g.skill, g.level, profile)
       if (s && s.level < to) goals.push({ ...mk(s, to, profile), why: g.why ? [g.why] : [] })
     }
-    if (goals.length) return { id: `combat-${tier.level}`, title: tier.title, why: tier.why || `Level ${tier.level} and up opens the next tier of gear.`, goals }
+    return goals
+  }
+  const hoursOf = (goals) => goals.reduce((sum, g) => sum + (planGoal({ ...g, methodId: AUTO_FAST }).hours || 0), 0)
+  for (let i = 0; i < tiers.length; i++) {
+    let goals = goalsOf(tiers[i])
+    if (!goals.length) continue
+    const first = tiers[i]
+    let last = first
+    // A stretch of a few hours is not a step worth a heading: carry on into the next tier (the higher level of a skill wins).
+    for (let j = i + 1; j < tiers.length && hoursOf(goals) < MIN_COMBAT_STEP_HOURS; j++) {
+      const more = goalsOf(tiers[j])
+      if (!more.length) continue
+      const merged = new Map(goals.map((g) => [g.skill, g]))
+      for (const g of more) {
+        const have = merged.get(g.skill)
+        merged.set(g.skill, have ? { ...g, why: [...new Set([...g.why, ...have.why])] } : g)
+      }
+      goals = [...merged.values()]
+      last = tiers[j]
+    }
+    const title = last === first ? first.title : `${first.title} and ${last.title.charAt(0).toLowerCase()}${last.title.slice(1)}`
+    return { id: `combat-${first.level}`, title, why: first.why || `Level ${first.level} and up opens the next tier of gear.`, goals }
   }
   return null
 }
@@ -356,9 +381,13 @@ function purposePhases(states, profile, settings, done, mode, sink = {}) {
       const [sk, amount] = Object.entries(q.xp).sort((a, b) => b[1] - a[1])[0]
       const st = byName[sk]
       if (st && (profile.members || F2P_SKILLS.includes(sk))) {
-        const to = Math.max(levelAtXp(st.xp + amount), st.level + 1)
-        const g = { ...mkGoalFor(st, to, profile), why: [`${q.quest.name} gives ${amount.toLocaleString('en-US')} ${sk} XP, about level ${to}.`], purpose: 'quest', quests: [...q.chain] }
-        goals.set(sk, g)
+        // Only when the quest's xp really is a level (or more) for this player: a quest that gives less than the next level is done for itself, and
+        // does not turn into a goal that claims a level it does not reach.
+        const to = levelAtXp(st.xp + amount)
+        if (to > st.level) {
+          const g = { ...mkGoalFor(st, to, profile), why: [`${q.quest.name} gives ${amount.toLocaleString('en-US')} ${sk} XP, about level ${to}.`], purpose: 'quest', quests: [...q.chain] }
+          goals.set(sk, g)
+        }
       }
     }
     questRows.push({
@@ -515,26 +544,68 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
     return { p, plans, sorted, reasonsFor }
   })
 
+  // Hitpoints comes with fighting: every point of damage gives the combat skill 4 xp and Hitpoints 1.33, a third as much. When the plan already trains
+  // Attack, Strength, Defence or Ranged enough for the Hitpoints it asks for, Hitpoints has no steps of its own (its hours would be counted twice).
+  const fightingIn = (list) => list.reduce((sum, x) => sum + x.p.goals.reduce((n, g, i) => n + (['Attack', 'Strength', 'Defence', 'Ranged'].includes(g.skill) ? x.plans[i].remainingXp || 0 : 0), 0), 0)
+  const fightingNow = fightingIn(passes.filter((x) => !x.p.later))
+  const fightingAll = fightingIn(passes)
+  const covered = new Set() // the Hitpoints goals that need no steps of their own
+  for (const x of passes) {
+    for (const g of x.p.goals) {
+      // A Hitpoints goal that is there because a quest gives Hitpoints xp is a quest reward, not training.
+      if (g.skill === 'Hitpoints' && g.purpose !== 'quest' && g.targetXp - g.currentXp <= (x.p.later ? fightingAll : fightingNow) / 3) covered.add(g)
+    }
+  }
+  if ([...covered].some((g) => passes.some((x) => !x.p.later && x.p.goals.includes(g)))) notes.push('Hitpoints comes along with your combat training (about a third of its xp), so it has no steps of its own.')
+
   // The gp answer: the plan, in the order it is trained, has to fit inside it (making money and ironmen are measured differently).
   const budget = GP_LEVELS.find((l) => l.key === profile.gp)?.budget
   let changes = new Map()
+  let trims = new Map()
   if (profile.goal !== 'money' && !profile.iron && budget) {
-    const inOrder = passes.filter((x) => !x.p.later).flatMap((x) => x.sorted)
+    const inOrder = passes.filter((x) => !x.p.later).flatMap((x) => x.sorted).filter((g) => !covered.has(g))
     const fit = fitBudget(inOrder, settings, budget)
     changes = fit.goals
+    trims = fit.trims
     notes.push(...fit.notes)
   }
 
+  // The budget may have cut some training short; Hitpoints that was not covered by the plan as first made can be covered by what is left of it.
+  const finalOf = (x, g) => (!x.p.later && changes.has(g.skill) ? changes.get(g.skill) : g)
+  const fightingFinal = passes.filter((x) => !x.p.later).reduce((sum, x) => sum + x.p.goals.reduce((n, g) => {
+    const f = finalOf(x, g)
+    return n + (f && ['Attack', 'Strength', 'Defence', 'Ranged'].includes(g.skill) ? f.targetXp - f.currentXp : 0)
+  }, 0), 0)
+  for (const x of passes) {
+    if (x.p.later) continue
+    for (const g of x.p.goals) {
+      const f = finalOf(x, g)
+      if (f && g.skill === 'Hitpoints' && g.purpose !== 'quest' && f.targetXp - f.currentXp <= fightingFinal / 3 && !covered.has(g)) {
+        covered.add(g)
+        if (!notes.some((n) => /^Hitpoints comes along/.test(n))) notes.push('Hitpoints comes along with your combat training (about a third of its xp), so it has no steps of its own.')
+      }
+    }
+  }
+
+  // No budget note for a Hitpoints goal that turned out to need no steps.
+  if ([...covered].some((g) => g.skill === 'Hitpoints')) for (let i = notes.length - 1; i >= 0; i--) if (/^Hitpoints (stops at|is left out)/.test(notes[i])) notes.splice(i, 1)
   const ordered = []
   const outPhases = passes.map(({ p, plans, sorted, reasonsFor }) => {
     const rows = []
     for (const g0 of sorted) {
+      if (covered.has(g0)) continue
       const changed = !p.later && changes.has(g0.skill)
       const fitted = changed ? changes.get(g0.skill) : g0
       if (!fitted) continue
       const g = fitted
       const plan = changed ? planOf(g) : plans[p.goals.indexOf(g0)]
       let reasons = reasonsFor(g0).filter((t) => t !== 'Done')
+      // Stopped short by the budget: the reasons for the planned level (an unlock, a piece of gear) no longer hold, so they say what it would have done.
+      const trim = !p.later ? trims.get(g0.skill) : null
+      if (trim && reasons.length) {
+        const first = reasons[0].replace(/\.$/, '')
+        reasons = [`Stopped at level ${trim.to}, not ${trim.from}, to stay inside your budget. At ${trim.from} it would: ${first.charAt(0).toLowerCase()}${first.slice(1)}.`]
+      }
       // The quests' own XP can cover a whole goal: say that, not "Done".
       if (plan.remainingXp === 0 && g.quests.length) reasons = [...reasons, 'The quest XP above covers this.']
       // Every step says why: a step with nothing more to say is at least named for the stretch it belongs to.
@@ -558,11 +629,14 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   if (combatQuestRows.length) outPhases.unshift({ id: 'quests', title: 'Quest shortcuts', why: 'Quests hand out XP. Times are for a first run, not a speedrun.', later: false, rows: combatQuestRows })
   if (profile.goal === 'quests' && !outPhases.some((p) => p.id === 'quests')) notes.push('No quest in our list would save you time at your levels.')
   const goals = ordered.map(({ why, purpose, ...g }) => g)
+  // A quest that gave a skill no goal of its own (its xp is under a level) still takes its time; the ones inside a goal are counted there already.
+  const inGoals = new Set(goals.flatMap((g) => g.quests || []))
+  const looseQuestHours = outPhases.filter((p) => !p.later).flatMap((p) => p.rows).filter((r) => r.kind === 'quest' && !inGoals.has(r.id)).reduce((n, r) => n + (r.hours || 0), 0)
   const sum = goals.length ? summarizePlan({ goals, globalStrategy: settings.globalStrategy, gpValue: settings.gpValue, hoursPerDay: settings.hoursPerDay }) : { totalHours: 0, netGp: 0, days: 0 }
   // Left out, and what the plan took for granted, so none of it is a mystery.
   const skippedQuests = (sink.skipped || []).slice(0, 4).map((x) => ({ id: x.quest.id, title: x.quest.name, reason: `Its fights need about combat level ${x.combatNeed}${x.quest.combatGuess ? ' (worked out from its enemies)' : ''}; yours is ${x.combat}.` }))
   const assumed = { combat: combatLevel(levelsOf(states)), members: profile.members, iron: profile.iron, doneQuests: doneSet.size }
-  return { profile, settings, phases: outPhases, notes, goals, skippedQuests, assumed, totals: { goals: goals.length, hours: sum.totalHours, days: sum.days, netGp: sum.netGp }, empty: !goals.length }
+  return { profile, settings, phases: outPhases, notes, goals, skippedQuests, assumed, totals: { goals: goals.length, hours: sum.totalHours + looseQuestHours, days: sum.days + looseQuestHours / Math.max(settings.hoursPerDay || 1, 0.1), netGp: sum.netGp }, empty: !goals.length && !looseQuestHours }
 }
 
 /** What to start a plan from: the ordered goals and the settings. */

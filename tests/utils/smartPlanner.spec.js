@@ -219,3 +219,52 @@ describe('AFK training and hardcore skilling', () => {
     expect(cleanProfile({ goal: 'hardcore' }).goal).toBe('hardcore')
   })
 })
+
+describe('plans that make sense to follow', () => {
+  const base = { members: true, hours: 2, gp: 'good', experience: 'returning', iron: false }
+
+  it('does not open a combat plan with a step of a level or two: short tiers are joined to the next', () => {
+    // Ranged is one level short of the Dragon tier; that alone is not a step.
+    const r = recommend({ ...base, goal: 'combat' }, skills({ all: 60, Hitpoints: 65, Prayer: 43 }))
+    const first = r.phases.find((p) => !p.later)
+    expect(first.rows.length).toBeGreaterThan(1)
+    expect(first.title).toMatch(/ and /)
+    expect(r.totals.hours).toBeGreaterThan(3)
+  })
+
+  it('leaves Hitpoints out of the steps when the fighting in the plan trains it, and says so', () => {
+    const r = recommend({ ...base, goal: 'combat', gp: 'rich' }, skills({ all: 80, Attack: 90, Strength: 90, Defence: 90, Hitpoints: 90, Ranged: 90, Prayer: 90, Magic: 90 }))
+    const rows = r.phases.filter((p) => !p.later).flatMap((p) => p.rows)
+    expect(rows.some((x) => x.skill === 'Attack' || x.skill === 'Strength' || x.skill === 'Defence')).toBe(true)
+    expect(rows.some((x) => x.skill === 'Hitpoints')).toBe(false)
+    expect(r.goals.some((g) => g.skill === 'Hitpoints')).toBe(false) // and the plan that starts from this has none either, so its hours are not counted twice
+    expect(r.notes.join(' ')).toMatch(/Hitpoints comes along/)
+  })
+
+  it('never turns a quest into a goal for a level it does not reach', () => {
+    // 2,000 xp is far less than a level at 60, so the quest is a step of its own and no skill is asked to go up a level for it.
+    const r = recommend({ ...base, goal: 'quests' }, skills({ all: 60, Hitpoints: 65 }))
+    for (const p of r.phases) {
+      for (const row of p.rows) {
+        if (row.kind === 'quest') continue
+        for (const t of row.reasons) {
+          const m = /gives [\d,]+ \w+ XP, about level (\d+)\./.exec(t)
+          if (m) expect(Number(m[1])).toBe(row.to)
+        }
+      }
+    }
+  })
+
+  it('says what a budget cut gave up, instead of the reason for the level it never reaches', () => {
+    const r = recommend({ ...base, goal: 'combat', gp: 'low' }, skills({ all: 60, Hitpoints: 65, Prayer: 43 }))
+    const cut = r.phases.flatMap((p) => p.rows).find((x) => x.reasons?.[0]?.startsWith('Stopped at level'))
+    if (cut) expect(cut.reasons[0]).toMatch(/to stay inside your budget\. At \d+ it would: /)
+  })
+
+  it('has free-to-play routes all the way up for Prayer, Cooking and Smithing (from the wiki free-to-play guides)', () => {
+    for (const skill of ['Prayer', 'Cooking', 'Smithing']) expect(f2pCap(skill), skill).toBe(99)
+    // and a free player's plan can now use them
+    const r = recommend({ ...base, members: false, goal: 'skills', gp: 'rich' }, skills({ all: 40 }))
+    expect(r.notes.join(' ')).not.toMatch(/routes for[^.]*(Prayer|Cooking|Smithing)/)
+  })
+})

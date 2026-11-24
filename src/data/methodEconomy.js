@@ -60,6 +60,10 @@ export const ECONOMY = {
   'hunter-black-chins': { xpPerAction: 315, outputs: [one('Black chinchompa')] },
 
   // Cooking wine and burning logs.
+  // Plain pizzas: the base, tomato and cheese bought. The cooked pizzas are not counted as sold (the market for them is thin).
+  'cooking-pizza': { xpPerAction: 143, inputs: [one('Pizza base'), one('Tomato'), one('Cheese')] },
+  // Prayer in free-to-play: a big bone and a vile ash together are 40 xp.
+  'prayer-bones-ashes': { xpPerAction: 40, inputs: [one('Big bones'), one('Vile ashes')] },
   'cooking-wines': { xpPerAction: 200, inputs: [one('Grapes'), one('Jug of water')], outputs: [one('Jug of wine')] },
   'cooking-karambwan-1t': { xpPerAction: 190, inputs: [one('Raw karambwan')], outputs: [one('Cooked karambwan')] },
   'firemaking-burn-90': { xpPerAction: 350, inputs: [one('Redwood logs')] },
@@ -73,6 +77,7 @@ export const ECONOMY = {
   'smithing-blast-adamant': { xpPerAction: 37.5, inputs: [one('Adamantite ore'), one('Coal', 3)], outputs: [one('Adamantite bar')], hourlyFee: BLAST_FURNACE_FEE },
   'smithing-blast-runite': { xpPerAction: 50, inputs: [one('Runite ore'), one('Coal', 4)], outputs: [one('Runite bar')], hourlyFee: BLAST_FURNACE_FEE },
   // Platebodies at the anvil: five bars each.
+  'smithing-iron-platebodies': { xpPerAction: 125, inputs: [one('Iron bar', 5)], outputs: [one('Iron platebody')] },
   'smithing-platebodies': { xpPerAction: 187.5, inputs: [one('Steel bar', 5)], outputs: [one('Steel platebody')] },
   'smithing-mithril-platebodies': { xpPerAction: 250, inputs: [one('Mithril bar', 5)], outputs: [one('Mithril platebody')] },
   'smithing-adamant-platebodies': { xpPerAction: 312.5, inputs: [one('Adamantite bar', 5)], outputs: [one('Adamant platebody')] },

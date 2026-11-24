@@ -47,6 +47,21 @@ function check(label, profile, skillsIn, r, problems) {
     ok(fallback || g.targetXp <= xpAtLevel(99), `${g.skill} goes past 99`)
     ok(g.currentXp === skillsIn[g.skill].xp, `${g.skill} does not start from the player's xp`)
   }
+  // A step is at least a level, and a reason that promises "about level N" is for a level the step reaches.
+  for (const p of r.phases) {
+    for (const row of p.rows) {
+      if (row.kind === 'quest') continue
+      ok(row.to > row.from, `${row.skill} goes from ${row.from} to ${row.to}`)
+      for (const t of row.reasons || []) {
+        const m = /about level (\d+)\./.exec(t)
+        if (m) ok(Number(m[1]) === row.to, `${row.skill} says "about level ${m[1]}" but the step ends at ${row.to}`)
+      }
+    }
+  }
+  // Hitpoints comes with fighting: it has no steps of its own in the plan when the plan trains melee or Ranged for more than it needs.
+  const fights = r.goals.filter((g) => ['Attack', 'Strength', 'Defence', 'Ranged'].includes(g.skill)).reduce((n, g) => n + (g.targetXp - g.currentXp), 0)
+  const hp = r.goals.find((g) => g.skill === 'Hitpoints')
+  if (hp && hp.targetXp - hp.currentXp <= fights / 3 && !r.phases.some((p) => p.rows.some((x) => x.reasons?.some((t) => /gives .* Hitpoints XP/.test(t))))) ok(false, 'Hitpoints is trained separately although the fighting in the plan covers it')
   // Every row says why
   for (const p of r.phases) for (const row of p.rows) ok((row.reasons || []).length > 0, `${row.skill || row.title} has no reason`)
   // Free-to-play stays free

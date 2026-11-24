@@ -80,6 +80,9 @@ export const TRAINING_METHODS = [
 
   // --- Prayer ---
   m('Prayer', 'urium', 'Cremating urium remains', 1, 35000, null, 'Low', 'Cremate remains for steady xp. The wiki says it is typically profitable.', '95 Firemaking for urium, zealot robes'),
+  // Free-to-play Prayer, from the wiki's free-to-play Prayer guide: bones and ashes are the only ways in, and the guide says buying vile ashes is the best of them.
+  m('Prayer', 'bones-ashes', 'Big bones and vile ashes (bury and scatter)', 1, 100000, -1092500, 'High', 'Bury big bones and scatter vile ashes bought from the Grand Exchange: 40 xp for two clicks. The wiki calls about 100K xp an hour realistic. Click-intensive and expensive.', 'Big bones and vile ashes from the Grand Exchange'),
+  m('Prayer', 'boneyard', 'Big bones from the Bone Yard (Wilderness)', 1, 6000, 0, 'High', 'Collect big bones north of Varrock (level 28 to 30 Wilderness) and bury them. About 6,000 xp an hour with efficient collecting; the wiki says buying vile ashes is a better use of time.', 'Wilderness access, food for the skeletons'),
   m('Prayer', 'ectofuntus', 'Ectofuntus', 1, 120000, -300000, 'Medium', 'Grind bones and worship at the Ectofuntus.', 'Ghosts Ahoy for easiest access'),
   m('Prayer', 'chaos', 'Big bones at the Chaos Altar', 43, 200000, -500000, 'Low', 'Offer bought bones at the Wilderness Chaos Altar (half are saved).', 'Wilderness access', 69),
   m('Prayer', 'libation', 'Libation bowl (blessed bone shards)', 30, 900000, null, 'Medium', 'Offer blessed bone shards with blessed wine at the Teomat libation bowl.', 'Prayer 30, bone shards'),
@@ -214,7 +217,8 @@ export const TRAINING_METHODS = [
   m('Slayer', 'konar', 'Konar tasks', 75, 55000, 400000, 'Medium', 'Higher-xp tasks with a location assignment. Approximate.', 'Slayer Master Konar'),
 
   // --- Cooking ---
-  m('Cooking', 'early', 'Shrimp, trout & salmon', 1, 50000, 0, 'Low', 'Cook low-level fish on a range.', '', 29),
+  m('Cooking', 'early', 'Shrimp, trout, salmon & tuna', 1, 50000, 0, 'Low', 'Cook low-level fish on a range or fire.', '', 34),
+  m('Cooking', 'pizza', 'Plain pizzas (Al Kharid range)', 35, 180000, -267000, 'High', 'Make and cook plain pizzas on the Al Kharid range: 143 xp each, up to 180K xp an hour on the wiki. Three steps per pizza, so it is click-intensive.', '', 67),
   m('Cooking', 'bake-pie', 'Bake Pie (Lunar)', 10, 147000, -1500000, 'Low', 'Lunar spell that also trains Magic. Every pie loses money.', 'Lunar Diplomacy'),
   m('Cooking', 'karambwan', 'Karambwans (Hosidius, AFK)', 30, 190000, 110000, 'Low', 'Cook raw karambwan at the Hosidius kitchen for steady xp and profit.', 'Tai Bwo Wannai Trio, Easy Kourend & Kebos Diary'),
   m('Cooking', 'swordfish', 'Swordfish & lobsters (Hosidius)', 40, 100000, -30000, 'Low', 'Cook mid-level fish on the Hosidius range.', 'Cooking gauntlets', 79),
@@ -257,6 +261,7 @@ export const TRAINING_METHODS = [
 
   // --- Smithing ---
   m('Smithing', 'early', 'Bronze & iron items (anvil)', 1, 60000, -360000, 'Low', 'Smith bars into daggers, warhammers and platebodies at an anvil.', '', 39),
+  m('Smithing', 'iron-platebodies', 'Iron platebodies at the anvil', 33, 100000, -491000, 'Low', 'Smith iron platebodies (5 bars, 125 xp each) at the anvil south of Varrock west bank. The wiki gives about 100K xp an hour.', '', 47),
   m('Smithing', 'giants-foundry', 'Giants\' Foundry (bronze / iron)', 15, 98000, 140000, 'Medium', 'Minigame; rates and profit change with the bar tier.', 'Sleeping Giants', 29),
   m('Smithing', 'blast-iron', 'Blast Furnace (iron)', 15, 75000, 567000, 'Medium', 'Smelt iron bars at the Blast Furnace.', 'Blast Furnace access', 29),
   m('Smithing', 'cannonballs', 'Cannonballs', 35, 14000, 250000, 'Low', 'Smelt steel bars into cannonballs with an ammo mould.', 'Dwarf Cannon quest'),
@@ -264,6 +269,7 @@ export const TRAINING_METHODS = [
   m('Smithing', 'blast-furnace', 'Blast Furnace (steel)', 30, 95000, 1660000, 'Medium', 'Smelt steel and mithril bars at the Blast Furnace for a strong profit.', 'Blast Furnace access', 69),
   m('Smithing', 'blast-gold', 'Blast Furnace (gold, gauntlets)', 40, 380000, -400000, 'High', 'The fastest Smithing xp. Cannot be done without goldsmith gauntlets.', 'Goldsmith gauntlets', null, true),
   m('Smithing', 'platebodies', 'Steel platebodies at the anvil', 48, 144000, -1437000, 'Low', 'Smith steel platebodies.', '', 67),
+
   m('Smithing', 'giants-foundry-3', 'Giants\' Foundry (steel / mithril)', 50, 165000, 60000, 'Medium', 'Minigame with strong xp.', 'Sleeping Giants', 69),
   m('Smithing', 'mithril-platebodies', 'Mithril platebodies at the anvil', 68, 200000, -1566000, 'Low', 'Smith mithril platebodies.', '', 87),
   m('Smithing', 'blast-adamant', 'Blast Furnace (adamantite)', 70, 101000, 2129000, 'Medium', 'Smelt adamantite bars for a strong profit.', 'Blast Furnace access', 84),

@@ -9,14 +9,15 @@ export const F2P_SKILLS = ['Attack', 'Strength', 'Defence', 'Hitpoints', 'Ranged
 // The catalogue has no free-to-play melee or Ranged method yet, so those skills are left out of free-to-play recommendations for now.
 export const F2P_METHOD_IDS = new Set([
   'magic-splash', 'magic-enchant-jewellery-1', 'magic-enchant-jewellery-2', 'magic-low-alch', 'magic-alch',
-  'cooking-early', 'cooking-wines',
+  'cooking-early', 'cooking-pizza', 'cooking-wines',
   'woodcutting-early', 'woodcutting-oak', 'woodcutting-willow', 'woodcutting-yew',
   'fishing-early', 'fishing-fly', 'fishing-lobster',
   'firemaking-logs', 'firemaking-burn-30', 'firemaking-burn-45',
   'crafting-early', 'crafting-gems', 'crafting-emerald-cut', 'crafting-ruby-cut', 'crafting-diamond-cut',
-  'smithing-early', 'smithing-platebodies', 'smithing-mithril-platebodies', 'smithing-adamant-platebodies',
+  'smithing-early', 'smithing-iron-platebodies', 'smithing-platebodies', 'smithing-mithril-platebodies', 'smithing-adamant-platebodies',
   'mining-early', 'mining-iron', 'mining-guild-iron',
   'runecraft-early', 'runecraft-tiaras',
+  'prayer-bones-ashes', 'prayer-boneyard',
 ])
 
 // "Bring everything up to N": the levels a player works through. With stats to go on, the planner picks the first of these that still has

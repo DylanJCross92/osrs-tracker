@@ -12,6 +12,10 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-24',
     items: [
+      { kind: 'new', text: 'Combat level badge: every profile, dashboard and top-gainer card now shows the player\'s combat level under their picture, in gold at 100 and up.' },
+      { kind: 'improved', text: 'Smart Planner: a combat plan no longer opens with a one-level step, and Hitpoints is no longer counted as extra hours when your Attack, Strength, Defence or Ranged training already raises it.' },
+      { kind: 'improved', text: 'Smart Planner: when your gp budget cuts a step short, the step now says what it gave up, and a quest is only turned into a level goal when its XP really reaches that level.' },
+      { kind: 'new', text: 'Free-to-play plans now reach level 99 in Prayer, Cooking and Smithing (bones and vile ashes, pizzas, iron platebodies), with rates from the wiki.' },
       { kind: 'new', text: 'No account needed for a dashboard: enter your name in the planner or tracker and the home page becomes your dashboard in this browser. Claiming the profile unlocks goals, a customised profile and your name.' },
       { kind: 'new', text: 'Move your data without an account: a save code (or restore link) carries your plans, quests, diaries, followed players and hours to another device.' },
       { kind: 'new', text: 'Following now tells you what changed since you were last here, such as XP gained and new 99s, signed in or not.' },

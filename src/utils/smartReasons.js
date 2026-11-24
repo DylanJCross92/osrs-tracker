@@ -226,13 +226,15 @@ export { levelAtXp }
 /**
  * Keeps a plan inside the gp the player said they can spend. Goals are taken in the order they will be trained, with a running balance (the
  * budget, less what each goal costs and plus what an earlier one made). A goal that does not fit is first planned with the cheapest methods,
- * then stopped at the highest level that does fit, then left out. Returns { goals: Map(skill -> goal | null), notes } (null is left out);
+ * then stopped at the highest level that does fit, then left out. Returns { goals: Map(skill -> goal | null), notes, trims } (null is left out);
  * only goals that changed or went are in the map. `budgetGp` of null or Infinity means no limit.
  */
 export function fitBudget(goals, { globalStrategy, gpValue }, budgetGp) {
   const changes = new Map()
   const notes = []
-  if (!(budgetGp > 0) || !Number.isFinite(budgetGp)) return { goals: changes, notes }
+  // Where a goal was stopped short: skill -> { from: planned level, to: level reached }, so its row can say its original reason no longer holds.
+  const trims = new Map()
+  if (!(budgetGp > 0) || !Number.isFinite(budgetGp)) return { goals: changes, notes, trims }
   const netOf = (g) => {
     const plan = planGoal(resolveGoal(g, globalStrategy, gpValue))
     return plan.netGp ?? 0
@@ -267,6 +269,7 @@ export function fitBudget(goals, { globalStrategy, gpValue }, budgetGp) {
     }
     if (best) {
       changes.set(g.skill, best.goal)
+      trims.set(g.skill, { from: levelAtXp(g.targetXp), to: best.level })
       balance += netOf(best.goal)
       notes.push(`${g.skill} stops at level ${best.level} to stay inside your ${money(budgetGp)} gp budget.`)
     } else {
@@ -274,5 +277,5 @@ export function fitBudget(goals, { globalStrategy, gpValue }, budgetGp) {
       notes.push(`${g.skill} is left out: even the cheapest route costs about ${money(-cheapNet)} gp, over your ${money(budgetGp)} gp budget.`)
     }
   }
-  return { goals: changes, notes }
+  return { goals: changes, notes, trims }
 }
