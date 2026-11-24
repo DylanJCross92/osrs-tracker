@@ -1,10 +1,7 @@
 <template>
   <div class="trk-quests">
     <div class="trk-ctl">
-      <label class="trk-search">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
-        <input v-model="search" type="search" name="quest-filter" placeholder="Search quests" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Search quests" data-1p-ignore data-lpignore="true" />
-      </label>
+      <TrackerSearch v-model="search" :items="searchItems" placeholder="Search quests" aria-label="Search quests" @pick="pickQuest" />
       <div class="trk-pills" role="group" aria-label="Show">
         <button v-for="t in statusTabs" :key="t.key" type="button" :class="{ on: status === t.key }" :aria-pressed="status === t.key" @click="status = t.key">{{ t.label }}<small>{{ t.count }}</small></button>
       </div>
@@ -123,6 +120,7 @@ import { shortfalls } from '@/utils/trackerSuggestions'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { track } from '@/utils/analytics'
 import QuestChip from '@/components/tracker/QuestChip.vue'
+import TrackerSearch from '@/components/tracker/TrackerSearch.vue'
 import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
 import MethodCards from '@/components/tracker/MethodCards.vue'
 
@@ -229,6 +227,17 @@ const groups = computed(() => {
 })
 const allShownDone = computed(() => shown.value.every((r) => r.done))
 
+// What the search box suggests: every quest by name, with its type and difficulty.
+const searchItems = QUEST_LIST.map((q) => ({ label: q.name, value: q.slug, sub: [QUEST_TYPES[q.type], getQuest(q.slug)?.difficulty].filter(Boolean).join(' · ') }))
+// Picking a suggestion shows that quest, open and in view.
+async function pickQuest(item) {
+  status.value = 'all'
+  type.value = ''
+  open.value = new Set([...open.value, item.value])
+  await nextTick()
+  document.getElementById(`quest-${item.value}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  track('tracker_search_pick', { kind: 'quest' })
+}
 function flip(slug) {
   const next = new Set(open.value)
   if (!next.delete(slug)) next.add(slug)
