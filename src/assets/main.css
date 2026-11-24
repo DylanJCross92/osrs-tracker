@@ -7346,3 +7346,60 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .trk-plan .btn { display: inline-flex; align-items: center; gap: 8px; }
 .trk-plan-note { flex: 1 1 240px; color: var(--muted); font-size: 0.8rem; line-height: 1.4; }
 .trk-plan-done { margin: 0; color: #9fd48a; font-size: 0.86rem; }
+
+/* Phones: tighter quest rows, filters that scroll sideways, rings in one row, tiers in a row of four */
+@media (max-width: 640px) {
+  .trk-line { grid-template-columns: auto minmax(0, 1fr) 28px; grid-template-areas: 'check name chev' '. gives gives'; gap: 0 8px; padding: 2px 0; align-items: start; }
+  .trk-check { grid-area: check; padding: 8px 4px 8px 2px; }
+  .trk-name { grid-area: name; padding: 8px 0 4px; gap: 0 10px; }
+  .trk-name b { font-size: 0.95rem; }
+  .trk-chev { grid-area: chev; padding: 10px 4px; }
+  .trk-gives { grid-area: gives; justify-content: flex-start; gap: 5px; padding: 0 0 8px; }
+  .trk-gives:empty { display: none; }
+  .trk-tag { font-size: 0.68rem; padding: 1px 8px; }
+  .trk-group-head { flex-wrap: wrap; gap: 2px 10px; }
+  .trk-group-head h3 { font-size: 0.95rem; }
+  .trk-group-head span { flex: none; white-space: nowrap; }
+  .trk-group-head .btn-text { margin-left: auto; font-size: 0.82rem; }
+
+  .trk-ctl { gap: 8px; }
+  .trk-pills { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 2px 16px; scrollbar-width: none; width: calc(100% + 32px); }
+  .trk-pills::-webkit-scrollbar { display: none; }
+  .trk-pills button { flex: none; padding: 5px 12px; font-size: 0.82rem; }
+  .trk-sort { font-size: 0.8rem; }
+  .trk-sort select { padding: 5px 8px; font-size: 0.84rem; }
+
+  .trk-sum { grid-template-columns: repeat(3, 1fr); gap: 0; margin-bottom: 18px; }
+  .trk-sum > .trk-ring { flex-direction: column; text-align: center; gap: 6px; padding: 2px 4px; border-left: 1px solid var(--border); }
+  .trk-sum > .trk-ring:first-child { border-left: 0; }
+  .trk-ring > div { align-items: center; }
+  .trk-ring-num b { font-size: 1.15rem; }
+  .trk-ring-num { font-size: 0.78rem; }
+  .trk-ring small { display: none; }
+
+  .trk-smart-cta-t { display: none; }
+  .trk-smart { padding: 10px 14px; }
+  .trk-smart-head .spl-spark { width: 36px; height: 36px; border-radius: 11px; }
+
+  .trk-tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .trk-tier { justify-content: center; gap: 5px; padding: 6px 4px; font-size: 0.8rem; }
+  .trk-tier-box { width: 16px; height: 16px; border-radius: 5px; border-width: 1.5px; }
+  .trk-tier-box svg { width: 10px; height: 10px; }
+  .trk-region { padding: 12px 0; }
+  .trk-cape { padding-bottom: 10px; }
+
+  .trk-reqs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .trk-reqs li { padding: 6px 8px; gap: 7px; }
+  .trk-reqs-main b { font-size: 0.98rem; }
+  .trk-methods { grid-template-columns: 1fr; }
+  .trk-facts { gap: 6px; }
+  .trk-fact { padding: 5px 10px; font-size: 0.84rem; }
+  .trk-detail { padding-bottom: 12px; gap: 12px; }
+  .trk-gets li { grid-template-columns: 22px 84px 1fr; gap: 8px; }
+  .trk-ttabs button { padding: 5px 12px; }
+  .trk-tabs button { padding: 10px 10px; font-size: 0.9rem; }
+  .trk-banner { padding: 12px 14px; gap: 10px; }
+  .trk-banner-ico { width: 34px; height: 34px; }
+  .trk-banner-text { font-size: 0.84rem; }
+}
+@media (max-width: 640px) { .trk-hint { display: none; } }

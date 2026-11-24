@@ -12,7 +12,7 @@
     </div>
     <p class="trk-hint">Tick the tiers you have finished. A tier needs the ones before it, so ticking Hard also ticks Easy and Medium.</p>
     <div class="trk-ctl">
-      <TrackerSearch v-model="search" :items="searchItems" placeholder="Search diaries, e.g. Karamja or Hard Falador" aria-label="Search diaries" @pick="pickDiary" />
+      <TrackerSearch v-model="search" :items="searchItems" placeholder="Search diaries" aria-label="Search diaries" @pick="pickDiary" />
     </div>
     <p v-if="!regions.length" class="acc-empty">No diary matches. <button class="btn-text" type="button" @click="search = ''">Clear the search</button></p>
     <DiaryRegion v-for="d in regions" :key="d.slug" :region="d" :focus="local || focus" @focused="onFocused" />

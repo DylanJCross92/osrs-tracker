@@ -16,7 +16,7 @@
         </span>
         <span v-else class="trk-smart-peek">{{ basis }}</span>
       </span>
-      <span class="trk-smart-cta">{{ open ? 'Hide' : 'Show suggestions' }}
+      <span class="trk-smart-cta"><span class="trk-smart-cta-t">{{ open ? 'Hide' : 'Show suggestions' }}</span>
         <svg :class="{ open }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
       </span>
     </button>
