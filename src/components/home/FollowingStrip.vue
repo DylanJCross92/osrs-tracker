@@ -9,9 +9,11 @@
     <!-- A returning visitor (signed in or not): what changed for these players since they last looked -->
     <div v-if="since && !gotIt" class="fol-since">
       <div class="fol-since-head">
-        <b>Since you were last here</b>
-        <small>{{ awayText(since.since) }}</small>
-        <button class="btn-text" type="button" @click="gotIt = true">Got it</button>
+        <div class="fol-since-title">
+          <b>Since you were last here</b>
+          <small>{{ awayText(since.since) }}</small>
+        </div>
+        <button class="fol-since-x" type="button" aria-label="Dismiss" title="Dismiss" @click="gotIt = true">×</button>
       </div>
       <ul>
         <li v-for="r in since.rows.slice(0, 4)" :key="r.username">

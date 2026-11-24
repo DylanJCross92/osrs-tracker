@@ -7443,14 +7443,16 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 
 /* Following: since you were last here */
 .fol-since { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(201, 182, 255, 0.35); background: linear-gradient(100deg, rgba(167, 139, 250, 0.14), rgba(240, 201, 118, 0.05)); }
-.fol-since-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-.fol-since-head .btn-text { white-space: nowrap; }
-.fol-since-head b { font-size: 0.9rem; }
-.fol-since-head small { color: var(--muted); flex: 1; }
-.fol-since ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 3px; font-size: 0.86rem; }
-.fol-since li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
-.fol-since a { color: var(--text); font-weight: 600; }
-.fol-since-gain { color: #9fd48a; font-weight: 600; }
+.fol-since-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.fol-since-title { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.fol-since-title b { font-size: 0.92rem; }
+.fol-since-title small { color: var(--muted); font-size: 0.78rem; }
+.fol-since-x { flex: none; width: 24px; height: 24px; margin: -3px -4px 0 0; display: grid; place-items: center; border: 0; border-radius: 50%; background: none; color: var(--muted); font-size: 1.15rem; line-height: 1; cursor: pointer; }
+.fol-since-x:hover, .fol-since-x:focus-visible { color: var(--text); background: rgba(255, 255, 255, 0.07); outline: none; }
+.fol-since ul { list-style: none; margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid rgba(201, 182, 255, 0.18); display: grid; gap: 6px; font-size: 0.86rem; }
+.fol-since li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.fol-since a { color: var(--text); font-weight: 600; margin-right: auto; }
+.fol-since-gain { color: #9fd48a; font-weight: 600; font-variant-numeric: tabular-nums; }
 .fol-since em { font-style: normal; color: var(--gold-bright); font-size: 0.78rem; font-weight: 700; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(217, 175, 82, 0.5); }
 
 /* "Make this plan yours": the name box sits under the words, across the note */
