@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { usePlayersStore } from '@/stores/players'
 import { useRivals } from '@/composables/useRivals'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { recordRecent } from '@/composables/useRecentPlayers'
 import { track } from '@/utils/analytics'
 
 // The player the quest and diary tracker tailors its suggestions to: levels from their tracked stats, so it can say "you can start this now" and
@@ -52,7 +53,10 @@ export function useTrackerPlayer() {
       player.value = found
       name.value = found.displayName
       write(found.displayName)
-      if (typed) track('tracker_player_loaded')
+      if (typed) {
+        recordRecent(found)
+        track('tracker_player_loaded')
+      }
     } catch (err) {
       error.value = err?.message || 'Could not find that player on the OSRS Hiscores.'
     } finally {

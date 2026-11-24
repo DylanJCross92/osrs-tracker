@@ -11,20 +11,27 @@
       </div>
     </header>
 
+    <!-- The same name box as everywhere else on the site: recent players, typeahead of tracked players, and a name we do not know yet is added in one go. -->
     <div class="trk-who">
-      <template v-if="player">
-        <span class="trk-who-chip"><span class="trk-avatar"><PlayerAvatar :name="player.username" /></span> Tailored to <b>{{ player.displayName }}</b> <i>Overall {{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
-        <button class="btn-text" type="button" @click="clear">Change</button>
-      </template>
-      <form v-else class="trk-who-form" autocomplete="off" @submit.prevent="submit">
-        <label for="trk-who-in">Your OSRS name <small>(optional)</small></label>
-        <span class="trk-who-row">
-          <input id="trk-who-in" v-model="typed" type="search" name="osrs-player-lookup" placeholder="e.g. Zezima" maxlength="12" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" :disabled="loading" data-1p-ignore data-lpignore="true" />
-          <button class="btn btn-primary" type="submit" :disabled="loading || typed.trim().length < 1">{{ loading ? 'Reading your stats…' : 'Tailor to my levels' }}</button>
-        </span>
-        <small v-if="error" class="trk-who-error">{{ error }}</small>
-        <small v-else class="trk-who-hint">Checks your levels so quests you can start now come first. Nothing is saved to the site except your name in this browser.</small>
-      </form>
+      <PlannerPlayerBox
+        v-model:username="typed"
+        :player="player"
+        :editing="false"
+        :looking-up="loading"
+        :lookup-error="error"
+        :suggestions="suggestions"
+        :show-recent="focused && !typed.trim()"
+        @submit="submit"
+        @change="change"
+        @pick="pick"
+        @focus="focused = true"
+        @blur="onBlur"
+      >
+        <template #hint>
+          <p v-if="loading" class="pt-hint">Reading stats…</p>
+          <p v-else class="pt-hint">Optional. Add your name and quests you can start now come first. Press Enter to load a player.</p>
+        </template>
+      </PlannerPlayerBox>
     </div>
 
     <div v-if="thinking" class="trk-think" aria-live="polite" aria-label="Working out what to suggest">
@@ -59,7 +66,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import PlannerPlayerBox from '@/components/planner/PlannerPlayerBox.vue'
+import { playersApi } from '@/api/players'
 import { useRequirements } from '@/composables/useRequirements'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { suggestNext } from '@/utils/trackerSuggestions'
@@ -72,7 +80,45 @@ const { confirmations, setQuestDone, setDiaryDone } = useRequirements()
 const { player, levels, loading, error, load, clear } = useTrackerPlayer()
 
 const typed = ref('')
-const submit = () => load(typed.value, { typed: true })
+const focused = ref(false)
+const suggestions = ref([])
+const submit = () => {
+  suggestions.value = []
+  load(typed.value, { typed: true })
+}
+// Typeahead among tracked players, the same as the planner's name box.
+let suggestTimer = null
+watch(typed, (q) => {
+  clearTimeout(suggestTimer)
+  const term = (q || '').trim()
+  if (term.length < 2 || (player.value && term.toLowerCase() === player.value.displayName.toLowerCase())) {
+    suggestions.value = []
+    return
+  }
+  suggestTimer = setTimeout(async () => {
+    try {
+      const rows = await playersApi.search(term)
+      if ((typed.value || '').trim() === term) suggestions.value = rows
+    } catch {
+      suggestions.value = []
+    }
+  }, 250)
+})
+function change() {
+  clear()
+  typed.value = ''
+}
+// A name picked from the list (or the recent players) loads straight away.
+function pick(p) {
+  suggestions.value = []
+  typed.value = p.displayName || p.username
+  load(typed.value, { typed: true })
+}
+// Leaving the box with a name typed loads it, so stats arrive without a button (unless a suggestion is about to be clicked).
+function onBlur() {
+  focused.value = false
+  if (!player.value && typed.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && !player.value && load(typed.value, { typed: true }), 150)
+}
 
 const list = computed(() => suggestNext(confirmations.value, levels.value))
 const basis = computed(() => (levels.value ? 'Quests and diaries you can start now, ranked by what they open up in the planner.' : 'The most useful quests and diaries left, ranked by what they open up in the planner.'))
@@ -87,7 +133,10 @@ function think() {
 }
 think()
 watch(levels, think)
-onBeforeUnmount(() => clearTimeout(timer))
+onBeforeUnmount(() => {
+  clearTimeout(timer)
+  clearTimeout(suggestTimer)
+})
 
 function done(s) {
   if (s.kind === 'diary') setDiaryDone(s.id, true)

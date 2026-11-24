@@ -7080,18 +7080,7 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .trk-smart-title { min-width: 0; }
 .trk-smart-title h2 { margin: 2px 0 2px; font-size: 1.6rem; letter-spacing: -0.01em; background: linear-gradient(95deg, #fbe7ad 10%, #e6dcff 60%, #c9b6ff); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
 .trk-smart-title p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-.trk-who { margin: 0 0 8px; padding: 12px 0; border-top: 1px solid rgba(201, 182, 255, 0.16); border-bottom: 1px solid rgba(201, 182, 255, 0.16); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
-.trk-who-chip { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--muted); }
-.trk-who-chip b { color: var(--text); }
-.trk-who-chip i { font-style: normal; color: #d8c8ff; font-size: 0.8rem; }
-.trk-avatar { flex: none; width: 30px; height: 30px; border-radius: 9px; overflow: hidden; border: 2px solid var(--gold); }
-.trk-avatar > * { width: 100%; height: 100%; display: block; }
-.trk-who-form { display: grid; gap: 6px; width: 100%; max-width: 560px; }
-.trk-who-form label { font-size: 0.86rem; font-weight: 600; }
-.trk-who-form label small { color: var(--muted); font-weight: 400; }
-.trk-who-row { display: flex; gap: 10px; flex-wrap: wrap; }
-.trk-who-row input { flex: 1 1 200px; min-width: 0; }
-.trk-who-hint, .trk-who-error { color: var(--muted); font-size: 0.78rem; }
+.trk-who { margin: 0 0 8px; padding: 12px 0 14px; border-top: 1px solid rgba(201, 182, 255, 0.16); border-bottom: 1px solid rgba(201, 182, 255, 0.16); display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .trk-who-error { color: #e58a7c; }
 .trk-think { display: grid; gap: 10px; padding: 10px 0; }
 .trk-think .spl-skel { height: 74px; }
