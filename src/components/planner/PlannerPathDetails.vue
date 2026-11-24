@@ -97,7 +97,8 @@ const quests = computed(() => {
   const planned = new Set(plannedList.map((q) => q.id))
   const remaining = Math.max((props.plan.targetXp || 0) - (props.plan.currentXp || 0), 0)
   const level = levelAtXp(props.plan.currentXp || 0, true)
-  // The quests already in the plan (ticked), then a few more that could be added.
+  // The quests already in the plan (ticked) and a few more that could be added, always in the same order (biggest reward first), so ticking one
+  // never moves the others: it is the same list, with a box ticked.
   const rows = plannedList.map((q) => {
     const full = getQuest(q.id)
     return { id: q.id, name: q.name, xp: q.xp, needs: full?.needs || '', minutes: q.minutes || full?.minutes || 0, on: true, locked: false }
@@ -108,6 +109,8 @@ const quests = computed(() => {
       rows.push({ id: quest.id, name: quest.name, xp: quest.rewards[skill], need, needs: quest.needs, minutes: quest.minutes, on: false, locked: need != null && level < need })
     }
   }
+  const position = new Map(all.map((q, i) => [q.id, i]))
+  rows.sort((a, b) => (position.get(a.id) ?? 1e9) - (position.get(b.id) ?? 1e9))
   return { rows, options: rows.filter((r) => !r.on), done: all.filter((q) => done.has(q.id)) }
 })
 // Ticking a quest ticks what it needs first; unticking one unticks whatever needs it. The plan changes as you click.

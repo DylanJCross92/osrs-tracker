@@ -51,7 +51,7 @@ const { doneQuestIds, setQuestDone } = useRequirements()
 // Finished quests are not offered (they cannot give their reward again); they are listed so they can be undone.
 const doneList = computed(() => questsForSkill(props.skill).filter((q) => doneQuestIds.value.includes(q.id)))
 
-const options = computed(() => {
+const candidates = computed(() => {
   const remaining = props.targetXp - props.currentXp
   if (remaining <= 0) return []
   const level = levelAtXp(props.currentXp, true)
@@ -81,8 +81,26 @@ const options = computed(() => {
         chainNames: before.map((id) => getQuest(id).name),
       }
     })
-    .sort((a, b) => Number(a.locked) - Number(b.locked) || b.hoursSaved - a.hoursSaved)
-    .slice(0, 6)
+})
+
+// Where each quest sits in the list. It is worked out the first time a quest shows (the ones you can do and that save the most first) and then
+// kept, so ticking a quest, which changes the start xp and what the others save, never moves the list under your finger. It is worked out again
+// when the goal itself changes (another skill, target, method, or a quest marked finished).
+const ranks = new Map()
+let rankKey = ''
+const byValue = (a, b) => Number(a.locked) - Number(b.locked) || b.hoursSaved - a.hoursSaved
+const options = computed(() => {
+  const list = candidates.value
+  const key = [props.skill, props.methodId, props.targetXp, doneQuestIds.value.length].join('|')
+  if (key !== rankKey) {
+    ranks.clear()
+    rankKey = key
+  }
+  for (const o of [...list].sort(byValue)) if (!ranks.has(o.quest.id)) ranks.set(o.quest.id, ranks.size)
+  const ordered = [...list].sort((a, b) => ranks.get(a.quest.id) - ranks.get(b.quest.id))
+  // The first six, and any quest you have ticked that is not among them, each where it belongs.
+  const top = new Set(ordered.slice(0, 6).map((o) => o.quest.id))
+  return ordered.filter((o) => top.has(o.quest.id) || props.modelValue.includes(o.quest.id))
 })
 
 function markDone(quest) {
