@@ -7452,3 +7452,9 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .fol-since a { color: var(--text); font-weight: 600; }
 .fol-since-gain { color: #9fd48a; font-weight: 600; }
 .fol-since em { font-style: normal; color: var(--gold-bright); font-size: 0.78rem; font-weight: 700; padding: 0 8px; border-radius: 999px; border: 1px solid rgba(217, 175, 82, 0.5); }
+
+/* "Make this plan yours": the name box sits under the words, across the note */
+.callout-name { position: relative; }
+.callout-name .callout-text { flex: 1 1 100%; padding-right: 28px; }
+.callout-name .callout-box { flex: 1 1 100%; max-width: 520px; }
+.callout-name .callout-x { position: absolute; top: 10px; right: 12px; }

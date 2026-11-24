@@ -97,12 +97,29 @@
           <button class="btn btn-primary callout-btn" type="button" @click="saveCurrent(currentPlanName)">Save plan</button>
         </div>
         <!-- A plan that does not know who it is for yet: say what adding a name gives you, with one clear button -->
-        <div v-if="template && templatePending" class="callout" role="status">
+        <div v-if="template && templatePending" class="callout callout-name" role="status">
           <div class="callout-text">
             <b>Make this plan yours</b>
-            <span>Right now every skill starts at level 1. Add your RuneScape name and the plan uses your real levels, tracks your progress, and shows how long it will really take.</span>
+            <span>Right now every skill starts at level 1. Enter your RuneScape name and the plan uses your real levels, tracks your progress, and shows how long it will really take.</span>
           </div>
-          <button class="btn btn-primary callout-btn" type="button" @click="openSettings(true)">Add my RuneScape name</button>
+          <!-- The same name box as everywhere else: recent players, typeahead, and a new name is added and loaded in one step -->
+          <div class="callout-box">
+            <PlannerPlayerBox
+              v-model:username="username"
+              :player="player"
+              :editing="editingPlayer"
+              :looking-up="lookingUp"
+              :lookup-error="lookupError"
+              :suggestions="suggestions"
+              :show-recent="claimFocused && !username.trim()"
+              @submit="loadPlayer({ typed: true })"
+              @change="startChangePlayer"
+              @cancel="editingPlayer = false"
+              @pick="pickSuggestion"
+              @focus="claimFocused = true"
+              @blur="onClaimBlur"
+            />
+          </div>
           <button class="callout-x" type="button" aria-label="Dismiss" title="Dismiss" @click="template = null">✕</button>
         </div>
         <div v-else-if="template && !template.recommendedId" class="ps-template" role="status">
@@ -351,6 +368,12 @@ watch(username, (q) => {
 function onSmartBlur() {
   smartFocused.value = false
   if (!goals.value.length && !player.value && username.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && loadTyped(), 150)
+}
+// The name box in the "Make this plan yours" note: leaving it with a name typed loads that player (the plan then uses their stats).
+const claimFocused = ref(false)
+function onClaimBlur() {
+  claimFocused.value = false
+  if (!player.value && username.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && !player.value && loadTyped(), 150)
 }
 function onSearchBlur() {
   searchFocused.value = false
