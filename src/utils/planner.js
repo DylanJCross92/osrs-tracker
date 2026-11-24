@@ -362,7 +362,7 @@ export const formatDays = (n) => `${Number(n).toLocaleString('en-US')} ${Number(
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
 // Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.
-export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt }) {
+export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt, members = true }) {
   const params = new URLSearchParams()
   if (username) params.set('u', username)
   params.set('h', String(hoursPerDay))
@@ -375,6 +375,8 @@ export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, bu
   if (strategy && strategy !== AUTO_FAST) params.set('s', strategy)
   if (gpValue && gpValue !== DEFAULT_GP_VALUE) params.set('v', String(Math.round(gpValue)))
   if (budget) params.set('b', String(Math.round(budget)))
+  // m=0: a free-to-play plan (members is the default, so older links have no m).
+  if (members === false) params.set('m', '0')
   // When the goals' starting stats were captured: the baseline live progress is measured from.
   const at = statsAt ? new Date(statsAt).getTime() : NaN
   if (Number.isFinite(at)) params.set('t', String(at))
@@ -403,7 +405,7 @@ export function decodePlan(query, validSkills) {
   const budget = Math.min(Math.max(parseInt(query.b, 10) || 0, 0), 100_000_000_000)
   const t = parseInt(query.t, 10)
   const statsAt = Number.isFinite(t) && t > 0 && t <= Date.now() + 86_400_000 ? new Date(t).toISOString() : null
-  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt }
+  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt, members: query.m !== '0' }
 }
 
 /**

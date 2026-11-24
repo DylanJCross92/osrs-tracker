@@ -29,6 +29,23 @@
         </div>
 
         <div class="pset-field">
+          <span>Account type</span>
+          <div class="pset-strategies is-two" role="radiogroup" aria-label="Free-to-play or members">
+            <button type="button" role="radio" :aria-checked="draftMembers" :class="{ on: draftMembers }" @click="draftMembers = true">
+              <b>Members</b>
+              <small>Every skill and training method.</small>
+            </button>
+            <button type="button" role="radio" :aria-checked="!draftMembers" :class="{ on: !draftMembers }" @click="draftMembers = false">
+              <b>Free-to-play</b>
+              <small>Only free methods, from the wiki's free-to-play guides.</small>
+            </button>
+          </div>
+          <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
+            We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
+          </p>
+        </div>
+
+        <div class="pset-field">
           <span>Strategy for every skill</span>
           <div class="pset-strategies" role="radiogroup" aria-label="Training strategy">
             <button v-for="s in strategies" :key="s.value" type="button" role="radio" :aria-checked="draftStrategy === s.value" :class="{ on: draftStrategy === s.value }" @click="draftStrategy = s.value">
@@ -61,6 +78,7 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { skillsWithoutFreeRoute } from '@/utils/membership'
 
 // The settings that belong to the whole plan, not one skill: its name, the strategy, how long you play, and who it is for.
 // Name, strategy and hours are edited as a draft and only reach the plan when Save is pressed; closing the window throws them away.
@@ -71,6 +89,9 @@ const props = defineProps({
   hoursPerDay: { type: Number, required: true },
   minHours: { type: Number, default: 0.5 },
   maxHours: { type: Number, default: 24 },
+  // Free-to-play or members, and the skills in the plan (to say which ones a free player has no route for).
+  members: { type: Boolean, default: true },
+  goalSkills: { type: Array, default: () => [] },
   // Only for a plan for a profile you own: { on, other, willSave, byDefault }. Shows the option to make this plan the goal on that profile.
   profile: { type: Object, default: null },
 })
@@ -78,6 +99,8 @@ const emit = defineEmits(['save', 'close'])
 const draftName = ref(props.name)
 const draftStrategy = ref(props.strategy)
 const draftHours = ref(props.hoursPerDay)
+const draftMembers = ref(props.members)
+const noFreeRoute = computed(() => skillsWithoutFreeRoute(props.goalSkills.map((skill) => ({ skill }))))
 const draftProfile = ref(!!props.profile?.on || !!props.profile?.byDefault)
 const profileHint = computed(() => {
   if (props.profile?.other) return `This replaces "${props.profile.other}", the plan on your profile now.`
@@ -91,7 +114,7 @@ function setHours(v) {
 // How far along the slider is (0.5 to 12 hours), to colour the track up to the handle.
 const fill = computed(() => ((Math.min(Math.max(draftHours.value, 0.5), 12) - 0.5) / 11.5) * 100)
 function save() {
-  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value })
+  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value })
 }
 function cancel() {
   emit('close')

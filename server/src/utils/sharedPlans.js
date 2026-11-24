@@ -54,6 +54,8 @@ export function cleanSharedPlan(body) {
       methodId,
       customXpPerHour: methodId === 'custom' ? int(g.customXpPerHour, 0, 10_000_000, 0) : 0,
       quests: (Array.isArray(g.quests) ? g.quests : []).filter((q) => typeof q === 'string' && METHOD_RE.test(q)).slice(0, 20),
+      // The methods the goal may use (a free-to-play plan, or AFK-only training), so a shared plan is worked out the way it was made.
+      ...(Array.isArray(g.allowedMethodIds) && g.allowedMethodIds.length ? { allowedMethodIds: g.allowedMethodIds.filter((id) => typeof id === 'string' && METHOD_RE.test(id)).slice(0, 60) } : {}),
       // Manual method choices for sets of levels: [{ fromLevel, toLevel, methodId }]
       overrides: (Array.isArray(g.overrides) ? g.overrides : [])
         .map((o) => ({ fromLevel: int(o?.fromLevel, 1, 126, 0), toLevel: int(o?.toLevel, 1, 126, 0), methodId: o?.methodId }))

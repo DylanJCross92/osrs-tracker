@@ -198,7 +198,7 @@
     </template>
 
     <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :profile="profileOption" @save="saveSettings" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -283,6 +283,7 @@ import {
   suggestedQuests,
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
+import { applyMembership } from '@/utils/membership'
 import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
 import {
@@ -503,6 +504,13 @@ const goals = ref([])
 // Hours a day starts as the last amount the person chose, so a new plan never goes back to a default.
 const { playHours, setPlayHours } = usePlayHours()
 const hoursPerDay = ref(playHours())
+// Free-to-play (false) or members: a free-to-play plan trains with free methods only (see utils/membership.js).
+const members = ref(true)
+function setMembers(value) {
+  members.value = value !== false
+  goals.value = applyMembership(goals.value, members.value)
+  track('planner_members', { members: members.value })
+}
 function onHoursTyped(e) {
   const raw = e.target.value
   if (raw !== '') setHours(Number(raw))
@@ -779,8 +787,9 @@ function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
 }
-async function saveSettings({ name, strategy, hours, profile }) {
+async function saveSettings({ name, strategy, hours, profile, members: wantMembers }) {
   closeSettings()
+  if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
     currentPlanName.value = name.slice(0, 60)
@@ -855,7 +864,7 @@ function addGoal(goal) {
   // A plan still in the suggested order stays in it when a skill is added; one the player has arranged is left alone.
   const orderOpts = smartOpts()
   const wasSmart = !first && !smartOrderGoals(goals.value, orderOpts).changed
-  goals.value.push(goal)
+  goals.value.push(...applyMembership([goal], members.value))
   if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
   expanded.value = new Set([goal.skill])
   showAdd.value = false
@@ -973,7 +982,7 @@ function gpClass(gp) {
 
 // --- Share ------------------------------------------------------------------------
 function planState() {
-  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value }
+  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value }
 }
 // --- Saved plans (browser storage) ---------------------------------------------------
 const savedPlans = ref(listSavedPlans())
@@ -1025,6 +1034,7 @@ function currentSnapshotState() {
     gpValue: gpValue.value,
     budget: null,
     hoursPerDay: hoursPerDay.value,
+    members: members.value,
     smart: smartProfile.value,
     goals: goals.value,
   }
@@ -1138,6 +1148,7 @@ function keepCurrentPlanBefore(name) {
 // `save: false` opens the plan on /planner/new without saving it: nothing is kept until they press Save plan.
 function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
+  members.value = true
   hoursPerDay.value = playHours()
   unsavedShareId.value = ''
   tab.value = 'overview'
@@ -1171,6 +1182,7 @@ function useSmartPlan(plan) {
   tab.value = 'overview'
   goalFilter.value = 'all'
   // The settings first: everything that works the plan out (the order, the totals) reads them.
+  members.value = plan.profile ? plan.profile.members !== false : plan.members !== false
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1233,7 +1245,7 @@ async function loadTemplate(slug) {
 
 // The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
 const paceShareLink = computed(() => {
-  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null })
+  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value })
   params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`
 })
@@ -1268,6 +1280,7 @@ function applyPlan(plan) {
   scratch.value = false
   unsavedShareId.value = ''
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests], ...(g.overrides ? { overrides: g.overrides.map((o) => ({ ...o })) } : {}) }))
+  members.value = plan.members !== false
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1300,6 +1313,7 @@ async function loadSaved(stored, { silent = false } = {}) {
 }
 // A blank planner with no plan picked: play with the calculators, share what you put together, save it only if you want to.
 function startNew() {
+  members.value = true
   hoursPerDay.value = playHours()
   goals.value = []
   currentPlanId.value = ''
@@ -1422,7 +1436,7 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
+  [goals, hoursPerDay, members, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
   () => {
     calcAt.value = new Date()
     const state = planState()
@@ -1516,7 +1530,8 @@ const overviewProgress = computed(() => {
 
 // --- Opening what the address asks for ---------------------------------------------
 function applyRestored(restored, keepScratch) {
-  goals.value = restored.goals || []
+  members.value = restored.members !== false
+  goals.value = applyMembership(restored.goals || [], members.value)
   hoursPerDay.value = restored.hoursPerDay || 2
   username.value = restored.username || ''
   if (GLOBAL_STRATEGIES.includes(restored.strategy)) globalStrategy.value = restored.strategy
