@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartGeometry, paceFileName } from '@/utils/paceImage'
+import { chartGeometry, chipRows, goalLabels, paceFileName } from '@/utils/paceImage'
 
 const series = {
   baseline: new Date('2026-11-01T00:00:00Z'),
@@ -52,5 +52,39 @@ describe('pace chart picture', () => {
     expect(paceFileName('My training plan')).toBe('tickgains-my-training-plan-pace.png')
     expect(paceFileName('')).toBe('tickgains-plan-pace.png')
     expect(paceFileName('  !!  ')).toBe('tickgains-plan-pace.png')
+  })
+})
+
+describe('goal labels', () => {
+  const X = (d) => 100 + d * 40
+  const Y = (xp) => 350 - xp * 0.3
+  const marks = [
+    { skill: 'Smithing', targetLevel: 70, day: 4, xp: 300 },
+    { skill: 'Mining', targetLevel: 70, day: 4.2, xp: 320 },
+    { skill: 'Agility', targetLevel: 99, day: 12, xp: 1000 },
+  ]
+
+  it('labels every goal with its target level, the last goal first', () => {
+    const l = goalLabels([marks[0], marks[2]], X, Y)
+    expect(l.map((x) => x.text)).toEqual(['Agility 99', 'Smithing 70'])
+  })
+
+  it('leaves out a label that would land on another, but never the last goal', () => {
+    const l = goalLabels(marks, X, Y)
+    expect(l[0].text).toBe('Agility 99')
+    // Smithing and Mining are a fraction of a day apart: only one of them fits.
+    expect(l.filter((x) => /Smithing|Mining/.test(x.text))).toHaveLength(1)
+  })
+
+  it('leaves out a label that would run off the chart', () => {
+    const l = goalLabels([{ skill: 'Agility', targetLevel: 99, day: 0, xp: 0 }], X, Y, { box: { left: 95, right: 500, top: 0 } })
+    expect(l).toEqual([])
+  })
+
+  it('wraps the goals into chips that fit the width', () => {
+    const rows = chipRows(['Agility 99', 'Smithing 70', 'Mining 70', 'Thieving 94'], (t) => t.length * 10, 300)
+    expect(rows.flat().map((c) => c.text)).toEqual(['Agility 99', 'Smithing 70', 'Mining 70', 'Thieving 94'])
+    for (const r of rows) expect(r.reduce((n, c) => n + c.width, 0) + (r.length - 1) * 10).toBeLessThanOrEqual(300)
+    expect(rows.length).toBeGreaterThan(1)
   })
 })

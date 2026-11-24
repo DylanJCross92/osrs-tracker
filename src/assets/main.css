@@ -7547,3 +7547,11 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 /* The progress card's Share button sits in its top corner. */
 .pp { position: relative; }
 .pp-share { position: absolute; top: 12px; right: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 0.84rem; }
+.pc-goal-label { fill: var(--text); font-size: 11px; font-weight: 700; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }
+
+/* Under the pace chart: every goal and its target level. */
+.pc-goals { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.pc-goals li { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font-size: 0.76rem; }
+.pc-goals li b { color: var(--gold-bright); }
+.pc-goals img { flex: none; image-rendering: pixelated; }
+.pc-goals-more { border-style: dashed; }

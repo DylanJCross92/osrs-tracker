@@ -46,6 +46,48 @@ export function chartGeometry(series, area, { xTickCount = 5, dateLabel = (d) =>
   }
 }
 
+/**
+ * Where to write each goal's target ("Agility 99") next to its marker on the plan line. Labels sit above and to the left of the marker (the line climbs
+ * away from that corner), the last goal's first, then the rest in order, and one that would land on another label or outside the chart is left out.
+ * `marks` is the series' marks ({ skill, targetLevel, day, xp }); X and Y turn a day and XP into positions; `box` is { left, right, top } of the chart.
+ * Returns [{ text, x, y, anchor, index }] (x/y is the text's baseline, anchor is 'end').
+ */
+export function goalLabels(marks, X, Y, { charWidth = 6.2, height = 12, gap = 4, box = { left: 0, right: Infinity, top: -Infinity } } = {}) {
+  const list = marks || []
+  const order = list.length ? [list.length - 1, ...list.slice(0, -1).map((_, i) => i)] : []
+  const placed = []
+  const out = []
+  for (const i of order) {
+    const m = list[i]
+    const text = `${m.skill} ${m.targetLevel}`
+    const width = text.length * charWidth
+    const x = X(m.day) - 7
+    const y = Y(m.xp) - 8
+    const b = { x0: x - width - gap, x1: x + gap, y0: y - height - gap, y1: y + gap }
+    if (b.x0 < box.left || b.x1 > box.right || b.y0 < box.top) continue
+    if (placed.some((o) => b.x0 < o.x1 && b.x1 > o.x0 && b.y0 < o.y1 && b.y1 > o.y0)) continue
+    placed.push(b)
+    out.push({ text, x, y, anchor: 'end', index: i })
+  }
+  return out
+}
+
+/** The goals as chips, wrapped into rows that fit `maxWidth`: [[{ text, width }]]. `measure` gives a text's width. */
+export function chipRows(labels, measure, maxWidth, { pad = 18, gap = 10 } = {}) {
+  const rows = [[]]
+  let used = 0
+  for (const text of labels) {
+    const width = measure(text) + pad * 2
+    if (used && used + gap + width > maxWidth) {
+      rows.push([])
+      used = 0
+    }
+    rows[rows.length - 1].push({ text, width })
+    used += (used ? gap : 0) + width
+  }
+  return rows.filter((r) => r.length)
+}
+
 /** A safe file name, like "tickgains-my-training-plan-pace.png". */
 export const paceFileName = (title) => `tickgains-${String(title || 'plan').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'plan'}-pace.png`
 
@@ -73,7 +115,14 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   const icon = await loadImage(skill ? skillIconSrc(skill) : null)
 
   const W = PACE_IMAGE_WIDTH
-  const H = PACE_IMAGE_HEIGHT
+  // The goals (each skill's target level) as chips under the chart, when there is more than one.
+  const goalTexts = (series.marks || []).map((m) => `${m.skill} ${m.targetLevel}`)
+  const measurer = document.createElement('canvas').getContext('2d')
+  measurer.font = `700 20px ${family}`
+  const chips = goalTexts.length > 1 ? chipRows(goalTexts, (t) => measurer.measureText(t).width, W - PAD * 2) : []
+  const CHIP_ROW = 42
+  const chipsHeight = chips.length ? 34 + chips.length * CHIP_ROW : 0
+  const H = PACE_IMAGE_HEIGHT + chipsHeight
   const scale = 2 // sharp on high-density screens
   const canvas = document.createElement('canvas')
   canvas.width = W * scale
@@ -225,6 +274,12 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.arc(geo.plannedEnd.x, geo.plannedEnd.y, 8, 0, Math.PI * 2)
   ctx.fill()
   ctx.stroke()
+  // the target level of each goal, by its marker
+  ctx.font = `700 18px ${family}`
+  ctx.fillStyle = C.text
+  ctx.textAlign = 'right'
+  for (const l of goalLabels(series.marks, geo.X, geo.Y, { charWidth: 10.2, height: 18, gap: 6, box: { left: area.left, right: area.left + area.width + 14, top: area.top - 36 } })) ctx.fillText(l.text, l.x, l.y)
+  ctx.textAlign = 'left'
   // what really happened
   if (geo.actual.length) {
     ctx.fillStyle = 'rgba(124,184,105,0.16)'
@@ -254,6 +309,29 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.beginPath()
   ctx.arc(geo.now.x, geo.now.y, 6.5, 0, Math.PI * 2)
   ctx.fill()
+
+  // the goals
+  if (chips.length) {
+    let cy = area.top + area.height + 70
+    ctx.font = `700 20px ${family}`
+    chips.forEach((row) => {
+      let cx = PAD
+      for (const c of row) {
+        ctx.fillStyle = C.panel
+        ctx.strokeStyle = C.border
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.roundRect(cx, cy - 26, c.width, 36, 18)
+        ctx.fill()
+        ctx.stroke()
+        ctx.fillStyle = C.gold
+        ctx.textAlign = 'left'
+        ctx.fillText(c.text, cx + 18, cy)
+        cx += c.width + 10
+      }
+      cy += CHIP_ROW
+    })
+  }
 
   // footer
   ctx.fillStyle = C.border

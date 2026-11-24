@@ -34,6 +34,8 @@
       <path class="pc-plan" :d="line(series.planned)" />
       <circle v-for="m in series.marks.slice(0, -1)" :key="m.skill" class="pc-goal" :cx="X(m.day)" :cy="Y(m.xp)" r="3.5"><title>{{ m.skill }} level {{ m.targetLevel }}: {{ dateText(m.day) }}</title></circle>
       <circle class="pc-end is-plan" :cx="X(series.plannedDays)" :cy="Y(series.totalXp)" r="5"><title>Planned finish: {{ dateText(series.plannedDays) }}</title></circle>
+      <!-- each goal's target level, by its marker (the ones that do not fit are left out; the tooltips have them all) -->
+      <text v-for="l in labels" :key="l.index" class="pc-goal-label" :x="l.x" :y="l.y" :text-anchor="l.anchor">{{ l.text }}</text>
 
       <!-- what really happened, and where it is heading -->
       <path class="pc-area" :d="`${line(series.actual)} L${X(series.nowDay)},${Y(0)} L${X(0)},${Y(0)} Z`" />
@@ -49,6 +51,11 @@
         <circle v-if="hover.mine != null" class="pc-dot is-actual" :cx="hover.x" :cy="Y(hover.mine)" r="3.5" />
       </g>
     </svg>
+    <!-- Every goal and the level it takes the skill to (the labels on the chart only have room for some) -->
+    <ul v-if="series.marks.length > 1" class="pc-goals" aria-label="Goals">
+      <li v-for="m in shownMarks" :key="m.skill"><img :src="skillIconSrc(m.skill)" alt="" width="14" height="14" />{{ m.skill }} <b>{{ m.targetLevel }}</b></li>
+      <li v-if="series.marks.length > shownMarks.length" class="pc-goals-more">+{{ series.marks.length - shownMarks.length }} more</li>
+    </ul>
     <div v-if="hover" class="pc-tip" :class="{ flip: hover.x > width * 0.6 }" :style="{ left: hover.x + 'px' }" role="tooltip">
       <b>{{ hover.date }}</b>
       <span v-if="hover.plan != null"><i class="pc-sw is-plan" />Plan <em>{{ formatXp(hover.plan) }} XP</em></span>
@@ -59,7 +66,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { formatXp } from '@/utils/osrsSkills'
+import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
+import { goalLabels } from '@/utils/paceImage'
 
 const props = defineProps({ series: { type: Object, required: true } })
 
@@ -76,7 +84,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => ro?.disconnect())
 
-const M = { l: 48, r: 16, t: 16, b: 26 }
+const M = { l: 48, r: 16, t: 26, b: 26 }
 const height = computed(() => (width.value < 480 ? 190 : 230))
 const innerW = computed(() => Math.max(10, width.value - M.l - M.r))
 const innerH = computed(() => height.value - M.t - M.b)
@@ -86,6 +94,10 @@ const X = (day) => M.l + (day / xMax.value) * innerW.value
 const Y = (xp) => M.t + innerH.value - (xp / props.series.totalXp) * innerH.value
 const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.day).toFixed(1)},${Y(p.xp).toFixed(1)}`).join(' ')
 
+// Where each goal's target level is written.
+const labels = computed(() => (width.value ? goalLabels(props.series.marks, X, Y, { charWidth: 6.4, height: 12, box: { left: M.l, right: width.value - 2, top: 2 } }) : []))
+
+const shownMarks = computed(() => props.series.marks.slice(0, 12))
 const nowXp = computed(() => props.series.actual[props.series.actual.length - 1].xp)
 
 const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
