@@ -7272,7 +7272,6 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .trk-dot.d-master { background: #e5675a; }
 .trk-dot.d-grandmaster { background: #b78cf0; }
 .trk-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 36px; }
-.trk-cols > .trk-block:only-child { grid-column: 1 / -1; }
 
 .trk-reqs { list-style: none; margin: 0 0 8px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .trk-reqs li { display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.035); border: 1px solid var(--border); }
