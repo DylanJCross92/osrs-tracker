@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import DashSkeleton from '@/components/dashboard/DashSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
@@ -51,14 +51,15 @@ const showAll = ref(false)
 const shownPlayers = computed(() => (showAll.value ? players.value : players.value.slice(0, LIMIT)))
 
 let stamp = 0
-async function load() {
+// quiet: a refresh of what is already shown, so no loading state.
+async function load({ quiet = false } = {}) {
   const names = following.value.slice(-200)
   if (!names.length) {
     players.value = []
     return
   }
   const id = ++stamp
-  loading.value = true
+  if (!quiet) loading.value = true
   try {
     const res = await followsApi.feed(names)
     if (id === stamp) players.value = res.players
@@ -68,8 +69,23 @@ async function load() {
     if (id === stamp) loading.value = false
   }
 }
-onMounted(load)
-watch(() => following.value.join('|'), load)
+// The strip stays right while the page is open: the gains are read again every minute (and when the tab is shown again), so it never lags behind the
+// figures on the rest of the site, which are read fresh each time.
+const REFRESH_MS = 60_000
+let refreshTimer = null
+const refreshIfVisible = () => {
+  if (document.visibilityState === 'visible' && following.value.length) load({ quiet: true })
+}
+onMounted(() => {
+  load()
+  refreshTimer = setInterval(refreshIfVisible, REFRESH_MS)
+  document.addEventListener('visibilitychange', refreshIfVisible)
+})
+onBeforeUnmount(() => {
+  clearInterval(refreshTimer)
+  document.removeEventListener('visibilitychange', refreshIfVisible)
+})
+watch(() => following.value.join('|'), () => load())
 
 function ago(iso) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
