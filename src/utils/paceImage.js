@@ -50,16 +50,17 @@ export function chartGeometry(series, area, { xTickCount = 5, dateLabel = (d) =>
  * Where to write each goal's target ("Agility 99") next to its marker on the plan line. Labels sit above and to the left of the marker (the line climbs
  * away from that corner), the last goal's first, then the rest in order, and one that would land on another label or outside the chart is left out.
  * `marks` is the series' marks ({ skill, targetLevel, day, xp }); X and Y turn a day and XP into positions; `box` is { left, right, top } of the chart.
+ * `text(mark, index)` can give a label its own words (the one-skill plan reads "Agility 98 → 99": where you are, and the goal).
  * Returns [{ text, x, y, anchor, index }] (x/y is the text's baseline, anchor is 'end').
  */
-export function goalLabels(marks, X, Y, { charWidth = 6.2, height = 12, gap = 4, box = { left: 0, right: Infinity, top: -Infinity } } = {}) {
+export function goalLabels(marks, X, Y, { charWidth = 6.2, height = 12, gap = 4, box = { left: 0, right: Infinity, top: -Infinity }, text: textFor = null } = {}) {
   const list = marks || []
   const order = list.length ? [list.length - 1, ...list.slice(0, -1).map((_, i) => i)] : []
   const placed = []
   const out = []
   for (const i of order) {
     const m = list[i]
-    const text = `${m.skill} ${m.targetLevel}`
+    const text = (textFor && textFor(m, i)) || `${m.skill} ${m.targetLevel}`
     const width = text.length * charWidth
     const x = X(m.day) - 7
     const y = Y(m.xp) - 8
@@ -74,6 +75,12 @@ export function goalLabels(marks, X, Y, { charWidth = 6.2, height = 12, gap = 4,
 
 /** "Agility 91 → 99" (where the player is now, and where the goal takes the skill); a finished goal says so. */
 export const goalChipText = (g) => (g.done ? `${g.skill} ${g.to} ✓` : g.from != null && g.from < g.to ? `${g.skill} ${g.from} → ${g.to}` : `${g.skill} ${g.to}`)
+
+/** For a plan of one skill, the finish label also says where the player is now: "Agility 98 → 99". Otherwise null (the default wording). */
+export function soloLabelText(goals) {
+  const g = goals && goals.length === 1 ? goals[0] : null
+  return g && !g.done && g.from != null && g.from < g.to ? () => `${g.skill} ${g.from} → ${g.to}` : null
+}
 
 /** The goals as chips, wrapped into rows that fit `maxWidth`: [[{ text, width }]]. `measure` gives a text's width. */
 export function chipRows(labels, measure, maxWidth, { pad = 18, gap = 10 } = {}) {
@@ -284,7 +291,7 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.font = `700 18px ${family}`
   ctx.fillStyle = C.text
   ctx.textAlign = 'right'
-  for (const l of goalLabels(series.marks, geo.X, geo.Y, { charWidth: 10.2, height: 18, gap: 6, box: { left: area.left, right: area.left + area.width + 14, top: area.top - 40 } })) ctx.fillText(l.text, l.x, l.y)
+  for (const l of goalLabels(series.marks, geo.X, geo.Y, { charWidth: 10.2, height: 18, gap: 6, box: { left: area.left, right: area.left + area.width + 14, top: area.top - 40 }, text: soloLabelText(goals) })) ctx.fillText(l.text, l.x, l.y)
   ctx.textAlign = 'left'
   // what really happened
   if (geo.actual.length) {
@@ -315,14 +322,6 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.beginPath()
   ctx.arc(geo.now.x, geo.now.y, 6.5, 0, Math.PI * 2)
   ctx.fill()
-  // Where the player is now, by the dot (for a plan of one skill; with several, the chips below say it for each)
-  if (goals.length === 1 && goals[0].from != null && !goals[0].done) {
-    ctx.font = `700 18px ${family}`
-    ctx.fillStyle = C.green
-    ctx.textAlign = 'right'
-    ctx.fillText(`You: ${goals[0].skill} ${goals[0].from}`, geo.now.x - 12, Math.max(geo.now.y - 26, area.top + 20))
-    ctx.textAlign = 'left'
-  }
 
   // the goals
   if (chips.length) {

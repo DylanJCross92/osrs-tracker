@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartGeometry, chipRows, goalChipText, goalLabels, paceFileName } from '@/utils/paceImage'
+import { chartGeometry, chipRows, goalChipText, goalLabels, paceFileName, soloLabelText } from '@/utils/paceImage'
 
 const series = {
   baseline: new Date('2026-11-01T00:00:00Z'),
@@ -95,5 +95,19 @@ describe('goal chips say where the player is now', () => {
     expect(goalChipText({ skill: 'Agility', from: 99, to: 99, done: true })).toBe('Agility 99 ✓')
     expect(goalChipText({ skill: 'Agility', from: null, to: 99 })).toBe('Agility 99')
     expect(goalChipText({ skill: 'Agility', from: 99, to: 99, done: false })).toBe('Agility 99')
+  })
+})
+
+describe('a plan of one skill', () => {
+  it('writes where you are into the finish label, once, instead of a second label', () => {
+    const X = (d) => 100 + d * 40
+    const Y = (xp) => 350 - xp * 0.3
+    const marks = [{ skill: 'Agility', targetLevel: 99, day: 12, xp: 1000 }]
+    const solo = soloLabelText([{ skill: 'Agility', from: 98, to: 99, done: false }])
+    expect(goalLabels(marks, X, Y, { text: solo }).map((l) => l.text)).toEqual(['Agility 98 → 99'])
+    // several goals, a finished goal, or no known level: the default wording
+    expect(soloLabelText([{ skill: 'A', from: 1, to: 2 }, { skill: 'B', from: 1, to: 2 }])).toBeNull()
+    expect(soloLabelText([{ skill: 'A', from: 99, to: 99, done: true }])).toBeNull()
+    expect(goalLabels(marks, X, Y, { text: null }).map((l) => l.text)).toEqual(['Agility 99'])
   })
 })

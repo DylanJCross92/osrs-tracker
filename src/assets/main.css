@@ -7557,4 +7557,3 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .pc-goals-more { border-style: dashed; }
 .pc-goals li span { color: var(--text); font-weight: 700; }
 .pc-goals li.done { opacity: 0.75; }
-.pc-now-label { fill: var(--xp-green); font-size: 11px; font-weight: 700; pointer-events: none; paint-order: stroke; stroke: var(--bg); stroke-width: 3px; }

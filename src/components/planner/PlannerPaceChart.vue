@@ -44,7 +44,6 @@
       <path v-if="series.projected" class="pc-proj" :d="line(series.projected)" />
       <circle v-if="series.projected" class="pc-end is-proj" :cx="X(series.projectedDay)" :cy="Y(series.totalXp)" r="5"><title>At your pace: {{ dateText(series.projectedDay) }}</title></circle>
       <circle class="pc-now" :cx="X(series.nowDay)" :cy="Y(nowXp)" r="4.5" />
-      <text v-if="nowLabel" class="pc-now-label" text-anchor="end" :x="X(series.nowDay) - 8" :y="Math.max(Y(nowXp) - 28, M.t + 12)">{{ nowLabel }}</text>
 
       <!-- hover -->
       <g v-if="hover">
@@ -69,7 +68,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
-import { goalChipText, goalLabels } from '@/utils/paceImage'
+import { goalChipText, goalLabels, soloLabelText } from '@/utils/paceImage'
 
 // `goals` is [{ skill, from, to, done }]: where the player is now and where each goal takes the skill.
 const props = defineProps({ series: { type: Object, required: true }, goals: { type: Array, default: () => [] } })
@@ -98,13 +97,11 @@ const Y = (xp) => M.t + innerH.value - (xp / props.series.totalXp) * innerH.valu
 const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.day).toFixed(1)},${Y(p.xp).toFixed(1)}`).join(' ')
 
 // Where each goal's target level is written.
-const labels = computed(() => (width.value ? goalLabels(props.series.marks, X, Y, { charWidth: 6.4, height: 12, box: { left: M.l, right: width.value - 2, top: 2 } }) : []))
+const labels = computed(() => (width.value ? goalLabels(props.series.marks, X, Y, { charWidth: 6.4, height: 12, box: { left: M.l, right: width.value - 2, top: 2 }, text: soloLabelText(props.goals) }) : []))
 
 // Every goal with where the player is now (or the marks' targets when that is not known).
 const chipGoals = computed(() => (props.goals.length ? props.goals : props.series.marks.map((m) => ({ skill: m.skill, from: null, to: m.targetLevel, done: false }))))
 const shownGoals = computed(() => chipGoals.value.slice(0, 12))
-// A plan of one skill: where the player is now, written by the dot.
-const nowLabel = computed(() => (props.goals.length === 1 && props.goals[0].from != null && !props.goals[0].done ? `You: ${props.goals[0].skill} ${props.goals[0].from}` : ''))
 // The label goes to the left of the line, unless that would leave the chart.
 const todayLeft = computed(() => X(props.series.nowDay) - 6 - 34 > M.l)
 const nowXp = computed(() => props.series.actual[props.series.actual.length - 1].xp)
