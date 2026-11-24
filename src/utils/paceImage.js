@@ -243,13 +243,16 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
     ctx.strokeStyle = 'rgba(236,228,211,0.45)'
     ctx.setLineDash([4, 5])
     ctx.beginPath()
-    ctx.moveTo(geo.todayX, area.top - 22)
+    ctx.moveTo(geo.todayX, area.top)
     ctx.lineTo(geo.todayX, area.top + area.height)
     ctx.stroke()
     ctx.setLineDash([])
+    // The label is at the foot of the line, beside it, so it never meets a goal's label near the top.
     ctx.fillStyle = C.muted
-    ctx.textAlign = geo.todayX > area.left + area.width * 0.85 ? 'right' : 'center'
-    ctx.fillText('Today', geo.todayX, area.top - 30)
+    ctx.font = `500 18px ${family}`
+    const left = geo.todayX - 10 - 56 > area.left
+    ctx.textAlign = left ? 'right' : 'left'
+    ctx.fillText('Today', geo.todayX + (left ? -10 : 10), area.top + area.height - 10)
     ctx.textAlign = 'left'
   }
   const path = (pts) => {
@@ -278,7 +281,7 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.font = `700 18px ${family}`
   ctx.fillStyle = C.text
   ctx.textAlign = 'right'
-  for (const l of goalLabels(series.marks, geo.X, geo.Y, { charWidth: 10.2, height: 18, gap: 6, box: { left: area.left, right: area.left + area.width + 14, top: area.top - 36 } })) ctx.fillText(l.text, l.x, l.y)
+  for (const l of goalLabels(series.marks, geo.X, geo.Y, { charWidth: 10.2, height: 18, gap: 6, box: { left: area.left, right: area.left + area.width + 14, top: area.top - 40 } })) ctx.fillText(l.text, l.x, l.y)
   ctx.textAlign = 'left'
   // what really happened
   if (geo.actual.length) {

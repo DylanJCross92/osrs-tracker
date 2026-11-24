@@ -27,7 +27,8 @@
       <!-- today -->
       <g v-if="series.nowDay > 0">
         <line class="pc-today" :x1="X(series.nowDay)" :x2="X(series.nowDay)" :y1="M.t" :y2="M.t + innerH" />
-        <text class="pc-today-label" :x="X(series.nowDay)" :y="M.t - 2" :text-anchor="series.nowDay / xMax > 0.85 ? 'end' : 'middle'">Today</text>
+        <!-- at the foot of the line, beside it, so it never meets a goal's label near the top -->
+        <text class="pc-today-label" :x="X(series.nowDay) + (todayLeft ? -6 : 6)" :y="M.t + innerH - 6" :text-anchor="todayLeft ? 'end' : 'start'">Today</text>
       </g>
 
       <!-- the plan -->
@@ -98,6 +99,8 @@ const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.day).toFixed(1)},
 const labels = computed(() => (width.value ? goalLabels(props.series.marks, X, Y, { charWidth: 6.4, height: 12, box: { left: M.l, right: width.value - 2, top: 2 } }) : []))
 
 const shownMarks = computed(() => props.series.marks.slice(0, 12))
+// The label goes to the left of the line, unless that would leave the chart.
+const todayLeft = computed(() => X(props.series.nowDay) - 6 - 34 > M.l)
 const nowXp = computed(() => props.series.actual[props.series.actual.length - 1].xp)
 
 const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
