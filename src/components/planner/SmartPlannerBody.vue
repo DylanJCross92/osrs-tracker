@@ -225,12 +225,22 @@ const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-r
 const shown = ref(live.value)
 const thinking = ref(false)
 let timer = null
+// Seeing the finished plan is logged once each time the plan step is reached, when the plan is really on screen (after the short beat),
+// not again every time the answers or the player's stats work it out afresh while it stays open.
+let viewedLogged = false
+function logViewed() {
+  if (viewedLogged || current.value !== 'plan' || shown.value.empty) return
+  viewedLogged = true
+  track('smart_planner_plan_viewed', { goal: profile.value.goal, goals: shown.value.totals.goals })
+}
 watch(
   [live, current],
   () => {
+    if (current.value !== 'plan') viewedLogged = false
     if (current.value !== 'plan' || reduced) {
       shown.value = live.value
       thinking.value = false
+      logViewed()
       return
     }
     thinking.value = true
@@ -238,6 +248,7 @@ watch(
     timer = setTimeout(() => {
       shown.value = live.value
       thinking.value = false
+      logViewed()
     }, 450)
   },
   { flush: 'post' },
@@ -258,16 +269,16 @@ watch(
 const phaseNumber = (p) => shown.value.phases.filter((x) => !x.later).indexOf(p) + 1
 const laterLine = (p) => `${p.rows.length} more ${p.rows.length === 1 ? 'skill' : 'skills'}, after this plan.`
 
-// The first step counts too (moving between steps is tracked in go()), and so does seeing the finished plan, for the funnel.
+// The first step counts too (moving between steps is tracked in go()). Seeing the finished plan, for the funnel, is logged by logViewed() above.
 onMounted(() => track('smart_planner_step', { step: STEPS[0].key }))
-watch(
-  () => current.value === 'plan' && !thinking.value && !shown.value.empty,
-  (on) => on && track('smart_planner_plan_viewed', { goal: profile.value.goal, goals: shown.value.totals.goals }),
-)
 
+// An answer counts once, not every time it is changed in quick succession (dragging the hours slider sends a change at every notch).
+const lastAnswer = new Map()
 function set(patch, question) {
   answer(patch)
-  track('smart_planner_answer', { question })
+  const now = Date.now()
+  if (now - (lastAnswer.get(question) || 0) > 1500) track('smart_planner_answer', { question })
+  lastAnswer.set(question, now)
 }
 function start() {
   track('smart_planner_start', { goal: profile.value.goal, members: profile.value.members, experience: profile.value.experience, iron: profile.value.iron, hasPlayer: props.hasPlayer, goals: shown.value.totals.goals })
