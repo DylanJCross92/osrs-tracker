@@ -20,21 +20,21 @@
         <template v-if="!showXp">
           <label>
             <span>From level</span>
-            <NumberInput v-model="currentLevelModel" :min="1" :max="126" />
+            <NumberInput v-model="currentLevelModel" :min="1" :max="126" commit="blur" />
           </label>
           <label>
             <span>To level</span>
-            <NumberInput v-model="form.targetLevel" :min="1" :max="126" @update:model-value="syncTarget" />
+            <NumberInput v-model="form.targetLevel" :min="1" :max="126" commit="blur" @update:model-value="syncTarget" />
           </label>
         </template>
         <template v-else>
           <label>
             <span>Current XP</span>
-            <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" />
+            <NumberInput v-model="form.currentXp" :min="0" :max="MAX_XP" commit="blur" />
           </label>
           <label>
             <span>Target XP</span>
-            <NumberInput v-model="form.targetXp" :min="0" :max="MAX_XP" />
+            <NumberInput v-model="form.targetXp" :min="0" :max="MAX_XP" commit="blur" />
           </label>
         </template>
       </div>

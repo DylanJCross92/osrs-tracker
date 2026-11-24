@@ -20,12 +20,12 @@
         <div class="se-levels">
           <label>
             <span>From level</span>
-            <NumberInput :model-value="startLevel" :min="1" :max="MAX_VIRTUAL_LEVEL" @update:model-value="setStartLevel" />
+            <NumberInput :model-value="startLevel" :min="1" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setStartLevel" />
           </label>
           <span class="se-arrow" aria-hidden="true">→</span>
           <label>
             <span>Goal level</span>
-            <NumberInput :model-value="endLevel" :min="2" :max="MAX_VIRTUAL_LEVEL" @update:model-value="setTargetLevel" />
+            <NumberInput :model-value="endLevel" :min="2" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setTargetLevel" />
           </label>
         </div>
       </section>
@@ -37,7 +37,7 @@
           <MethodPicker :model-value="goal.methodId" :methods="methods" :routes="methodRoutes" @update:model-value="$emit('patch', { methodId: $event })" />
           <label v-if="goal.methodId === 'custom'" class="se-inline">
             <span>XP per hour</span>
-            <NumberInput :model-value="goal.customXpPerHour" :min="1" :max="10000000" @update:model-value="$emit('patch', { customXpPerHour: $event })" />
+            <NumberInput :model-value="goal.customXpPerHour" :min="1" :max="10000000" commit="blur" @update:model-value="$emit('patch', { customXpPerHour: $event })" />
           </label>
         </div>
         <p v-if="method" class="se-hint">
@@ -58,9 +58,9 @@
         <div class="route-range">
           <button class="btn-text" type="button" :aria-expanded="rangeOpen" @click="toggleRange">{{ rangeOpen ? 'Close' : '+ Pick a method for a range of levels' }}</button>
           <div v-if="rangeOpen" class="route-range-form">
-            <label><span>From level</span><NumberInput :model-value="rangeFrom" :min="startLevel" :max="endLevel - 1" @update:model-value="(v) => v && (rangeFrom = Math.min(Math.max(v, startLevel), endLevel - 1))" /></label>
+            <label><span>From level</span><NumberInput :model-value="rangeFrom" :min="startLevel" :max="endLevel - 1" commit="blur" @update:model-value="(v) => v && (rangeFrom = Math.min(Math.max(v, startLevel), endLevel - 1))" /></label>
             <span class="goal-levels-arrow" aria-hidden="true">→</span>
-            <label><span>To level</span><NumberInput :model-value="rangeTo" :min="startLevel + 1" :max="endLevel" @update:model-value="(v) => v && (rangeTo = Math.min(Math.max(v, startLevel + 1), endLevel))" /></label>
+            <label><span>To level</span><NumberInput :model-value="rangeTo" :min="startLevel + 1" :max="endLevel" commit="blur" @update:model-value="(v) => v && (rangeTo = Math.min(Math.max(v, startLevel + 1), endLevel))" /></label>
             <div class="route-range-pick">
               <span>Method</span>
               <MethodPicker v-if="rangeMethods.length && rangeTo > rangeFrom" inline model-value="" :methods="rangeMethods" :allow-custom="false" @update:model-value="applyRange" />

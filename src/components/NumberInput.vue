@@ -17,10 +17,13 @@ import { ref, watch } from 'vue'
 // Whole-number field that groups thousands as you type (1,234,567), strips
 // anything that isn't a digit, and clamps to [min, max], max immediately,
 // min on blur so you can still clear the box and retype.
+// `commit` says when the new value is passed on: 'input' (every keystroke, the default) or 'blur' (when the person leaves the box or presses
+// Enter), for fields where the page changes under them as they type (a level that rebuilds the route).
 const props = defineProps({
   modelValue: { type: Number, default: null },
   min: { type: Number, default: 0 },
   max: { type: Number, default: Number.MAX_SAFE_INTEGER },
+  commit: { type: String, default: 'input' },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -40,16 +43,17 @@ function onInput(e) {
   const input = e.target
   const caretDigits = input.value.slice(0, input.selectionStart).replace(/\D/g, '').length
   const digits = input.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '')
+  const live = props.commit !== 'blur'
   if (digits === '') {
     display.value = ''
     input.value = ''
-    emit('update:modelValue', null)
+    if (live) emit('update:modelValue', null)
     return
   }
   const n = Math.min(parseInt(digits, 10), props.max)
   display.value = fmt(n)
   input.value = display.value
-  emit('update:modelValue', n)
+  if (live) emit('update:modelValue', n)
   // Put the caret back after the same number of digits it was after.
   let pos = 0
   let seen = 0
@@ -65,6 +69,8 @@ function onBlur() {
   const n = Math.min(Math.max(Number.isNaN(typed) ? props.min : typed, props.min), props.max)
   display.value = fmt(n)
   if (el.value) el.value.value = display.value
+  // Waiting for the end of typing: nothing to say when the number is the one the page already has.
+  if (props.commit === 'blur' && n === props.modelValue) return
   emit('update:modelValue', n)
 }
 </script>
