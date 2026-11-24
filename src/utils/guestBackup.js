@@ -8,6 +8,15 @@ export const BACKUP_VERSION = 1
 const EXTRA = { me: 'tickgains:me', rivals: 'tickgains:rivals' }
 const FILES = { ...KEYS, ...EXTRA }
 const NAMES = Object.keys(FILES)
+// Small settings saved as plain text (not JSON): the player the tracker is tailored to, which profile the dashboard is about, the gain period, and whether the
+// planner skips methods whose requirements are missing. Only taken on another device when it has no value of its own.
+const RAW = {
+  trackerPlayer: 'tickgains-tracker-player',
+  dashboardProfile: 'tickgains-dashboard-profile',
+  ownProfile: 'tickgains-planner-own-profile',
+  gainPeriod: 'tickgains:gain-period',
+  respect: 'tickgains-planner-respect-requirements',
+}
 
 const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v)
 const empty = (v) => v == null || v === '' || (Array.isArray(v) && v.length === 0) || (isObj(v) && Object.keys(v).length === 0) || (isObj(v) && Array.isArray(v.goals) && v.goals.length === 0 && Object.keys(v).length <= 1)
@@ -27,6 +36,14 @@ export function collectBackup(storage = localStorage) {
   for (const name of NAMES) {
     const value = read(storage, FILES[name])
     if (!empty(value)) data[name] = value
+  }
+  for (const [name, key] of Object.entries(RAW)) {
+    try {
+      const text = storage.getItem(key)
+      if (text) data[name] = text
+    } catch {
+      /* storage unavailable */
+    }
   }
   return { v: BACKUP_VERSION, app: 'tickgains', at: new Date().toISOString(), data }
 }
@@ -132,6 +149,9 @@ export function applyBackup(backup, storage = localStorage) {
     else if (['cheered', 'dismissed', 'watch', 'rivals'].includes(name)) put(name, union(local, incoming).slice(0, 5000))
     else if (name === 'requirements') put(name, { ...(isObj(local) ? local : {}), ...incoming })
     else if (empty(local)) put(name, incoming)
+  }
+  for (const [name, key] of Object.entries(RAW)) {
+    if (typeof d[name] === 'string' && d[name] && storage.getItem(key) == null) storage.setItem(key, d[name])
   }
   return describeBackup(backup)
 }

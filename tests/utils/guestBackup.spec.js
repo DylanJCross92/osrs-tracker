@@ -63,3 +63,18 @@ describe('save code', () => {
     expect(get(c, 'tickgains-planner-prefs-v1')).toEqual({ hours: 4 })
   })
 })
+
+describe('save code: plain settings', () => {
+  it('carries the plain-text settings and only fills in ones that are not set', async () => {
+    const a = mem()
+    a.setItem('tickgains-tracker-player', 'Zezima')
+    a.setItem('tickgains:gain-period', 'week')
+    const b = await decodeBackup(await encodeBackup(collectBackup(a)))
+    expect(b.data.trackerPlayer).toBe('Zezima')
+    const c = mem()
+    c.setItem('tickgains:gain-period', 'day')
+    applyBackup(b, c)
+    expect(c.getItem('tickgains-tracker-player')).toBe('Zezima')
+    expect(c.getItem('tickgains:gain-period')).toBe('day')
+  })
+})

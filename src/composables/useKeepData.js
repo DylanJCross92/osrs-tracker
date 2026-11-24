@@ -4,8 +4,8 @@ import { listSavedPlans } from '@/utils/plannerTools'
 import { useRequirements } from '@/composables/useRequirements'
 import { useFollowing } from '@/composables/useFollowing'
 
-// What a visitor who is not signed in has built up in this browser, and the ways to make it last: ask the browser not to clear it, and (on an iPhone)
-// install the site to the home screen, which Safari does not clear after a week away the way it does for websites.
+// What a visitor who is not signed in has built up in this browser, and whether to suggest installing the site to the home screen on an iPhone (Safari does
+// not clear an installed app after a week away the way it does for websites).
 export function useKeepData() {
   const { questStats, diaryStats } = useRequirements()
   const { following } = useFollowing()
@@ -23,7 +23,6 @@ export function useKeepData() {
     read()
     window.addEventListener(SYNCED_EVENT, onChange)
     window.addEventListener('storage', onChange)
-    checkPersisted()
   })
   onBeforeUnmount(() => {
     window.removeEventListener(SYNCED_EVENT, onChange)
@@ -43,31 +42,11 @@ export function useKeepData() {
     return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0] || ''
   })
 
-  // Asking the browser to keep this site's data. Some browsers ask the person, so it is only done when they press the button.
-  const canPersist = typeof navigator !== 'undefined' && !!navigator.storage?.persist
-  const persisted = ref(false)
-  async function checkPersisted() {
-    try {
-      persisted.value = !!(await navigator.storage?.persisted?.())
-    } catch {
-      persisted.value = false
-    }
-  }
-  /** Returns true when the browser agreed to keep the data. */
-  async function keepOnDevice() {
-    try {
-      persisted.value = !!(await navigator.storage.persist())
-    } catch {
-      persisted.value = false
-    }
-    return persisted.value
-  }
-
   // An iPhone or iPad in Safari, not yet installed to the home screen.
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   const isApple = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1)
   const standalone = typeof window !== 'undefined' && (window.navigator.standalone === true || window.matchMedia?.('(display-mode: standalone)').matches)
   const suggestInstall = isApple && !standalone
 
-  return { counts, total, summary, canPersist, persisted, keepOnDevice, suggestInstall }
+  return { counts, total, summary, suggestInstall }
 }

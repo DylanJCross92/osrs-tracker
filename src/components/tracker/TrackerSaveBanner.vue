@@ -10,9 +10,9 @@
     <div class="trk-banner-cta">
       <RouterLink class="btn btn-primary" :to="{ name: 'signup', query: { next: '/quests' } }" @click="track('tracker_signup_click', { place: place })">Create a free account</RouterLink>
       <RouterLink class="btn-text" :to="{ name: 'login', query: { next: '/quests' } }" @click="track('tracker_login_click', { place: place })">Log in</RouterLink>
-      <button class="btn-text" type="button" title="Copy a code that restores this on another device" @click="backupOpen = true">Back up with a code</button>
+      <button class="btn-text" type="button" title="Copies a link that brings back your quests, diaries and plans on any device" @click="copySessionLink('tracker')">Copy link to save session</button>
     </div>
-    <GuestBackupModal v-if="backupOpen" @close="backupOpen = false" />
+
   </aside>
   <!-- Signed in: nothing to say unless saving to the account is failing. -->
   <aside v-else-if="syncState === 'error'" class="trk-banner is-saved" role="status" aria-label="Where your progress is saved">
@@ -27,13 +27,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-import GuestBackupModal from '@/components/guest/GuestBackupModal.vue'
+import { useSessionLink } from '@/composables/useSessionLink'
 import { track } from '@/utils/analytics'
 
 // Says plainly where the quests and diaries are kept. Signed out they live in this browser only, and the way to keep them is one click away.
 defineProps({ place: { type: String, default: 'tracker' } })
 const { loggedIn, syncState } = useAuth()
-const backupOpen = ref(false)
+const { copySessionLink } = useSessionLink()
 </script>
