@@ -7540,3 +7540,4 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .ptl-next em { font-style: normal; font-size: 0.78rem; color: var(--muted); }
 .ptl-next em.is-ready { color: #86c98f; }
 .ptl-next em.is-almost { color: var(--gold); }
+.wl-note .wl-fake-link { color: var(--gold-bright); }

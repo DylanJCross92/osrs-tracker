@@ -138,12 +138,35 @@
       </li>
     </ul>
   </section>
+
+  <!-- The watchlist, one placeholder row for each item being watched, so the cards below it do not move when the prices arrive -->
+  <section v-else-if="kind === 'watchlist'" class="wl card dash-card dash-sk" aria-busy="true" aria-labelledby="dash-wl-sk">
+    <header class="wl-head">
+      <h2 id="dash-wl-sk"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z" /></svg>Your watchlist<small>{{ count }}</small></h2>
+      <span class="wl-more sk sk-w80">GE prices →</span>
+    </header>
+    <ul class="wl-list" aria-hidden="true">
+      <li v-for="n in count" :key="n">
+        <span class="wl-item">
+          <span class="sk sk-icon26" />
+          <span class="wl-name"><b class="sk sk-w120">Item name</b><small class="sk sk-w60">0,000 gp</small></span>
+        </span>
+        <span class="wl-x" />
+      </li>
+    </ul>
+    <!-- The same line the loaded card ends with when signed out (it is plain text, so it can show as it is) -->
+    <p v-if="note" class="wl-note">Saved in this browser. <span class="wl-fake-link">Log in</span> to keep it on every device.</p>
+  </section>
 </template>
 
 <script setup>
 defineProps({
-  // head | week | clans | plans | next | following | milestones | goals
+  // head | week | clans | plans | next | following | milestones | goals | watchlist
   kind: { type: String, required: true },
+  // watchlist: how many items are being watched
+  count: { type: Number, default: 1 },
+  // watchlist: show the "saved in this browser" line (when signed out)
+  note: { type: Boolean, default: false },
 })
 
 // A week of bars of different heights reads as a chart, not a block.
