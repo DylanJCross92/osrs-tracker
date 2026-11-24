@@ -7544,9 +7544,6 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .ptl-next em.is-almost { color: var(--gold); }
 .wl-note .wl-fake-link { color: var(--gold-bright); }
 
-/* The pace chart's top row: the legend, and "Save image" at the far end. */
-.pc-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
-.pc-top .pc-legend { margin-bottom: 2px; }
-.pc-save { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); font: inherit; font-size: 0.78rem; cursor: pointer; transition: border-color 0.15s, color 0.15s; }
-.pc-save:hover:not(:disabled), .pc-save:focus-visible { border-color: var(--gold); color: var(--text); outline: none; }
-.pc-save:disabled { opacity: 0.7; cursor: progress; }
+/* The progress card's Share button sits in its top corner. */
+.pp { position: relative; }
+.pp-share { position: absolute; top: 12px; right: 14px; z-index: 2; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 0.84rem; }

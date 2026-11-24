@@ -149,6 +149,7 @@
         :projection="shownProjection"
         :series="series"
         :plan-name="currentPlanName"
+        :share-link="paceShareLink"
         :player-name="player?.displayName || ''"
         :focus="focusIdx >= 0 ? focusSkill : ''"
         @focus="(skill) => (focusSkill = skill)"
@@ -1229,6 +1230,13 @@ async function loadTemplate(slug) {
   recordPlanEvent(slug, 'use')
   return true
 }
+
+// The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
+const paceShareLink = computed(() => {
+  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null })
+  params.set('from', 'share')
+  return `${window.location.origin}/planner/new?${params.toString()}`
+})
 
 // --- Sharing a plan publicly ---------------------------------------------------------------
 const sharing = ref(null)

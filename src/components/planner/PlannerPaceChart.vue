@@ -1,17 +1,10 @@
 <template>
   <div class="pc" ref="root">
-    <div class="pc-top">
-      <ul class="pc-legend" aria-hidden="true">
-        <li><i class="pc-sw is-plan" />Plan</li>
-        <li><i class="pc-sw is-actual" />Your progress</li>
-        <li v-if="series.projected"><i class="pc-sw is-proj" />At your pace</li>
-      </ul>
-      <!-- Save the chart as a picture (with the plan's name and the numbers above it) -->
-      <button v-if="exportInfo" class="pc-save" type="button" :disabled="saving" :title="saveError || 'Save this chart as a picture'" @click="save">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12" /><path d="M7 10l5 5 5-5" /><path d="M5 21h14" /></svg>
-        {{ saving ? 'Making picture…' : saveError ? 'Try again' : 'Save image' }}
-      </button>
-    </div>
+    <ul class="pc-legend" aria-hidden="true">
+      <li><i class="pc-sw is-plan" />Plan</li>
+      <li><i class="pc-sw is-actual" />Your progress</li>
+      <li v-if="series.projected"><i class="pc-sw is-proj" />At your pace</li>
+    </ul>
     <svg
       v-if="width"
       class="pc-svg"
@@ -67,30 +60,8 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatXp } from '@/utils/osrsSkills'
-import { drawPaceImage, paceFileName } from '@/utils/paceImage'
-import { saveRouteImage } from '@/utils/routeImage'
-import { track } from '@/utils/analytics'
 
-// `exportInfo` (when given) turns on "Save image": { title, subtitle, finishText, untilText, pctText, badge, xpText, skill } for the picture's heading.
-const props = defineProps({ series: { type: Object, required: true }, exportInfo: { type: Object, default: null } })
-
-const saving = ref(false)
-const saveError = ref('')
-async function save() {
-  if (saving.value) return
-  saving.value = true
-  saveError.value = ''
-  try {
-    const blob = await drawPaceImage({ series: props.series, ...props.exportInfo })
-    // A file on the device, not the phone's share sheet: this is "save", and the picture goes where the person puts it.
-    await saveRouteImage(blob, paceFileName(props.exportInfo?.title), { share: false })
-    track('plan_pace_image')
-  } catch {
-    saveError.value = 'Could not make the picture. Try again.'
-  } finally {
-    saving.value = false
-  }
-}
+const props = defineProps({ series: { type: Object, required: true } })
 
 const root = ref(null)
 const width = ref(0)

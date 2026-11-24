@@ -1,5 +1,8 @@
 <template>
   <section class="pp" :class="{ complete: progress.complete }" aria-label="Plan progress">
+    <!-- Share the pace chart as a picture (the same window as sharing a route) -->
+    <button v-if="exportInfo && series && !view.complete" class="btn btn-ghost pp-share" type="button" aria-haspopup="dialog" @click="sharing = true"><ShareIcon name="share" :size="15" />Share</button>
+    <SharePaceModal v-if="sharing" :series="series" :info="exportInfo" :link="shareLink" @close="sharing = false" />
     <!-- The finish line and how it is going, together -->
     <div class="pp-top" :class="{ 'has-finish': !!finish }">
       <div v-if="finish" class="pp-finish">
@@ -37,7 +40,7 @@
       </div>
     </div>
 
-    <PlannerPaceChart v-if="series && !view.complete" :series="series" :export-info="exportInfo" />
+    <PlannerPaceChart v-if="series && !view.complete" :series="series" />
 
     <!-- One slice per skill, as wide as it takes to train, filled as it gets done -->
     <div class="pc-seg-wrap">
@@ -79,8 +82,10 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import PlannerPaceChart from '@/components/planner/PlannerPaceChart.vue'
+import SharePaceModal from '@/components/planner/SharePaceModal.vue'
+import ShareIcon from '@/components/ShareIcon.vue'
 import { formatNum } from '@/utils/planner'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
@@ -105,7 +110,10 @@ const props = defineProps({
   // The plan's name and the player it is for, for the heading of the saved picture of the chart.
   planName: { type: String, default: '' },
   playerName: { type: String, default: '' },
+  // The address that opens this plan (without the player's name), for sharing the chart.
+  shareLink: { type: String, default: '' },
 })
+const sharing = ref(false)
 defineEmits(['rebase', 'focus'])
 
 // Each skill is as wide as it takes to train, so the bar reads like the plan's timeline. Very short ones keep a sliver of room.
