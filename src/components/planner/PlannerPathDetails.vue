@@ -30,7 +30,8 @@
               <span class="pd-q-main">
                 <b>{{ r.name }}</b>
                 <span class="stat-gain">+{{ formatNum(r.xp) }} xp</span>
-                <small v-if="r.locked">needs {{ r.need }} {{ goal.skill }}</small>
+                <small v-if="r.first" class="pd-q-first">needed first by a quest you ticked</small>
+                <small v-else-if="r.locked">needs {{ r.need }} {{ goal.skill }}</small>
                 <small v-else-if="r.needs">needs {{ r.needs }}</small>
                 <small v-else-if="r.minutes">about {{ r.minutes }} min</small>
               </span>
@@ -97,17 +98,21 @@ const quests = computed(() => {
   const planned = new Set(plannedList.map((q) => q.id))
   const remaining = Math.max((props.plan.targetXp || 0) - (props.plan.currentXp || 0), 0)
   const level = levelAtXp(props.plan.currentXp || 0, true)
-  // The quests already in the plan (ticked) and a few more that could be added, always in the same order (biggest reward first), so ticking one
-  // never moves the others: it is the same list, with a box ticked.
-  const rows = plannedList.map((q) => {
-    const full = getQuest(q.id)
-    return { id: q.id, name: q.name, xp: q.xp, needs: full?.needs || '', minutes: q.minutes || full?.minutes || 0, on: true, locked: false }
-  })
+  // The same few quests are always offered (the four biggest rewards you can still use), so ticking one never brings new ones in. The only rows
+  // that can be added are the quests a ticked one needs first, which the plan has to do too: those say so.
+  const offered = new Set(all.filter((x) => !done.has(x.id) && x.rewards[skill] <= remaining).slice(0, 4).map((x) => x.id))
+  const rows = []
   if (remaining) {
-    for (const quest of all.filter((x) => !done.has(x.id) && !planned.has(x.id) && x.rewards[skill] <= remaining).slice(0, 4)) {
+    for (const quest of all.filter((x) => offered.has(x.id))) {
+      const on = planned.has(quest.id)
       const need = quest.reqs[skill]
-      rows.push({ id: quest.id, name: quest.name, xp: quest.rewards[skill], need, needs: quest.needs, minutes: quest.minutes, on: false, locked: need != null && level < need })
+      rows.push({ id: quest.id, name: quest.name, xp: quest.rewards[skill], need, needs: quest.needs, minutes: quest.minutes, on, locked: !on && need != null && level < need, first: false })
     }
+  }
+  for (const q of plannedList) {
+    if (offered.has(q.id)) continue
+    const full = getQuest(q.id)
+    rows.push({ id: q.id, name: q.name, xp: q.xp, needs: full?.needs || '', minutes: q.minutes || full?.minutes || 0, on: true, locked: false, first: true })
   }
   const position = new Map(all.map((q, i) => [q.id, i]))
   rows.sort((a, b) => (position.get(a.id) ?? 1e9) - (position.get(b.id) ?? 1e9))
