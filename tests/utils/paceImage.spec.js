@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chartGeometry, chipRows, goalLabels, paceFileName } from '@/utils/paceImage'
+import { chartGeometry, chipRows, goalChipText, goalLabels, paceFileName } from '@/utils/paceImage'
 
 const series = {
   baseline: new Date('2026-11-01T00:00:00Z'),
@@ -86,5 +86,14 @@ describe('goal labels', () => {
     expect(rows.flat().map((c) => c.text)).toEqual(['Agility 99', 'Smithing 70', 'Mining 70', 'Thieving 94'])
     for (const r of rows) expect(r.reduce((n, c) => n + c.width, 0) + (r.length - 1) * 10).toBeLessThanOrEqual(300)
     expect(rows.length).toBeGreaterThan(1)
+  })
+})
+
+describe('goal chips say where the player is now', () => {
+  it('shows the current level and the goal, a finished goal as done, and just the goal when the level is not known', () => {
+    expect(goalChipText({ skill: 'Agility', from: 91, to: 99, done: false })).toBe('Agility 91 → 99')
+    expect(goalChipText({ skill: 'Agility', from: 99, to: 99, done: true })).toBe('Agility 99 ✓')
+    expect(goalChipText({ skill: 'Agility', from: null, to: 99 })).toBe('Agility 99')
+    expect(goalChipText({ skill: 'Agility', from: 99, to: 99, done: false })).toBe('Agility 99')
   })
 })

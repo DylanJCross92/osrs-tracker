@@ -44,6 +44,7 @@
       <path v-if="series.projected" class="pc-proj" :d="line(series.projected)" />
       <circle v-if="series.projected" class="pc-end is-proj" :cx="X(series.projectedDay)" :cy="Y(series.totalXp)" r="5"><title>At your pace: {{ dateText(series.projectedDay) }}</title></circle>
       <circle class="pc-now" :cx="X(series.nowDay)" :cy="Y(nowXp)" r="4.5" />
+      <text v-if="nowLabel" class="pc-now-label" text-anchor="end" :x="X(series.nowDay) - 8" :y="Math.max(Y(nowXp) - 28, M.t + 12)">{{ nowLabel }}</text>
 
       <!-- hover -->
       <g v-if="hover">
@@ -53,9 +54,9 @@
       </g>
     </svg>
     <!-- Every goal and the level it takes the skill to (the labels on the chart only have room for some) -->
-    <ul v-if="series.marks.length > 1" class="pc-goals" aria-label="Goals">
-      <li v-for="m in shownMarks" :key="m.skill"><img :src="skillIconSrc(m.skill)" alt="" width="14" height="14" />{{ m.skill }} <b>{{ m.targetLevel }}</b></li>
-      <li v-if="series.marks.length > shownMarks.length" class="pc-goals-more">+{{ series.marks.length - shownMarks.length }} more</li>
+    <ul v-if="chipGoals.length > 1" class="pc-goals" aria-label="Goals">
+      <li v-for="g in shownGoals" :key="g.skill" :class="{ done: g.done }"><img :src="skillIconSrc(g.skill)" alt="" width="14" height="14" />{{ g.skill }} <template v-if="!g.done && g.from != null && g.from < g.to"><span>{{ g.from }}</span> → <b>{{ g.to }}</b></template><b v-else>{{ g.to }}{{ g.done ? ' ✓' : '' }}</b></li>
+      <li v-if="chipGoals.length > shownGoals.length" class="pc-goals-more">+{{ chipGoals.length - shownGoals.length }} more</li>
     </ul>
     <div v-if="hover" class="pc-tip" :class="{ flip: hover.x > width * 0.6 }" :style="{ left: hover.x + 'px' }" role="tooltip">
       <b>{{ hover.date }}</b>
@@ -68,9 +69,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
-import { goalLabels } from '@/utils/paceImage'
+import { goalChipText, goalLabels } from '@/utils/paceImage'
 
-const props = defineProps({ series: { type: Object, required: true } })
+// `goals` is [{ skill, from, to, done }]: where the player is now and where each goal takes the skill.
+const props = defineProps({ series: { type: Object, required: true }, goals: { type: Array, default: () => [] } })
 
 const root = ref(null)
 const width = ref(0)
@@ -98,7 +100,11 @@ const line = (pts) => pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.day).toFixed(1)},
 // Where each goal's target level is written.
 const labels = computed(() => (width.value ? goalLabels(props.series.marks, X, Y, { charWidth: 6.4, height: 12, box: { left: M.l, right: width.value - 2, top: 2 } }) : []))
 
-const shownMarks = computed(() => props.series.marks.slice(0, 12))
+// Every goal with where the player is now (or the marks' targets when that is not known).
+const chipGoals = computed(() => (props.goals.length ? props.goals : props.series.marks.map((m) => ({ skill: m.skill, from: null, to: m.targetLevel, done: false }))))
+const shownGoals = computed(() => chipGoals.value.slice(0, 12))
+// A plan of one skill: where the player is now, written by the dot.
+const nowLabel = computed(() => (props.goals.length === 1 && props.goals[0].from != null && !props.goals[0].done ? `You: ${props.goals[0].skill} ${props.goals[0].from}` : ''))
 // The label goes to the left of the line, unless that would leave the chart.
 const todayLeft = computed(() => X(props.series.nowDay) - 6 - 34 > M.l)
 const nowXp = computed(() => props.series.actual[props.series.actual.length - 1].xp)

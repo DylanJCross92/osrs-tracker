@@ -72,6 +72,9 @@ export function goalLabels(marks, X, Y, { charWidth = 6.2, height = 12, gap = 4,
   return out
 }
 
+/** "Agility 91 → 99" (where the player is now, and where the goal takes the skill); a finished goal says so. */
+export const goalChipText = (g) => (g.done ? `${g.skill} ${g.to} ✓` : g.from != null && g.from < g.to ? `${g.skill} ${g.from} → ${g.to}` : `${g.skill} ${g.to}`)
+
 /** The goals as chips, wrapped into rows that fit `maxWidth`: [[{ text, width }]]. `measure` gives a text's width. */
 export function chipRows(labels, measure, maxWidth, { pad = 18, gap = 10 } = {}) {
   const rows = [[]]
@@ -103,9 +106,9 @@ function loadImage(src) {
 
 /**
  * Paints the picture and resolves to a PNG Blob.
- * info: { series, title, subtitle, finishText, untilText, pctText, badge: { kind, text } | null, xpText, skill }
+ * info: { series, title, subtitle, finishText, untilText, pctText, badge: { kind, text } | null, xpText, skill, goals: [{ skill, from, to, done }] }
  */
-export async function drawPaceImage({ series, title = 'Training plan', subtitle = '', finishText = '', untilText = '', pctText = '', badge = null, xpText = '', skill = '' }) {
+export async function drawPaceImage({ series, title = 'Training plan', subtitle = '', finishText = '', untilText = '', pctText = '', badge = null, xpText = '', skill = '', goals = [] }) {
   const family = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif"
   try {
     await Promise.all(['500 24px', '700 24px', '800 24px'].map((f) => document.fonts.load(`${f} 'Plus Jakarta Sans'`)))
@@ -116,7 +119,7 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
 
   const W = PACE_IMAGE_WIDTH
   // The goals (each skill's target level) as chips under the chart, when there is more than one.
-  const goalTexts = (series.marks || []).map((m) => `${m.skill} ${m.targetLevel}`)
+  const goalTexts = goals.length ? goals.map(goalChipText) : (series.marks || []).map((m) => `${m.skill} ${m.targetLevel}`)
   const measurer = document.createElement('canvas').getContext('2d')
   measurer.font = `700 20px ${family}`
   const chips = goalTexts.length > 1 ? chipRows(goalTexts, (t) => measurer.measureText(t).width, W - PAD * 2) : []
@@ -312,6 +315,14 @@ export async function drawPaceImage({ series, title = 'Training plan', subtitle 
   ctx.beginPath()
   ctx.arc(geo.now.x, geo.now.y, 6.5, 0, Math.PI * 2)
   ctx.fill()
+  // Where the player is now, by the dot (for a plan of one skill; with several, the chips below say it for each)
+  if (goals.length === 1 && goals[0].from != null && !goals[0].done) {
+    ctx.font = `700 18px ${family}`
+    ctx.fillStyle = C.green
+    ctx.textAlign = 'right'
+    ctx.fillText(`You: ${goals[0].skill} ${goals[0].from}`, geo.now.x - 12, Math.max(geo.now.y - 26, area.top + 20))
+    ctx.textAlign = 'left'
+  }
 
   // the goals
   if (chips.length) {

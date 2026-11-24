@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <PlannerPaceChart v-if="series && !view.complete" :series="series" />
+    <PlannerPaceChart v-if="series && !view.complete" :series="series" :goals="goalLevels" />
 
     <!-- One slice per skill, as wide as it takes to train, filled as it gets done -->
     <div class="pc-seg-wrap">
@@ -215,6 +215,9 @@ const badge = computed(() => {
   return { kind: sc, text: sc === 'ahead' ? `${amount} ahead of schedule` : sc === 'behind' ? `${amount} behind schedule` : 'On schedule' }
 })
 
+// Each goal with where the player is now and where it goes: shown on the chart and in the picture.
+const goalLevels = computed(() => props.progress.per.map((p) => ({ skill: p.skill, from: p.liveLevel, to: p.targetLevel, done: !!p.done })))
+
 // The heading and numbers of the picture the chart can be saved as: the same ones shown above the chart, for the whole plan.
 const exportInfo = computed(() => {
   if (props.readonly || !props.series) return null
@@ -227,6 +230,7 @@ const exportInfo = computed(() => {
     pctText: `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`,
     badge: badge.value,
     xpText: `${formatNum(props.progress.gainedXp)} XP gained · ${formatNum(props.progress.remainingXp)} left`,
+    goals: goalLevels.value,
   }
 })
 </script>
