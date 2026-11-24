@@ -7532,7 +7532,8 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 
 /* The quest tracker callout names a next quest: what it is, why, and whether you can start it. */
 .ptl-next { flex: 1 1 100%; display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(201, 182, 255, 0.22); color: inherit; text-decoration: none; transition: border-color 0.15s, background 0.15s; }
-.ptl-next:hover { border-color: rgba(201, 182, 255, 0.5); background: rgba(0, 0, 0, 0.3); }
+.ptl-next:hover { border-color: rgba(201, 182, 255, 0.5); background: rgba(0, 0, 0, 0.3); text-decoration: none; }
+.ptl-next:hover * { text-decoration: none; }
 .ptl-next-label { color: #d8c8ff; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
 .ptl-next b { color: var(--gold-bright); font-size: 1rem; }
 .ptl-next small { color: var(--text); font-size: 0.82rem; line-height: 1.4; opacity: 0.85; }
