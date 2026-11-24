@@ -1,9 +1,12 @@
 <template>
   <article class="trk-page">
-    <header class="trk-head">
-      <span class="trk-eyebrow">Quests and Achievement Diaries</span>
-      <h1>Track what you have done. Let the planner use it.</h1>
-      <p class="trk-lede">Tick off your quests and diary tiers once. TickGains then knows which training methods you can use, skips XP you have already taken, and suggests what to do next. No account needed to start.</p>
+    <header class="pgh">
+      <div class="pgh-title">
+        <h1>Quest and diary tracker</h1>
+        <p class="pgh-sub">Tick off what you have done once. The planner uses it, skips XP you already took, and suggests what to do next. No account needed to start.</p>
+      </div>
+    </header>
+    <div class="trk-head">
       <ul class="trk-uses" aria-label="How your progress is used">
         <li>
           <span class="trk-uses-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5" /></svg></span>
@@ -18,7 +21,7 @@
           <span><b>A next step, always</b><small>The suggestions below rank what is left by what it opens up for you.</small></span>
         </li>
       </ul>
-    </header>
+    </div>
     <TrackerPanel v-model:tab="tab" />
   </article>
 </template>
