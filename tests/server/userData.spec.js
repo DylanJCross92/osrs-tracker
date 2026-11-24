@@ -70,3 +70,16 @@ describe('planner profile (the Smart Planner answers)', () => {
     expect(sanitizeUserData({ plannerProfile: { value: [1] } }).plannerProfile).toBeUndefined()
   })
 })
+
+describe('planner preferences (hours a day)', () => {
+  it('keeps the hours on a half hour step between 0.5 and 24', () => {
+    expect(sanitizeUserData({ plannerPrefs: { value: { hours: 3.2 }, updatedAt: '2026-01-01T00:00:00Z' } }).plannerPrefs.value).toEqual({ hours: 3 })
+    expect(sanitizeUserData({ plannerPrefs: { value: { hours: 99 } } }).plannerPrefs.value).toEqual({ hours: 24 })
+    expect(sanitizeUserData({ plannerPrefs: { value: { hours: 0 } } }).plannerPrefs.value).toEqual({ hours: 0.5 })
+  })
+  it('drops anything else and a value that is not an object', () => {
+    expect(sanitizeUserData({ plannerPrefs: { value: { hours: 'lots', evil: '<script>' } } }).plannerPrefs.value).toEqual({})
+    expect(sanitizeUserData({ plannerPrefs: { value: 4 } }).plannerPrefs).toBeUndefined()
+    expect(sanitizeUserData({ plannerPrefs: { value: [4] } }).plannerPrefs).toBeUndefined()
+  })
+})

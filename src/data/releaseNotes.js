@@ -12,6 +12,7 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-23',
     items: [
+      { kind: 'improved', text: 'The planner remembers how many hours a day you play. Change it once and every new plan starts with it, and it follows your account to every device.' },
       { kind: 'new', text: 'A quest and Achievement Diary tracker, open to everyone with no account: tick off every quest and all 48 diary tiers, see your quest points, what each one needs and gives, and which training methods it opens up. There is a Quests link in the main menu, and the planner points to it.' },
       { kind: 'new', text: 'The tracker suggests what to do next in the Smart Planner style: the quests and diary tiers that open the most for you, each with a plain reason. Add your name to see only what you can start now.' },
       { kind: 'improved', text: 'Signed out, the tracker now says plainly that progress is kept in this browser only, and a free account keeps it on every device.' },

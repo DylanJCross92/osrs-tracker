@@ -75,6 +75,14 @@ function cleanPlannerProfile(v) {
   return out
 }
 
+// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24), used for every new plan.
+function cleanPlannerPrefs(v) {
+  if (!isObj(v)) return null
+  const out = {}
+  if (Number.isFinite(Number(v.hours))) out.hours = Math.min(24, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
+  return out
+}
+
 // The Grand Exchange items someone watches, as item addresses ("dragon-bones"), in the order they were added.
 function cleanWatch(list) {
   if (!Array.isArray(list)) return null
@@ -99,5 +107,6 @@ export function sanitizeUserData(input) {
   take('requirements', cleanRequirements)
   take('watch', cleanWatch)
   take('plannerProfile', cleanPlannerProfile)
+  take('plannerPrefs', cleanPlannerPrefs)
   return out
 }

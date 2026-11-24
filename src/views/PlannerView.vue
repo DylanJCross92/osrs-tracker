@@ -234,6 +234,7 @@ import { useRequirements } from '@/composables/useRequirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { blockedMethodIds, methodAvailability } from '@/utils/requirements'
 import { TRAINING_METHODS } from '@/data/trainingMethods'
+import { usePlayHours } from '@/composables/usePlayHours'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
 import PlannerSavedPlans from '@/components/planner/PlannerSavedPlans.vue'
 import { usePlayersStore } from '@/stores/players'
@@ -468,7 +469,9 @@ const playerXp = (skill) => player.value?.latest?.skills?.[skill]?.xp ?? null
 
 // --- Plan state ---------------------------------------------------------------
 const goals = ref([])
-const hoursPerDay = ref(2)
+// Hours a day starts as the last amount the person chose, so a new plan never goes back to a default.
+const { playHours, setPlayHours } = usePlayHours()
+const hoursPerDay = ref(playHours())
 function onHoursTyped(e) {
   const raw = e.target.value
   if (raw !== '') setHours(Number(raw))
@@ -481,6 +484,8 @@ const MAX_HOURS = 24
 function setHours(v) {
   if (!Number.isFinite(v)) return
   hoursPerDay.value = Math.min(MAX_HOURS, Math.max(MIN_HOURS, Math.round(v * 2) / 2))
+  // A choice made here is remembered for every new plan (and, signed in, on every device).
+  setPlayHours(hoursPerDay.value)
 }
 const globalStrategy = ref(AUTO_FAST)
 const gpValue = ref(DEFAULT_GP_VALUE)
@@ -1102,6 +1107,7 @@ function keepCurrentPlanBefore(name) {
 // `save: false` opens the plan on /planner/new without saving it: nothing is kept until they press Save plan.
 function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
+  hoursPerDay.value = playHours()
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
@@ -1256,6 +1262,7 @@ async function loadSaved(stored, { silent = false } = {}) {
 }
 // A blank planner with no plan picked: play with the calculators, share what you put together, save it only if you want to.
 function startNew() {
+  hoursPerDay.value = playHours()
   goals.value = []
   currentPlanId.value = ''
   currentPlanName.value = ''
@@ -1489,6 +1496,8 @@ async function restoreFromQuery() {
   // A link made by Share carries the plan and nothing about who made it: opened as a shared plan.
   const fromShare = q.from === 'share' && typeof q.u !== 'string'
   applyRestored(restored, false)
+  // An address that does not say how many hours a day (a link from the tracker or a guide) uses the person's own.
+  if (q.h == null) hoursPerDay.value = playHours()
   // A plan opened from the quest and diary tracker comes with a name ("Legends' Quest levels"), kept until it is saved.
   if (typeof q.name === 'string' && q.name.trim() && !fromShare && goals.value.length) currentPlanName.value = q.name.trim().slice(0, 60)
   if (fromShare && goals.value.length) {

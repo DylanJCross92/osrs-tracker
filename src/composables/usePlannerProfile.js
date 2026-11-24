@@ -1,6 +1,7 @@
 import { ref, watch } from 'vue'
 import { cleanProfile, DEFAULT_PROFILE } from '@/utils/smartPlanner'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
+import { playHours, usePlayHours } from '@/composables/usePlayHours'
 
 // The answers to the Smart Planner's questions. Kept in this browser and, when signed in, in the account (see utils/accountData.js), so a
 // returning player finds them as they left them. `touched` is whether anything was ever answered (until then the steps are for a typical player).
@@ -16,7 +17,8 @@ function read() {
 }
 
 const saved = read()
-const profile = ref(cleanProfile(saved))
+// Never answered: the hours start as the last amount chosen on a plan's settings.
+const profile = ref(cleanProfile(saved ? saved : { hours: Math.min(12, playHours()) }))
 const touched = ref(!!saved && Object.keys(saved).length > 0)
 
 watch(
@@ -45,6 +47,8 @@ if (typeof window !== 'undefined') {
 export function usePlannerProfile() {
   /** Change one answer (or several). The first answer marks the profile as the player's own. */
   function answer(patch) {
+    // The hours are the person's play time everywhere, so they are remembered for the Account Planner too.
+    if (patch.hours != null) usePlayHours().setPlayHours(patch.hours)
     profile.value = cleanProfile({ ...profile.value, ...patch })
     touched.value = true
   }

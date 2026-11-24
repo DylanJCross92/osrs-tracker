@@ -69,8 +69,10 @@ export function goalsForLevels(skills, xp = null) {
 }
 
 /** The planner address that opens these goals as a new plan (for this player when given). */
-export function planQuery({ goals, username = '', hoursPerDay = 2, name = '' }) {
-  const params = encodePlan({ username, hoursPerDay, goals, strategy: null, gpValue: null, budget: null, statsAt: null })
+export function planQuery({ goals, username = '', hoursPerDay = null, name = '' }) {
+  const params = encodePlan({ username, hoursPerDay: hoursPerDay || 2, goals, strategy: null, gpValue: null, budget: null, statsAt: null })
+  // No hours unless asked for: the planner then uses the player's own.
+  if (!hoursPerDay) params.delete('h')
   // A name for the new plan, which the planner uses until it is saved.
   if (name) params.set('name', String(name).slice(0, 60))
   return Object.fromEntries(params.entries())
