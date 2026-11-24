@@ -19,7 +19,8 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useRequirements } from '@/composables/useRequirements'
 import { questPoints } from '@/utils/questProgress'
 import { track } from '@/utils/analytics'
@@ -43,4 +44,15 @@ async function onFocus(s) {
   if (props.tab !== want) emit('update:tab', want)
   focusTarget.value = { ...s, at: Date.now() }
 }
+
+// A link from the dashboard (?focus=quest:slug or a diary tier id) opens that one, then the address is tidied so a refresh does not do it again.
+const route = useRoute()
+const router = useRouter()
+onMounted(() => {
+  const id = typeof route.query.focus === 'string' ? route.query.focus : ''
+  if (!id) return
+  onFocus({ kind: id.startsWith('quest:') ? 'quest' : 'diary', id })
+  const { focus, ...rest } = route.query
+  router.replace({ query: rest })
+})
 </script>

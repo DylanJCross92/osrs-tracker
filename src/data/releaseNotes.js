@@ -12,6 +12,7 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-24',
     items: [
+      { kind: 'new', text: 'The dashboard now names your next quest: the one that does the most for the plan you are working on (a quest your route leans on, or one whose XP your plan would otherwise train for), or the best thing to do next. Press it and the tracker opens on that quest.' },
       { kind: 'new', text: 'Combat level badge: every profile, dashboard and top-gainer card now shows the player\'s combat level under their picture, in gold at 100 and up.' },
       { kind: 'improved', text: 'Smart Planner: a combat plan no longer opens with a one-level step, and Hitpoints is no longer counted as extra hours when your Attack, Strength, Defence or Ranged training already raises it.' },
       { kind: 'improved', text: 'Smart Planner: when your gp budget cuts a step short, the step now says what it gave up, and a quest is only turned into a level goal when its XP really reaches that level.' },

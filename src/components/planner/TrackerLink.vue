@@ -8,6 +8,13 @@
       <b>{{ headline }}</b>
       <span>{{ sub }}</span>
     </div>
+    <!-- What to do next: the quest that helps the plan being worked on, or the best thing to do next -->
+    <RouterLink v-if="pick" class="ptl-next" :to="pickTo" @click="track('tracker_pick_click', { place, source: pick.source, kind: pick.kind })">
+      <span class="ptl-next-label">{{ pick.source === 'plan' ? `Next for ${pick.planName}` : 'Do this next' }}</span>
+      <b>{{ pick.name }}</b>
+      <small>{{ pick.why }}</small>
+      <em :class="`is-${pick.status}`">{{ pick.status === 'ready' ? 'You can start it now' : pick.note }}</em>
+    </RouterLink>
     <RouterLink class="btn" :class="{ 'btn-primary': prominent }" :to="{ name: 'quests' }" @click="track('tracker_link_click', { place })">{{ cta }}</RouterLink>
   </div>
 </template>
@@ -19,9 +26,12 @@ import { track } from '@/utils/analytics'
 
 // A pointer from the planner to the quest and diary tracker, worded for where the person is: a plan with parts that depend on something they have
 // not confirmed, nothing marked yet, or a tracker already in use. `unconfirmed` is how many skills in the plan use a method with an open requirement.
-const props = defineProps({ unconfirmed: { type: Number, default: 0 }, place: { type: String, default: 'planner' }, variant: { type: String, default: 'bar' } })
+// `pick` is the suggestion to show (see utils/trackerPick.js): { name, why, note, status, source, planName, kind, id }.
+const props = defineProps({ unconfirmed: { type: Number, default: 0 }, place: { type: String, default: 'planner' }, variant: { type: String, default: 'bar' }, pick: { type: Object, default: null } })
 const { questStats, diaryStats } = useRequirements()
 
+// Lands on the tracker with that quest or tier opened.
+const pickTo = computed(() => ({ name: 'quests', query: { ...(props.pick?.kind === 'diary' ? { tab: 'diaries' } : {}), focus: props.pick?.id } }))
 const none = computed(() => questStats.value.done === 0 && diaryStats.value.done === 0)
 const prominent = computed(() => props.unconfirmed > 0 || none.value)
 const headline = computed(() => {

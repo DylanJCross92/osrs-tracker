@@ -2,10 +2,13 @@
 // Works with or without a player. With levels it only offers what the player can start now (or is a few levels short of, and says so); without
 // them it offers what has its own prerequisites done and says it cannot check levels.
 import { QUEST_LIST } from '@/data/questList'
-import { LENGTH_MINUTES, getQuest } from '@/data/quests'
+import { LENGTH_MINUTES, getQuest, questChain } from '@/data/quests'
 import { DIARIES } from '@/data/diaries'
 import { questSlug } from '@/utils/questSlug'
 import { unlocksFor } from '@/utils/trackerUnlocks'
+import { requirementsFor } from '@/data/methodRequirements'
+import { formatHours, planGoal } from '@/utils/planner'
+import { resolveGoal } from '@/utils/plannerTools'
 import { completedQuestSlugs, questPoints } from '@/utils/questProgress'
 import { tierDone } from '@/utils/diaryProgress'
 import { combatLevel } from '@/utils/smartReasons'
@@ -60,6 +63,7 @@ function questCandidates(confirmations, levels) {
       kind: 'quest',
       key: q.id,
       id: q.id,
+      slug: q.slug,
       name: q.name,
       score,
       ready: levels ? gaps.length === 0 : null,
@@ -137,3 +141,79 @@ export function suggestNext(confirmations = {}, levels = null, { limit = 5, maxD
   return picked.sort((a, b) => Number(b.status === 'ready' || b.status === 'unknown') - Number(a.status === 'ready' || a.status === 'unknown') || b.score - a.score)
 }
 
+
+/** A quest the plan's route needs counts as "next" when at most this many quests (itself included) are left to do on the way to it. */
+const MAX_ON_THE_WAY = 3
+
+/**
+ * The quest that does the most for the plan being worked on, or null when none does: one that can be started now (or is a few levels short) and
+ * either gives XP the plan would otherwise train for, or opens a method the plan's route already runs through. `goals` are the plan's goals with
+ * their XP as of now; the hours come from the planner itself (the plan's hours with and without the quest's XP), so "saves about 3 h" is what the
+ * plan would show. Returns the suggestion with { source: 'plan', saved, need, why }.
+ */
+export function nextForPlan(confirmations = {}, levels = null, { goals = [], strategy, gpValue, blockedMethodIds = [], planName = '' } = {}) {
+  const live = goals.filter((g) => g.targetXp > g.currentXp)
+  if (!live.length) return null
+  const prep = (g) => planGoal({ ...resolveGoal(g, strategy, gpValue), blockedMethodIds })
+  const base = live.map(prep)
+  const hoursOf = (plan) => (Number.isFinite(plan.hours) ? plan.hours : 0)
+  // The quests the plan's route leans on (not done yet): slug -> { hours, method, skill } for the one it spends the most time with.
+  const doneSlugs = completedQuestSlugs(confirmations)
+  const leans = new Map()
+  base.forEach((plan, i) => {
+    for (const seg of plan.segments || []) {
+      if (!seg.method || !(seg.hours > 0)) continue
+      for (const req of requirementsFor(seg.method)) {
+        for (const id of [req.kind === 'quest' ? req.id : null, ...(req.quests || []).map((q) => q.id)].filter(Boolean)) {
+          const slug = id.replace(/^quest:/, '').replace(/:partial$/, '')
+          if (doneSlugs.has(slug)) continue
+          const have = leans.get(slug)
+          const hours = (have?.hours || 0) + seg.hours
+          if (!have || seg.hours > have.top) leans.set(slug, { hours, top: seg.hours, method: seg.method.name, skill: live[i].skill })
+          else have.hours = hours
+        }
+      }
+    }
+  })
+  const picks = []
+  for (const c of questCandidates(confirmations, levels)) {
+    const info = getQuest(c.slug)
+    if (!info) continue
+    // 1. XP the plan would otherwise train for.
+    let saved = 0
+    const counted = []
+    live.forEach((g, i) => {
+      const reward = info.rewards[g.skill]
+      if (!reward) return
+      const credit = Math.min(reward, g.targetXp - g.currentXp)
+      const after = hoursOf(prep({ ...g, currentXp: g.currentXp + credit }))
+      const gain = hoursOf(base[i]) - after
+      if (gain > 0) {
+        saved += gain
+        counted.push(g.skill)
+      }
+    })
+    // 2. A quest the route leans on: a method it trains with needs this quest, or this one is on the way to it (a quest it needs first).
+    let need = 0
+    let lean = null
+    for (const [slug, use] of leans) {
+      // What is still to do on the way to it, in order. A quest several others away is too far off to be what to do next.
+      const chain = questChain(getQuest(slug)?.id ?? slug).map((id) => questSlug(getQuest(id)?.name || id)).filter((x) => !doneSlugs.has(x))
+      if (!chain.includes(c.slug) || chain.length > MAX_ON_THE_WAY) continue
+      need += use.hours / chain.length
+      if (!lean || use.hours / chain.length > lean.share) lean = { share: use.hours / chain.length, ...use, target: slug === c.slug ? '' : getQuest(slug)?.name || '' }
+    }
+    const value = saved + need * 0.5 - c.minutes / 60
+    // Worth a mention only when it pays for its own time: a quarter of an hour saved, or a route that leans on it.
+    if ((saved < 0.25 && need < 0.5) || value <= 0) continue
+    const xpText = counted.length ? `${counted.join(' and ')} XP` : ''
+    const why = need >= saved && lean
+      ? `Your plan trains ${lean.skill} with ${lean.method} for about ${formatHours(lean.hours)}, which needs ${lean.target ? `${lean.target}. This quest comes first on the way.` : 'this quest.'}`
+      : `Its ${xpText} counts toward your plan and saves about ${formatHours(saved)} of training${c.minutes ? ` for about ${c.minutes >= 60 ? formatHours(c.minutes / 60) : `${c.minutes} min`}` : ''}.`
+    picks.push({ ...c, source: 'plan', planName, saved, need, value, why })
+  }
+  if (!picks.length) return null
+  const ready = (p) => Number(p.status === 'ready' || p.status === 'unknown')
+  picks.sort((a, b) => ready(b) - ready(a) || b.value - a.value)
+  return picks[0]
+}

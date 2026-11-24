@@ -127,7 +127,7 @@
           <DashSkeleton v-if="current && firstLoad" kind="milestones" />
           <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
-          <TrackerLink place="dashboard" variant="side" />
+          <TrackerLink place="dashboard" variant="side" :pick="questPick" />
           <DashSkeleton v-if="current && firstLoad" kind="goals" />
           <!-- Goals come from a plan shown on a claimed profile: for anyone else the card is there, locked, saying what unlocks it -->
           <section v-else-if="current && profiles.length" class="card dash-card" aria-labelledby="dash-goals-h">
@@ -197,6 +197,7 @@ import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { setPageMeta } from '@/utils/pageMeta'
 import { formatHours } from '@/utils/planner'
 import { listSavedPlans } from '@/utils/plannerTools'
+import { trackerPick } from '@/utils/trackerPick'
 import { formatRelative } from '@/utils/time'
 import { paceRates, paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
 import { usualByNow } from '@/utils/usualPace'
@@ -364,8 +365,11 @@ const allPlanRows = computed(() =>
       pct: status.tracked ? (status.progress.complete ? 100 : Math.floor(status.progress.timePct * 100)) : 0,
       finish: status.tracked ? finishText(status.projection) : '',
       soon: finishDays(plan, status),
+      latest: p?.latest || null,
     }
   }),
 )
 const planRows = computed(() => [...allPlanRows.value].sort((a, b) => a.soon - b.soon).slice(0, 3))
+// The next quest: one that helps the plan being worked on (the one finishing soonest), or else the best thing to do next.
+const questPick = computed(() => trackerPick({ rows: [...allPlanRows.value].sort((a, b) => a.soon - b.soon), latest: player.value?.latest || null, confirmations: confirmations.value, respect: respect.value }))
 </script>
