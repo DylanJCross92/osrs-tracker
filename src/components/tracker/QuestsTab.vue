@@ -227,8 +227,19 @@ const groups = computed(() => {
 })
 const allShownDone = computed(() => shown.value.every((r) => r.done))
 
-// What the search box suggests: every quest by name, with its type and difficulty.
-const searchItems = QUEST_LIST.map((q) => ({ label: q.name, value: q.slug, sub: [QUEST_TYPES[q.type], getQuest(q.slug)?.difficulty].filter(Boolean).join(' · ') }))
+// What the search box suggests: every quest by name, with its type and difficulty, whether it is done, and (with a player) whether their levels are enough.
+const searchItems = computed(() =>
+  rows.value.map((r) => ({
+    label: r.name,
+    value: r.slug,
+    sub: [QUEST_TYPES[r.type], r.info?.difficulty].filter(Boolean).join(' · '),
+    badges: [
+      r.done ? { text: '✓ Done', kind: 'done' } : { text: 'Not done', kind: 'todo' },
+      ...(!r.done && r.ready === 'ready' ? [{ text: 'Levels met', kind: 'ready' }] : []),
+      ...(!r.done && r.ready === 'locked' ? [{ text: `Needs ${r.lockShort}`, kind: 'locked', title: r.lockText }] : []),
+    ],
+  })),
+)
 // Picking a suggestion shows that quest, open and in view.
 async function pickQuest(item) {
   status.value = 'all'

@@ -28,8 +28,10 @@
     </label>
     <ul v-if="show" :id="listId" class="trk-sugg" role="listbox" :aria-label="`${ariaLabel} suggestions`" @mousedown.prevent>
       <li v-for="(s, i) in suggestions" :id="`${listId}-${i}`" :key="s.value" role="option" :aria-selected="i === active" :class="{ on: i === active }" @mouseenter="active = i" @click="choose(s)">
-        <span class="trk-sugg-main"><span v-html="mark(s.label)" /></span>
-        <small v-if="s.sub">{{ s.sub }}</small>
+        <span class="trk-sugg-main"><span v-html="mark(s.label)" /><small v-if="s.sub">{{ s.sub }}</small></span>
+        <span v-if="s.badges?.length" class="trk-sugg-badges">
+          <i v-for="b in s.badges" :key="b.text" :class="`is-${b.kind}`" :title="b.title">{{ b.text }}</i>
+        </span>
       </li>
     </ul>
   </div>
@@ -39,7 +41,7 @@
 import { computed, ref } from 'vue'
 
 // A search box that suggests as you type (matches at the start of a name first), completes the top one in grey, and can be driven from the keyboard:
-// arrows move, Enter picks, Tab or the right arrow completes, Escape closes. items: [{ label, value, sub? }].
+// arrows move, Enter picks, Tab or the right arrow completes, Escape closes. items: [{ label, value, sub?, badges?: [{ text, kind, title? }] }].
 const props = defineProps({
   modelValue: { type: String, default: '' },
   items: { type: Array, default: () => [] },

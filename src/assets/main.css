@@ -7330,7 +7330,13 @@ button.start-card:hover { border-color: var(--border-strong); transform: transla
 .trk-ghost { position: absolute; left: 39px; top: 50%; transform: translateY(-50%); max-width: calc(100% - 52px); overflow: hidden; white-space: pre; color: var(--muted); opacity: 0.6; pointer-events: none; font: inherit; font-size: 0.95rem; }
 .trk-ghost i { font-style: normal; visibility: hidden; }
 .trk-sugg { position: absolute; z-index: 30; left: 0; min-width: min(360px, 90vw); right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--panel); box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5); max-height: 340px; overflow: auto; }
-.trk-sugg li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.92rem; }
+.trk-sugg li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border-radius: 8px; cursor: pointer; font-size: 0.92rem; }
 .trk-sugg li.on { background: rgba(217, 175, 82, 0.16); }
 .trk-sugg b { color: var(--gold-bright); font-weight: 700; }
-.trk-sugg small { color: var(--muted); font-size: 0.74rem; white-space: nowrap; }
+.trk-sugg-main { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.trk-sugg small { color: var(--muted); font-size: 0.72rem; white-space: nowrap; }
+.trk-sugg-badges { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex: none; }
+.trk-sugg-badges i { font-style: normal; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+.trk-sugg-badges i.is-done { color: #0f1a0b; background: #8fd277; border-color: #8fd277; }
+.trk-sugg-badges i.is-ready { color: #9fd48a; border-color: rgba(120, 190, 100, 0.6); }
+.trk-sugg-badges i.is-locked { color: #e6b872; border-color: rgba(230, 184, 114, 0.55); }

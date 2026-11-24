@@ -27,6 +27,8 @@ import { DIARIES, ALL_DIARY_TIERS } from '@/data/diaries'
 import { useRequirements } from '@/composables/useRequirements'
 import { track } from '@/utils/analytics'
 import { tierDone } from '@/utils/diaryProgress'
+import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
+import { shortfalls } from '@/utils/trackerSuggestions'
 import { computed, ref } from 'vue'
 import TrackerSearch from '@/components/tracker/TrackerSearch.vue'
 import DiaryRegion from '@/components/tracker/DiaryRegion.vue'
@@ -35,13 +37,32 @@ defineProps({ focus: { type: Object, default: null } })
 const emit = defineEmits(['focused'])
 const { diaryStats: stats, setMany, confirmations } = useRequirements()
 
+const { levels } = useTrackerPlayer()
 const search = ref('')
 const local = ref(null)
-// Every region and every tier by name ("Karamja", "Hard Karamja Diary"), for the search box.
-const searchItems = DIARIES.flatMap((d) => [
-  { label: d.name, value: d.slug, sub: 'Region', tier: null },
-  ...d.tiers.map((t) => ({ label: t.name, value: t.id, sub: 'Tier', tier: t })),
-])
+// Every region and every tier by name ("Karamja", "Hard Karamja Diary"), with whether it is done and, with a player, whether their levels are enough.
+const searchItems = computed(() =>
+  DIARIES.flatMap((d) => {
+    const doneCount = d.tiers.filter((t) => tierDone(t.id, confirmations.value)).length
+    return [
+      { label: d.name, value: d.slug, sub: 'Region', tier: null, badges: [{ text: `${doneCount} of 4 done`, kind: doneCount === 4 ? 'done' : 'todo' }] },
+      ...d.tiers.map((t) => {
+        const done = tierDone(t.id, confirmations.value)
+        const gaps = levels.value ? shortfalls(t.skills, levels.value) : null
+        return {
+          label: t.name,
+          value: t.id,
+          sub: 'Tier',
+          tier: t,
+          badges: [
+            done ? { text: '✓ Done', kind: 'done' } : { text: 'Not done', kind: 'todo' },
+            ...(!done && gaps ? [gaps.length ? { text: `Needs ${gaps[0].need} ${gaps[0].skill}${gaps.length > 1 ? ` +${gaps.length - 1}` : ''}`, kind: 'locked', title: gaps.map((g) => `${g.need} ${g.skill} (you are ${g.have})`).join(', ') } : { text: 'Levels met', kind: 'ready' }] : []),
+          ],
+        }
+      }),
+    ]
+  }),
+)
 // A region shows when what is typed is in its name or in the name of one of its tiers.
 const regions = computed(() => {
   const term = search.value.trim().toLowerCase()
