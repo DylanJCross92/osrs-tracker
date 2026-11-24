@@ -7,6 +7,7 @@ import { questSlug } from '@/utils/questSlug'
 import { AUTO_CHEAP, AUTO_FAST, AUTO_PROFIT, levelAtXp, planGoal, xpAtLevel, formatGp } from '@/utils/planner'
 import { resolveGoal } from '@/utils/plannerTools'
 import { formatXp } from '@/utils/osrsSkills'
+import { combatLevel } from '@/utils/combat'
 
 // The reasoning behind the Smart Planner's steps (see utils/smartPlanner.js): the next level that opens something better, which skill to
 // train first to pay for the rest, and which quests are worth their time. Pure; every figure comes from the planner's own methods and quests.
@@ -14,15 +15,7 @@ import { formatXp } from '@/utils/osrsSkills'
 /** How long a quest is taken to take when we do not know: a stated estimate, and shown as one. */
 export const ESTIMATED_QUEST_MINUTES = 60
 
-/** The game's combat level from the seven combat levels (Hitpoints starts at 10). `levels` is { Skill: level }. */
-export function combatLevel(levels) {
-  const l = (s, d = 1) => levels[s] ?? d
-  const base = 0.25 * (l('Defence') + l('Hitpoints', 10) + Math.floor(l('Prayer') / 2))
-  const melee = 0.325 * (l('Attack') + l('Strength'))
-  const ranged = 0.325 * Math.floor(l('Ranged') * 1.5)
-  const magic = 0.325 * Math.floor(l('Magic') * 1.5)
-  return Math.floor(base + Math.max(melee, ranged, magic))
-}
+export { combatLevel }
 const MAX_STRETCH_HOURS = 40 // how far one step goes for one skill
 
 const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirements}`)

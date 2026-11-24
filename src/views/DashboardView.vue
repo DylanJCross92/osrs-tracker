@@ -24,7 +24,10 @@
     <template v-else>
       <header class="card dash-head">
         <div class="dash-who">
-          <RouterLink v-if="current" class="dash-avatar" :to="profileRoute" :aria-label="`Open ${current.displayName}'s profile`"><PlayerAvatar :name="current.username" /></RouterLink>
+          <div v-if="current" class="dash-avatar-wrap">
+            <RouterLink class="dash-avatar" :to="profileRoute" :aria-label="`Open ${current.displayName}'s profile`"><PlayerAvatar :name="current.username" /></RouterLink>
+            <CombatBadge :skills="player?.latest?.skills" />
+          </div>
           <div class="dash-who-text">
             <p class="dash-hi">Welcome back</p>
             <h1>
@@ -168,6 +171,7 @@ import DashClans from '@/components/dashboard/DashClans.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
 import ClaimTeaser from '@/components/dashboard/ClaimTeaser.vue'
+import CombatBadge from '@/components/CombatBadge.vue'
 import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import DashWelcome from '@/components/dashboard/DashWelcome.vue'

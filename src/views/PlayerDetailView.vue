@@ -50,8 +50,11 @@
       </div>
     </div>
     <div class="detail-body">
-      <div class="profile-avatar" aria-hidden="true">
-        <PlayerAvatar :name="player?.username || usernameParam" />
+      <div class="pa">
+        <div class="profile-avatar" aria-hidden="true">
+          <PlayerAvatar :name="player?.username || usernameParam" />
+        </div>
+        <CombatBadge :skills="latest?.skills" />
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
@@ -299,6 +302,7 @@
 <script setup>
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import CombatBadge from '@/components/CombatBadge.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'

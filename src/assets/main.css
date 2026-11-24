@@ -7512,3 +7512,17 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 .btn-lock { margin-left: 2px; opacity: 0.7; }
 .sip { width: min(480px, calc(100vw - 24px)); }
 .sip-text { margin: 0 0 10px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+
+/* Combat level badge: hangs off the bottom of the picture */
+.pa { position: relative; flex-shrink: 0; margin-bottom: 8px; }
+.detail-body .pa { margin-top: -34px; z-index: 2; }
+.detail-body .pa .profile-avatar { margin-top: 0; }
+@media (max-width: 640px) { .detail-body .pa { margin-top: 14px; } }
+.dash-avatar-wrap { position: relative; flex: none; margin-bottom: 8px; }
+.cb { position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 3px; padding: 0 6px 0 5px; border-radius: 999px; background: linear-gradient(180deg, #2a2216, #17120a); border: 1px solid rgba(217, 175, 82, 0.75); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55); color: var(--gold-bright); font-size: 0.7rem; line-height: 1.4; white-space: nowrap; z-index: 3; pointer-events: auto; cursor: help; }
+.cb b { font-weight: 800; letter-spacing: 0.01em; font-variant-numeric: tabular-nums; }
+.cb-ico { flex: none; width: 10px; height: 10px; opacity: 0.85; }
+.cb.is-high { border-color: #f6d98a; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.55), 0 0 0 2px rgba(246, 217, 138, 0.12); }
+.cb.is-max { color: #1b1508; background: linear-gradient(135deg, #fbe7ad, #e0a94a); border-color: #fff1c4; box-shadow: 0 2px 8px rgba(224, 169, 74, 0.55), 0 0 0 2px rgba(255, 241, 196, 0.25); }
+.cb.is-sm { font-size: 0.62rem; padding: 0 5px 0 4px; bottom: -7px; }
+.cb.is-sm .cb-ico { width: 8px; height: 8px; }
