@@ -77,7 +77,7 @@
           <span class="pp-goal-bar"><i :style="{ width: headerGoal.percent + '%' }" /></span>
           <span class="pp-goal-pct">{{ headerGoal.percent }}%</span>
         </button>
-        <div v-if="latest" class="profile-chips">
+        <div v-if="latest" class="profile-chips" :class="{ 'has-world': hardcore && mainPlayer }">
           <span><img :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <b>{{ latest.overallLevel.toLocaleString('en-US') }}</b></span>
           <span>Total XP <b>{{ latest.overallXp.toLocaleString('en-US') }}</b></span>
           <span v-if="latest.overallRank > 0">Rank <b>{{ latest.overallRank.toLocaleString('en-US') }}</b></span>
@@ -386,13 +386,27 @@ const playerId = computed(() => player.value?.id ?? null)
 
 // The name's Hardcore Worlds character, or null when it has none (looked for once a day on the server).
 const hardcore = ref(null)
+let hardcoreFor = ''
+// Snapshots already fetched, by player id: switching between a name's characters shows the other one at once, with no skeleton and no jump in height.
+const snapCache = new Map()
+async function snapshotsFor(id) {
+  const rows = await store.fetchSnapshots(id)
+  snapCache.set(id, rows)
+  return rows
+}
+function prefetchSnapshots(ids) {
+  for (const id of ids) if (id && !snapCache.has(id)) snapshotsFor(id).catch(() => {})
+}
 async function loadHardcore() {
   const id = mainPlayer.value?.id ?? hardcorePlayer.value?.id
-  hardcore.value = null
+  // Only forget the last answer for a different name, so the switch stays put while it is refreshed.
+  if (hardcoreFor !== lower(usernameParam.value)) hardcore.value = null
+  hardcoreFor = lower(usernameParam.value)
   if (!id) return
   try {
     const { character } = await playersApi.hardcore(id)
     hardcore.value = character
+    if (character) prefetchSnapshots([mainPlayer.value?.id, character.id])
     if (character && !store.hardcorePlayers.some((p) => p.id === character.id)) await store.loadHardcore()
   } catch {
     hardcore.value = null
@@ -489,16 +503,18 @@ watch([playerId, () => snapshots.value.length], loadProfile, { immediate: true }
 // Who follows this profile and who its owner follows. Counts only.
 const followCounts = ref(null)
 const formatCount = (n) => Number(n).toLocaleString('en-US')
+// Followers belong to the person (the normal character's profile), so they stay the same whichever character is shown and never blink on a switch.
 async function loadFollowCounts() {
-  if (!playerId.value) return
+  const id = mainPlayer.value?.id
+  if (!id) return
   try {
-    followCounts.value = await playersApi.followCounts(playerId.value)
+    followCounts.value = await playersApi.followCounts(id)
   } catch {
     followCounts.value = null
   }
 }
-watch(playerId, () => {
-  followCounts.value = null
+watch(() => mainPlayer.value?.id, (id, prev) => {
+  if (!id || id !== prev) followCounts.value = null
   loadFollowCounts()
 }, { immediate: true })
 // One event per profile opened (not per refresh).
@@ -669,7 +685,8 @@ const currentLife = (rows) => {
 }
 
 async function load() {
-  loading.value = true
+  // Switching characters: what was already fetched shows straight away (and is refreshed below), so the page does not collapse into the skeleton.
+  loading.value = !(playerId.value && snapCache.has(playerId.value))
   if (!store.loaded) await store.loadPlayers()
   // A name with no normal character might be a Hardcore Worlds one, so look there before saying it is not tracked.
   if ((isHardcore.value || !mainPlayer.value) && !store.hardcoreLoaded) await store.loadHardcore().catch(() => {})
@@ -684,7 +701,9 @@ async function load() {
   }
 
   try {
-    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
+    const cached = snapCache.get(playerId.value)
+    if (cached) snapshots.value = currentLife(cached)
+    snapshots.value = currentLife(await snapshotsFor(playerId.value))
   } catch {
     showToast("Could not load this player's history.")
     snapshots.value = []
@@ -699,7 +718,7 @@ async function load() {
   checkingForUpdates.value = true
   try {
     await store.refreshPlayer(playerId.value)
-    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
+    snapshots.value = currentLife(await snapshotsFor(playerId.value))
     if (isHardcore.value) store.loadHardcore().catch(() => {})
   } catch {
     // Non-fatal, the page already has the last saved data.
@@ -881,7 +900,7 @@ async function refresh() {
   refreshing.value = true
   try {
     await store.refreshPlayer(playerId.value)
-    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
+    snapshots.value = currentLife(await snapshotsFor(playerId.value))
     showToast('Synced the latest hiscores.')
   } catch {
     showToast('Could not refresh right now.')

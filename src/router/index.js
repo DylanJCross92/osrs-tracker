@@ -126,6 +126,8 @@ export function createAppRouter() {
       // Footer links like /#features scroll to their section (below the sticky nav).
       // (A restore link carries a save code after the #, which is not an element to scroll to.)
       if (to.hash && to.name !== 'restore') return { el: to.hash, top: 80, behavior: 'smooth' }
+      // Switching between a player's main and Hardcore Worlds character changes only the query: the page stays where it is.
+      if (to.name === 'playerDetail' && from.name === 'playerDetail' && to.params.username === from.params.username) return false
       // Opening or closing a skill inside the same plan changes the address but not the page position.
       if (to.params.id && to.params.id === from.params.id) return false
       // The quest and diary tracker keeps its place when its Quests / Diaries tab changes (the tab is in the address).
