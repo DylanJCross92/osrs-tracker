@@ -4,6 +4,7 @@
       ref="svgRef"
       :viewBox="`0 0 ${W} ${H}`"
       class="xp-chart-svg"
+      :style="{ height: `${H}px` }"
       tabindex="0"
       role="img"
       :aria-label="ariaLabel"
@@ -73,6 +74,8 @@ import { withYearIfNotCurrent } from '@/utils/time'
 const props = defineProps({
   points: { type: Array, required: true },
   ariaLabel: { type: String, default: 'XP over time' },
+  // The drawn height; the welcome page uses a short one.
+  height: { type: Number, default: 300 },
 })
 
 // W tracks the container's actual rendered width (via ResizeObserver) so the
@@ -81,7 +84,7 @@ const props = defineProps({
 // preserveAspectRatio to stop it) would scale text non-uniformly and
 // squish it horizontally.
 const W = ref(760)
-const H = 300
+const H = props.height
 const padL = 54
 const padT = 28
 const padR = 16

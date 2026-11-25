@@ -26,11 +26,11 @@ beforeEach(() => {
   track.mockReset()
 })
 
-describe('the welcome page product preview', () => {
+describe('the welcome page feature tabs', () => {
   it('starts on XP tracking with a profile and a way into it', () => {
     const w = mountIt()
     const tabs = w.findAll('[role="tab"]')
-    expect(tabs.map((t) => t.text())).toEqual(['XP Tracking', 'Account Planner', 'GE Prices'])
+    expect(tabs.map((t) => t.find('b').text())).toEqual(['XP Tracking', 'Account Planner', 'GE Prices'])
     expect(tabs[0].attributes('aria-selected')).toBe('true')
     expect(w.text()).toContain('Zezima')
     expect(w.text()).toContain('Open this profile')
@@ -38,11 +38,9 @@ describe('the welcome page product preview', () => {
   it('shows a plan from the planner on the Account Planner tab, and says which tab was opened', async () => {
     const w = mountIt()
     await w.findAll('[role="tab"]')[1].trigger('click')
-    await flushPromises()
-    await new Promise((r) => setTimeout(r, 50))
-    await flushPromises()
     expect(w.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true')
-    expect(w.findAll('.hp-plan-rows li').length).toBeGreaterThanOrEqual(3)
+    // The planner code loads the first time the tab opens, so wait for the rows.
+    await vi.waitFor(() => expect(w.findAll('.hf-plan li').length).toBeGreaterThanOrEqual(3), { timeout: 5000 })
     expect(w.text()).toContain('Build your plan')
     expect(track).toHaveBeenCalledWith('home_preview_tab', { tab: 'planner' })
   })
@@ -59,13 +57,25 @@ describe('the welcome page product preview', () => {
     const w = mountIt()
     await flushPromises()
     expect(prices).toHaveBeenCalledTimes(1)
-    expect(w.find('.hp-prices').attributes('style') || '').toContain('display: none')
+    expect(w.find('.hf-prices').attributes('style') || '').toContain('display: none')
     await w.findAll('[role="tab"]')[2].trigger('click')
-    expect(w.find('.hp-prices').attributes('style') || '').not.toContain('display: none')
-    expect(w.findAll('.hp-ge-items li')).toHaveLength(3)
+    expect(w.find('.hf-prices').attributes('style') || '').not.toContain('display: none')
+    expect(w.findAll('.hf-ge-items li')).toHaveLength(3)
   })
   it('explains itself when no example profile exists yet', () => {
     const w = mountIt({ example: null })
     expect(w.text()).toContain('Track a player above')
+  })
+})
+
+describe('the XP chart height', () => {
+  it('draws at the height it is given, 300 by default', async () => {
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} })
+    const { default: XpLineChart } = await import('@/components/XpLineChart.vue')
+    const pts = [{ x: 1, y: 1 }, { x: 2, y: 5 }]
+    const short = mount(XpLineChart, { props: { points: pts, height: 170 } })
+    expect(short.find('svg').attributes('viewBox')).toMatch(/ 170$/)
+    expect(short.find('svg').attributes('style')).toContain('height: 170px')
+    expect(mount(XpLineChart, { props: { points: pts } }).find('svg').attributes('viewBox')).toMatch(/ 300$/)
   })
 })

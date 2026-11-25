@@ -1,6 +1,6 @@
 <template>
-  <div class="hp-ge">
-    <ul v-if="items.length" class="hp-ge-items">
+  <div class="hf-ge">
+    <ul v-if="items.length" class="hf-ge-items">
       <li v-for="it in items" :key="it.slug">
         <RouterLink :to="{ name: 'item', params: { slug: it.slug } }" @click="track('home_ge_band', { target: 'item' })">
           <img :src="itemImage(it.icon, it.name)" alt="" width="28" height="28" loading="lazy" @error="hide" />
@@ -8,9 +8,9 @@
         </RouterLink>
       </li>
     </ul>
-    <p v-else-if="loaded" class="hp-empty">Live prices are not available right now. The full list is one click away.</p>
-    <p v-else class="hp-empty">Loading prices…</p>
-    <p class="hp-note">
+    <p v-else-if="loaded" class="hf-empty">Live prices are not available right now. The full list is one click away.</p>
+    <p v-else class="hf-empty">Loading prices…</p>
+    <p class="hf-note">
       Every gp figure in the planners and calculators comes from these prices, after the 2% tax.
       <template v-if="updatedAt">Updated {{ ago(updatedAt) }} from the OSRS Wiki.</template>
     </p>

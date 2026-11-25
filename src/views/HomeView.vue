@@ -43,14 +43,12 @@
       </div>
 
       <p class="hm-hero-links">
-        <RouterLink :to="{ name: 'planner' }" @click="track('home_hero_link', { target: 'planner' })">Account Planner<span aria-hidden="true"> →</span></RouterLink>
-        <RouterLink :to="{ name: 'items' }" @click="track('home_hero_link', { target: 'prices' })">GE Prices<span aria-hidden="true"> →</span></RouterLink>
+        <RouterLink :to="{ name: 'planner' }" @click="track('home_hero_link', { target: 'planner' })">Explore Account Planner <span aria-hidden="true">→</span></RouterLink>
+        <RouterLink :to="{ name: 'items' }" @click="track('home_hero_link', { target: 'prices' })">Browse GE Prices <span aria-hidden="true">→</span></RouterLink>
+        <RouterLink :to="{ name: 'quests' }" @click="track('home_hero_link', { target: 'quests' })">Track Quests &amp; Diaries <span aria-hidden="true">→</span></RouterLink>
       </p>
       <p class="home-nosignup">No sign-up needed to start. A <RouterLink :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'hero' })">free account</RouterLink> saves your plans, goals and alerts.</p>
     </section>
-
-    <!-- 2. Interactive product preview -->
-    <HomePreview :example="example" :chart-points="chartPoints" :loading="loading" />
 
     <!-- Live community ticker -->
     <section v-if="liveEvents.length" class="home-live" aria-label="Live community activity">
@@ -108,15 +106,9 @@
 
     <FollowingStrip />
 
-    <!-- 4. The three main features -->
-    <section class="home-section hm-primary" aria-label="Main features">
-      <RouterLink v-for="f in primary" :key="f.key" :to="f.to" class="hm-prime" @click="track('home_feature', { feature: f.key })">
-        <span class="hm-prime-ico" v-html="f.icon" />
-        <h3>{{ f.title }}</h3>
-        <p>{{ f.text }}</p>
-        <span class="hm-prime-cta">{{ f.cta }} <span aria-hidden="true">→</span></span>
-      </RouterLink>
-    </section>
+    <!-- The three main features, as tabs with a small live preview -->
+    <HomePreview :example="example" :chart-points="chartPoints" :loading="loading" />
+
 
     <!-- 5. The other tools, compact -->
     <section class="home-section" aria-label="More tools">
@@ -288,6 +280,9 @@ async function loadHome(initial = false) {
   }
 }
 onMounted(() => {
+  // The search box is the point of the page, so it is ready to type in. Not on touch screens, where it would raise the keyboard
+  // and cover the page before anyone has looked at it.
+  if (!window.matchMedia?.('(pointer: coarse)').matches) searchInput.value?.focus({ preventScroll: true })
   loadHome(true)
   // Poll while the tab is visible so the ticker keeps moving as people level up.
   pollTimer = setInterval(() => !document.hidden && loadHome(), 45_000)
@@ -320,12 +315,7 @@ const chartPoints = computed(() => (example.value?.series || []).map((p) => ({ x
 const exampleTo = (tab) =>
   example.value ? { name: 'playerDetail', params: { username: example.value.username }, query: tab ? { tab } : {} } : { path: '/discover' }
 const svg = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
-// The three things the site is for, then the rest in a compact list.
-const primary = computed(() => [
-  { key: 'tracking', title: 'XP Tracking', text: 'Hourly snapshots, gains and full hiscores history for any player.', cta: 'See a live profile', to: exampleTo('stats'), icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
-  { key: 'planner', title: 'Account Planner', text: 'The date you reach each level, the methods to unlock, and what it costs.', cta: 'Plan a goal', to: { name: 'planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
-  { key: 'ge', title: 'GE Prices', text: 'Live prices for 4,500 items, after tax, behind every gp figure.', cta: 'Browse prices', to: { name: 'items' }, icon: svg('<circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" />') },
-])
+// The three main features live in HomePreview; these are the rest, in a compact list.
 const tools = computed(() => [
   { key: 'tracker', title: 'Quest & Diary Tracker', text: 'Tick off what you have done; plans skip it.', to: { name: 'quests' }, icon: svg('<path d="M9 6h11M9 12h11M9 18h11" /><path d="M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8" />') },
   { key: 'calculators', title: 'Skill Calculators', text: 'XP, time and gp for every skill.', to: { path: '/calculators' }, icon: svg('<rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2" />') },
