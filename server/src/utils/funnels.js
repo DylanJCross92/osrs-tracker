@@ -8,6 +8,8 @@
 // step before. Each step also reports how many people did it at all, in any order (`independent`), so the two kinds of number are
 // never confused: independent counts can be larger than the sequential one, and the difference is `bypassed`.
 
+import { statsDay } from './statsDay.js'
+
 const MINUTE = 60_000
 const DAY = 86_400_000
 
@@ -36,7 +38,7 @@ export function spanLabel(ms) {
 }
 
 const pct = (n, of) => (of ? Math.round((n / of) * 1000) / 10 : null)
-const dayOf = (t) => new Date(t).toISOString().slice(0, 10)
+const dayOf = (t) => statsDay(t)
 const pathOnly = (path) => String(path || '/').split(/[?#]/)[0] || '/'
 
 // --- the funnels -------------------------------------------------------------------------------------------------------------

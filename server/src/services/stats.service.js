@@ -1,16 +1,17 @@
 import { pool } from '../db.js'
 import { summarize, summarizeItems } from '../utils/shareStats.js'
 import { APP_TIMEZONE, localDay } from '../utils/dates.js'
+import { SQL_STATS_TODAY, statsDay } from '../utils/statsDay.js'
 import { fillDailyXp } from '../utils/dailyXp.js'
 import { playersByDay } from '../utils/dailyPlayers.js'
 import { groupPlansByPlayer } from '../utils/adminPlans.js'
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => statsDay()
 
 // One row per day, type, kind and detail, counted up. No identifiers are stored.
 const bump = (type, kind, detail) =>
   pool.query(
-    `INSERT INTO share_stats (day, type, kind, detail, n) VALUES ((now() AT TIME ZONE 'utc')::date, $1, $2, $3, 1)
+    `INSERT INTO share_stats (day, type, kind, detail, n) VALUES (${SQL_STATS_TODAY}, $1, $2, $3, 1)
      ON CONFLICT (day, type, kind, detail) DO UPDATE SET n = share_stats.n + 1`,
     [type, kind, detail],
   )
@@ -20,8 +21,8 @@ const MAX_ITEMS_PER_DAY = 3000
 const bumpItem = (type, kind, item) =>
   pool.query(
     `INSERT INTO share_items (day, type, kind, item, n)
-     SELECT (now() AT TIME ZONE 'utc')::date, $1, $2, $3, 1
-     WHERE (SELECT count(*) FROM share_items WHERE day = (now() AT TIME ZONE 'utc')::date) < $4
+     SELECT ${SQL_STATS_TODAY}, $1, $2, $3, 1
+     WHERE (SELECT count(*) FROM share_items WHERE day = ${SQL_STATS_TODAY}) < $4
      ON CONFLICT (day, type, kind, item) DO UPDATE SET n = share_items.n + 1`,
     [type, kind, item, MAX_ITEMS_PER_DAY],
   )
@@ -38,8 +39,8 @@ export async function recordVisit({ kind, source, item }) {
 /** Shares and shared-link visits for the last `days` days (including today). */
 export async function shareOverview(days) {
   const [{ rows }, { rows: itemRows }] = await Promise.all([
-    pool.query(`SELECT day::text AS day, type, kind, detail, n FROM share_stats WHERE day > (now() AT TIME ZONE 'utc')::date - $1::int`, [days]),
-    pool.query(`SELECT type, kind, item, sum(n)::int AS n FROM share_items WHERE day > (now() AT TIME ZONE 'utc')::date - $1::int GROUP BY type, kind, item`, [days]),
+    pool.query(`SELECT day::text AS day, type, kind, detail, n FROM share_stats WHERE day > ${SQL_STATS_TODAY} - $1::int`, [days]),
+    pool.query(`SELECT type, kind, item, sum(n)::int AS n FROM share_items WHERE day > ${SQL_STATS_TODAY} - $1::int GROUP BY type, kind, item`, [days]),
   ])
   return { ...summarize(rows, days, today()), items: summarizeItems(itemRows) }
 }

@@ -15,8 +15,17 @@ describe('compact', () => {
 })
 
 describe('lastDays', () => {
-  it('ends on the given UTC day', () => {
-    expect(lastDays(3, Date.UTC(2026, 0, 2, 23, 59))).toEqual(['2025-12-31', '2026-01-01', '2026-01-02'])
+  it('ends on the Eastern day, even when it is already tomorrow in UTC', () => {
+    // 8:44 PM EST on Jan 1 is 01:44 UTC on Jan 2: still Jan 1.
+    expect(lastDays(3, Date.UTC(2026, 0, 2, 1, 44))).toEqual(['2025-12-30', '2025-12-31', '2026-01-01'])
+  })
+  it('turns over at midnight Eastern', () => {
+    expect(lastDays(2, Date.UTC(2026, 0, 2, 4, 59)).at(-1)).toBe('2026-01-01') // 11:59 PM EST
+    expect(lastDays(2, Date.UTC(2026, 0, 2, 5, 0)).at(-1)).toBe('2026-01-02') // midnight EST
+  })
+  it('counts calendar days across a daylight-saving change', () => {
+    expect(lastDays(3, Date.UTC(2026, 2, 9, 18, 0))).toEqual(['2026-03-07', '2026-03-08', '2026-03-09'])
+    expect(lastDays(3, Date.UTC(2026, 10, 2, 18, 0))).toEqual(['2026-10-31', '2026-11-01', '2026-11-02'])
   })
 })
 

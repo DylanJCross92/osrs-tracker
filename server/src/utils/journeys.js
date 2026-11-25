@@ -1,6 +1,8 @@
 // Turns one visitor's events into a journey: what they did, in order, split into visits, with a count per day. Pure (no
 // database), so it is easy to test. The rows come from the events table, oldest or newest first.
 
+import { statsDay } from './statsDay.js'
+
 export const SESSION_GAP_MINUTES = 30
 
 /** 'a:12' (an account) or 'v:<32 hex>' (a browser) -> { kind, id }, or null. */
@@ -16,17 +18,17 @@ export function parsePersonKey(key) {
   return m ? { kind: 'visitor', id: m[1] } : null
 }
 
-const dayOf = (d) => new Date(d).toISOString().slice(0, 10)
+const dayOf = (d) => statsDay(d)
 
 /**
- * rows: [{ at, name, props }]. days/today: the window shown in the per-day chart (UTC days, ending today).
+ * rows: [{ at, name, props }]. days/today: the window shown in the per-day chart (Eastern days, ending today).
  * Returns { count, pages, first, last, daily: [{ day, n }], sessions: [{ start, end, events: [{ at, name, props }] }] } with
  * the newest visit first and each visit's events newest first too. A new visit starts after a quiet gap.
  */
 export function buildJourney(rows, days, today, gapMinutes = SESSION_GAP_MINUTES) {
   const events = [...rows].filter((r) => r.at && !Number.isNaN(new Date(r.at).getTime())).sort((a, b) => new Date(a.at) - new Date(b.at))
   const end = new Date(`${today}T00:00:00Z`)
-  const daily = new Map(Array.from({ length: days }, (_, i) => [dayOf(end.getTime() - (days - 1 - i) * 86_400_000), 0]))
+  const daily = new Map(Array.from({ length: days }, (_, i) => [new Date(end.getTime() - (days - 1 - i) * 86_400_000).toISOString().slice(0, 10), 0]))
   const sessions = []
   let pages = 0
   for (const e of events) {

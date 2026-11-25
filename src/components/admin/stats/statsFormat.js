@@ -34,8 +34,10 @@ export function ago(iso, now = Date.now()) {
   return `${Math.floor(s / 86400)} d ago`
 }
 
-/** The last `n` UTC days as 'YYYY-MM-DD', oldest first, ending today (the same days the events are counted by). */
+const statsDayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' })
+
+/** The last `n` days as 'YYYY-MM-DD', oldest first, ending today: midnight to midnight Eastern, the days the statistics are counted by. */
 export function lastDays(n, now = Date.now()) {
-  const end = Date.UTC(new Date(now).getUTCFullYear(), new Date(now).getUTCMonth(), new Date(now).getUTCDate())
+  const end = Date.parse(`${statsDayFmt.format(new Date(now))}T12:00:00Z`)
   return Array.from({ length: n }, (_, i) => new Date(end - (n - 1 - i) * 86_400_000).toISOString().slice(0, 10))
 }

@@ -472,6 +472,12 @@ CREATE INDEX IF NOT EXISTS events_account_idx ON events (account_id) WHERE accou
 ALTER TABLE events ADD COLUMN IF NOT EXISTS at TIMESTAMPTZ;
 ALTER TABLE events ALTER COLUMN at SET DEFAULT now();
 ALTER TABLE events ADD COLUMN IF NOT EXISTS visitor_id TEXT;
+-- Statistics days run midnight to midnight Eastern time (see utils/statsDay.js), not UTC. New events take the Eastern day; rows
+-- that have a moment are re-cut once (this only touches rows whose day differs, so it is a no-op after the first run). Rows from
+-- before the moment was kept keep the UTC day they were counted under.
+ALTER TABLE events ALTER COLUMN day SET DEFAULT ((now() AT TIME ZONE 'America/New_York')::date);
+UPDATE events SET day = (at AT TIME ZONE 'America/New_York')::date
+ WHERE at IS NOT NULL AND day <> (at AT TIME ZONE 'America/New_York')::date;
 CREATE INDEX IF NOT EXISTS events_visitor_idx ON events (visitor_id, id) WHERE visitor_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS events_at_idx ON events (at) WHERE at IS NOT NULL;
 -- Which account a browser's id signed in as, so what the person did before signing in joins their account. Deleting the account

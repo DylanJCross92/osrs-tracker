@@ -1,4 +1,5 @@
 import { pool } from '../db.js'
+import { SQL_STATS_TODAY } from '../utils/statsDay.js'
 
 const MAX_ACCOUNTS = 500
 const iso = (d) => (d ? new Date(d).toISOString() : null)
@@ -23,7 +24,7 @@ export async function accountsOverview(days) {
        LEFT JOIN (
          SELECT account_id, count(*)::int AS steps, count(DISTINCT day)::int AS active_days
          FROM events
-         WHERE day > ((now() AT TIME ZONE 'utc')::date - $1::int) AND account_id IS NOT NULL
+         WHERE day > (${SQL_STATS_TODAY} - $1::int) AND account_id IS NOT NULL
          GROUP BY account_id
        ) a ON a.account_id = u.id
        ORDER BY coalesce(u.last_seen_at, u.last_login_at, u.created_at) DESC, u.id DESC

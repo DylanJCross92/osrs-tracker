@@ -1,8 +1,10 @@
 import { pool } from '../db.js'
+import { SQL_STATS_TODAY, sqlStatsDay, statsDay } from '../utils/statsDay.js'
 import { dayLabels, growthItems, mergeFeed } from '../utils/siteOverview.js'
 
-const today = () => new Date().toISOString().slice(0, 10)
-const UTC_TODAY = `(now() AT TIME ZONE 'utc')::date`
+// Days are midnight to midnight Eastern, like the events (utils/statsDay.js).
+const today = () => statsDay()
+const STATS_TODAY = SQL_STATS_TODAY
 
 // What the site keeps growing, and where each thing's creation time lives. These are fixed strings (nothing from a request).
 const SOURCES = [
@@ -23,13 +25,13 @@ const FEED_EACH = 12
 
 /**
  * What is going on across the site, for the owner's statistics page: how much of everything exists and how fast it is growing
- * (per UTC day, like the events), plus a merged list of the latest things people did.
+ * (per Eastern day, like the events), plus a merged list of the latest things people did.
  */
 export async function siteOverview(days) {
   const n = Math.min(Math.max(Math.floor(Number(days)) || 30, 7), 90)
   const perDay = SOURCES.map(
-    (s) => `SELECT '${s.key}' AS key, (${s.ts} AT TIME ZONE 'utc')::date::text AS day, count(*)::int AS n FROM ${s.table}
-            WHERE ${where(s)} AND ${s.ts} IS NOT NULL AND (${s.ts} AT TIME ZONE 'utc')::date > ${UTC_TODAY} - $1::int GROUP BY 2`,
+    (s) => `SELECT '${s.key}' AS key, ${sqlStatsDay(s.ts)}::text AS day, count(*)::int AS n FROM ${s.table}
+            WHERE ${where(s)} AND ${s.ts} IS NOT NULL AND ${sqlStatsDay(s.ts)} > ${STATS_TODAY} - $1::int GROUP BY 2`,
   ).join(' UNION ALL ')
   const totals = SOURCES.map((s) => `SELECT '${s.key}' AS key, count(*)::int AS n FROM ${s.table} WHERE ${where(s)}`).join(' UNION ALL ')
 
@@ -39,7 +41,7 @@ export async function siteOverview(days) {
     pool.query(
       `SELECT (SELECT count(*)::int FROM users WHERE email_verified_at IS NULL) AS unverified,
               (SELECT count(*)::int FROM profile_claims WHERE status = 'pending' AND expires_at > now()) AS pending_claims,
-              (SELECT count(*)::int FROM users WHERE email_verified_at IS NOT NULL AND last_seen_day >= ${UTC_TODAY} - 6) AS active_week`,
+              (SELECT count(*)::int FROM users WHERE email_verified_at IS NOT NULL AND last_seen_day >= ${STATS_TODAY} - 6) AS active_week`,
     ),
     Promise.all([
       pool.query(`SELECT created_at AS at, display_name AS text FROM players ORDER BY created_at DESC LIMIT ${FEED_EACH}`),

@@ -3,10 +3,12 @@ import { RETENTION_DAYS, askedNotToTrack, summarizeBreakdown, summarizeEvents } 
 import { fillDailyActive } from '../utils/dailyActive.js'
 import { ANON_KEY, buildJourney, parsePersonKey } from '../utils/journeys.js'
 import { hasRole } from '../utils/roles.js'
+import { SQL_STATS_TODAY, statsDay } from '../utils/statsDay.js'
 import { describeOwners, findPlanOwners } from '../utils/planMatch.js'
 
-const today = () => new Date().toISOString().slice(0, 10)
-const WINDOW = `day > (now() AT TIME ZONE 'utc')::date - $1::int`
+// Statistics days run midnight to midnight Eastern (utils/statsDay.js); events.day is set that way by the database.
+const today = () => statsDay()
+const WINDOW = `day > ${SQL_STATS_TODAY} - $1::int`
 
 /**
  * Stores a batch of cleaned events (see utils/events.js). accountId is null for signed-out visitors. visitorId is the random id
@@ -40,7 +42,7 @@ export async function linkVisitor(visitorId, accountId, { keepPlans = false } = 
 
 /** Deletes events older than the retention period, and browser links nobody has refreshed for as long. */
 export async function purgeOldEvents() {
-  const { rowCount } = await pool.query(`DELETE FROM events WHERE day <= (now() AT TIME ZONE 'utc')::date - $1::int`, [RETENTION_DAYS])
+  const { rowCount } = await pool.query(`DELETE FROM events WHERE day <= ${SQL_STATS_TODAY} - $1::int`, [RETENTION_DAYS])
   await pool.query(`DELETE FROM visitor_links WHERE linked_at < now() - $1::int * interval '1 day'`, [RETENTION_DAYS])
   await pool.query(`DELETE FROM visitor_data WHERE updated_at < now() - $1::int * interval '1 day'`, [RETENTION_DAYS])
   return rowCount
@@ -173,7 +175,7 @@ export async function eventsOverview(days) {
   const [byDay, totals] = await Promise.all([
     pool.query(`SELECT name, day::text AS day, count(*)::int AS n FROM events WHERE ${WINDOW} GROUP BY name, day`, [days]),
     pool.query(`SELECT name, count(*)::int AS total, count(DISTINCT account_id)::int AS accounts,
-              count(DISTINCT account_id) FILTER (WHERE day = (now() AT TIME ZONE 'utc')::date)::int AS accounts_today
+              count(DISTINCT account_id) FILTER (WHERE day = ${SQL_STATS_TODAY})::int AS accounts_today
        FROM events WHERE ${WINDOW} GROUP BY name`, [days]),
   ])
   return { days, events: summarizeEvents(byDay.rows, totals.rows, days, today()) }
@@ -250,7 +252,7 @@ export async function noteActivity(user, headers = {}) {
   }
 }
 
-/** Different accounts active on each of the last `days` days (UTC), with how many signed in and how many just came back. */
+/** Different accounts active on each of the last `days` days (Eastern), with how many signed in and how many just came back. */
 export async function dailyActive(days = 30) {
   const n = Math.min(Math.max(Math.floor(Number(days)) || 30, 7), 90)
   const { rows } = await pool.query(
@@ -265,7 +267,7 @@ export async function dailyActive(days = 30) {
 }
 
 /**
- * Which accounts were active on one UTC day (YYYY-MM-DD): { day, accounts: [{ email, players, logins, returned, lastSeen }] }, busiest
+ * Which accounts were active on one Eastern day (YYYY-MM-DD): { day, accounts: [{ email, players, logins, returned, lastSeen }] }, busiest
  * first. For the site owner only. players is the OSRS names the account has claimed, if any.
  */
 export async function activeAccounts(day) {
