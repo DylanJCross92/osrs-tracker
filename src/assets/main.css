@@ -7835,3 +7835,7 @@ html.iron-mode .gp-figure { display: none !important; }
   .hf-step { display: none; }
   .hf-tab + .hf-tab::before { left: -9px; top: 8px; width: 18px; height: 18px; font-size: 0.68rem; }
 }
+
+/* the schedule badge on a plan card: on schedule, ahead or behind, between the progress label and the percentage */
+.po-prog-top .po-badge { flex: none; margin-left: auto; margin-right: 10px; white-space: nowrap; text-transform: none; letter-spacing: 0; }
+.po-prog-top > span:first-child { min-width: 0; }

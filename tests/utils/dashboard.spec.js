@@ -253,4 +253,11 @@ describe('finishDays', () => {
     ]
     expect(plans.sort((a, b) => a.soon - b.soon).map((p) => p.id)).toEqual(['near', 'far', 'done'])
   })
+  it('says whether the plan is on schedule, ahead or behind, from the schedule alone', () => {
+    const at = (schedule, aheadDays) => planBadge({ tracked: true, progress: { complete: false, schedule, aheadDays }, projection: null })
+    expect(at('on', 0)).toEqual({ kind: 'on', text: 'On schedule' })
+    expect(at('ahead', 3)).toEqual({ kind: 'ahead', text: '3 days ahead' })
+    expect(at('behind', -3)).toEqual({ kind: 'behind', text: '3 days behind' })
+    expect(at(null, null)).toBeNull()
+  })
 })

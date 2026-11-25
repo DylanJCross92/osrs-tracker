@@ -28,7 +28,7 @@
             </span>
           </span>
           <span v-if="progress[p.id]" class="po-prog" :class="{ done: progress[p.id].pct >= 1 }">
-            <span class="po-prog-top"><span>{{ progress[p.id].pct >= 1 ? 'Complete' : 'Progress' }} · {{ progress[p.id].done }} of {{ progress[p.id].total }} done</span><b>{{ pctText(progress[p.id].pct) }}</b></span>
+            <span class="po-prog-top"><span>{{ progress[p.id].pct >= 1 ? 'Complete' : 'Progress' }} · {{ progress[p.id].done }} of {{ progress[p.id].total }} done</span><span v-if="progress[p.id].badge" class="dash-badge po-badge" :class="`is-${progress[p.id].badge.kind}`">{{ progress[p.id].badge.text }}</span><b>{{ pctText(progress[p.id].pct) }}</b></span>
             <span class="po-bar" role="progressbar" :aria-valuenow="Math.round(progress[p.id].pct * 100)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${p.name} progress`"><i :style="{ width: progress[p.id].pct * 100 + '%' }" /></span>
           </span>
           <span v-else class="po-prog po-prog-none"><small>{{ progressLoading && p.hasPlayer ? 'Checking progress…' : p.hasPlayer ? 'This player is not tracked yet' : 'No player linked, so progress is not tracked' }}</small></span>

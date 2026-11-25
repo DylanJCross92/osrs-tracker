@@ -75,7 +75,7 @@
           <section class="card dash-card is-compact" aria-labelledby="dash-plans-h">
             <header class="dash-card-head">
               <h2 id="dash-plans-h">Your plans</h2>
-              <RouterLink class="dash-more" :to="{ name: 'account', query: { tab: 'plans' } }">{{ plans.length > planRows.length ? `All ${plans.length} plans →` : 'All plans →' }}</RouterLink>
+              <RouterLink class="dash-more" :to="{ name: 'planner' }">{{ plans.length > planRows.length ? `All ${plans.length} plans →` : 'All plans →' }}</RouterLink>
             </header>
             <div v-if="!planRows.length" class="dash-empty dash-empty-row">
               <span>No saved plans yet.</span>

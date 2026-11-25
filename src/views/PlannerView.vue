@@ -232,6 +232,7 @@ import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
 import { GOALS, planFromProfile } from '@/utils/smartPlanner'
 import { describeProfile } from '@/utils/smartProfile'
+import { planBadge } from '@/utils/dashboard'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -1527,7 +1528,9 @@ function cardProgress(p) {
   const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline)
   // What is still to train, worked out the way the plan page does: the card also shows it beside the plan's whole time.
   const left = planTotals(now, p.hoursPerDay)
-  return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length, hoursLeft: left.totalHours, daysLeft: left.days }
+  // On schedule, ahead or behind, from the same schedule the plan page shows (null once the plan is complete or has no schedule yet).
+  const badge = planBadge({ tracked: true, progress: prog, projection: null })
+  return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length, hoursLeft: left.totalHours, daysLeft: left.days, badge }
 }
 // Time and gp for each card, from the plan's own start, skipping methods the player cannot use (as the plan page does).
 const overviewSummaries = computed(() => {
