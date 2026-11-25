@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { shortfalls, suggestNext } from '@/utils/trackerSuggestions'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { QUEST_LIST } from '@/data/questList'
 
 const levels = (over = {}) => ({ ...Object.fromEntries(SKILL_NAMES.map((s) => [s, 1])), Hitpoints: 10, ...over })
 
@@ -63,5 +64,14 @@ describe('suggestNext', () => {
     const t = Date.now()
     for (let i = 0; i < 20; i++) suggestNext({}, levels({ Mining: 50 }))
     expect(Date.now() - t).toBeLessThan(2000)
+  })
+
+  it('offers a free-to-play account only free quests and no diaries', () => {
+    const free = new Set(QUEST_LIST.filter((q) => q.type === 'F').map((q) => q.slug))
+    const list = suggestNext({}, null, { members: false, limit: 20 })
+    expect(list.length).toBeGreaterThan(0)
+    expect(list.every((s) => s.kind === 'quest' && free.has(s.slug))).toBe(true)
+    // A members account still gets diaries among its suggestions.
+    expect(suggestNext({}, null, { limit: 30, maxDiaries: 5 }).some((s) => s.kind === 'diary')).toBe(true)
   })
 })

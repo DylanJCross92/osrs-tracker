@@ -81,6 +81,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import PlannerPlayerBox from '@/components/planner/PlannerPlayerBox.vue'
 import { playersApi } from '@/api/players'
 import { useRequirements } from '@/composables/useRequirements'
+import { useAccountType } from '@/composables/useAccountType'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { suggestNext } from '@/utils/trackerSuggestions'
 import { track } from '@/utils/analytics'
@@ -152,7 +153,8 @@ function onBlur() {
   if (!player.value && typed.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && !player.value && load(typed.value, { typed: true }), 150)
 }
 
-const list = computed(() => suggestNext(confirmations.value, levels.value))
+const { members } = useAccountType()
+const list = computed(() => suggestNext(confirmations.value, levels.value, { members: members.value }))
 const basis = computed(() => (levels.value ? 'Quests and diaries you can start now, ranked by what they open up in the planner.' : 'The most useful quests and diaries left, ranked by what they open up in the planner.'))
 
 // A short "thinking" beat when the page opens and when the player changes, like the Smart Planner.

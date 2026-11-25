@@ -3,6 +3,7 @@ import { nextForPlan, suggestNext } from '@/utils/trackerSuggestions'
 import { trackerPick } from '@/utils/trackerPick'
 import { xpAtLevel } from '@/utils/planner'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
+import { QUEST_LIST } from '@/data/questList'
 
 const stats = (levels) => Object.fromEntries(SKILL_NAMES.map((s) => [s, { xp: xpAtLevel(levels[s] ?? levels.all ?? 1), level: levels[s] ?? levels.all ?? 1 }]))
 const levelsOf = (s) => Object.fromEntries(Object.entries(s).map(([k, v]) => [k, v.level]))
@@ -58,5 +59,16 @@ describe('what the dashboard shows', () => {
   it('still suggests something with no plans and no player', () => {
     const pick = trackerPick({ rows: [], latest: null, confirmations: {} })
     expect(pick?.source).toBe('general')
+  })
+})
+
+describe('a free-to-play account is only pointed at free quests', () => {
+  it('for the general pick and for a plan', () => {
+    const free = new Set(QUEST_LIST.filter((q) => q.type === 'F').map((q) => q.slug))
+    const latest = { skills: stats({ all: 60, Hitpoints: 60 }) }
+    const general = trackerPick({ rows: [], latest, members: false })
+    expect(general && free.has(general.slug)).toBe(true)
+    const pick = nextForPlan({}, levelsOf(latest.skills), { goals: [goal('Attack', 50, 70), goal('Strength', 50, 70), goal('Magic', 50, 70)], members: false })
+    if (pick) expect(free.has(pick.slug)).toBe(true)
   })
 })

@@ -113,6 +113,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { QUEST_LIST, QUEST_TYPES } from '@/data/questList'
 import { LENGTH_MINUTES, getQuest } from '@/data/quests'
 import { useRequirements } from '@/composables/useRequirements'
+import { useAccountType } from '@/composables/useAccountType'
 import { useTrackerPlayer } from '@/composables/useTrackerPlayer'
 import { levelAtXp, xpAtLevel } from '@/utils/planner'
 import { questSlug } from '@/utils/questSlug'
@@ -134,7 +135,11 @@ const { levels, xp: playerXp } = useTrackerPlayer()
 
 const search = ref('')
 const status = ref('all')
-const type = ref('')
+// Free-to-play accounts start on the free quests; members see every quest. Changing membership (here or in the account settings) resets it.
+const { members } = useAccountType()
+const startType = () => (members.value ? '' : 'F')
+const type = ref(startType())
+watch(members, () => (type.value = startType()))
 const sort = ref('az')
 const open = ref(new Set())
 const flashSlug = ref('')
@@ -262,7 +267,7 @@ function flip(slug) {
 function reset() {
   search.value = ''
   status.value = 'all'
-  type.value = ''
+  type.value = startType()
 }
 function toggle(r, checked) {
   setQuestDone(r.name, checked)

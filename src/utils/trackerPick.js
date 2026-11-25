@@ -18,7 +18,7 @@ const levelsFrom = (latest) => {
  * is for; a plan with a tracked player of its own is judged against that player's stats instead. Returns the suggestion, with `source` 'plan' (it
  * helps that plan, and `why` says how) or 'general', or null when everything is done.
  */
-export function trackerPick({ rows = [], latest = null, confirmations = {}, respect = true } = {}) {
+export function trackerPick({ rows = [], latest = null, confirmations = {}, respect = true, members = true } = {}) {
   const row = rows.find((r) => r.status?.tracked && r.latest?.skills && !r.status.progress?.complete)
   if (row) {
     const stats = row.latest
@@ -29,9 +29,11 @@ export function trackerPick({ rows = [], latest = null, confirmations = {}, resp
       gpValue: row.plan.gpValue || DEFAULT_GP_VALUE,
       blockedMethodIds: blockedFor(row.plan, stats, confirmations, respect),
       planName: row.plan.name || 'your plan',
+      // A free-to-play plan is only pointed at free quests, and so is a free-to-play account.
+      members: members && row.plan.members !== false,
     })
     if (pick) return pick
   }
-  const general = suggestNext(confirmations, levelsFrom(latest), { limit: 1 })[0]
+  const general = suggestNext(confirmations, levelsFrom(latest), { limit: 1, members })[0]
   return general ? { ...general, source: 'general', planName: '' } : null
 }

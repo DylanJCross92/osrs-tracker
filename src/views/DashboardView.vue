@@ -190,6 +190,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useFollowing } from '@/composables/useFollowing'
 import { useToast } from '@/composables/useToast'
 import { useRequirements } from '@/composables/useRequirements'
+import { useAccountType } from '@/composables/useAccountType'
 import { useRivals } from '@/composables/useRivals'
 import { usePlayersStore } from '@/stores/players'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -212,6 +213,7 @@ const { profiles, profilesReady, loggedIn } = useAuth()
 const { me, clearMe } = useRivals()
 const { following } = useFollowing()
 const { confirmations, respect } = useRequirements()
+const { members } = useAccountType()
 
 // "Not you?": forget the saved player in this browser (the home page goes back to the welcome page).
 function notMe() {
@@ -373,5 +375,5 @@ const allPlanRows = computed(() =>
 )
 const planRows = computed(() => [...allPlanRows.value].sort((a, b) => a.soon - b.soon).slice(0, 3))
 // The next quest: one that helps the plan being worked on (the one finishing soonest), or else the best thing to do next.
-const questPick = computed(() => trackerPick({ rows: [...allPlanRows.value].sort((a, b) => a.soon - b.soon), latest: player.value?.latest || null, confirmations: confirmations.value, respect: respect.value }))
+const questPick = computed(() => trackerPick({ rows: [...allPlanRows.value].sort((a, b) => a.soon - b.soon), latest: player.value?.latest || null, confirmations: confirmations.value, respect: respect.value, members: members.value }))
 </script>

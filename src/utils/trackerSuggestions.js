@@ -125,9 +125,13 @@ function diaryCandidates(confirmations, levels) {
  * The best things to do next, [{ kind, key, name, why, note, status, ... }], best first: up to `limit`, at most `maxDiaries` of them diary tiers so
  * quests are not crowded out. status is 'ready', 'almost' (a few levels short) or 'unknown' (no levels to check).
  */
-export function suggestNext(confirmations = {}, levels = null, { limit = 5, maxDiaries = 2 } = {}) {
-  const quests = questCandidates(confirmations, levels).sort((a, b) => b.score - a.score)
-  const diaries = diaryCandidates(confirmations, levels).sort((a, b) => b.score - a.score)
+export function suggestNext(confirmations = {}, levels = null, { limit = 5, maxDiaries = 2, members = true } = {}) {
+  // A free-to-play account is only offered free quests, and no diaries (they are members-only).
+  const free = new Set(QUEST_LIST.filter((q) => q.type === 'F').map((q) => q.slug))
+  const quests = questCandidates(confirmations, levels)
+    .filter((q) => members || free.has(q.slug))
+    .sort((a, b) => b.score - a.score)
+  const diaries = members ? diaryCandidates(confirmations, levels).sort((a, b) => b.score - a.score) : []
   const picked = []
   const all = [...quests, ...diaries].sort((a, b) => b.score - a.score)
   let d = 0
@@ -151,7 +155,7 @@ const MAX_ON_THE_WAY = 3
  * their XP as of now; the hours come from the planner itself (the plan's hours with and without the quest's XP), so "saves about 3 h" is what the
  * plan would show. Returns the suggestion with { source: 'plan', saved, need, why }.
  */
-export function nextForPlan(confirmations = {}, levels = null, { goals = [], strategy, gpValue, blockedMethodIds = [], planName = '' } = {}) {
+export function nextForPlan(confirmations = {}, levels = null, { goals = [], strategy, gpValue, blockedMethodIds = [], planName = '', members = true } = {}) {
   const live = goals.filter((g) => g.targetXp > g.currentXp)
   if (!live.length) return null
   const prep = (g) => planGoal({ ...resolveGoal(g, strategy, gpValue), blockedMethodIds })
@@ -176,9 +180,12 @@ export function nextForPlan(confirmations = {}, levels = null, { goals = [], str
     }
   })
   const picks = []
+  const freeSlugs = new Set(QUEST_LIST.filter((q) => q.type === 'F').map((q) => q.slug))
   for (const c of questCandidates(confirmations, levels)) {
     const info = getQuest(c.slug)
     if (!info) continue
+    // A free-to-play account is only pointed at free quests.
+    if (!members && !freeSlugs.has(c.slug)) continue
     // 1. XP the plan would otherwise train for.
     let saved = 0
     const counted = []

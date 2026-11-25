@@ -7911,3 +7911,10 @@ html.iron-mode .gp-figure { display: none !important; }
 .acp-intro h2 { font-size: 1.3rem; }
 @media (max-width: 760px) { .hub-main .hub-card { padding: 18px 16px; } }
 .acp-hours { justify-self: start; }
+
+/* the tracker's membership switch, and the note a free-to-play account sees where the diaries would be */
+.trk-acct { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 6px; }
+.trk-acct small { color: var(--muted); font-size: 0.84rem; }
+.trk-members-only { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px 0; color: var(--muted); }
+.trk-members-only p { margin: 0; max-width: 60ch; line-height: 1.5; }
+.trk-members-only b { color: var(--text); }
