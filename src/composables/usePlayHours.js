@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
+import { mirrorToMain } from '@/utils/profilePrefs'
 
 // How many hours a day the person plays, from the last time they chose it (on a plan's settings, or in the Smart Planner). New plans start with it, so it
 // never goes back to a default of 2. Kept in this browser and, when signed in, in the account (see utils/accountData.js).
@@ -43,6 +44,7 @@ export function usePlayHours() {
         /* none yet */
       }
       localStorage.setItem(KEY, JSON.stringify({ ...other, hours }))
+      mirrorToMain({ hours })
     } catch {
       /* storage unavailable */
     }

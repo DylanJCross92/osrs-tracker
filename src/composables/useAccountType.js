@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
+import { mirrorToMain } from '@/utils/profilePrefs'
 
 // What kind of account the person plays, from the last time they chose it (on a plan's settings, in the add-goal window, a skill calculator or the Smart
 // Planner): free-to-play or members, and whether it is an ironman. Every planner and calculator starts from it, so nobody is asked again. Kept in this
@@ -52,6 +53,7 @@ export function useAccountType() {
     if (next === members.value) return next
     members.value = next
     writePrefs({ members: next })
+    mirrorToMain({ members: next })
     return next
   }
   /** Remember whether the account is an ironman. Pages that follow the person's choice change at once. */
@@ -62,6 +64,7 @@ export function useAccountType() {
     iron.value = next
     if (following) ironMode.value = next
     writePrefs({ iron: next })
+    mirrorToMain({ iron: next })
     return next
   }
   return { members, iron, ironMode, membersPref, ironPref, setMembersPref, setIronPref }

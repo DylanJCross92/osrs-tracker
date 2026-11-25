@@ -233,6 +233,7 @@ import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
 import { GOALS, planFromProfile } from '@/utils/smartPlanner'
 import { describeProfile } from '@/utils/smartProfile'
 import { planBadge } from '@/utils/dashboard'
+import { profileEntry } from '@/utils/profilePrefs'
 import PlannerStart from '@/components/planner/PlannerStart.vue'
 import PlannerOverview from '@/components/planner/PlannerOverview.vue'
 import { SYNCED_EVENT } from '@/utils/accountData'
@@ -468,6 +469,14 @@ async function loadPlayer({ typed = false } = {}) {
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     const previous = player.value
+    // A profile the account owns brings its own settings (members or free-to-play, ironman, hours a day) to a new plan, or to a plan started for
+    // that player; a plan that is already saved keeps its own.
+    const own = !currentPlanId.value && (!goals.value.length || (typed && shouldSwitchPlayer(previous, found))) ? profileEntry(found.displayName) : null
+    if (own) {
+      if (typeof own.members === 'boolean') members.value = own.members
+      if (typeof own.iron === 'boolean') iron.value = own.iron
+      if (own.hours) hoursPerDay.value = own.hours
+    }
     player.value = found
     if (ownsLoadedProfile.value) rememberOwnProfile(found.username)
     if (typed) {

@@ -80,6 +80,13 @@ describe('planner preferences (hours a day)', () => {
   it('drops anything else and a value that is not an object', () => {
     expect(sanitizeUserData({ plannerPrefs: { value: { hours: 'lots', evil: '<script>' } } }).plannerPrefs.value).toEqual({})
     expect(sanitizeUserData({ plannerPrefs: { value: 4 } }).plannerPrefs).toBeUndefined()
+    // Ironman is kept, and so are the settings of each profile (by lower-case name, bad names and values dropped).
+    expect(sanitizeUserData({ plannerPrefs: { value: { members: false, iron: true } } }).plannerPrefs.value).toEqual({ members: false, iron: true })
+    expect(
+      sanitizeUserData({
+        plannerPrefs: { value: { hours: 2, profiles: { 'Iron Zez': { members: true, iron: true, hours: 3.3 }, 'bad<name>': { iron: true }, main: { hours: 'lots' }, alt: { evil: 1 } } } },
+      }).plannerPrefs.value,
+    ).toEqual({ hours: 2, profiles: { 'iron zez': { members: true, iron: true, hours: 3.5 } } })
     expect(sanitizeUserData({ plannerPrefs: { value: [4] } }).plannerPrefs).toBeUndefined()
   })
 })

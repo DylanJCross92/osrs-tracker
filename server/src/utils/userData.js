@@ -76,12 +76,31 @@ function cleanPlannerProfile(v) {
   return out
 }
 
-// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24) and whether they are free-to-play or a member and whether they are an ironman, used for every new plan.
-function cleanPlannerPrefs(v) {
+// Planner preferences: the hours a day the person plays (a half hour step, 0.5 to 24), whether they are free-to-play or a member, and whether they
+// are an ironman. These are the defaults for new plans; `profiles` keeps the same three settings for each RuneScape profile the account owns, by
+// lower-case name, so an ironman alt and a main can differ.
+const MAX_PREF_PROFILES = 20
+const PROFILE_KEY = /^[a-z0-9 _-]{1,12}$/
+function cleanAccountType(v) {
   if (!isObj(v)) return null
   const out = {}
   if (Number.isFinite(Number(v.hours))) out.hours = Math.min(24, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
   if (typeof v.members === 'boolean') out.members = v.members
+  if (typeof v.iron === 'boolean') out.iron = v.iron
+  return out
+}
+function cleanPlannerPrefs(v) {
+  const out = cleanAccountType(v)
+  if (!out) return null
+  if (isObj(v.profiles)) {
+    const profiles = {}
+    for (const [name, settings] of Object.entries(v.profiles).slice(0, MAX_PREF_PROFILES)) {
+      const key = String(name).toLowerCase()
+      const clean = PROFILE_KEY.test(key) ? cleanAccountType(settings) : null
+      if (clean && Object.keys(clean).length) profiles[key] = clean
+    }
+    if (Object.keys(profiles).length) out.profiles = profiles
+  }
   return out
 }
 

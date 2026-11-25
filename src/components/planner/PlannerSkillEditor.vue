@@ -93,8 +93,8 @@
           <RequirementList :items="a.items" :method-name="a.method.name" />
         </div>
         <p class="se-hint">
-          <template v-if="loggedIn">Your answers are saved to your account and used in every plan. <RouterLink :to="{ name: 'account', hash: '#quests' }">Open your quest tracker</RouterLink></template>
-          <template v-else>Your answers are saved in this browser. <RouterLink :to="{ name: 'login', query: { next: '/account' } }">Log in</RouterLink> to keep them on your account and use them on every device.</template>
+          <template v-if="loggedIn">Your answers are saved to your account and used in every plan. <RouterLink :to="{ name: 'quests' }">Open your quest tracker</RouterLink></template>
+          <template v-else>Your answers are saved in this browser. <RouterLink :to="{ name: 'login', query: { next: '/quests' } }">Log in</RouterLink> to keep them on your account and use them on every device.</template>
         </p>
       </section>
     </div>
