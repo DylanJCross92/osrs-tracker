@@ -29,9 +29,14 @@ describe('fillHourly', () => {
     const out = fillHourly([{ hour: '2026-11-25T15:00:00Z', people: 4 }, { hour: new Date('2026-11-24T20:00:00Z'), people: '7' }], now)
     expect(out).toHaveLength(24)
     expect(out[0].at).toBe('2026-11-24T16:00:00.000Z')
-    expect(out[23]).toEqual({ at: '2026-11-25T15:00:00.000Z', people: 4 })
+    expect(out[23]).toEqual({ at: '2026-11-25T15:00:00.000Z', people: 4, signedIn: 0, actions: 0 })
     expect(out.find((h) => h.at === '2026-11-24T20:00:00.000Z').people).toBe(7)
     expect(out.filter((h) => h.people === 0)).toHaveLength(22)
+  })
+  it('carries signed-in people and actions for each hour, never more signed in than people', () => {
+    const out = fillHourly([{ hour: '2026-11-25T15:00:00Z', people: 4, signed_in: 9, actions: '30' }, { hour: '2026-11-25T14:00:00Z', people: 3, signed_in: 1, actions: 5 }], now)
+    expect(out[23]).toMatchObject({ people: 4, signedIn: 4, actions: 30 })
+    expect(out[22]).toMatchObject({ people: 3, signedIn: 1, actions: 5 })
   })
   it('ignores hours outside the window', () => {
     const out = fillHourly([{ hour: '2026-11-20T10:00:00Z', people: 9 }], now)
@@ -42,13 +47,13 @@ describe('fillHourly', () => {
 describe('shapeAreas', () => {
   it('ranks by people then views, drops blank names and cuts to the limit', () => {
     const rows = [
-      { route: 'players', people: 5, views: 9 },
-      { route: '', people: 99, views: 99 },
-      { route: 'planner', people: 5, views: 12 },
-      { route: 'items', people: 2, views: 2 },
-      { route: null, people: 3, views: 3 },
+      { area: 'players', people: 5, views: 9 },
+      { area: '', people: 99, views: 99 },
+      { area: 'planner', people: 5, views: 12 },
+      { area: 'items', people: 2, views: 2 },
+      { area: null, people: 3, views: 3 },
     ]
-    expect(shapeAreas(rows).map((a) => a.route)).toEqual(['planner', 'players', 'items'])
+    expect(shapeAreas(rows).map((a) => a.area)).toEqual(['planner', 'players', 'items'])
     expect(shapeAreas(rows, 2)).toHaveLength(2)
   })
 })

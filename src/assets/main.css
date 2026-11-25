@@ -7944,7 +7944,15 @@ html.iron-mode .gp-figure { display: none !important; }
 .sa-bar { display: flex; align-items: flex-end; height: 100%; }
 .sa-bar i { display: block; width: 100%; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); opacity: 0.85; }
 .sa-bar i.now { opacity: 1; box-shadow: 0 0 10px rgba(217, 175, 82, 0.5); }
-.sa-bar:hover i { opacity: 1; }
+.sa-bar.on i, .sa-bar:hover i { opacity: 1; filter: brightness(1.12); }
+.sa-chart { position: relative; }
+.sa-bars { outline-offset: 4px; border-radius: 6px; }
+.sa-bar { cursor: default; }
+.sa-tip { top: auto; bottom: calc(100% + 6px); min-width: 170px; }
+.sa-tip > b small { color: var(--muted); font-weight: 500; }
+.sa-sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; }
+.sa-sw.is-in { background: var(--gold); }
+.sa-sw.is-out { background: #6aa3d8; }
 .sa-axis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: 0.74rem; }
 .sa-areas ol { list-style: none; margin: 0; padding: 0; }
 .sa-areas li { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.9rem; }

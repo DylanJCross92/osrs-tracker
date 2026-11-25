@@ -42,23 +42,26 @@ export function shapeWindows(row = {}) {
 const HOUR_MS = 3_600_000
 
 /**
- * rows: [{ hour: Date | ISO (start of the hour), people }] (only hours with someone). Returns `hours` entries, oldest first and ending with the
- * hour `now` is in (so the last one is still filling up), zero for quiet hours: [{ at: ISO, people }].
+ * rows: [{ hour: Date | ISO (start of the hour), people, signed_in, actions }] (only hours with someone). Returns `hours` entries, oldest
+ * first and ending with the hour `now` is in (so the last one is still filling up), zero for quiet hours:
+ * [{ at: ISO, people, signedIn, actions }].
  */
 export function fillHourly(rows, now = new Date(), hours = 24) {
   const end = Math.floor(new Date(now).getTime() / HOUR_MS) * HOUR_MS
-  const byHour = new Map(rows.map((r) => [Math.floor(new Date(r.hour).getTime() / HOUR_MS) * HOUR_MS, n(r.people)]))
+  const byHour = new Map(rows.map((r) => [Math.floor(new Date(r.hour).getTime() / HOUR_MS) * HOUR_MS, r]))
   return Array.from({ length: hours }, (_, i) => {
     const at = end - (hours - 1 - i) * HOUR_MS
-    return { at: new Date(at).toISOString(), people: byHour.get(at) || 0 }
+    const r = byHour.get(at)
+    const people = n(r?.people)
+    return { at: new Date(at).toISOString(), people, signedIn: Math.min(people, n(r?.signed_in)), actions: n(r?.actions) }
   })
 }
 
-/** rows: [{ route, people, views }] -> the busiest areas, without empty names, at most `limit`. */
+/** rows: [{ area, people, views }] -> the busiest areas, without empty names, at most `limit`. */
 export function shapeAreas(rows, limit = 8) {
   return rows
-    .filter((r) => r.route)
-    .map((r) => ({ route: String(r.route), people: n(r.people), views: n(r.views) }))
-    .sort((a, b) => b.people - a.people || b.views - a.views || a.route.localeCompare(b.route))
+    .filter((r) => r.area)
+    .map((r) => ({ area: String(r.area), people: n(r.people), views: n(r.views) }))
+    .sort((a, b) => b.people - a.people || b.views - a.views || a.area.localeCompare(b.area))
     .slice(0, limit)
 }

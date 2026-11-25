@@ -43,15 +43,19 @@ export async function activePeople() {
        FROM users WHERE email_verified_at IS NOT NULL AND created_at >= now() - interval '7 days'`,
     ),
     pool.query(
-      `SELECT date_trunc('hour', e.at) AS hour, count(DISTINCT ${PERSON})::int AS people
+      `SELECT date_trunc('hour', e.at) AS hour, count(DISTINCT ${PERSON})::int AS people,
+              count(DISTINCT ${PERSON}) FILTER (WHERE ${PERSON} LIKE 'a:%')::int AS signed_in, count(*)::int AS actions
        FROM events e LEFT JOIN visitor_links vl ON vl.visitor_id = e.visitor_id
        WHERE e.at >= date_trunc('hour', now()) - interval '23 hours' AND ${PERSON} IS NOT NULL
        GROUP BY 1`,
     ),
     pool.query(
-      `SELECT e.props->>'route_name' AS route, count(DISTINCT ${PERSON})::int AS people, count(*)::int AS views
+      // The route name is not stored (the event rules drop detail keys ending in _name), so the area is the first part of the page address
+      // ('/player/Zezima?x' -> 'player', '/' -> 'home'). Only that part is read, never the rest.
+      `SELECT COALESCE(NULLIF(lower(left(split_part(split_part(split_part(e.props->>'page_path', '?', 1), '#', 1), '/', 2), 40)), ''), 'home') AS area,
+              count(DISTINCT ${PERSON})::int AS people, count(*)::int AS views
        FROM events e LEFT JOIN visitor_links vl ON vl.visitor_id = e.visitor_id
-       WHERE e.name = 'spa_page_view' AND e.at >= now() - interval '24 hours' AND e.props->>'route_name' <> ''
+       WHERE e.name = 'spa_page_view' AND e.at >= now() - interval '24 hours' AND e.props->>'page_path' IS NOT NULL AND ${PERSON} IS NOT NULL
        GROUP BY 1`,
     ),
   ])

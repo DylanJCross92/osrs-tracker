@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ago, busiestHour, compact, lastDays, niceMax, routeLabel } from '../../src/components/admin/stats/statsFormat.js'
+import { ago, busiestHour, compact, lastDays, niceMax, areaLabel } from '../../src/components/admin/stats/statsFormat.js'
 
 describe('niceMax', () => {
   it.each([[0, 4], [3, 4], [7, 8], [80, 80], [81, 100], [100, 100], [130, 200], [1240, 2000]])('%s -> %s', (max, top) => expect(niceMax(max)).toBe(top))
@@ -36,12 +36,13 @@ describe('ago', () => {
   })
 })
 
-describe('routeLabel', () => {
-  it('names the known areas and splits any other route name into words', () => {
-    expect(routeLabel('playerDetail')).toBe('Player profiles')
-    expect(routeLabel('plannerPlan')).toBe('Account Planner')
-    expect(routeLabel('releaseNotes')).toBe('Release notes')
-    expect(routeLabel('')).toBe('Other')
+describe('areaLabel', () => {
+  it('names the known areas and shows any other as plain words', () => {
+    expect(areaLabel('player')).toBe('Player profiles')
+    expect(areaLabel('home')).toBe('Home and dashboard')
+    expect(areaLabel('release-notes')).toBe('Release notes')
+    expect(areaLabel('forgot-password')).toBe('Forgot password')
+    expect(areaLabel('')).toBe('Other')
   })
 })
 
