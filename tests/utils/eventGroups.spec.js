@@ -13,6 +13,7 @@ describe('eventGroup', () => {
     ['search_started', 'search'],
     ['player_added', 'search'],
     ['sign_up', 'account'],
+    ['sign_up_click', 'account'],
     ['session_resumed', 'account'],
     ['profile_tab', 'profile'],
     ['outbound_click', 'other'],

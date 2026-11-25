@@ -73,15 +73,6 @@
       </g>
     </template>
 
-    <!-- Free account: what you keep -->
-    <template v-else-if="kind === 'account'">
-      <g v-for="(r, i) in kept" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
-        <rect class="fa-chip" x="4" y="1" width="76" height="14" rx="7" />
-        <text class="fa-text" x="42" y="11" text-anchor="middle">{{ r.n }}</text>
-        <text class="fa-text fa-gold fa-strong" x="124" y="11" text-anchor="end">{{ r.v }}</text>
-      </g>
-    </template>
-
     <!-- Player discovery: a mini leaderboard -->
     <template v-else>
       <g v-for="(r, i) in board" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
@@ -112,11 +103,6 @@ const versus = [
   { n: 'Atk', a: 1, b: 0.7 },
   { n: 'Str', a: 0.6, b: 0.95 },
   { n: 'Mag', a: 0.85, b: 0.5 },
-]
-const kept = [
-  { n: 'Saved plans', v: '3' },
-  { n: 'Goals', v: '5' },
-  { n: 'Following', v: '8' },
 ]
 const board = [
   { n: 'a', p: 1, g: '+4.2M' },

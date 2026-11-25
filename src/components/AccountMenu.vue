@@ -2,6 +2,7 @@
   <div v-if="ready" class="acct" :class="{ 'is-in': loggedIn }">
     <template v-if="!loggedIn">
       <RouterLink class="btn btn-ghost acct-login" :to="{ name: 'login', query: nextQuery }">Log in</RouterLink>
+      <RouterLink class="btn btn-primary acct-signup" :to="{ name: 'signup', query: nextQuery }" @click="track('sign_up_click', { where: 'header' })">Sign up</RouterLink>
     </template>
     <template v-else>
     <NotificationBell />

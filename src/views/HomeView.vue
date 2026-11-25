@@ -50,7 +50,7 @@
         <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>Historical XP imports</li>
         <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" /></svg>Live GE prices</li>
       </ul>
-      <p class="home-nosignup">No registration required, just enter your RSN.</p>
+      <p class="home-nosignup">No sign-up needed to start, just enter your RSN. A <RouterLink :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'hero' })">free account</RouterLink> saves your plans, goals and alerts.</p>
     </section>
 
     <!-- Live community ticker -->
@@ -124,6 +124,24 @@
           <span class="home-feature-link">{{ f.cta }}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
         </RouterLink>
       </div>
+    </section>
+
+    <!-- What a free account adds: flat, between the features and the rest of the page -->
+    <section class="home-section home-account" aria-label="Free account">
+      <div class="home-account-copy">
+        <h2>Make it yours with a free account</h2>
+        <p>Tracking a player never needs one. An account keeps what you build and tells you what to do next.</p>
+        <div class="home-account-actions">
+          <RouterLink class="btn btn-primary" :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'home_band' })">Create free account</RouterLink>
+          <RouterLink class="btn btn-ghost" :to="{ name: 'login' }">Log in</RouterLink>
+        </div>
+      </div>
+      <ul class="home-account-list">
+        <li v-for="b in accountBenefits" :key="b.title">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          <span><b>{{ b.title }}</b> {{ b.text }}</span>
+        </li>
+      </ul>
     </section>
 
     <!-- Grand Exchange prices, and that the planners use them -->
@@ -253,8 +271,11 @@
     <!-- 7. Final CTA -->
     <section class="card home-final">
       <h2>Ready to Track Your Next 99?</h2>
-      <p>Free, no sign-up, just your RSN.</p>
-      <button class="btn btn-primary" type="button" @click="focusSearch">Start Tracking Your Player</button>
+      <p>Free, and no sign-up to start. Add an account to save your plans and goals.</p>
+      <div class="home-final-actions">
+        <button class="btn btn-primary" type="button" @click="focusSearch">Start Tracking Your Player</button>
+        <RouterLink class="btn btn-ghost" :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'home_final' })">Create free account</RouterLink>
+      </div>
     </section>
   </div>
 </template>
@@ -361,8 +382,13 @@ const features = computed(() => [
   { key: 'discover', title: 'Player Discovery', text: 'Explore leaderboards, player achievements, and recent activity.', cta: 'Open Discover', to: { path: '/discover' }, icon: svg('<circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />') },
   { key: 'clans', title: 'Clans & Competitions', text: 'Start a clan, share an invite link and run XP competitions with live leaderboards.', cta: 'Browse clans', to: { path: '/clans' }, icon: svg('<circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><circle cx="17" cy="9" r="2.6" /><path d="M17 14c2.8 0 5 2.2 5 5" />') },
   { key: 'compare', title: 'Compare Players', text: 'Put two players side by side, skill by skill, and send a friend a challenge link.', cta: 'Compare players', to: { path: '/compare' }, icon: svg('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4" />') },
-  { key: 'account', title: 'Free Account', text: 'Save plans, set goals and follow players from your own dashboard, and verify your RuneScape name to make it yours.', cta: 'Create an account', to: { name: 'signup' }, icon: svg('<circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" />') },
 ])
+const accountBenefits = [
+  { title: 'Plans and goals that stay.', text: 'Save them once and they follow you to any device.' },
+  { title: 'Follow players.', text: 'Get told when a friend hits a new 99.' },
+  { title: 'A dashboard for what is next.', text: 'Built from your own levels, plan and quests.' },
+  { title: 'Your own profile.', text: 'Claim your RuneScape name to make it yours.' },
+]
 const steps = [
   { title: 'Enter Your RSN', text: 'Search for your OSRS character.' },
   { title: 'Track Automatically', text: 'TickGains records XP snapshots every hour (daily when a player is inactive) and imports available historical data.' },
