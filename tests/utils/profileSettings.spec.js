@@ -75,7 +75,7 @@ describe('profile settings', () => {
     const items = w.findAll('.acp-item')
     expect(items).toHaveLength(2)
     expect(items[0].text()).toContain('Main profile')
-    expect(items[1].text()).toContain('Make this my main profile')
+    expect(items[1].text()).toContain('Make main')
     expect(w.text()).toContain('ABC123')
     // Ironman on the second profile.
     const ironBtn = items[1].findAll('button').find((b) => b.text().includes('Ironman'))
@@ -94,7 +94,7 @@ describe('profile settings', () => {
     const w = mount(AccountProfiles, { global: { stubs: { RouterLink: { props: ['to'], template: '<a><slot /></a>' }, PlayerAvatar: true } } })
     await flushPromises()
     util.saveProfileEntry('Alt Iron', { iron: true, members: false, hours: 5 })
-    await w.findAll('.acp-item')[1].find('button.btn-text').trigger('click')
+    await w.findAll('.acp-item')[1].find('button.acp-makemain').trigger('click')
     await flushPromises()
     // The profile that stopped being the main one keeps its own settings.
     expect(util.profileEntry('Main One')).toEqual({ members: true, iron: false, hours: 2 })

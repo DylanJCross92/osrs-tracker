@@ -1,13 +1,14 @@
 <template>
   <div class="hub">
-    <section class="card hub-top">
+    <header class="hub-top">
       <div>
+        <p class="hub-eyebrow">Account</p>
         <h1>My account</h1>
         <p class="acc-sub">{{ user?.email }}<span v-if="since"> · Member since {{ since }}</span></p>
         <RoleBadges class="acc-roles" :roles="user?.roles || []" />
       </div>
       <button class="btn btn-ghost" type="button" @click="doLogout">Log out</button>
-    </section>
+    </header>
 
     <div class="hub-body">
       <nav class="hub-nav" aria-label="Account sections">
