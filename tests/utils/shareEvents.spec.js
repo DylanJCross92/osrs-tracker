@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { claimVisit, referrerSource, shareFromEvent, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
+import { claimVisit, referrerHost, referrerSource, shareFromEvent, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
 
 describe('shareFromEvent', () => {
   it('groups share buttons into links, images and posts', () => {
@@ -62,6 +62,49 @@ describe('referrerSource', () => {
     expect(referrerSource('', 'tickgains.com')).toBe('direct')
     expect(referrerSource('https://www.tickgains.com/player/x', 'tickgains.com')).toBe('direct')
     expect(referrerSource('not a url', 'tickgains.com')).toBe('direct')
+  })
+})
+
+describe('referrerSource: more places and apps', () => {
+  const own = 'tickgains.com'
+  it('knows Facebook, its link redirector and its messenger', () => {
+    expect(referrerSource('https://l.facebook.com/l.php?u=x', own)).toBe('facebook')
+    expect(referrerSource('https://m.facebook.com/', own)).toBe('facebook')
+    expect(referrerSource('https://www.messenger.com/', own)).toBe('facebook')
+  })
+  it('knows the other social, video and search sites', () => {
+    expect(referrerSource('https://www.instagram.com/', own)).toBe('instagram')
+    expect(referrerSource('https://www.youtube.com/watch?v=1', own)).toBe('youtube')
+    expect(referrerSource('https://www.twitch.tv/x', own)).toBe('twitch')
+    expect(referrerSource('https://www.bing.com/search?q=x', own)).toBe('bing')
+    expect(referrerSource('https://duckduckgo.com/', own)).toBe('duckduckgo')
+    expect(referrerSource('https://oldschool.runescape.wiki/w/Agility', own)).toBe('wiki')
+  })
+  it('reads the tag on a link first, so a link posted somewhere says where', () => {
+    expect(referrerSource('', own, { search: '?utm_source=facebook' })).toBe('facebook')
+    expect(referrerSource('https://example.org/', own, { search: '?utm_source=FB' })).toBe('facebook')
+    expect(referrerSource('', own, { search: '?utm_source=twitter' })).toBe('x')
+    expect(referrerSource('', own, { search: '?utm_source=mystery' })).toBe('direct')
+  })
+  it('spots Facebook and other apps when no referrer is sent', () => {
+    expect(referrerSource('', own, { search: '?fbclid=abc' })).toBe('facebook')
+    expect(referrerSource('', own, { userAgent: 'Mozilla/5.0 (iPhone) [FBAN/FBIOS;FBAV/430.0]' })).toBe('facebook')
+    expect(referrerSource('', own, { userAgent: 'Mozilla/5.0 Instagram 300.0' })).toBe('instagram')
+    expect(referrerSource('', own, { userAgent: 'Mozilla/5.0 musical_ly_30.0' })).toBe('tiktok')
+    expect(referrerSource('', own, { userAgent: 'Mozilla/5.0 (Macintosh) Chrome/120' })).toBe('direct')
+  })
+  it('does not call a visit from the site itself an app visit', () => {
+    expect(referrerSource('https://tickgains.com/player/x', own, { search: '?fbclid=abc', userAgent: 'FBAN' })).toBe('direct')
+  })
+})
+
+describe('referrerHost', () => {
+  it('gives the referring site without www, and nothing for no referrer, junk or this site', () => {
+    expect(referrerHost('https://www.reddit.com/r/2007scape', 'tickgains.com')).toBe('reddit.com')
+    expect(referrerHost('https://l.facebook.com/l.php', 'tickgains.com')).toBe('l.facebook.com')
+    expect(referrerHost('', 'tickgains.com')).toBe('')
+    expect(referrerHost('not a url', 'tickgains.com')).toBe('')
+    expect(referrerHost('https://www.tickgains.com/x', 'tickgains.com')).toBe('')
   })
 })
 

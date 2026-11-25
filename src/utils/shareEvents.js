@@ -81,24 +81,70 @@ export function sharedLinkKind(path, query = {}) {
   return null
 }
 
-/** Where a visitor came from, from document.referrer. Links opened in an app that sends no referrer count as direct. */
-export function referrerSource(referrer, ownHost = '') {
-  if (!referrer) return 'direct'
+// Where a visitor came from. Must match SOURCES on the server (server/src/utils/shareStats.js), which counts anything else as direct.
+const TAG_ALIASES = { twitter: 'x', fb: 'facebook', ig: 'instagram', yt: 'youtube', ddg: 'duckduckgo', runescape_wiki: 'wiki' }
+const TAGGED = ['discord', 'x', 'reddit', 'facebook', 'instagram', 'tiktok', 'youtube', 'twitch', 'google', 'bing', 'duckduckgo', 'wiki']
+
+/** The referring site's name without "www." ('l.facebook.com'), or '' when there is none, it is junk or it is this site. */
+export function referrerHost(referrer, ownHost = '') {
+  if (!referrer) return ''
   let host
   try {
     host = new URL(referrer).hostname.toLowerCase().replace(/^www\./, '')
   } catch {
-    return 'direct'
+    return ''
   }
   const own = String(ownHost).toLowerCase().replace(/^www\./, '')
-  if (own && (host === own || host.endsWith(`.${own}`))) return 'direct'
+  return own && (host === own || host.endsWith(`.${own}`)) ? '' : host
+}
+
+/**
+ * Where a visitor came from. In order:
+ *  1. a tag on the link itself, ?utm_source=facebook (so a link you post somewhere says where it was posted);
+ *  2. the site that sent them, from document.referrer;
+ *  3. with no referrer at all (apps often send none): Facebook's click id (?fbclid) or the in-app browser of Facebook, Instagram or TikTok;
+ *  4. otherwise direct.
+ * Visits from this site itself count as direct. `search` is location.search, `userAgent` navigator.userAgent.
+ */
+export function referrerSource(referrer, ownHost = '', { search = '', userAgent = '' } = {}) {
+  try {
+    const tag = String(new URLSearchParams(search).get('utm_source') || '').toLowerCase().trim()
+    const id = TAG_ALIASES[tag] || tag
+    if (TAGGED.includes(id)) return id
+  } catch {
+    /* no usable query: carry on */
+  }
+  if (!referrer) return appSource(search, userAgent)
+  const host = referrerHost(referrer, ownHost)
+  if (!host) return 'direct'
   const is = (...domains) => domains.some((d) => host === d || host.endsWith(`.${d}`))
   if (is('discord.com', 'discordapp.com', 'discord.gg')) return 'discord'
   if (is('twitter.com', 'x.com', 't.co')) return 'x'
   if (is('reddit.com', 'redd.it')) return 'reddit'
-  if (is('facebook.com', 'fb.com', 'fb.me')) return 'facebook'
+  if (is('facebook.com', 'fb.com', 'fb.me', 'messenger.com')) return 'facebook'
+  if (is('instagram.com')) return 'instagram'
+  if (is('tiktok.com')) return 'tiktok'
+  if (is('youtube.com', 'youtu.be')) return 'youtube'
+  if (is('twitch.tv')) return 'twitch'
   if (host.split('.').includes('google')) return 'google'
+  if (is('bing.com')) return 'bing'
+  if (is('duckduckgo.com')) return 'duckduckgo'
+  if (is('oldschool.runescape.wiki')) return 'wiki'
   return 'other'
+}
+
+// Links opened inside an app often arrive with no referrer; the app still leaves its mark.
+function appSource(search, userAgent) {
+  try {
+    if (new URLSearchParams(search).has('fbclid')) return 'facebook'
+  } catch {
+    /* ignore */
+  }
+  const ua = String(userAgent || '')
+  if (/FBAN|FBAV|FB_IAB|FBIOS/i.test(ua)) return 'facebook'
+  if (/Instagram/i.test(ua)) return 'instagram'
+  if (/musical_ly|TikTok|BytedanceWebview/i.test(ua)) return 'tiktok'
+  return 'direct'
 }
 
 /**

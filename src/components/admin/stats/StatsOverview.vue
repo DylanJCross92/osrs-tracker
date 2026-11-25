@@ -10,6 +10,7 @@
 
     <!-- Who is around right now, today and this week -->
     <StatsActive />
+    <StatsTraffic :days="days" />
 
     <!-- The headline numbers, each with how the latest stretch compares with the one before -->
     <section class="st-tiles is-six" aria-label="Summary">
@@ -179,6 +180,7 @@ import { conversion, funnelRows, peopleSummary, sharingSummary, trend, trendLabe
 import { ago, compact, count, dayLong, fmt, lastDays } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
 import StatsActive from './StatsActive.vue'
+import StatsTraffic from './StatsTraffic.vue'
 
 const props = defineProps({ days: { type: Number, required: true } })
 // 'go' asks the page to open one of the other tabs, optionally on one visitor.

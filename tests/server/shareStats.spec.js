@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { cleanItem, cleanShare, cleanVisit, summarize, summarizeItems } from '../../server/src/utils/shareStats.js'
+import { cleanHost, cleanItem, cleanShare, cleanVisit, summarize, summarizeItems, summarizeTraffic } from '../../server/src/utils/shareStats.js'
 
 describe('request cleaning', () => {
   it('accepts only known shares', () => {
@@ -27,8 +27,8 @@ describe('what was shared', () => {
     expect(cleanShare({ kind: 'weekly_card', method: 'link', item: 'zezima' })).toEqual({ kind: 'weekly_card', method: 'link', item: 'zezima' })
     expect(cleanShare({ kind: 'weekly_card', method: 'link', item: '  ' })).toEqual({ kind: 'weekly_card', method: 'link' })
     expect(cleanVisit({ kind: 'record', source: 'x', item: 'zezima · biggest-day' })).toEqual({ kind: 'record', source: 'x', item: 'zezima · biggest-day' })
-    // A site visit is never about an item.
-    expect(cleanVisit({ kind: 'site', source: 'x', item: 'zezima' })).toEqual({ kind: 'site', source: 'x' })
+    // A site visit's item is only ever the referring site's host name, never a player or anything with spaces.
+    expect(cleanVisit({ kind: 'site', source: 'x', item: 'zezima the great' })).toEqual({ kind: 'site', source: 'x' })
   })
   it('lists the busiest items with their shares and visits together', () => {
     const rows = [
@@ -72,5 +72,59 @@ describe('summarize', () => {
   it('gives one point per day for the whole window, empty days included', () => {
     expect(out.daily.map((d) => d.day)).toEqual(['2026-11-12', '2026-11-13', '2026-11-14'])
     expect(out.daily.map((d) => [d.shares, d.visits])).toEqual([[0, 0], [3, 0], [3, 5]])
+  })
+})
+
+describe('where site visitors came from', () => {
+  it('keeps the referring site only for a site visit that came from somewhere, and only as a plain host name', () => {
+    expect(cleanVisit({ kind: 'site', source: 'facebook', item: 'L.Facebook.com' })).toEqual({ kind: 'site', source: 'facebook', item: 'l.facebook.com' })
+    expect(cleanVisit({ kind: 'site', source: 'direct', item: 'example.org' })).toEqual({ kind: 'site', source: 'direct' })
+    expect(cleanVisit({ kind: 'site', source: 'other', item: 'https://example.org/path?a=b' })).toEqual({ kind: 'site', source: 'other' })
+    expect(cleanVisit({ kind: 'site', source: 'instagram' })).toEqual({ kind: 'site', source: 'instagram' })
+    expect(cleanVisit({ kind: 'site', source: 'youtube' }).source).toBe('youtube')
+  })
+  it('cleans a host name', () => {
+    expect(cleanHost(' Old.Reddit.com ')).toBe('old.reddit.com')
+    expect(cleanHost('a b.com')).toBe('')
+    expect(cleanHost('x@y.com')).toBe('')
+    expect(cleanHost('')).toBe('')
+    expect(cleanHost(5)).toBe('')
+    expect(cleanHost('a'.repeat(100))).toBe('')
+  })
+
+  const rows = [
+    { day: '2026-11-24', detail: 'direct', n: 10 },
+    { day: '2026-11-24', detail: 'facebook', n: 6 },
+    { day: '2026-11-25', detail: 'direct', n: 8 },
+    { day: '2026-11-25', detail: 'google', n: 4 },
+    { day: '2026-11-25', detail: 'facebook', n: 2 },
+    { day: '2026-11-25', detail: 'made-up', n: 3 },
+    { day: '2026-11-01', detail: 'reddit', n: 99 },
+  ]
+  const sites = [{ item: 'l.facebook.com', n: 5 }, { item: 'm.facebook.com', n: 3 }, { item: 'bad host', n: 9 }]
+
+  it('totals, splits direct from other sites, ranks the sources and gives each its share', () => {
+    const t = summarizeTraffic(rows, sites, 2, '2026-11-25', 12)
+    // The 99 reddit visits are outside the two days of rows only because the caller never selects them; here every row passed counts.
+    expect(t.total).toBe(10 + 6 + 8 + 4 + 2 + 3 + 99)
+    const small = summarizeTraffic(rows.slice(0, 6), sites, 2, '2026-11-25', 12)
+    expect(small).toMatchObject({ days: 2, total: 33, previous: 12, direct: 21, referred: 12 })
+    expect(small.sources.map((s) => [s.source, s.visits])).toEqual([['direct', 21], ['facebook', 8], ['google', 4]])
+    expect(small.sources[0].pct).toBe(63.6)
+    expect(small.sources.map((s) => s.label)).toEqual(['Direct or app', 'Facebook', 'Google'])
+  })
+  it('counts an unknown source as direct and drops invalid referring sites', () => {
+    const small = summarizeTraffic(rows.slice(0, 6), sites, 2, '2026-11-25')
+    expect(small.sites).toEqual([{ site: 'l.facebook.com', visits: 5 }, { site: 'm.facebook.com', visits: 3 }])
+  })
+  it('gives one point per day, ending today, with how many came from other sites', () => {
+    const small = summarizeTraffic(rows.slice(0, 6), sites, 2, '2026-11-25')
+    expect(small.daily).toEqual([
+      { day: '2026-11-24', total: 16, referred: 6 },
+      { day: '2026-11-25', total: 17, referred: 6 },
+    ])
+  })
+  it('is all zero with nothing recorded', () => {
+    expect(summarizeTraffic([], [], 7, '2026-11-25')).toMatchObject({ total: 0, direct: 0, referred: 0, sources: [], sites: [] })
   })
 })

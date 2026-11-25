@@ -1,5 +1,5 @@
 import { pool } from '../db.js'
-import { summarize, summarizeItems } from '../utils/shareStats.js'
+import { summarize, summarizeItems, summarizeTraffic } from '../utils/shareStats.js'
 import { APP_TIMEZONE, localDay } from '../utils/dates.js'
 import { SQL_STATS_TODAY, statsDay } from '../utils/statsDay.js'
 import { fillDailyXp } from '../utils/dailyXp.js'
@@ -43,6 +43,19 @@ export async function shareOverview(days) {
     pool.query(`SELECT type, kind, item, sum(n)::int AS n FROM share_items WHERE day > ${SQL_STATS_TODAY} - $1::int GROUP BY type, kind, item`, [days]),
   ])
   return { ...summarize(rows, days, today()), items: summarizeItems(itemRows) }
+}
+
+/**
+ * Where visitors came from over the last `days` days (including today): each source with its share, the sites that sent people, and a
+ * point per day. A visit is one browser's first visit of the day. `previous` counts the same length of time before, for a comparison.
+ */
+export async function trafficOverview(days) {
+  const [{ rows }, { rows: itemRows }, { rows: before }] = await Promise.all([
+    pool.query(`SELECT day::text AS day, detail, n FROM share_stats WHERE type = 'visit' AND kind = 'site' AND day > ${SQL_STATS_TODAY} - $1::int`, [days]),
+    pool.query(`SELECT item, sum(n)::int AS n FROM share_items WHERE type = 'visit' AND kind = 'site' AND day > ${SQL_STATS_TODAY} - $1::int GROUP BY item ORDER BY 2 DESC LIMIT 40`, [days]),
+    pool.query(`SELECT COALESCE(sum(n), 0)::int AS n FROM share_stats WHERE type = 'visit' AND kind = 'site' AND day > ${SQL_STATS_TODAY} - $1::int AND day <= ${SQL_STATS_TODAY} - $2::int`, [days * 2, days]),
+  ])
+  return summarizeTraffic(rows, itemRows, days, today(), before[0].n)
 }
 
 /** The players most recently added to the tracker, newest first, with where they stand now (for the admin view on Discover). */

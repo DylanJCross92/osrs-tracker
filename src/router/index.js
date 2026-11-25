@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import { isInternalTraffic, track } from '@/utils/analytics'
 import { logEvent } from '@/utils/eventLog'
 import { statsApi } from '@/api/stats'
-import { claimVisit, referrerSource, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
+import { claimVisit, referrerHost, referrerSource, sharedLinkItem, sharedLinkKind } from '@/utils/shareEvents'
 import { isStaleChunkError, reloadForNewVersion } from '@/utils/staleDeploy'
 import { useRivals } from '@/composables/useRivals'
 import { authReady, useAuth } from '@/composables/useAuth'
@@ -165,12 +165,13 @@ export function createAppRouter() {
       // The page a visit starts on, for the site's own record only (the analytics container reports its own first page view). Without
       // it the first page of every visit would be missing from the paths people take.
       logEvent('spa_page_view', { page_path: to.fullPath, page_title: document.title, route_name: String(to.name || ''), landing: true })
-      const source = referrerSource(document.referrer, window.location.hostname)
+      const here = { search: window.location.search, userAgent: navigator.userAgent }
+      const source = referrerSource(document.referrer, window.location.hostname, here)
       const asked = to.redirectedFrom || to
       const kind = sharedLinkKind(asked.path, asked.query)
       if (kind && claimVisit(`${kind}:${asked.path}`)) statsApi.visit(kind, source, sharedLinkItem(asked.path)).catch(() => {})
       // Every first visit of the day, so the admin page can say how many people arrive through shared links.
-      if (claimVisit('site')) statsApi.visit('site', source).catch(() => {})
+      if (claimVisit('site')) statsApi.visit('site', source, referrerHost(document.referrer, window.location.hostname)).catch(() => {})
     } catch {
       /* counting must never break navigation */
     }

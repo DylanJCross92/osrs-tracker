@@ -18,8 +18,23 @@ export const KINDS = Object.keys(KIND_LABELS)
 export const SHARE_METHODS = ['link', 'image', 'social']
 
 // Where a visitor came from, as far as the browser tells us.
-export const SOURCES = ['discord', 'x', 'reddit', 'facebook', 'google', 'other', 'direct']
-export const SOURCE_LABELS = { discord: 'Discord', x: 'X / Twitter', reddit: 'Reddit', facebook: 'Facebook', google: 'Google', other: 'Other sites', direct: 'Direct or app' }
+export const SOURCE_LABELS = {
+  discord: 'Discord',
+  x: 'X / Twitter',
+  reddit: 'Reddit',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  tiktok: 'TikTok',
+  youtube: 'YouTube',
+  twitch: 'Twitch',
+  google: 'Google',
+  bing: 'Bing',
+  duckduckgo: 'DuckDuckGo',
+  wiki: 'OSRS Wiki',
+  other: 'Other sites',
+  direct: 'Direct or app',
+}
+export const SOURCES = Object.keys(SOURCE_LABELS)
 
 /**
  * What was shared, as a short label ("zezima", "The Skilling Clan", "my 99 plan"): a player's name, a clan or plan name, a skill.
@@ -39,12 +54,17 @@ export function cleanShare(body) {
   return item ? { kind, method, item } : { kind, method }
 }
 
-/** { kind, source, item } from a request body, or null. A missing or unknown source counts as direct. */
+// A referring site's name ('l.facebook.com'): lower case letters, digits, dots and dashes only, so nothing else is ever stored.
+const HOST = /^[a-z0-9]([a-z0-9.-]{0,78}[a-z0-9])?$/
+export const cleanHost = (value) => (typeof value === 'string' && HOST.test(value.trim().toLowerCase()) ? value.trim().toLowerCase() : '')
+
+/** { kind, source, item } from a request body, or null. A missing or unknown source counts as direct. A site visit's item is the referring site's name. */
 export function cleanVisit(body) {
   const kind = body?.kind
   if (kind !== 'site' && !KINDS.includes(kind)) return null
-  const out = { kind, source: SOURCES.includes(body?.source) ? body.source : 'direct' }
-  const item = kind === 'site' ? '' : cleanItem(body?.item)
+  const source = SOURCES.includes(body?.source) ? body.source : 'direct'
+  const out = { kind, source }
+  const item = kind === 'site' ? (source === 'direct' ? '' : cleanHost(body?.item)) : cleanItem(body?.item)
   return item ? { ...out, item } : out
 }
 
@@ -106,6 +126,51 @@ export function summarize(rows, days, today) {
     totals,
     byKind: [...byKind.values()].sort((a, b) => b.shares + b.visits - (a.shares + a.visits)),
     sources: SOURCES.map((s) => ({ source: s, label: SOURCE_LABELS[s], visits: sources.get(s) || 0 })).filter((s) => s.visits > 0).sort((a, b) => b.visits - a.visits),
+    daily: [...daily.values()],
+  }
+}
+
+/**
+ * Where people who opened the site came from, from the stored rows: `rows` are one per day and source ({ day, detail, n }, type 'visit',
+ * kind 'site'), `itemRows` the referring sites ({ item, n }) and `previous` the visits in the period before (a number).
+ * A visit is one browser's first visit of the day. Returns the total, how many were direct and how many came from other sites,
+ * each source with its share, the sites that sent the most people, and one point per day.
+ */
+export function summarizeTraffic(rows, itemRows, days, today, previous = 0) {
+  const bySource = new Map()
+  const daily = new Map()
+  const end = new Date(`${today}T00:00:00Z`)
+  for (let i = days - 1; i >= 0; i--) daily.set(new Date(end.getTime() - i * 86_400_000).toISOString().slice(0, 10), { day: '', total: 0, referred: 0 })
+  for (const [d, v] of daily) v.day = d
+  let total = 0
+  for (const r of rows) {
+    const n = Number(r.n) || 0
+    const source = SOURCES.includes(r.detail) ? r.detail : 'direct'
+    bySource.set(source, (bySource.get(source) || 0) + n)
+    total += n
+    const day = daily.get(r.day)
+    if (day) {
+      day.total += n
+      if (source !== 'direct') day.referred += n
+    }
+  }
+  const direct = bySource.get('direct') || 0
+  const pct = (n) => (total ? Math.round((n / total) * 1000) / 10 : 0)
+  const sites = new Map()
+  for (const r of itemRows) {
+    const host = cleanHost(r.item)
+    if (host) sites.set(host, (sites.get(host) || 0) + (Number(r.n) || 0))
+  }
+  return {
+    days,
+    total,
+    previous: Number(previous) || 0,
+    direct,
+    referred: total - direct,
+    sources: SOURCES.map((s) => ({ source: s, label: SOURCE_LABELS[s], visits: bySource.get(s) || 0, pct: pct(bySource.get(s) || 0) }))
+      .filter((s) => s.visits > 0)
+      .sort((a, b) => b.visits - a.visits || a.label.localeCompare(b.label)),
+    sites: [...sites.entries()].map(([site, visits]) => ({ site, visits })).sort((a, b) => b.visits - a.visits || a.site.localeCompare(b.site)).slice(0, 12),
     daily: [...daily.values()],
   }
 }

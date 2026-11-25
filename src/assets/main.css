@@ -7993,3 +7993,17 @@ html.iron-mode .gp-figure { display: none !important; }
 .ann-progress { display: flex; align-items: center; gap: 12px; margin: 6px 0 8px; color: var(--text); font-size: 0.9rem; }
 .ann-bar { flex: 0 0 180px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
 .ann-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s; }
+
+/* Where visitors come from (statistics Overview) */
+.stt-top { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px 32px; align-items: center; margin-bottom: 18px; }
+.stt-total { display: grid; gap: 4px; justify-items: start; }
+.stt-num { font-size: 2.1rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--gold-bright); }
+.stt-split { display: grid; gap: 8px; min-width: 0; }
+.stt-lower { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 22px 36px; }
+.stt-sites { list-style: none; margin: 0; padding: 0; }
+.stt-sites li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+.stt-sites li:first-child { border-top: 0; }
+.stt-sites span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stt-sites b { font-variant-numeric: tabular-nums; }
+.stt .st-note code { padding: 1px 5px; border-radius: 5px; background: rgba(255, 255, 255, 0.07); font-size: 0.85em; }
+@media (max-width: 720px) { .stt-top, .stt-lower { grid-template-columns: minmax(0, 1fr); } }

@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview } from '../services/stats.service.js'
+import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview, trafficOverview } from '../services/stats.service.js'
 import { askedNotToTrack, cleanEvents, cleanVisitorId, isCrawler } from '../utils/events.js'
 import { activeAccounts, dailyActive, deleteVisitor, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
@@ -92,6 +92,15 @@ statsRouter.post('/stats/visitor-plans', plansLimiter, attachUser, async (req, r
 // For the site owner: which events happen and how often, and the detail of one.
 const adminOnly = [attachUser, requireRole('admin', 'owner'), rateLimit({ windowMs: 60_000, max: 60 })]
 const askedDays = (req) => (DAY_CHOICES.includes(Number(req.query.days)) ? Number(req.query.days) : 30)
+// For the site owner: where people come from (direct, Facebook, Google and so on), from each browser's first visit of the day.
+statsRouter.get('/admin/stats/traffic', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await trafficOverview(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
 // For the site owner: how much of everything exists and how fast it grows, and the latest things people did.
 statsRouter.get('/admin/stats/overview', ...adminOnly, async (req, res, next) => {
   try {
