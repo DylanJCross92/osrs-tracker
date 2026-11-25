@@ -46,15 +46,28 @@
       </section>
     </Transition>
 
-    <button class="fb-fab" type="button" :aria-expanded="open" aria-controls="fb-panel" :aria-label="open ? 'Close feedback' : 'Send feedback'" title="Feedback" @click="toggle">
-      <svg v-if="!open" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1.1-4.7A8 8 0 1121 12z" /><path d="M8.5 11h7M8.5 14h4" /></svg>
+    <Transition name="fb-pop">
+      <div v-if="nudge && !open" class="fb-nudge" role="status">
+        <button class="fb-nudge-main" type="button" @click="show('nudge')">
+          <b>Spotted a bug or have an idea?</b>
+          <span>Tell us. We read every message.</span>
+        </button>
+        <button class="fb-nudge-x" type="button" aria-label="Dismiss" @click="dismissNudge">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+      </div>
+    </Transition>
+
+    <button class="fb-fab" :class="{ 'is-open': open, 'is-calling': calling }" type="button" :aria-expanded="open" aria-controls="fb-panel" :aria-label="open ? 'Close feedback' : 'Send feedback'" @click="toggle">
+      <svg v-if="!open" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 01-11.6 7.1L4 20l1.1-4.7A8 8 0 1121 12z" /><path d="M8.5 11h7M8.5 14h4" /></svg>
       <svg v-else viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      <span v-if="!open" class="fb-fab-label">Feedback</span>
     </button>
   </div>
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError } from '@/api/client'
 import { feedbackApi } from '@/api/feedback'
@@ -97,12 +110,53 @@ watch(
   { immediate: true },
 )
 
+// Nobody was finding the button, so it carries a word, pulses gently a few times, and after a short while on the page a small bubble asks
+// for a bug or an idea. The bubble shows once: opening the form or dismissing it ends it for good (remembered in this browser).
+const SEEN_KEY = 'tickgains:fb-nudge-seen'
+const NUDGE_AFTER_MS = 25_000
+const nudge = ref(false)
+const calling = ref(true)
+const seen = () => {
+  try {
+    return localStorage.getItem(SEEN_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+const markSeen = () => {
+  try {
+    localStorage.setItem(SEEN_KEY, '1')
+  } catch {
+    /* the bubble may then show again next visit, which is harmless */
+  }
+}
+let nudgeTimer = null
+let callTimer = null
+onMounted(() => {
+  callTimer = setTimeout(() => (calling.value = false), 9000)
+  if (seen()) return
+  nudgeTimer = setTimeout(() => {
+    if (open.value || seen()) return
+    nudge.value = true
+    track('feedback_nudge_shown', { page: String(route.name || '') })
+  }, NUDGE_AFTER_MS)
+})
+onBeforeUnmount(() => {
+  clearTimeout(nudgeTimer)
+  clearTimeout(callTimer)
+})
+function dismissNudge() {
+  nudge.value = false
+  markSeen()
+}
+
 function toggle() {
   open.value ? close() : show()
 }
-function show() {
+function show(from = 'button') {
   open.value = true
-  track('feedback_open', { page: String(route.name || '') })
+  if (nudge.value) dismissNudge()
+  track('feedback_open', { page: String(route.name || ''), from })
   nextTick(() => box.value?.focus())
 }
 function close() {
