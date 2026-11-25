@@ -6,7 +6,7 @@
       <span class="prs-main">
         <b>{{ showSkill ? `${step.skill} ` : '' }}<em>{{ step.seg.startLevel }} → {{ step.seg.endLevel }}</em></b>
         <span class="prs-method">
-          <img v-if="icon" class="route-ico" :src="icon" alt="" width="20" height="20" loading="lazy" />{{ step.seg.method ? step.seg.method.name : 'No catalog method' }}
+          <img v-if="icon" class="route-ico" :src="icon" alt="" width="20" height="20" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ step.seg.method ? step.seg.method.name : 'No catalog method' }}
           <RouteReqTip v-if="flag" :flag="flag" />
         </span>
       </span>

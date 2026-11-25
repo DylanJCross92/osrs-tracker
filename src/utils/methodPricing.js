@@ -13,7 +13,7 @@ import { afterTax } from '@/utils/geTax'
 export function economyFor(id, xpPerHour) {
   const e = ECONOMY[id]
   if (!e || !(xpPerHour > 0)) return null
-  const actions = xpPerHour / e.xpPerAction
+  const actions = e.xpPerAction > 0 ? xpPerHour / e.xpPerAction : 0
   const lines = []
   let gp = 0
   for (const [name, qty] of e.outputs || []) {
@@ -22,6 +22,14 @@ export function economyFor(id, xpPerHour) {
     const each = afterTax(sell, name)
     lines.push({ name, qty: qty * actions, each, total: Math.round(qty * actions * each), kind: 'out' })
     gp += qty * actions * each
+  }
+  // Made every hour whatever the xp (marks of grace turned into amylase crystals), sold after tax.
+  for (const [name, qty, detail] of e.perHour || []) {
+    const sell = sellOf(name)
+    if (sell == null) return null
+    const each = afterTax(sell, name)
+    lines.push({ name, qty, each, total: Math.round(qty * each), kind: 'out', ...(detail ? { detail } : {}) })
+    gp += qty * each
   }
   for (const [name, qty] of e.inputs || []) {
     const buy = buyOf(name)

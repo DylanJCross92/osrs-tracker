@@ -21,7 +21,7 @@
     >
       <span class="planner-step-levels">{{ seg.startLevel }} → {{ seg.endLevel }}</span>
       <span class="planner-step-name">
-        <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="20" height="20" loading="lazy" />{{ seg.method ? seg.method.name : 'No catalog method' }}
+        <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="20" height="20" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ seg.method ? seg.method.name : 'No catalog method' }}
         <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
         <em v-if="seg.kind === 'manual'">your pick for these levels</em>
         <em v-else-if="seg.kind === 'main'">your chosen method</em>

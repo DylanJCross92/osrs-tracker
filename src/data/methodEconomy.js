@@ -3,9 +3,13 @@
 //   xpPerAction   the xp one action gives (one log chopped, one bone offered, one gem cut)
 //   inputs        item names and how many one action uses up, bought at the current price
 //   outputs       item names and how many one action makes, sold at the current price after the Grand Exchange tax
+//   perHour       [item name, how many, optional words under the line in the gp tip] made in every hour whatever the xp (marks of grace picked up
+//                 while climbing), sold after tax
 // Actions an hour come from the method's xpPerHour in trainingMethods.js, so the two stay in step. Every item name is a Grand Exchange
 // item name (the site checks them against the wiki's item list; see scripts/check-item-names.js). A method not listed here, or one with
 // an item that has no price, keeps the gpPerHour typed in trainingMethods.js.
+import { CRYSTALS_PER_MARK, MARKS, marksPerHour } from '@/data/marksOfGrace'
+
 const one = (name, qty = 1) => [name, qty]
 // What the Blast Furnace's coffer takes an hour on a themed world (see the wiki's Blast Furnace page).
 const BLAST_FURNACE_FEE = { label: 'Blast Furnace coffer fee', gp: 72_000 }
@@ -114,5 +118,14 @@ export const ECONOMY = {
   'runecraft-wrath': { xpPerAction: 8, inputs: [one('Pure essence')], outputs: [one('Wrath rune')] },
 }
 
+// Agility: the marks of grace a course drops are exchanged for amylase crystals (10 a mark, at Grace in the Rogues' Den) and the crystals are sold
+// on the Grand Exchange. The marks an hour are the Wiki's (data/marksOfGrace.js); the crystals are priced live and taxed like any sale.
+for (const id of Object.keys(MARKS)) {
+  const marks = marksPerHour(id)
+  const shown = Number.isInteger(marks) ? String(marks) : marks.toFixed(1)
+  // The third part says where the crystals come from, shown under the line in the gp tip.
+  ECONOMY[id] = { perHour: [['Amylase crystal', marks * CRYSTALS_PER_MARK, `${shown} marks an hour, ${CRYSTALS_PER_MARK} crystals each`]] }
+}
+
 /** Every item name the economy uses (what to ask the server to price). */
-export const ECONOMY_ITEMS = [...new Set(Object.values(ECONOMY).flatMap((e) => [...(e.inputs || []), ...(e.outputs || [])].map(([name]) => name)))]
+export const ECONOMY_ITEMS = [...new Set(Object.values(ECONOMY).flatMap((e) => [...(e.inputs || []), ...(e.outputs || []), ...(e.perHour || [])].map(([name]) => name)))]

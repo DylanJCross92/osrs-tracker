@@ -6,6 +6,7 @@ import { afterTax as serverAfterTax, geTax as serverGeTax } from '../../server/s
 import { economyFor, gpPerHourFor, isLive } from '@/utils/methodPricing'
 import { midOf, priceOf, resetPrices, setPrices, slugOf } from '@/utils/priceBook'
 import { PRICE_NAMES } from '@/utils/priceNames'
+import { CRYSTALS_PER_MARK, MARKS, marksPerHour } from '@/data/marksOfGrace'
 
 beforeEach(() => resetPrices())
 
@@ -86,9 +87,10 @@ describe('the recipes', () => {
     const ids = new Set(TRAINING_METHODS.map((m) => m.id))
     for (const [id, e] of Object.entries(ECONOMY)) {
       expect(ids.has(id), id).toBe(true)
-      expect(e.xpPerAction, id).toBeGreaterThan(0)
-      expect((e.inputs || []).length + (e.outputs || []).length, id).toBeGreaterThan(0)
-      for (const [name, qty] of [...(e.inputs || []), ...(e.outputs || [])]) {
+      // A recipe made of what is done each time needs xp per action; one that only says what an hour makes (marks of grace) does not.
+      if (!e.perHour) expect(e.xpPerAction, id).toBeGreaterThan(0)
+      expect((e.inputs || []).length + (e.outputs || []).length + (e.perHour || []).length, id).toBeGreaterThan(0)
+      for (const [name, qty] of [...(e.inputs || []), ...(e.outputs || []), ...(e.perHour || [])]) {
         expect(typeof name).toBe('string')
         expect(qty).toBeGreaterThan(0)
       }
@@ -170,9 +172,51 @@ describe('every recipe', () => {
     const ids = new Set(TRAINING_METHODS.map((m) => m.id))
     for (const [id, e] of Object.entries(ECONOMY)) {
       expect(ids.has(id), id).toBe(true)
-      expect(e.xpPerAction, id).toBeGreaterThan(0)
-      expect((e.inputs || []).length + (e.outputs || []).length, id).toBeGreaterThan(0)
+      if (!e.perHour) expect(e.xpPerAction, id).toBeGreaterThan(0)
+      expect((e.inputs || []).length + (e.outputs || []).length + (e.perHour || []).length, id).toBeGreaterThan(0)
     }
     expect(ECONOMY_ITEMS.length).toBeGreaterThan(80)
+  })
+})
+
+describe('marks of grace sold as amylase crystals', () => {
+  const rooftops = ['agility-draynor', 'agility-varrock', 'agility-seers', 'agility-ardougne', 'agility-canifis']
+  it('every course that drops marks has a recipe, a real method and a sane range', () => {
+    const ids = new Set(TRAINING_METHODS.map((m) => m.id))
+    for (const [id, m] of Object.entries(MARKS)) {
+      expect(ids.has(id), id).toBe(true)
+      expect(m.low, id).toBeGreaterThan(0)
+      expect(m.high, id).toBeGreaterThanOrEqual(m.low)
+      expect(m.high, id).toBeLessThan(25)
+      expect(ECONOMY[id].perHour[0][0]).toBe('Amylase crystal')
+      expect(ECONOMY[id].perHour[0][1]).toBeCloseTo(marksPerHour(id) * CRYSTALS_PER_MARK, 6)
+    }
+    expect(CRYSTALS_PER_MARK).toBe(10)
+    expect(marksPerHour('agility-sepulchre')).toBe(0)
+  })
+  it('sells ten crystals a mark after the tax, for the marks an hour in the middle of the Wiki range', () => {
+    setPrices({ 'amylase crystal': [270, 262, 'amylase-crystal'] })
+    const m = getMethod('agility-ardougne')
+    const live = economyFor('agility-ardougne', m.xpPerHour)
+    const crystals = ((16 + 18.1) / 2) * 10
+    expect(live.lines).toHaveLength(1)
+    expect(live.lines[0]).toMatchObject({ name: 'Amylase crystal', qty: crystals, each: afterTax(266, 'Amylase crystal'), kind: 'out' })
+    expect(live.gpPerHour).toBe(Math.round(crystals * afterTax(266, 'Amylase crystal')))
+    expect(live.gpPerHour).toBeGreaterThan(40_000)
+  })
+  it('does not depend on how fast the course gives xp, and is the same marks an hour for any xp rate', () => {
+    setPrices({ 'amylase crystal': [270, 262, 'amylase-crystal'] })
+    expect(economyFor('agility-varrock', 10_000).gpPerHour).toBe(economyFor('agility-varrock', 50_000).gpPerHour)
+  })
+  it('falls back to the saved figure (0) when the crystal has no price', () => {
+    resetPrices()
+    expect(economyFor('agility-draynor', 9500)).toBeNull()
+    expect(gpPerHourFor('agility-draynor', 9500, 0)).toBe(0)
+  })
+  it('pays more on a better rooftop, from Draynor up to Canifis', () => {
+    setPrices({ 'amylase crystal': [270, 262, 'amylase-crystal'] })
+    const gp = (id) => economyFor(id, getMethod(id).xpPerHour).gpPerHour
+    expect(gp('agility-canifis')).toBeGreaterThan(gp('agility-draynor'))
+    for (const id of rooftops) expect(gp(id)).toBeGreaterThan(0)
   })
 })

@@ -33,6 +33,8 @@
           <button type="button" role="option" :aria-selected="modelValue === m.id" :aria-disabled="!!off(m)" :disabled="!!off(m)" class="mpick-row" :class="{ active: modelValue === m.id, 'is-off': !!off(m) }" @click="pick(m.id)">
             <span class="mpick-first">
             <img v-if="iconOf(m)" class="mpick-ico" :src="iconOf(m)" alt="" width="32" height="32" />
+            <!-- No picture for this one: keep its place, so the names line up with the rows that have one. -->
+            <span v-else-if="anyIcon" class="mpick-ico" aria-hidden="true" />
             <span class="mpick-name">
               <b>{{ m.name }}</b>
               <span class="mpick-tags">
@@ -105,6 +107,8 @@ const root = ref(null)
 const sortKey = ref(props.initialSort)
 const sortDir = ref(props.initialSort === 'level' ? 'asc' : 'desc')
 const iconOf = (m) => methodIconSrc(m)
+// Whether any method in the list has a picture: only then do rows without one keep an empty slot for it.
+const anyIcon = computed(() => props.methods.some((m) => !!iconOf(m)))
 const off = (m) => (props.reasonFor ? props.reasonFor(m) : '')
 // Tags and bars only compare the methods that can be picked.
 const note = (m) => (props.noteFor ? props.noteFor(m) : '')

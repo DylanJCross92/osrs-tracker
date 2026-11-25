@@ -4,17 +4,14 @@
 // rest fall back to a note based on the skill and whether the figure is a
 // profit, a cost, or roughly break-even.
 
+import { MARKS } from '@/data/marksOfGrace'
+
+// Courses that drop marks of grace: the marks are exchanged for amylase crystals and the crystals sold. Nothing is bought, so it is all income.
+const MARKS_NOTE = 'You earn marks of grace as you climb. Each swaps for 10 amylase crystals (from Grace, in the Rogues\' Den), which you sell on the Grand Exchange. Nothing to buy. Diary bonuses give more marks than counted here.'
+const MARKS_NOTES = Object.fromEntries(Object.keys(MARKS).map((id) => [id, MARKS_NOTE]))
+
 const SPECIFIC = {
-  'agility-draynor': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-al-kharid': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-varrock': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-canifis': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-falador': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-seers': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-pollnivneach': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-rellekka': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
-  'agility-prison-of-raun': 'Pays in Marks of Grace (30+ an hour on the high-intensity route), Fremennik and ghostly sail fabric and Sunken Treasure, none of which are counted here, and uses no supplies, so it breaks even.',
-  'agility-ardougne': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  ...MARKS_NOTES,
   'agility-prifddinas': 'Crystal shards are not counted, and the course uses no supplies, so it breaks even.',
   'construction-gnome-benches': 'Six mahogany planks go into every bench and are used up when you remove it.',
   'prayer-superior': 'Superior dragon bones cost a fortune and every one is used up.',

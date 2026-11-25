@@ -1680,11 +1680,11 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 @media (max-width: 520px) { .plan-skill { grid-template-columns: minmax(0, 1.6fr) 1fr 0.8fr 1fr; gap: 6px; padding: 10px; font-size: 0.82rem; } .plan-skill-name em { display: none; } }
 
 /* GP tooltip: explains why a method profits or costs gp. */
-.gp-tip { position: relative; display: inline-block; cursor: help; border-bottom: 1px dotted currentColor; outline: none; }
+.gp-tip { position: relative; display: inline-block; cursor: pointer; border-bottom: 1px dotted currentColor; outline: none; }
 .gp-tip-bubble { position: absolute; z-index: 30; bottom: calc(100% + 8px); right: 0; width: 260px; max-width: 70vw; display: none; flex-direction: column; gap: 4px; padding: 10px 12px; text-align: left; font-size: 0.82rem; font-weight: 400; line-height: 1.4; color: var(--text); background: var(--panel); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: 0 10px 24px rgba(0, 0, 0, 0.5); white-space: normal; }
 .gp-tip-bubble b { color: var(--gold-bright); font-weight: 600; }
 .gp-tip-bubble small { color: var(--muted); font-size: 0.76rem; }
-.gp-tip:hover .gp-tip-bubble, .gp-tip:focus .gp-tip-bubble { display: flex; }
+.gp-tip:hover .gp-tip-bubble, .gp-tip:focus .gp-tip-bubble, .gp-tip.is-open .gp-tip-bubble { display: flex; }
 .planner-hint .gp-tip-bubble, .planner-table td:first-child .gp-tip-bubble { right: auto; left: 0; }
 
 .gp-incomplete { color: var(--gold-bright) !important; }
@@ -8117,3 +8117,34 @@ html.iron-mode .gp-figure { display: none !important; }
 .cd-meta b { color: var(--text); font-variant-numeric: tabular-nums; }
 .cj-in { display: flex; align-items: center; gap: 9px; margin: 0; padding: 10px 14px; border: 1px solid rgba(124, 184, 105, 0.45); border-radius: 12px; background: rgba(124, 184, 105, 0.09); color: var(--text); font-size: 0.92rem; max-width: none; }
 .cj-in svg { flex: none; color: var(--xp-green); }
+
+/* The gp tooltip: the rate up top, why, an itemised hour, and what this stretch comes to */
+.gp-tip-bubble.gpt { width: 330px; max-width: min(92vw, 330px); gap: 12px; padding: 15px 16px 14px; border-radius: 14px; font-size: 0.86rem; line-height: 1.45; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6); }
+.gpt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.gpt-title { color: var(--gold-bright); font-weight: 700; font-size: 1rem; line-height: 1.25; }
+.gpt-rate { flex: none; padding: 3px 10px; border-radius: 999px; font-weight: 800; font-size: 0.86rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gpt-rate small { font-weight: 600; opacity: 0.8; }
+.gpt-rate.is-gain { background: rgba(124, 184, 105, 0.14); color: var(--xp-green); }
+.gpt-rate.is-cost { background: rgba(215, 116, 74, 0.15); color: #f0907a; }
+.gpt-why { color: var(--text); opacity: 0.9; }
+.gpt-sec { display: flex; flex-direction: column; gap: 9px; padding-top: 11px; border-top: 1px solid var(--border); }
+.gpt-sec-title { color: var(--muted); font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.gpt-row { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: start; gap: 10px; }
+.gpt-kind { padding: 1px 0; border: 1px solid var(--border-strong); border-radius: 6px; text-align: center; color: var(--muted); font-size: 0.66rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.gpt-kind.is-out { border-color: rgba(124, 184, 105, 0.5); color: var(--xp-green); }
+.gpt-kind.is-in { border-color: rgba(215, 116, 74, 0.5); color: #f0907a; }
+.gpt-item { display: flex; flex-direction: column; min-width: 0; }
+.gpt-name { color: var(--text); font-weight: 600; overflow-wrap: anywhere; }
+.gpt-item small { color: var(--muted); font-size: 0.76rem; font-variant-numeric: tabular-nums; }
+.gpt-amt { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gpt-net { display: flex; justify-content: space-between; gap: 12px; padding-top: 8px; border-top: 1px dashed var(--border-strong); font-weight: 600; }
+.gpt-net b { font-variant-numeric: tabular-nums; }
+.gpt-note { color: var(--muted); font-size: 0.8rem; }
+.gpt-stretch { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 2px 12px; padding: 9px 12px; border-radius: 10px; background: rgba(217, 175, 82, 0.09); color: var(--muted); font-size: 0.84rem; }
+.gpt-stretch b { color: var(--text); font-variant-numeric: tabular-nums; }
+.gpt-stretch b.planner-gain, .gpt-stretch b.planner-cost { font-size: 0.95rem; }
+.gpt-foot { color: var(--muted); font-size: 0.74rem; line-height: 1.4; }
+
+.gp-tip.is-open { z-index: 31; }
+.gp-tip.is-open .gp-tip-bubble.gpt { cursor: auto; user-select: text; }
+.gp-tip.is-below .gp-tip-bubble { bottom: auto; top: calc(100% + 8px); }
