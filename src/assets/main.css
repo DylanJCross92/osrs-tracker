@@ -5726,8 +5726,8 @@ b.path-name { font-size: 1.12rem; }
 .se .planner-route { margin: 0; }
 
 /* ---------- Planner: plan settings window ---------- */
-.ps-settings { max-width: 560px; }
-.pset-field { display: flex; flex-direction: column; gap: 8px; margin: 0 0 18px; }
+.ps-settings { max-width: 620px; }
+.pset-field { display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px; }
 .pset-field > span { color: var(--muted); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
 .pset-field input[type='text'] { font-size: 1rem; }
 .pset-strategies { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
@@ -5952,11 +5952,10 @@ b.path-name { font-size: 1.12rem; }
 .pg-plan p b { color: var(--text); }
 .path-menu .po-menu-list { min-width: 215px; }
 .path-menu .po-item { white-space: nowrap; }
-.pset-check { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--bg); cursor: pointer; }
+.pset-check { display: flex; align-items: flex-start; gap: 10px; padding: 2px 0; cursor: pointer; }
 .pset-check input { margin-top: 3px; accent-color: var(--gold); width: 18px; height: 18px; flex: none; }
 .pset-check b { display: block; color: var(--text); font-size: 0.95rem; }
 .pset-check small { display: block; margin-top: 2px; color: var(--muted); font-size: 0.8rem; line-height: 1.45; }
-.pset-check:has(input:checked) { border-color: var(--gold); background: rgba(217, 175, 82, 0.08); }
 .pg-plan-card { margin: 0 0 4px; padding: 14px 16px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--bg); }
 .pg-plan-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
 .pg-plan-name { color: var(--gold-bright); font-size: 1.1rem; }
@@ -7569,3 +7568,18 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 /* An ironman's page leaves gp figures out: they are things to buy and sell, which an ironman cannot do. */
 html.iron-mode .gp-figure { display: none !important; }
 .acct-toggle .range-tabs + .range-tabs { margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--border-strong, var(--border)); }
+
+/* Compact choices with a game icon each (plan settings), and a line for what the chosen one means. */
+.oc { display: flex; flex-direction: column; gap: 6px; }
+.oc-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.oc-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); color: var(--text); font: inherit; font-size: 0.88rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.oc-chip img { flex: none; width: 20px; height: 20px; object-fit: contain; image-rendering: pixelated; }
+.oc-chip svg { flex: none; color: var(--gold-bright); }
+.oc-chip:hover { border-color: var(--border-strong, var(--gold)); }
+.oc-chip.on { border-color: var(--gold); background: rgba(217, 175, 82, 0.14); }
+.oc-hint { color: var(--muted); font-size: 0.78rem; line-height: 1.4; }
+.ps-settings .pset-field .oc + .oc { margin-top: 8px; }
+.pset-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.pset-chips .oc + .oc { margin-top: 0 !important; }
+.acct-toggle .range-tabs button { display: inline-flex; align-items: center; gap: 6px; }
+.acct-toggle .range-tabs img { flex: none; width: 14px; height: 14px; object-fit: contain; image-rendering: pixelated; }

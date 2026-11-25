@@ -28,28 +28,14 @@
           </label>
         </div>
 
+        <!-- The kind of account, in compact chips -->
         <div class="pset-field">
-          <span>Account type</span>
-          <div class="pset-strategies is-two" role="radiogroup" aria-label="Free-to-play or members">
-            <button type="button" role="radio" :aria-checked="draftMembers" :class="{ on: draftMembers }" @click="draftMembers = true">
-              <b>Members</b>
-              <small>Every skill and training method.</small>
-            </button>
-            <button type="button" role="radio" :aria-checked="!draftMembers" :class="{ on: !draftMembers }" @click="draftMembers = false">
-              <b>Free-to-play</b>
-              <small>Only free methods, from the wiki's free-to-play guides.</small>
-            </button>
+          <span>Account</span>
+          <div class="pset-chips">
+            <OptionChips v-model="draftMembers" :options="MEMBERSHIP" label="Free-to-play or members" hide-hint />
+            <OptionChips :model-value="draftIron" :options="ACCOUNT" label="Main account or ironman" hide-hint @update:model-value="setIron" />
           </div>
-          <div class="pset-strategies is-two pset-iron" role="radiogroup" aria-label="Main account or ironman">
-            <button type="button" role="radio" :aria-checked="!draftIron" :class="{ on: !draftIron }" @click="draftIron = false">
-              <b>Main account</b>
-              <small>You can buy and sell on the Grand Exchange.</small>
-            </button>
-            <button type="button" role="radio" :aria-checked="draftIron" :class="{ on: draftIron }" @click="setIron(true)">
-              <b>Ironman</b>
-              <small>You gather everything yourself: gp is left out and the cheapest routes lead.</small>
-            </button>
-          </div>
+          <small class="oc-hint">{{ accountHint }}</small>
           <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
             We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
           </p>
@@ -57,12 +43,7 @@
 
         <div class="pset-field">
           <span>Strategy for every skill</span>
-          <div class="pset-strategies" role="radiogroup" aria-label="Training strategy">
-            <button v-for="s in strategies" :key="s.value" type="button" role="radio" :aria-checked="draftStrategy === s.value" :class="{ on: draftStrategy === s.value }" @click="draftStrategy = s.value">
-              <b>{{ s.label }}</b>
-              <small>{{ s.hint }}</small>
-            </button>
-          </div>
+          <OptionChips v-model="draftStrategy" :options="strategyChoices" label="Training strategy" />
         </div>
 
         <div class="pset-field">
@@ -89,6 +70,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillsWithoutFreeRoute } from '@/utils/membership'
+import OptionChips from '@/components/OptionChips.vue'
 import { ironStrategy } from '@/utils/ironman'
 
 // The settings that belong to the whole plan, not one skill: its name, the strategy, how long you play, and who it is for.
@@ -113,6 +95,18 @@ const draftStrategy = ref(props.strategy)
 const draftHours = ref(props.hoursPerDay)
 const draftMembers = ref(props.members)
 const draftIron = ref(props.iron)
+// The choices, with the icons the game itself uses where it has them.
+const MEMBERSHIP = [
+  { value: true, label: 'Members', icon: '/icons/ui/members.png', hint: 'Every skill and training method.' },
+  { value: false, label: 'Free-to-play', icon: '/icons/ui/free-to-play.png', hint: "Only free methods, from the wiki's free-to-play guides." },
+]
+const ACCOUNT = [
+  { value: false, label: 'Main account', icon: '/icons/ui/main-account.png', hint: 'You can buy and sell on the Grand Exchange.' },
+  { value: true, label: 'Ironman', icon: '/icons/ui/ironman.png', hint: 'You gather everything yourself: gp is left out and the cheapest routes lead.' },
+]
+const accountHint = computed(() => `${MEMBERSHIP.find((o) => o.value === draftMembers.value)?.hint} ${ACCOUNT.find((o) => o.value === draftIron.value)?.hint}`)
+const STRATEGY_LOOK = { 'auto-fast': { icon: '/icons/ui/fastest.png' }, 'auto-cheap': { icon: '/icons/ui/cheapest.png' }, 'auto-balanced': { svg: 'balance' } }
+const strategyChoices = computed(() => props.strategies.map((s) => ({ value: s.value, label: s.label, hint: s.hint, ...(STRATEGY_LOOK[s.value] || {}) })))
 // Choosing ironman also moves a strategy that assumes buying (fastest, profit) to cheapest, the way an ironman plays.
 function setIron(on) {
   draftIron.value = on
