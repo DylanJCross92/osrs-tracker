@@ -1418,7 +1418,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .home-nosignup a { color: var(--gold-bright); text-decoration: none; font-weight: 600; }
 .home-nosignup a:hover { text-decoration: none; color: var(--text); }
 /* what a free account adds: flat, two columns divided by a hairline, no card */
-.home-account { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px 48px; align-items: center; padding: 34px 6px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.home-account { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 20px 48px; align-items: center; padding: 34px 6px; }
 .home-account h2 { margin: 0 0 8px; font-size: 1.6rem; }
 .home-account p { margin: 0 0 18px; color: var(--muted); max-width: 46ch; }
 .home-account-actions, .home-final-actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -7757,4 +7757,25 @@ html.iron-mode .gp-figure { display: none !important; }
   .hf-pl-main > small { display: none; }
   .hf-pl-why li:not(.why-prices) small { display: none; }
   .hf-pl-why li { padding: 7px 0; }
+}
+
+/* welcome page sections: clearly apart, each opened by a fading gold hairline with a small gold marker, and titles with a gold tick */
+.home { gap: 0; }
+.home > .hf, .home > .home-section { position: relative; margin-top: 52px; padding-top: 48px; }
+.home > .hf::before, .home > .home-section::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(217, 175, 82, 0.5) 18%, rgba(217, 175, 82, 0.5) 82%, transparent); }
+.home > .hf::after, .home > .home-section::after { content: ''; position: absolute; top: -3px; left: 50%; width: 7px; height: 7px; margin-left: -3px; transform: rotate(45deg); background: var(--gold); box-shadow: 0 0 12px rgba(217, 175, 82, 0.7); }
+.home > .home-final { margin-top: 56px; }
+.home > .home-account { border: 0; }
+.hm-h2 { display: flex; align-items: center; gap: 10px; font-size: 1.4rem; }
+.hm-h2::before { content: ''; flex: none; width: 4px; height: 1.15em; border-radius: 2px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 10px rgba(217, 175, 82, 0.45); }
+.home-account h2 { display: flex; align-items: center; gap: 10px; }
+.home-account h2::before { content: ''; flex: none; width: 4px; height: 1.15em; border-radius: 2px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 10px rgba(217, 175, 82, 0.45); }
+.home-community-head .hm-h2 { margin: 0; }
+.home-live { margin-top: 30px; }
+@media (max-width: 760px) {
+  .home { gap: 0; }
+  .home > .hf, .home > .home-section { margin-top: 34px; padding-top: 34px; }
+  .home > .home-final { margin-top: 38px; }
+  .hm-h2 { font-size: 1.25rem; }
+  .home-live { margin-top: 22px; }
 }
