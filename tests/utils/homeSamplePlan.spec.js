@@ -1,28 +1,28 @@
 import { describe, expect, it } from 'vitest'
-import { SAMPLE_GOALS, buildSamplePlan } from '@/utils/homeSamplePlan'
+import { SAMPLE_LEVELS, SAMPLE_PROFILE, buildSamplePlan } from '@/utils/homeSamplePlan'
 
 describe('the welcome page example plan', () => {
-  const start = new Date('2026-01-01T12:00:00Z')
-  const plan = buildSamplePlan({ hoursPerDay: 2, start })
+  const plan = buildSamplePlan()
 
-  it('is worked out by the planner for every sample goal', () => {
-    expect(plan.rows.map((r) => r.skill)).toEqual(SAMPLE_GOALS.map((g) => g.skill))
-    for (const r of plan.rows) {
-      expect(r.to).toBe(99)
-      expect(r.hours).toBeGreaterThan(0)
-      expect(Number.isFinite(r.hours)).toBe(true)
-      expect(r.method).toBeTruthy()
-      expect(r.more).toBeGreaterThanOrEqual(0)
+  it('is the Smart Planner answer for the sample account, with a quest shortcut and skill steps that each say why', () => {
+    expect(plan.quests.length).toBeGreaterThanOrEqual(1)
+    expect(plan.quests[0].title).toBeTruthy()
+    expect(plan.steps.length).toBeGreaterThanOrEqual(3)
+    for (const s of plan.steps) {
+      expect(s.to).toBeGreaterThan(s.from)
+      expect(s.reason.length).toBeGreaterThan(10)
+      expect(s.time).toMatch(/^\d+ (min|h)$/)
     }
   })
-  it('does the goals one after another, so finish dates only move later', () => {
-    const times = plan.rows.map((r) => r.done.getTime())
-    expect(times).toEqual([...times].sort((a, b) => a - b))
-    expect(times[0]).toBeGreaterThan(start.getTime())
+  it('summarises the whole plan', () => {
+    expect(plan.goals).toBeGreaterThan(plan.steps.length - 1)
+    expect(plan.hours).toBeGreaterThan(0)
+    expect(plan.days).toBeGreaterThanOrEqual(1)
+    expect(plan.netGp === null || Number.isFinite(plan.netGp)).toBe(true)
   })
-  it('adds up the hours and turns them into days at the daily pace', () => {
-    expect(plan.totalHours).toBeCloseTo(plan.rows.reduce((s, r) => s + r.hours, 0), 6)
-    expect(plan.days).toBe(Math.ceil(plan.totalHours / 2))
-    expect(buildSamplePlan({ hoursPerDay: 4, start }).days).toBeLessThan(plan.days)
+  it('is the same every time, so the page does not flicker between loads', () => {
+    expect(buildSamplePlan()).toEqual(plan)
+    expect(SAMPLE_PROFILE.members).toBe(true)
+    expect(Object.keys(SAMPLE_LEVELS).length).toBeGreaterThan(20)
   })
 })

@@ -40,8 +40,11 @@ describe('the welcome page feature tabs', () => {
     await w.findAll('[role="tab"]')[1].trigger('click')
     expect(w.findAll('[role="tab"]')[1].attributes('aria-selected')).toBe('true')
     // The planner code loads the first time the tab opens, so wait for the rows.
-    await vi.waitFor(() => expect(w.findAll('.hf-plan li').length).toBeGreaterThanOrEqual(3), { timeout: 5000 })
+    await vi.waitFor(() => expect(w.findAll('.hf-pl-steps li').length).toBeGreaterThanOrEqual(3), { timeout: 5000 })
     expect(w.text()).toContain('Build your plan')
+    expect(w.text()).toContain('Live GE prices')
+    expect(w.text()).toContain('Quest & diary tracker')
+    expect(w.text()).toContain('Smart recommendations')
     expect(track).toHaveBeenCalledWith('home_preview_tab', { tab: 'planner' })
   })
   it('moves between the tabs with the arrow keys', async () => {

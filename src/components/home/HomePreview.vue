@@ -56,21 +56,50 @@
         <p v-else class="hf-empty">Track a player above and their profile will look like this: charts, milestones and gains.</p>
       </template>
 
-      <!-- Account planner: a plan worked out by the planner itself -->
+      <!-- Account planner: the Smart Planner's own answer for a sample account, with what makes it smart -->
       <template v-else-if="tab === 'planner'">
         <div class="hf-head">
-          <span class="hf-label">Example plan · fastest route<template v-if="plan"> · {{ plan.rows.length }} goals · {{ Math.round(plan.totalHours) }} h · about {{ daysText(plan.days) }} at 2 h a day</template></span>
+          <span class="hf-label">Example plan · Smart Planner<template v-if="plan"> · {{ plan.goals }} goals · {{ Math.round(plan.hours) }} h · about {{ daysText(plan.days) }} at 2 h a day</template></span>
           <RouterLink class="hf-open" :to="{ name: 'planner' }" @click="track('home_preview_open', { tab: 'planner' })">Build your plan <span aria-hidden="true">→</span></RouterLink>
         </div>
-        <ol v-if="plan" class="hf-plan">
-          <li v-for="r in plan.rows" :key="r.skill">
-            <span class="hf-plan-skill"><img :src="skillIconSrc(r.skill)" :alt="r.skill" width="20" height="20" />{{ r.skill }}</span>
-            <span class="hf-plan-levels">{{ r.from }} <i aria-hidden="true">→</i> {{ r.to }}</span>
-            <span class="hf-plan-method">{{ r.method }}<small v-if="r.more"> + {{ r.more }} more</small></span>
-            <span class="hf-plan-bar" aria-hidden="true"><i :style="{ width: `${Math.max(6, (r.hours / maxHours) * 100)}%` }" /></span>
-            <span class="hf-plan-time">{{ Math.round(r.hours) }} h <small>done {{ dateText(r.done) }}</small></span>
-          </li>
-        </ol>
+        <div v-if="plan" class="hf-pl">
+          <ol class="hf-pl-steps">
+            <li v-for="q in plan.quests" :key="q.title" class="is-quest">
+              <span class="hf-pl-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z" /></svg></span>
+              <span class="hf-pl-main"><b>{{ q.title }}</b><em>Quest</em><small :title="q.reason">{{ q.reason }}</small></span>
+              <span class="hf-pl-end"><b>{{ q.time }}</b><small>{{ q.rewards }}</small></span>
+            </li>
+            <li v-for="r in plan.steps" :key="r.skill">
+              <span class="hf-pl-ico"><img :src="skillIconSrc(r.skill)" :alt="r.skill" width="22" height="22" /></span>
+              <span class="hf-pl-main"><b>{{ r.skill }}</b><span class="hf-pl-lv">{{ r.from }} <i aria-hidden="true">→</i> {{ r.to }}</span><small :title="r.reason">{{ r.reason }}</small></span>
+              <span class="hf-pl-end"><b>{{ r.time }}</b><small v-if="r.netGp != null" :class="r.netGp >= 0 ? 'stat-gain' : 'hf-cost'">{{ gpSigned(r.netGp) }} gp</small></span>
+            </li>
+          </ol>
+          <ul class="hf-pl-why">
+            <li class="why-prices">
+              <span class="hf-why-ico"><i class="hf-live-dot" :class="{ off: !pricesLive }" aria-hidden="true" /></span>
+              <span>
+                <b>Live GE prices</b>
+                <strong v-if="plan.netGp != null" :class="plan.netGp >= 0 ? 'stat-gain' : 'hf-cost'">{{ gpSigned(plan.netGp) }} gp <small>net for this plan</small></strong>
+                <small>{{ pricesLive ? `Every cost and profit, after the 2% tax. Updated ${updatedText}.` : 'Loading live prices…' }}</small>
+              </span>
+            </li>
+            <li>
+              <span class="hf-why-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11" /><path d="M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8" /></svg></span>
+              <span>
+                <b>Quest &amp; diary tracker</b>
+                <small>Tick off what you have done: plans skip the XP, and methods you have unlocked are marked ready. <RouterLink :to="{ name: 'quests' }" @click="track('home_preview_open', { tab: 'quests' })">Open the tracker →</RouterLink></small>
+              </span>
+            </li>
+            <li>
+              <span class="hf-why-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" /><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" /></svg></span>
+              <span>
+                <b>Smart recommendations</b>
+                <small>Steps are ordered by what unlocks faster training, and every one says why.</small>
+              </span>
+            </li>
+          </ul>
+        </div>
         <p v-else class="hf-empty">Working out an example plan…</p>
       </template>
 
@@ -87,7 +116,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import PageSkeleton from '@/components/PageSkeleton.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
@@ -95,6 +124,7 @@ import XpLineChart from '@/components/XpLineChart.vue'
 import HomeGePrices from '@/components/home/HomeGePrices.vue'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { track } from '@/utils/analytics'
+import { ago } from '@/components/admin/stats/statsFormat'
 
 // The welcome page's three main features, as tabs: each says what it is in a line, and opens a small live preview with a way into
 // it (a real profile, a plan worked out by the planner itself, live prices). Only the open tab is drawn, except the prices, which load
@@ -130,18 +160,42 @@ function onKey(e) {
 
 const maxGain = computed(() => Math.max(1, ...(props.example?.recentSkills || []).map((r) => r.xp)))
 
-const plan = ref(null)
-const maxHours = computed(() => Math.max(1, ...(plan.value?.rows || []).map((r) => r.hours)))
+// The sample plan is the Smart Planner's own answer, so its code is only loaded the first time the tab opens, and its prices start
+// loading then. The plan is worked out again when the live prices arrive, so its gp figures use them.
+const sample = shallowRef(null)
+let stopPrices = null
 watch(tab, async (t) => {
-  if (t !== 'planner' || plan.value) return
+  if (t !== 'planner' || sample.value) return
   try {
     const mod = await import('@/utils/homeSamplePlan')
-    plan.value = mod.buildSamplePlan()
+    stopPrices = mod.startPrices()
+    sample.value = mod
   } catch {
-    plan.value = null
+    sample.value = null
   }
 })
+onBeforeUnmount(() => stopPrices?.())
+const plan = computed(() => {
+  const mod = sample.value
+  if (!mod) return null
+  void mod.priceVersion.value
+  try {
+    return mod.buildSamplePlan()
+  } catch {
+    return null
+  }
+})
+const pricesLive = computed(() => !!sample.value?.priceStatus.value.loaded)
+const updatedText = computed(() => {
+  const at = sample.value?.priceStatus.value.updatedAt
+  return at ? ago(at) : 'just now'
+})
 
-const dateText = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+// 5.5M, 312K, 800: short gp with its sign.
+function gpSigned(v) {
+  const a = Math.abs(v)
+  const t = a >= 1e6 ? `${+(a / 1e6).toFixed(1)}M` : a >= 1e3 ? `${Math.round(a / 1e3)}K` : String(Math.round(a))
+  return `${v < 0 ? '-' : '+'}${t}`
+}
 const daysText = (days) => (days >= 60 ? `${Math.round(days / 30)} months` : `${days} days`)
 </script>
