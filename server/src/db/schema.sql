@@ -381,6 +381,9 @@ CREATE INDEX IF NOT EXISTS clans_owner_idx ON clans (owner_user_id);
 ALTER TABLE clans ALTER COLUMN visibility SET DEFAULT 'public';
 -- Whether the invite link takes new join requests. The owner can switch it off (people already waiting stay answerable).
 ALTER TABLE clans ADD COLUMN IF NOT EXISTS accepting_requests BOOLEAN NOT NULL DEFAULT true;
+-- open_join: anyone who asks is let in at once, with no approval (the site's own weekly race clan). official: made and run by the site itself.
+ALTER TABLE clans ADD COLUMN IF NOT EXISTS open_join BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE clans ADD COLUMN IF NOT EXISTS official BOOLEAN NOT NULL DEFAULT false;
 UPDATE clans SET visibility = 'public' WHERE visibility <> 'public';
 
 -- Members are players (RSNs). user_id is set when the account that owns that RSN (a verified claim) joined, which is what the

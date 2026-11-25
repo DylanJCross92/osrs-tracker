@@ -15,7 +15,7 @@ export class ClanError extends Error {
   }
 }
 
-const shapeClan = (r, memberCount) => ({ slug: r.slug, name: r.name, description: r.description, visibility: r.visibility, createdAt: r.created_at, memberCount, acceptingRequests: r.accepting_requests !== false })
+const shapeClan = (r, memberCount) => ({ slug: r.slug, name: r.name, description: r.description, visibility: r.visibility, createdAt: r.created_at, memberCount, acceptingRequests: r.accepting_requests !== false, openJoin: Boolean(r.open_join), official: Boolean(r.official) })
 
 export async function clanBySlug(slug) {
   const { rows } = await pool.query('SELECT * FROM clans WHERE slug = $1', [String(slug || '').toLowerCase()])
@@ -214,6 +214,22 @@ export async function joinClan({ token, rsn, user }) {
   const { rows } = await pool.query('SELECT * FROM clans WHERE invite_token = $1', [String(token || '')])
   const clan = rows[0]
   if (!clan) throw new ClanError('That invite link is not valid any more. Ask for a new one.', 404)
+  return requestJoin(clan, name, user)
+}
+
+/**
+ * Asking to join from the clan's own page or the Clans page, with no invite link. The same as the link: an owner or moderator is added
+ * straight away, everyone else becomes a waiting request the owner answers (unless the clan lets everyone in, like the weekly race).
+ */
+export async function joinClanBySlug({ slug, rsn, user }) {
+  const name = cleanRsn(rsn)
+  if (!name) throw new ClanError('Enter a RuneScape name: up to 12 letters, numbers, spaces, hyphens or underscores.')
+  const clan = await clanBySlug(slug)
+  if (!clan) throw new ClanError('That clan does not exist.', 404)
+  return requestJoin(clan, name, user)
+}
+
+async function requestJoin(clan, name, user) {
   if ((await memberCount(clan.id)) >= MAX_MEMBERS) throw new ClanError(`This clan is full (${MAX_MEMBERS} members).`, 409)
 
   const player = await resolvePlayer(name)
@@ -237,6 +253,11 @@ export async function joinClan({ token, rsn, user }) {
   }
 
   if (clan.accepting_requests === false) throw new ClanError('This clan is not taking new join requests right now.', 403)
+  // A clan that lets everyone in (the weekly race) adds them now, and they are in its competitions straight away.
+  if (clan.open_join) {
+    await addMember(clan, player, verifiedBy)
+    return { ...base, status: 'member', alreadyMember: false }
+  }
   const { rows: waiting } = await pool.query('SELECT count(*)::int AS n FROM clan_join_requests WHERE clan_id = $1', [clan.id])
   const { rowCount: existing } = await pool.query('SELECT 1 FROM clan_join_requests WHERE clan_id = $1 AND player_id = $2', [clan.id, player.id])
   if (!existing && waiting[0].n >= MAX_PENDING_REQUESTS) throw new ClanError('This clan has too many requests waiting. Try again once some have been answered.', 429)
@@ -472,7 +493,7 @@ async function summarize(clans) {
 
 /** Every clan, newest first, with their size, this week's XP, top gainers and competitions. */
 export async function listPublicClans() {
-  const { rows } = await pool.query(`SELECT id, slug, name, description, visibility, created_at FROM clans WHERE visibility = 'public' ORDER BY created_at DESC LIMIT $1`, [LISTED_LIMIT])
+  const { rows } = await pool.query(`SELECT id, slug, name, description, visibility, created_at, accepting_requests, open_join, official FROM clans WHERE visibility = 'public' ORDER BY created_at DESC LIMIT $1`, [LISTED_LIMIT])
   return summarize(rows)
 }
 

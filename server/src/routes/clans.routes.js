@@ -2,8 +2,9 @@ import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { attachUser, requireUser } from './auth.routes.js'
 import { renderClanInviteCardPng } from '../services/cardImage.service.js'
-import { ClanError, addMemberDirect, approveRequest, setAcceptingRequests, canManage, createClan, declineRequest, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
+import { ClanError, addMemberDirect, approveRequest, setAcceptingRequests, canManage, createClan, declineRequest, deleteClan, getClanView, getInviteCardData, listPublicClans, clanBySlug, joinClan, joinClanBySlug, myClans, previewInvite, removeMember, resetInvite, roleOf, setModerator } from '../services/clans.service.js'
 import { CompetitionError, cancelCompetition, createCompetition, getCompetition } from '../services/competitions.service.js'
+import { weeklyRaceView } from '../services/weeklyRace.service.js'
 import { pool } from '../db.js'
 
 export const clansRouter = Router()
@@ -74,6 +75,15 @@ clansRouter.get('/clans/invite/:token/image.png', imageLimiter, async (req, res,
 })
 
 clansRouter.post('/clans/join', attachUser, joinLimiter, handle(async (req, res) => res.json(await joinClan({ token: req.body?.token, rsn: req.body?.rsn, user: req.user }))))
+
+// Asking to join from a clan's own page, with no invite link (the owner still approves, unless the clan lets everyone in).
+clansRouter.post('/clans/:slug/request', attachUser, joinLimiter, handle(async (req, res) => res.json(await joinClanBySlug({ slug: req.params.slug, rsn: req.body?.rsn, user: req.user }))))
+
+// The site's own weekly race: this week's leaders, time left and last week's winner. Public. { clan, current, top, last } or null.
+clansRouter.get('/clans/weekly', handle(async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=30')
+  res.json({ weekly: await weeklyRaceView() })
+}))
 
 clansRouter.get('/clans/:slug', attachUser, handle(async (req, res) => {
   const view = await getClanView(req.params.slug, req.user)

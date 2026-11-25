@@ -9,24 +9,21 @@
     </section>
 
     <template v-else-if="view">
-      <header class="pgh">
-        <div class="pgh-title">
-          <div class="pgh-eyebrow">
-            <RouterLink class="hero-back" :to="{ name: 'clans' }">← All clans</RouterLink>
-            <span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span>
-          </div>
+      <header class="cd-head">
+        <div class="cd-top">
+          <RouterLink class="hero-back" :to="{ name: 'clans' }">← All clans</RouterLink>
+          <span v-if="roleLabel" class="clan-role">{{ roleLabel }}</span>
+          <span v-if="view.clan.official" class="clan-role is-official">Official</span>
+        </div>
+        <div class="cd-title">
           <h1>{{ view.clan.name }}</h1>
-          <p class="pgh-sub">
-            <span v-if="view.clan.description" class="pgh-desc">{{ view.clan.description }}</span>
-            <span aria-hidden="true" v-if="view.clan.description">·</span>
-            <span>{{ view.members.length }} member{{ view.members.length === 1 ? '' : 's' }}</span>
-            <span aria-hidden="true">·</span>
-            <span>created {{ createdText }}</span>
-          </p>
+          <button class="btn btn-ghost cd-copy" type="button" @click="copy(clansApi.pageUrl(view.clan.slug), 'Clan page link copied')">Copy page link</button>
         </div>
-        <div class="pgh-actions">
-          <button class="btn btn-ghost" type="button" @click="copy(clansApi.pageUrl(view.clan.slug), 'Clan page link copied')">Copy page link</button>
-        </div>
+        <p v-if="view.clan.description" class="cd-desc">{{ view.clan.description }}</p>
+        <p class="cd-meta">
+          <span><b>{{ view.members.length }}</b> {{ view.members.length === 1 ? 'member' : 'members' }}</span>
+          <span>Created {{ createdText }}</span>
+        </p>
       </header>
 
       <div class="clan-grid">
@@ -138,10 +135,11 @@
             </div>
           </section>
 
-          <section v-else-if="!view.viewer.role" class="cl-sec">
-            <header class="cl-sec-head"><h2>Join this clan</h2></header>
+          <section v-else-if="!view.viewer.role" id="join" class="cl-sec">
+            <header class="cl-sec-head"><h2>{{ view.clan.openJoin ? 'Join this clan' : 'Ask to join' }}</h2></header>
             <div class="cl-panel cl-panel-pad">
-            <p class="clan-note">{{ view.clan.acceptingRequests ? 'Ask a member or the owner for the invite link, then open it and ask to join with your RuneScape name. The owner or a moderator approves you.' : 'This clan is not taking new join requests right now.' }}</p>
+              <ClanAskToJoin v-if="view.clan.acceptingRequests" :slug="view.clan.slug" :instant="view.clan.openJoin" from="clan_page" :members="view.members.map((m) => m.username.toLowerCase())" @joined="load" />
+              <p v-else class="clan-note">This clan is not taking new join requests right now.</p>
             </div>
           </section>
 
@@ -153,7 +151,7 @@
                 <button type="button" class="clan-switch" :class="{ on: view.clan.acceptingRequests }" role="switch" :aria-checked="view.clan.acceptingRequests" aria-label="Accept new join requests" :disabled="busy" @click="toggleRequests"><i /></button>
                 <b class="clan-switch-label">Join requests</b>
               </div>
-              <p class="clan-switch-help">{{ view.clan.acceptingRequests ? 'Anyone with the invite link can ask to join.' : 'The invite link is not taking new requests. Ones already waiting can still be answered.' }}</p>
+              <p class="clan-switch-help">{{ view.clan.acceptingRequests ? 'Anyone can ask to join from this page or with the invite link.' : 'The invite link is not taking new requests. Ones already waiting can still be answered.' }}</p>
             </div>
             <p class="clan-note">Deleting the clan removes it for everyone, along with its competitions.</p>
             <button v-if="!deleteOpen" class="btn btn-ghost" type="button" :disabled="busy" @click="openDelete">Delete clan</button>
@@ -184,6 +182,7 @@ import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ClanAddMember from '@/components/clans/ClanAddMember.vue'
+import ClanAskToJoin from '@/components/clans/ClanAskToJoin.vue'
 import ClanCompetitionModal from '@/components/clans/ClanCompetitionModal.vue'
 import ClanInviteModal from '@/components/clans/ClanInviteModal.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'

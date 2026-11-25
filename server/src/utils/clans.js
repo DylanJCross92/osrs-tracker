@@ -88,7 +88,7 @@ export function summarizeClans(clanRows, memberRows, competitionRows) {
       // Running ones first, then the soonest to start.
       .sort((a, b) => Number(b.status === 'running') - Number(a.status === 'running') || new Date(a.startsAt) - new Date(b.startsAt))
     const weekGain = members.reduce((sum, m) => sum + m.weekGain, 0)
-    return { slug: c.slug, name: c.name, description: c.description, visibility: c.visibility, createdAt: c.created_at, memberCount: members.length, weekGain, topMembers: members.slice(0, 3), competitions }
+    return { slug: c.slug, name: c.name, description: c.description, visibility: c.visibility, createdAt: c.created_at, acceptingRequests: c.accepting_requests !== false, openJoin: Boolean(c.open_join), official: Boolean(c.official), memberCount: members.length, weekGain, topMembers: members.slice(0, 3), competitions }
   })
   clans.sort((a, b) => b.weekGain - a.weekGain || b.memberCount - a.memberCount || a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
   const running = clans

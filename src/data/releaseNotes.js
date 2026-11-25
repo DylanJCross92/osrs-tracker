@@ -12,6 +12,8 @@ export const RELEASE_NOTES = [
   {
     date: '2026-11-25',
     items: [
+      { kind: 'new', text: 'Clans: you can now ask to join a clan straight from its page or the Clans page, with the usual name box. No invite link is needed, and the clan\'s owner or a moderator still approves each request.' },
+      { kind: 'new', text: 'A weekly race for everyone: TickGains Weekly runs an overall XP race from Monday to Monday (Eastern), open to any player. Join with your RuneScape name from the top of the Clans page, watch the leaders and see last week\'s winner.' },
       { kind: 'new', text: 'The Graveyard, released today, is in the quest tracker and the planners: a Master quest (3 quest points, 35,000 Agility, 35,000 Sailing, 15,000 Runecraft and 10,000 Fletching XP, plus two lamps of 75,000 XP) that needs Sailing 65, Agility 65, Woodcutting 56, Fletching 54 and Olaf\'s Quest, The Fremennik Exiles and Pandemonium. The Smart Planner only suggests it once your combat level is up to it.' },
       { kind: 'new', text: 'The new Prison of R\u00e6un Agility course (level 65, unlocked by The Graveyard) is an Agility method in the planners and calculators, counted at the Wiki\'s 2,960 XP a lap on the slow route. Jagex\'s Marks of Grace rates are in its description.' },
       { kind: 'fixed', text: 'Quest tracker: sorting by type, A to Z now puts every group in alphabetical order.' },

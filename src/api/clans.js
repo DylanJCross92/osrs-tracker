@@ -7,7 +7,8 @@ export const clansApi = {
   create: (name, description) => api.post('/clans', { name, description }),
   // Public. The Clans page: { clans: [{ slug, name, description, createdAt, memberCount, weekGain, topMembers, competitions }],
   // running: [{ ...competition, clan: { slug, name } }], totals: { clans, members, runningCompetitions, weekGain } }
-  list: () => api.get('/clans'),
+  // `fresh` skips the short cache, for the moment right after someone joins.
+  list: (fresh = false) => api.get(fresh ? `/clans?t=${Date.now()}` : '/clans'),
   // Signed in. { clans: [{ ...clan, openCompetitions, owner }] }
   mine: () => api.get('/clans/mine'),
   // Anyone. The clan, its members with this week's gain, its competitions and what the viewer may do:
@@ -20,6 +21,12 @@ export const clansApi = {
   // { slug, name, player, status: 'pending', alreadyRequested, alreadyMember: false, verified }. An owner or moderator is added
   // straight away ({ status: 'member' }), and someone already in gets { status: 'member', alreadyMember: true }.
   join: (token, rsn) => api.post('/clans/join', { token, rsn }),
+  // The same from the clan's own page or the Clans page, with no invite link. A clan that lets everyone in (the weekly race) answers
+  // { status: 'member' } at once; otherwise { status: 'pending' } until the owner or a moderator approves.
+  request: (slug, rsn) => api.post(`/clans/${enc(slug)}/request`, { rsn }),
+  // Public. The site's own weekly race: { weekly: { clan: { slug, name, description, memberCount }, current: { id, title, status, startsAt, endsAt, entrants }
+  // | null, members: ['lower case names'], top: [{ rank, username, displayName, gain }], last: { id, title, winners: [{ username, displayName, gain }] } | null } | null }.
+  weekly: (fresh = false) => api.get(fresh ? `/clans/weekly?t=${Date.now()}` : '/clans/weekly'),
   // Owner only: turn new join requests on or off for the invite link. Requests already waiting can still be answered.
   setAcceptingRequests: (slug, accepting) => api.post(`/clans/${enc(slug)}/requests/accepting`, { accepting }),
   // Owner or moderator: let a waiting player in, or turn the request down.

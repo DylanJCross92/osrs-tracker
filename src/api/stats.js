@@ -16,6 +16,9 @@ export const statsApi = {
   announcement: (key) => api.get(`/admin/announcements/${key}`),
   announcementTest: (key) => api.post(`/admin/announcements/${key}/test`),
   announcementSend: (key) => api.post(`/admin/announcements/${key}/send`),
+  // Site owner only: a one-off in-app notice to every account. Status: { text, link, accounts, alreadySent, remaining }; send answers { sent }.
+  broadcast: (key) => api.get(`/admin/broadcasts/${key}`),
+  broadcastSend: (key) => api.post(`/admin/broadcasts/${key}/send`),
   // Site owner only: every product event with its counts, and one event in detail.
   events: (days = 30) => api.get(`/admin/stats/events?days=${days}`),
   // Site owner only: { total, players: [{ username, displayName, badge, claimed, trackedAt, level, xp }] }, newest first.

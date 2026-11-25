@@ -33,6 +33,8 @@ const KINDS = {
   clan_request: { icon: 'users', tone: 'blue', action: 'Respond' },
   clan_requests: { icon: 'users', tone: 'blue', action: 'Open' },
   clan_added: { icon: 'users', tone: 'blue' },
+  // A one-off notice from the site to everyone (the weekly race).
+  race_open: { icon: 'trophy', tone: 'gold', action: 'Join' },
 }
 
 /** { paths, tone, action } for a notice type. Unknown types get a plain bell. */
