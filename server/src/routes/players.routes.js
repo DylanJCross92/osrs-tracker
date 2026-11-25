@@ -71,7 +71,7 @@ playersRouter.get('/:id/hardcore', async (req, res, next) => {
 // client can show "still importing" without this request blocking on it.
 playersRouter.get('/search', searchLimiter, async (req, res, next) => {
   try {
-    res.json(await searchPlayers(req.query.q))
+    res.json(await searchPlayers(req.query.q, { both: req.query.both === '1' }))
   } catch (err) {
     next(err)
   }

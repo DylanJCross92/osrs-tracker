@@ -16,7 +16,8 @@ export const playersApi = {
   cheer: (id, milestone) => api.post(`/players/${id}/cheer`, milestone),
   // A signed-in account has watched the celebration for this milestone (never shown to them again).
   celebrationSeen: (id, milestone) => api.post(`/players/${id}/celebration-seen`, milestone),
-  search: (q) => api.get(`/players/search?q=${encodeURIComponent(q)}`),
+  // `both`: a name with a normal and a Hardcore Worlds character comes back as two rows (each with mode and hasBoth), so the person can pick.
+  search: (q, { both = false } = {}) => api.get(`/players/search?q=${encodeURIComponent(q)}${both ? '&both=1' : ''}`),
   discover: (world = 'main') => api.get(world === 'hardcore' ? '/discover?world=hardcore' : '/discover'),
   syncAll: () => api.post('/players/sync-all'),
 }

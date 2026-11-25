@@ -28,7 +28,7 @@
     <RecentPlayers v-if="!hero && focused && !query.trim()" @pick="(o) => go(o)" />
     <ul v-if="focused && (suggestions.length || showNewRow)" class="search-suggest" @mousedown.prevent>
       <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
-      <li v-for="sg in suggestions" :key="sg.username">
+      <li v-for="sg in suggestions" :key="`${sg.username}:${sg.mode}`">
         <!-- hero: the same rows with a Claim button (or a label when the profile already has an owner) instead of opening the profile -->
         <div v-if="hero" class="suggest-row suggest-claim">
           <PlayerSuggestRow :player="sg" />
@@ -93,7 +93,7 @@ watch(query, (q) => {
   }
   timer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: !props.hero })
       if (query.value.trim() === term) {
         suggestions.value = rows
         track('player_search', { player: term, source, username_length: term.length, matches: rows.length })
@@ -124,7 +124,7 @@ function close() {
 function go(player) {
   recordRecent(player)
   track('search_suggestion_selected', { source })
-  router.push({ name: 'playerDetail', params: { username: player.username } })
+  router.push({ name: 'playerDetail', params: { username: player.username }, ...(player.mode === 'hardcore' && player.hasBoth ? { query: { world: 'hardcore' } } : {}) })
   close()
 }
 

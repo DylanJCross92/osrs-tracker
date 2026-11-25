@@ -273,7 +273,11 @@ async function buildDiscover() {
 }
 
 /** Case-insensitive partial RSN match among tracked players, with enough detail to show a useful suggestion row. */
-export async function searchPlayers(rawQuery) {
+/**
+ * With `both`, a name that has a normal and a Hardcore Worlds character gives two rows (normal first, `hasBoth` set on each) so the search can let
+ * the person pick one; otherwise one row per name, as before.
+ */
+export async function searchPlayers(rawQuery, { both = false } = {}) {
   const q = String(rawQuery || '').trim().slice(0, 12)
   if (q.length < 2) return []
   const escaped = q.replace(/[\\%_]/g, (c) => `\\${c}`)
@@ -282,9 +286,9 @@ export async function searchPlayers(rawQuery) {
      FROM players p
      WHERE p.username ILIKE $1 ESCAPE '\\'
        -- Normal characters, plus names that only exist on Hardcore Worlds (a name with both is found once, as the normal one).
-       AND (p.mode = 'main' OR NOT EXISTS (SELECT 1 FROM players m WHERE m.username = p.username AND m.mode = 'main'))
-     ORDER BY (lower(p.username) = lower($2)) DESC, (p.username ILIKE $3 ESCAPE '\\') DESC, p.username ASC
-     LIMIT 8`,
+       ${both ? '' : "AND (p.mode = 'main' OR NOT EXISTS (SELECT 1 FROM players m WHERE m.username = p.username AND m.mode = 'main'))"}
+     ORDER BY (lower(p.username) = lower($2)) DESC, (p.username ILIKE $3 ESCAPE '\\') DESC, p.username ASC, (p.mode = 'hardcore') ASC
+     LIMIT ${both ? 10 : 8}`,
     [`%${escaped}%`, q, `${escaped}%`],
   )
   if (!rows.length) return []
@@ -301,6 +305,8 @@ export async function searchPlayers(rawQuery) {
       displayName: r.display_name,
       // 'hardcore' for a Hardcore Worlds character (its stats are not from the main hiscores).
       mode: d?.mode || 'main',
+      // The name has a character on both the normal and the Hardcore Worlds hiscores (only set when both rows are asked for).
+      hasBoth: both && rows.some((o) => o.username === r.username && o.id !== r.id),
       badge: r.badge,
       claimed: Boolean(d?.claimed),
       overallLevel: latest?.overallLevel ?? null,

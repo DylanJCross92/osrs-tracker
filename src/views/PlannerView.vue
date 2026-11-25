@@ -376,7 +376,7 @@ watch(username, (q) => {
   }
   suggestTimer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: true })
       if ((username.value || '').trim() === term) suggestions.value = rows
     } catch {
       suggestions.value = []
@@ -401,8 +401,11 @@ function onSearchBlur() {
 }
 function pickSuggestion(sg) {
   track('search_suggestion_selected', { source: 'planner' })
+  // A name shown with both characters: the row picked says which one the plan is for.
+  const choseWorld = suggestions.value.some((s) => s.username === sg.username && s.mode !== sg.mode)
   suggestions.value = []
   username.value = sg.displayName
+  if (choseWorld) setWorld(sg.mode === 'hardcore' ? 'hardcore' : 'normal')
   loadTyped({ force: true })
 }
 

@@ -25,7 +25,7 @@
         <RecentPlayers v-if="showRecent" @pick="(p) => $emit('pick', p)" />
         <ul v-if="suggestions.length" class="search-suggest">
           <li class="suggest-head">Already tracked</li>
-          <li v-for="sg in suggestions" :key="sg.username">
+          <li v-for="sg in suggestions" :key="`${sg.username}:${sg.mode}`">
             <a href="#" class="suggest-row" @click.prevent="$emit('pick', sg)"><PlayerSuggestRow :player="sg" /></a>
           </li>
         </ul>

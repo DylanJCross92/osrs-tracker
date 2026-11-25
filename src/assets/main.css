@@ -8270,3 +8270,4 @@ html.iron-mode .gp-figure { display: none !important; }
 .detail-header .profile-banner { border-top-left-radius: inherit; border-top-right-radius: inherit; }
 /* A name with both characters keeps the header the same height on either side (the Hardcore Worlds one has a rank chip that makes the chips wrap). */
 .profile-chips.has-world { min-height: 62px; align-content: flex-start; }
+.sg-main-tag { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em; line-height: 1.5; vertical-align: middle; }
