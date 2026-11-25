@@ -223,7 +223,7 @@ const shown = computed(() => {
   })
   if (sort.value === 'useful') return [...list].sort((a, b) => score(b) - score(a) || a.name.localeCompare(b.name))
   if (sort.value === 'short') return [...list].sort((a, b) => minutesOf(a) - minutesOf(b) || a.name.localeCompare(b.name))
-  return list
+  return [...list].sort((a, b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
 })
 // By type (free, members, miniquests) when sorted by type; one list when sorted another way.
 const groups = computed(() => {
