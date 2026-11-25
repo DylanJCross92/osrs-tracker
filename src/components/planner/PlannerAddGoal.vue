@@ -13,7 +13,7 @@
           <div class="planner-skill-select">
             <span class="planner-skill-icon"><img :src="skillIconSrc(form.skill)" :alt="form.skill" width="24" height="24" /></span>
             <select v-model="form.skill" @change="onSkillChange">
-              <option v-for="s in SKILL_NAMES" :key="s" :value="s" :disabled="taken.has(s)">{{ s }}{{ taken.has(s) ? ' (in plan)' : '' }}</option>
+              <option v-for="s in SKILL_NAMES" :key="s" :value="s" :disabled="taken.has(s) || locked.has(s)">{{ s }}{{ taken.has(s) ? ' (in plan)' : locked.has(s) ? (lockReason(accountRulesNow(), s) === 'members' ? ' (members only)' : ` (locked for a ${buildOf(build).short.toLowerCase()})`) : '' }}</option>
             </select>
           </div>
         </label>
@@ -45,6 +45,7 @@
         </template>
         <button class="btn-text agm-xp-toggle" type="button" @click="toggleXp">{{ showXp ? 'Use levels instead' : 'Use XP instead' }}</button>
       </div>
+      <p v-if="capNote" class="acct-note agm-cap" role="status">{{ capNote }}</p>
       <p v-if="player" class="planner-hint agm-hint">Starting stats come from {{ player.displayName }}'s latest snapshot. You can edit them.</p>
 
       <!-- 2. How to get there: the best method for each set of levels, changeable one by one -->
@@ -86,9 +87,11 @@
 
 <script setup>
 import AccountTypeToggle from '@/components/AccountTypeToggle.vue'
-import { applyMembership, freeMethodIds } from '@/utils/membership'
+import { freeMethodIds } from '@/utils/membership'
+import { applyRules, isLocked, lockReason, lockedSkills, questFitsBuild, skillCap } from '@/utils/builds'
+import { buildOf } from '@/data/builds'
 import { ironStrategy } from '@/utils/ironman'
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
@@ -108,6 +111,9 @@ const props = defineProps({
   // Free-to-play or members, as the plan has it now (changed here, it applies to the whole plan when the goal is added).
   members: { type: Boolean, default: true },
   iron: { type: Boolean, default: false },
+  // The kind of account (see data/builds.js): skills it never trains are locked here, and others stop at the level it allows.
+  build: { type: String, default: 'main' },
+  ironKind: { type: String, default: 'standard' },
 })
 const emit = defineEmits(['add', 'close'])
 
@@ -127,9 +133,20 @@ function onIron(on) {
 const hasFreeRoute = computed(() => freeMethodIds(form.skill).length > 0)
 
 const taken = computed(() => new Set(props.existingSkills))
-const firstFree = SKILL_NAMES.find((s) => !props.existingSkills.includes(s)) || SKILL_NAMES[0]
+// Skills this account cannot train: the build's locked ones, and members-only skills when free-to-play.
+const accountRulesNow = () => ({ build: props.build, members: draftMembers.value })
+const locked = computed(() => new Set(lockedSkills(accountRulesNow())))
+const open = (s) => !props.existingSkills.includes(s) && !isLocked(accountRulesNow(), s)
+const firstFree = SKILL_NAMES.find(open) || SKILL_NAMES[0]
+// Switching to free-to-play while a members-only skill is picked moves the choice to a skill that can be trained.
+watch(draftMembers, () => {
+  if (locked.value.has(form.skill)) {
+    form.skill = SKILL_NAMES.find(open) || form.skill
+    onSkillChange()
+  }
+})
 
-const startSkill = SKILL_NAMES.includes(props.initialSkill) && !props.existingSkills.includes(props.initialSkill) ? props.initialSkill : firstFree
+const startSkill = SKILL_NAMES.includes(props.initialSkill) && open(props.initialSkill) ? props.initialSkill : firstFree
 // methodId stays "follow the global strategy" until a different strategy is picked here.
 const form = reactive({ skill: startSkill, currentXp: 0, targetMode: 'level', targetLevel: 99, targetXp: xpAtLevel(99), methodId: GLOBAL_STRATEGY, overrides: [] })
 const error = ref('')
@@ -150,7 +167,9 @@ const currentLevelModel = computed({
 })
 const targetXp = computed(() => (form.targetMode === 'level' ? xpAtLevel(form.targetLevel || 1) : Math.min(Math.floor(form.targetXp || 0), MAX_XP)))
 // Quick targets above where the player is now.
-const chips = computed(() => [70, 80, 90, 99].filter((l) => l > currentLevel.value))
+const cap = computed(() => skillCap(accountRulesNow(), form.skill))
+const chips = computed(() => [...new Set([70, 80, 90, 99, cap.value].filter((l) => l <= cap.value))].sort((a, b) => a - b).filter((l) => l > currentLevel.value))
+const capNote = computed(() => (cap.value < 99 ? `A ${buildOf(props.build).short.toLowerCase()} stops ${form.skill} at level ${cap.value}.` : ''))
 
 function setTarget(level) {
   form.targetMode = 'level'
@@ -172,7 +191,7 @@ function toggleXp() {
 // Fill the starting stats from the selected player (or a sane default) and aim at 99 or the next level.
 function onSkillChange() {
   form.currentXp = playerXp(form.skill) ?? (form.skill === 'Hitpoints' ? xpAtLevel(10) : 0)
-  form.targetLevel = currentLevel.value < 99 ? 99 : Math.min(currentLevel.value + 1, 126)
+  form.targetLevel = currentLevel.value < cap.value ? cap.value : Math.min(currentLevel.value + 1, 126)
   // Methods differ from skill to skill, so choices made for the last skill do not carry over.
   form.overrides = []
   syncTarget()
@@ -193,9 +212,11 @@ const baseGoal = computed(() => {
   if (targetXp.value <= cur) return null
   const id = strategy.value
   const goal = resolveGoal({ skill: form.skill, currentXp: cur, targetXp: targetXp.value, methodId: id, quests: [], overrides: form.overrides, blockedMethodIds: props.blockedMethodIds, doneQuestIds: props.doneQuestIds }, id, props.gpValue)
-  return applyMembership([goal], draftMembers.value)[0]
+  return applyRules([goal], rulesNow(), null, freeMethodIds)[0] || null
 })
-const suggested = computed(() => (baseGoal.value ? suggestedQuests(baseGoal.value) : []))
+// What the account may do: free-to-play or members, the build and the kind of ironman.
+const rulesNow = () => ({ members: draftMembers.value, build: props.build, iron: draftIron.value, ironKind: props.ironKind })
+const suggested = computed(() => (baseGoal.value ? suggestedQuests(baseGoal.value, (q) => questFitsBuild(q, accountRulesNow())) : []))
 const preview = computed(() => (baseGoal.value ? planGoal({ ...baseGoal.value, quests: suggested.value }) : null))
 
 function submit() {
@@ -221,6 +242,11 @@ function submit() {
   }
   const goal = { skill: form.skill, currentXp, targetXp: target, methodId: form.methodId, customXpPerHour: 0, quests: [...suggested.value] }
   if (form.overrides.length) goal.overrides = form.overrides.map((o) => ({ ...o }))
-  emit('add', applyMembership([goal], draftMembers.value)[0], draftMembers.value, draftIron.value)
+  const fitted = applyRules([goal], rulesNow(), null, freeMethodIds)[0]
+  if (!fitted) {
+    error.value = capNote.value || `${form.skill} cannot be trained on this account.`
+    return
+  }
+  emit('add', fitted, draftMembers.value, draftIron.value)
 }
 </script>

@@ -1,4 +1,5 @@
 import { F2P_SKILLS, F2P_METHOD_IDS, LEVEL_STEPS, START_LEVEL, COMBAT_TIERS } from '@/data/plannerMilestones'
+import { isLocked, methodFits, questFitsBuild, ruleIdsFor, skillCap } from '@/utils/builds'
 import { methodsForSkill } from '@/data/trainingMethods'
 import { questBySlug } from '@/data/questList'
 import { getQuest } from '@/data/quests'
@@ -53,13 +54,14 @@ const mk = (state, targetLevel, profile) => ({
   methodId: 'global',
   customXpPerHour: 0,
   quests: [],
-  ...(profile.members ? {} : { allowedMethodIds: f2pIds(state.skill) }),
+  ...(ruleIdsFor(state.skill, profile, f2pIds(state.skill)) ? { allowedMethodIds: ruleIdsFor(state.skill, profile, f2pIds(state.skill)) } : {}),
 })
 
 /** The level a skill can be taken to for this player: the target, held back for free-to-play where the methods run out. */
 function reachable(skill, targetLevel, profile) {
-  if (profile.members) return targetLevel
-  return Math.min(targetLevel, f2pCap(skill))
+  const held = Math.min(targetLevel, skillCap(profile.build, skill))
+  if (profile.members) return held
+  return Math.min(held, f2pCap(skill))
 }
 
 function tierGoals(states, tierLevel, profile) {
@@ -173,7 +175,7 @@ function moneyNowPhase(states, profile, done = new Set(), hoursPerDay = 2) {
   const stretch = ({ s, m }) => {
     const f2p = profile.members ? null : new Set(f2pIds(s.skill))
     // The methods this player can actually do (everything but the skill's own level is checked), so the profit route never needs a quest they lack.
-    const allowedMethodIds = methodsForSkill(s.skill).filter((x) => !(f2p && !f2p.has(x.id)) && canUseMethod(x, { ...levels, [s.skill]: 99 }, done)).map((x) => x.id)
+    const allowedMethodIds = methodsForSkill(s.skill).filter((x) => !(f2p && !f2p.has(x.id)) && methodFits(x, profile) && canUseMethod(x, { ...levels, [s.skill]: 99 }, done)).map((x) => x.id)
     const base = { ...mk(s, s.level + 1, profile), methodId: AUTO_PROFIT, allowedMethodIds }
     const candidates = [...new Set([...LEVEL_STEPS.filter((t) => t > s.level), 99, Math.min(99, s.level + 5)])].map((t) => reachable(s.skill, t, profile)).filter((t) => t > s.level).sort((a, b) => b - a)
     let to = null
@@ -255,7 +257,7 @@ function intensityPhase(states, profile, done, kind) {
     if (!profile.members && !F2P_SKILLS.includes(s.skill)) continue
     if (kind === 'hardcore' && !HARDCORE_SKILLS.includes(s.skill)) continue
     const f2p = profile.members ? null : new Set(f2pIds(s.skill))
-    const methods = methodsForSkill(s.skill).filter((m) => cfg.levels.includes(m.intensity) && !(f2p && !f2p.has(m.id)) && canUseMethod(m, { ...levels, [s.skill]: 99 }, done))
+    const methods = methodsForSkill(s.skill).filter((m) => cfg.levels.includes(m.intensity) && !(f2p && !f2p.has(m.id)) && methodFits(m, profile) && canUseMethod(m, { ...levels, [s.skill]: 99 }, done))
     if (!methods.length) continue
     const cap = reachable(s.skill, coverTo(methods, s.level), profile)
     if (cap <= s.level) continue
@@ -443,7 +445,7 @@ function purposePhases(states, profile, settings, done, mode, sink = {}) {
 function questsOf(goal, settings, profile) {
   let picked = []
   try {
-    picked = suggestedQuests({ ...goal, quests: [], methodId: settings.globalStrategy, gpValuePerHour: settings.gpValue })
+    picked = suggestedQuests({ ...goal, quests: [], methodId: settings.globalStrategy, gpValuePerHour: settings.gpValue }, (q) => questFitsBuild(q, profile.build))
   } catch {
     picked = []
   }
@@ -459,7 +461,8 @@ function questsOf(goal, settings, profile) {
  */
 export function recommend(rawProfile, skills, { done = new Set() } = {}) {
   const profile = cleanProfile(rawProfile)
-  const states = skillStates(skills)
+  // The skills this account never trains (a skiller's combat skills) are not part of the plan at all.
+  const states = skillStates(skills).filter((s) => !isLocked(profile.build, s.skill))
   const settings = settingsFor(profile)
   const hasStats = !!skills
   const doneSet = done instanceof Set ? done : new Set(done)
@@ -500,7 +503,7 @@ export function recommend(rawProfile, skills, { done = new Set() } = {}) {
     )
   }
   if (!phases.length) {
-    const big = recommendedPlans(skills).find((p) => p.kind !== 'total') || recommendedPlans(skills)[0]
+    const big = recommendedPlans(skills, profile.build).find((p) => p.kind !== 'total') || recommendedPlans(skills, profile.build)[0]
     if (big && profile.members) {
       phases = [{ id: 'big', title: big.title, why: big.description, goals: big.goals.map((g) => ({ ...g, why: [] })), later: false }]
       notes.push("You're ahead of every tier here, so this is the next big goal.")

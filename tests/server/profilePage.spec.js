@@ -72,3 +72,16 @@ describe('pinned achievement', () => {
     expect('pinnedAchievement' in sanitizeProfilePage({ bio: 'hi' })).toBe(false)
   })
 })
+
+describe('the account kind on a profile page', () => {
+  it('keeps a known build and ironman kind, and nothing else', () => {
+    expect(sanitizeProfilePage({ build: 'skiller', ironKind: 'hardcore' })).toEqual({ build: 'skiller', ironKind: 'hardcore' })
+    expect(sanitizeProfilePage({ build: 'wizard', ironKind: '<b>' })).toEqual({ build: 'main', ironKind: null })
+    expect(sanitizeProfilePage({ ironKind: null })).toEqual({ ironKind: null })
+  })
+  it('leaves them out when they were not sent, so saving a bio never changes them', () => {
+    const out = sanitizeProfilePage({ bio: 'hi' })
+    expect('build' in out).toBe(false)
+    expect('ironKind' in out).toBe(false)
+  })
+})

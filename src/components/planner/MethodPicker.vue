@@ -78,6 +78,8 @@ import NewTag from '@/components/NewTag.vue'
 import { formatNum, formatGp } from '@/utils/planner'
 import { methodAvailability, unmetText } from '@/utils/requirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
+import { plannerAccountContext } from '@/composables/plannerAccountContext'
+import { methodBlockReason } from '@/utils/builds'
 import { methodIconSrc } from '@/data/methodIcons'
 
 // A readable replacement for the long method dropdown: every method in a table with XP/hr and GP/hr bars, sortable
@@ -109,7 +111,8 @@ const sortDir = ref(props.initialSort === 'level' ? 'asc' : 'desc')
 const iconOf = (m) => methodIconSrc(m)
 // Whether any method in the list has a picture: only then do rows without one keep an empty slot for it.
 const anyIcon = computed(() => props.methods.some((m) => !!iconOf(m)))
-const off = (m) => (props.reasonFor ? props.reasonFor(m) : '')
+const account = inject(plannerAccountContext, null)
+const off = (m) => (props.reasonFor ? props.reasonFor(m) : '') || (account?.value ? methodBlockReason(m, account.value) : '')
 // Tags and bars only compare the methods that can be picked.
 const note = (m) => (props.noteFor ? props.noteFor(m) : '')
 const usable = computed(() => props.methods.filter((m) => !off(m) && !note(m)))

@@ -58,6 +58,7 @@
       </div>
       <div class="detail-info">
         <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
+        <AccountBadge :build="page.build" :iron-kind="page.ironKind" />
         <div v-if="followCounts || profile" class="pp-meta">
           <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
             <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
@@ -317,6 +318,7 @@ import ChallengeModal from '@/components/profile/ChallengeModal.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
 import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vue'
 import ProfileFlair from '@/components/profile/ProfileFlair.vue'
+import AccountBadge from '@/components/profile/AccountBadge.vue'
 import ProfileGoalsPublic from '@/components/profile/ProfileGoalsPublic.vue'
 import GoalShareModal from '@/components/profile/GoalShareModal.vue'
 import { goalsApi } from '@/api/goals'
@@ -507,7 +509,7 @@ async function toggleFollow() {
 // How this profile relates to the signed-in visitor (claimed? owned by them?). Loaded below.
 const claim = ref(null)
 // What the owner added to this profile (bio, status, links, hidden tabs). Visitors get it too.
-const blankPage = () => ({ bio: '', links: [], pinnedAchievement: null, hasAvatar: false, avatarV: null })
+const blankPage = () => ({ bio: '', links: [], pinnedAchievement: null, hasAvatar: false, avatarV: null, build: 'main', ironKind: null })
 const page = ref(blankPage())
 const customizeOpen = ref(false)
 // Public goals the owner set, with live progress; the pinned one shows in the header.

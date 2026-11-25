@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { buildMaxTotal } from '@/utils/builds'
 import { MAX_TOTAL, levelPlan, recommendedPlans, skillStates, suggestedPlans, totalLevelPlan } from '@/utils/recommendedPlans'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { levelAtXp, xpAtLevel } from '@/utils/planner'
@@ -147,5 +148,49 @@ describe('groupedPlans', () => {
     expect(g.totals[0].id).toBe(totals[0].id)
     expect(g.totals.at(-1).id).toBe(totals.at(-1).id)
     expect(new Set(g.totals.map((p) => p.id)).size).toBe(g.totals.length)
+  })
+})
+
+describe('plans for a build', () => {
+  const plan = (plans, id) => plans.find((p) => p.id === id)
+  it('a skiller is never given a combat skill, and max means every skill a skiller can train', () => {
+    const plans = recommendedPlans(null, 'skiller')
+    const locked = ['Attack', 'Strength', 'Defence', 'Ranged', 'Prayer', 'Magic', 'Slayer', 'Hitpoints']
+    for (const p of plans) for (const g of p.goals) expect(locked, `${p.id} ${g.skill}`).not.toContain(g.skill)
+    expect(plan(plans, 'combat-99')).toBeUndefined()
+    expect(plan(plans, 'all-99').title).toBe('Max your skiller: every skill to 99')
+    expect(plan(plans, 'all-99').skillCount).toBe(SKILL_NAMES.length - 8)
+    expect(plan(plans, 'all-99').description).toContain('Combat skills and Slayer stay locked')
+  })
+  it('the max total of a skiller is the most its skills can reach', () => {
+    const totals = recommendedPlans(null, 'skiller').filter((p) => p.kind === 'total')
+    expect(totals.at(-1).title).toMatch(/^Max total level/)
+    expect(totals.at(-1).targetTotal).toBe(buildMaxTotal('skiller'))
+    expect(totals.every((p) => p.targetTotal <= buildMaxTotal('skiller'))).toBe(true)
+    expect(buildMaxTotal('skiller')).toBeLessThan(MAX_TOTAL)
+  })
+  it('a pure never trains Defence and stops Prayer at 52', () => {
+    const plans = recommendedPlans(null, 'pure')
+    const all99 = plan(plans, 'all-99')
+    expect(all99.goals.find((g) => g.skill === 'Defence')).toBeUndefined()
+    expect(all99.goals.find((g) => g.skill === 'Prayer').targetXp).toBe(xpAtLevel(52))
+    expect(all99.goals.find((g) => g.skill === 'Strength').targetXp).toBe(xpAtLevel(99))
+    const combat = plan(plans, 'combat-99')
+    expect(combat.title).toBe('Pure combat skills')
+    expect(combat.goals.map((g) => g.skill)).not.toContain('Defence')
+  })
+  it('a zerker takes Defence to 45', () => {
+    const goals = plan(recommendedPlans(null, 'zerker'), 'all-99').goals
+    expect(goals.find((g) => g.skill === 'Defence').targetXp).toBe(xpAtLevel(45))
+  })
+  it('a plain account gets the same plans as before', () => {
+    expect(recommendedPlans(null, 'main').map((p) => p.id)).toEqual(recommendedPlans(null).map((p) => p.id))
+    expect(plan(recommendedPlans(null, 'main'), 'all-99').title).toBe('Max your account: all skills to 99')
+  })
+  it('totalLevelPlan stops at the cap and refuses a total the build cannot reach', () => {
+    expect(totalLevelPlan(skillStates(null), buildMaxTotal('skiller') + 1, 'skiller')).toBeNull()
+    const goals = totalLevelPlan(skillStates(null), buildMaxTotal('pure'), 'pure')
+    expect(goals.find((g) => g.skill === 'Defence')).toBeUndefined()
+    expect(goals.find((g) => g.skill === 'Prayer').targetXp).toBe(xpAtLevel(52))
   })
 })

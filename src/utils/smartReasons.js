@@ -1,4 +1,5 @@
 import { F2P_SKILLS, F2P_METHOD_IDS } from '@/data/plannerMilestones'
+import { isLocked, questFitsBuild, ruleIdsFor } from '@/utils/builds'
 import { methodsForSkill } from '@/data/trainingMethods'
 import { requirementsFor } from '@/data/methodRequirements'
 import { QUESTS, getQuest, questChain } from '@/data/quests'
@@ -22,7 +23,9 @@ const isTrick = (m) => /tick manipulation|-tick\b/i.test(`${m.name} ${m.requirem
 const f2pIds = (skill) => methodsForSkill(skill).filter((m) => F2P_METHOD_IDS.has(m.id)).map((m) => m.id)
 export const isFreeQuest = (quest) => quest.members === false || questBySlug(questSlug(quest.name))?.type === 'F'
 const gpShort = (n) => formatGp(Math.round(n)).replace(/^\+/, '').replace(/ gp$/, '')
-const eligible = (skill, profile) => profile.members || F2P_SKILLS.includes(skill)
+const eligible = (skill, profile) => (profile.members || F2P_SKILLS.includes(skill)) && !isLocked(profile.build, skill)
+// The methods this account may use for a skill (free-to-play, the build and a hardcore ironman cut them down), or undefined when nothing is ruled out.
+const ruleIds = (skill, profile) => ruleIdsFor(skill, profile, f2pIds(skill)) || undefined
 
 /**
  * Whether a player with these levels can use a method today: the skill levels it asks for are met, and it needs no quest, unlock or special item
@@ -40,7 +43,8 @@ export function canUseMethod(m, levels, done = new Set()) {
 }
 
 function usableMethods(skill, profile) {
-  const allowed = profile.members ? null : new Set(f2pIds(skill))
+  const rule = ruleIds(skill, profile)
+  const allowed = rule ? new Set(rule) : null
   return methodsForSkill(skill).filter((m) => (!allowed || allowed.has(m.id)) && !isTrick(m))
 }
 const openAt = (m, level) => m.minLevel <= level && (m.maxLevel == null || level <= m.maxLevel)
@@ -48,8 +52,8 @@ const bestRate = (methods, level, key = 'xpPerHour') => methods.filter((m) => op
 
 /** Hours to take a skill from one level to another by the fastest route (null when the catalogue has a gap). */
 export function hoursBetween(state, toLevel, profile) {
-  const allowedMethodIds = profile.members ? undefined : f2pIds(state.skill)
-  // No free-to-play route at all (an empty list would mean "any method" to the planner).
+  const allowedMethodIds = ruleIds(state.skill, profile)
+  // No route at all (an empty list would mean "any method" to the planner).
   if (allowedMethodIds && !allowedMethodIds.length) return null
   const plan = planGoal({ skill: state.skill, currentXp: state.xp, targetXp: xpAtLevel(toLevel), methodId: AUTO_FAST, quests: [], ...(allowedMethodIds ? { allowedMethodIds } : {}) })
   return plan.complete ? plan.hours : null
@@ -113,6 +117,7 @@ export function evaluateQuests(states, profile, done = new Set(), { skills = nul
   for (const q of QUESTS) {
     if (done.has(q.id)) continue
     if (!profile.members && !isFreeQuest(q)) continue
+    if (!questFitsBuild(q, profile.build)) continue
     const chain = questChain(q.id).filter((id) => !done.has(id))
     if (!profile.members && chain.some((id) => !isFreeQuest(getQuest(id)))) continue
     const xp = {}
@@ -194,7 +199,7 @@ export function fundingFor(states, profile, spenders, avoid = new Set()) {
     if (!eligible(s.skill, profile) || s.level >= 99 || spend.has(s.skill)) continue
     const methods = usableMethods(s.skill, profile)
     if (!methods.some((m) => m.gpPerHour >= 300_000 && m.minLevel <= s.level + 25)) continue
-    const allowedMethodIds = profile.members ? undefined : f2pIds(s.skill)
+    const allowedMethodIds = ruleIds(s.skill, profile)
     let best = null
     for (const gap of [8, 16, 25]) {
       const to = Math.min(99, s.level + gap)

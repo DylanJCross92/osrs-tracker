@@ -7887,7 +7887,7 @@ html.iron-mode .gp-figure { display: none !important; }
 .acp-links a { color: var(--gold-bright); font-weight: 600; font-size: 0.95rem; text-decoration: none; white-space: nowrap; }
 .acp-links a:hover { color: var(--text); text-decoration: none; }
 /* the three settings sit in one row, each with its small label above */
-.acp-grid { display: grid; grid-template-rows: auto auto; grid-auto-flow: column; grid-auto-columns: max-content; gap: 8px 40px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
+.acp-grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px 28px; margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border); }
 .acp-grid .acct-toggle { display: contents; }
 .acp-grid .acct-label, .acp-grid .acct-label-2 { margin: 0; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .acp-hours { display: inline-flex; align-items: center; gap: 4px; align-self: center; padding: 3px; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(14, 12, 9, 0.5); }
@@ -7908,9 +7908,7 @@ html.iron-mode .gp-figure { display: none !important; }
   .hub-top h1 { font-size: 1.6rem; }
   .acp-item { padding: 18px 16px; }
   .acp-links { width: 100%; padding-left: 76px; }
-  .acp-grid { grid-auto-flow: row; grid-template-rows: none; grid-template-columns: 1fr; grid-auto-columns: auto; gap: 8px; }
-  .acp-grid .acct-label-2 { margin-top: 8px; }
-  .acp-grid .acct-label:last-of-type { margin-top: 8px; }
+  .acp-grid { gap: 14px 22px; }
 }
 .acp-item, .acp-wait, .acp-claim { text-align: left; }
 .hub-tab:first-child { padding-left: 2px; }
@@ -7920,7 +7918,7 @@ html.iron-mode .gp-figure { display: none !important; }
 .hub h2 { font-size: 1.2rem; }
 .acp-intro h2 { font-size: 1.3rem; }
 @media (max-width: 760px) { .hub-main .hub-card { padding: 18px 16px; } }
-.acp-hours { justify-self: start; }
+.acp-hours { align-self: flex-start; }
 
 /* the tracker's membership switch, and the note a free-to-play account sees where the diaries would be */
 .trk-acct { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; margin: 4px 0 6px; }
@@ -8148,3 +8146,84 @@ html.iron-mode .gp-figure { display: none !important; }
 .gp-tip.is-open { z-index: 31; }
 .gp-tip.is-open .gp-tip-bubble.gpt { cursor: auto; user-select: text; }
 .gp-tip.is-below .gp-tip-bubble { bottom: auto; top: calc(100% + 8px); }
+
+/* The account fields (membership, account type, build) */
+.af { display: grid; gap: 16px; }
+.af-sub { margin-top: 8px; }
+.af-blurb { margin: 8px 0 0; color: var(--text); font-size: 0.9rem; line-height: 1.5; max-width: none; opacity: 0.9; }
+.af-effects { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 0.84rem; line-height: 1.5; }
+.af-suggest { margin: 10px 0 0; padding: 8px 12px; border: 1px solid rgba(217, 175, 82, 0.4); border-radius: 10px; background: rgba(217, 175, 82, 0.08); font-size: 0.88rem; max-width: none; }
+
+/* The account setup at the top of a new plan */
+.as { margin: 0 0 22px; padding: 18px 20px; border: 1px solid rgba(217, 175, 82, 0.35); border-radius: 16px; background: linear-gradient(180deg, rgba(46, 38, 26, 0.7), rgba(33, 28, 20, 0.7)); }
+.as-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.as-title { min-width: 0; }
+.as-kicker { margin: 0 0 2px; color: var(--gold-bright); font-size: 0.7rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; max-width: none; }
+.as h2 { margin: 0; font-size: 1.2rem; }
+.as-sum { margin: 4px 0 0; color: var(--muted); font-size: 0.92rem; line-height: 1.5; max-width: 62ch; }
+.as-sum b { color: var(--text); }
+.as-body { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.byo-skill.is-locked { opacity: 0.4; cursor: not-allowed; filter: grayscale(0.6); }
+
+/* The account type beside a profile's name */
+.pp-account { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; max-width: none; }
+.pp-acct-chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(255, 255, 255, 0.04); color: var(--text); font-size: 0.78rem; font-weight: 700; }
+.pp-acct-chip.is-build { border-color: rgba(217, 175, 82, 0.6); color: var(--gold-bright); background: rgba(217, 175, 82, 0.08); }
+.acp-select { height: 34px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; font-size: 0.9rem; }
+.acp-select:focus-visible { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(217, 175, 82, 0.2); }
+
+/* The account option beside the player at the top of the planner */
+.am { position: relative; display: inline-block; }
+.am-btn { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; padding: 5px 12px; border: 1px solid var(--border-strong); border-radius: 999px; background: rgba(255, 255, 255, 0.04); color: var(--text); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.am-btn:hover, .am-btn[aria-expanded='true'] { border-color: var(--gold); background: rgba(217, 175, 82, 0.08); }
+.am-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.am-caret { flex: none; opacity: 0.7; }
+.am-pop { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: min(520px, calc(100vw - 32px)); padding: 16px 18px 14px; border: 1px solid var(--border-strong); border-radius: 14px; background: var(--panel); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6); }
+.am-title { margin: 0 0 12px; color: var(--gold-bright); font-size: 0.95rem; font-weight: 700; max-width: none; }
+.am-foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+.as-done { flex: none; }
+.pt-account { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-top: 12px; color: var(--muted); font-size: 0.84rem; }
+/* Smaller chips for the account fields, wherever they sit */
+.af.is-compact .oc-chip { padding: 5px 11px; font-size: 0.82rem; gap: 6px; }
+.af.is-compact .oc-chip img { width: 16px; height: 16px; }
+.af.is-compact .oc-hint { font-size: 0.76rem; }
+.af.is-compact .pset-field > span { font-size: 0.7rem; }
+.af.is-compact .af-blurb { font-size: 0.84rem; }
+.af.is-compact .af-effects { font-size: 0.78rem; }
+
+/* The account page's per-profile settings: small, quiet controls (they are set once and rarely changed) */
+.acp-grid { gap: 14px 28px; }
+.acct-field { display: contents; }
+.acp-grid .acct-field, .acp-field { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; min-width: 0; }
+.acp-grid .range-tabs { gap: 4px; }
+.acp-grid .range-tabs button { box-sizing: border-box; height: 28px; min-height: 0; padding: 0 11px; font-size: 0.8rem; line-height: 1; }
+.acp-grid .acct-toggle .range-tabs img { width: 13px; height: 13px; }
+.acp-select { box-sizing: border-box; height: 28px; min-height: 0; padding: 0 26px 0 10px; font-size: 0.8rem; border-radius: 999px; line-height: 1; }
+.acp-hours { gap: 2px; padding: 2px; }
+.acp-hours b { min-width: 2.8em; font-size: 0.86rem; }
+.acp-hours button { box-sizing: border-box; width: 24px; height: 24px; min-height: 0; padding: 0; font-size: 1rem; }
+
+/* The account option lives inside the player piece: beside Change on a loaded player, or on the hint line before one is loaded. */
+.ppb-foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; }
+.ppb-foot > .pt-hint, .ppb-foot > .planner-error { flex: 1 1 auto; min-width: 0; }
+.ppb-foot-account { margin-left: auto; margin-top: 8px; }
+.pt-player-actions { align-items: center; gap: 8px; }
+.ppb .am-pop { left: auto; right: 0; }
+.ppb .am-btn { padding: 4px 6px 4px 11px; gap: 6px; border-color: var(--border); background: none; color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+.ppb .am-btn:hover, .ppb .am-btn[aria-expanded='true'] { color: var(--gold-bright); border-color: var(--gold); background: rgba(217, 175, 82, 0.08); }
+.pt-player-actions .pt-link { padding: 4px 12px; }
+@media (max-width: 640px) { .ppb .pt-player-actions { flex-wrap: wrap; } .ppb-foot-account { margin-left: 0; } }
+
+/* Plan settings: the account fields and hours take less height. */
+.af.is-tight { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.af.is-tight .pset-field { margin-bottom: 0; }
+.af.is-tight .pset-field:last-child { grid-column: 1 / -1; margin-top: 12px; }
+.af.is-tight .af-blurb { margin-top: 6px; font-size: 0.82rem; line-height: 1.4; }
+.af.is-tight .af-suggest { margin-top: 8px; padding: 6px 10px; font-size: 0.82rem; }
+.ps-settings .pset-field { margin-bottom: 12px; gap: 6px; }
+.ps-settings .pset-hours { flex-direction: row; align-items: center; gap: 16px; }
+.ps-settings .pset-read { flex: none; min-width: 7.2em; }
+.ps-settings .pset-read b { font-size: 1.3rem; }
+.ps-settings .pset-range { flex: 1; min-width: 0; }
+@media (max-width: 560px) { .af.is-tight { grid-template-columns: 1fr; gap: 12px 0; } .ps-settings .pset-hours { flex-direction: column; align-items: stretch; gap: 6px; } }
+.ps-settings .af.is-tight + .pset-note, .ps-settings .af.is-tight + .pset-field { margin-top: 14px; }

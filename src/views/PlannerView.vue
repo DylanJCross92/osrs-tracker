@@ -29,6 +29,10 @@
           @focus="searchFocused = true"
           @blur="onSearchBlur"
         >
+          <!-- Once the account has been settled on the page below, it is one small option that belongs to the player -->
+          <template v-if="setupSeen" #account>
+            <AccountMenu :account="accountNow" :detected="detectedBuild" :player-label="player?.displayName || ''" @change="applyAccountPatch" />
+          </template>
           <template #hint>
             <p class="pt-hint pt-hint-start">
               <template v-if="lookingUp">Loading stats…</template>
@@ -40,6 +44,7 @@
 
       <PlannerStart
         ref="startRef"
+        :account="accountNow"
         :skills="player?.latest?.skills || null"
         :has-player="!!player?.latest"
         :player-label="player?.displayName || ''"
@@ -51,6 +56,7 @@
         @custom="startCustom"
         @smart="startSmart"
         @smart-open="(open) => (smartOpen = open)"
+        @account="applyAccountPatch"
       >
         <!-- The same name box as at the top of the page, for the Smart Planner window that covers it -->
         <template #name-box>
@@ -198,7 +204,7 @@
     </template>
 
     <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :iron-kind="ironKind" :build="build" :detected="detectedBuild" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -218,7 +224,7 @@
       </template>
     </PlannerPlanSettings>
     <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
-    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" :iron="iron" @add="addGoalFrom" @close="showAdd = false" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" :iron="iron" :build="build" :iron-kind="ironKind" @add="addGoalFrom" @close="showAdd = false" />
   </div>
 </template>
 
@@ -285,8 +291,14 @@ import {
   suggestedQuests,
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
-import { applyMembership } from '@/utils/membership'
-import { ironPref, membersPref, setIronMode, useAccountType } from '@/composables/useAccountType'
+import { freeMethodIds } from '@/utils/membership'
+import AccountMenu from '@/components/planner/AccountMenu.vue'
+import { useAccountSetupSeen } from '@/composables/useAccountSetupSeen'
+import { useProfileSettings } from '@/composables/useProfileSettings'
+import { plannerAccountContext } from '@/composables/plannerAccountContext'
+import { applyRules, detectBuild, questFitsBuild } from '@/utils/builds'
+import { buildOf, cleanBuild, cleanIronKind } from '@/data/builds'
+import { buildPref, ironKindPref, ironPref, membersPref, setIronMode, useAccountType } from '@/composables/useAccountType'
 import { ironStrategy } from '@/utils/ironman'
 import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
@@ -475,6 +487,8 @@ async function loadPlayer({ typed = false } = {}) {
     if (own) {
       if (typeof own.members === 'boolean') members.value = own.members
       if (typeof own.iron === 'boolean') iron.value = own.iron
+      if (own.build) build.value = own.build
+      if (own.ironKind) ironKind.value = own.ironKind
       if (own.hours) hoursPerDay.value = own.hours
     }
     player.value = found
@@ -517,24 +531,87 @@ const goals = ref([])
 const { playHours, setPlayHours } = usePlayHours()
 const hoursPerDay = ref(playHours())
 // Free-to-play (false) or members: a free-to-play plan trains with free methods only (see utils/membership.js).
-const { setMembersPref, setIronPref } = useAccountType()
+const { setMembersPref, setIronPref, setBuildPref, setIronKindPref } = useAccountType()
 // A new plan starts with the account type last chosen anywhere on the site.
 const members = ref(membersPref())
 // An ironman plan leaves gp out and starts from the cheapest routes (see utils/ironman.js). What is on screen follows the plan open now.
 const iron = ref(ironPref())
+// What kind of account it is (a level 3 skiller, a pure...) and what kind of ironman: they decide which skills, methods and quests the plan may use
+// (see utils/builds.js). Like the two above they start from the last choice made anywhere on the site.
+const build = ref(buildPref())
+const ironKind = ref(ironKindPref())
+const accountRules = () => ({ members: members.value, build: build.value, iron: iron.value, ironKind: ironKind.value })
+// The same, for the start page and the account option at the top.
+const accountNow = computed(() => accountRules())
+const { seen: setupSeen, markSeen: markSetupSeen } = useAccountSetupSeen()
+// A choice about the account is kept for the player it is for when that player is one of your profiles (each can have its own settings, also on the account
+// page); otherwise it becomes the default for new plans.
+const profileSettings = useProfileSettings()
+function rememberAccount(patch) {
+  const name = player.value?.displayName
+  if (name && profileEntry(name)) return profileSettings.set(name, patch)
+  if ('members' in patch) setMembersPref(patch.members)
+  if ('iron' in patch) setIronPref(patch.iron)
+  if ('ironKind' in patch) setIronKindPref(patch.ironKind)
+  if ('build' in patch) setBuildPref(patch.build)
+}
+// The start page and the account option report choices as small patches: { build: 'skiller' }.
+function applyAccountPatch(patch) {
+  if ('members' in patch) setMembers(patch.members)
+  if ('iron' in patch) setIron(patch.iron)
+  if ('ironKind' in patch) setIronKind(patch.ironKind)
+  if ('build' in patch) setBuild(patch.build)
+}
+// The goals made to fit the account: locked skills dropped, targets held at the build's caps, methods cut to what the account may use. `prev` is the
+// rules they were last given, so a change can undo what it set before.
+const applyAccountRules = (list, prev = null) => applyRules(list, accountRules(), prev, freeMethodIds)
+// The build the loaded player's stats already look like (a level 3 skiller, a pure...), offered in the plan settings.
+const detectedBuild = computed(() => {
+  const skills = player.value?.latest?.skills
+  if (!skills) return null
+  const levels = {}
+  for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
+  return detectBuild(levels)
+})
+// Tells the person which goals a change took out of the plan (a locked skill cannot be planned).
+function noteDropped(before, after, why) {
+  const gone = before.filter((g) => !after.some((a) => a.skill === g.skill)).map((g) => g.skill)
+  if (gone.length) showToast(`${gone.join(', ')} ${gone.length === 1 ? 'was' : 'were'} taken out of the plan: ${why}.`)
+}
 watch(iron, (v) => setIronMode(v), { immediate: true })
 onBeforeUnmount(() => setIronMode(null))
 function setIron(value) {
+  const prev = accountRules()
   iron.value = value === true
-  setIronPref(iron.value)
+  rememberAccount({ iron: iron.value })
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
+  goals.value = applyAccountRules(goals.value, prev)
   track('planner_ironman', { iron: iron.value })
 }
+function setIronKind(value) {
+  const prev = accountRules()
+  ironKind.value = cleanIronKind(value)
+  rememberAccount({ ironKind: ironKind.value })
+  goals.value = applyAccountRules(goals.value, prev)
+  track('planner_iron_kind', { kind: ironKind.value })
+}
 function setMembers(value) {
+  const prev = accountRules()
+  const before = goals.value
   members.value = value !== false
-  setMembersPref(members.value)
-  goals.value = applyMembership(goals.value, members.value)
+  rememberAccount({ members: members.value })
+  goals.value = applyAccountRules(goals.value, prev)
+  noteDropped(before, goals.value, `members-only skills cannot be trained free-to-play`)
   track('planner_members', { members: members.value })
+}
+function setBuild(value) {
+  const prev = accountRules()
+  const before = goals.value
+  build.value = cleanBuild(value)
+  rememberAccount({ build: build.value })
+  goals.value = applyAccountRules(goals.value, prev)
+  noteDropped(before, goals.value, `${buildOf(build.value).short} does not train ${before.length === 1 ? 'it' : 'them'}`)
+  track('planner_build', { build: build.value })
 }
 function onHoursTyped(e) {
   const raw = e.target.value
@@ -582,12 +659,13 @@ const reqCtx = computed(() => {
   }
 })
 provide(plannerRequirementContext, reqCtx)
+provide(plannerAccountContext, computed(() => accountRules()))
 const blockedIds = computed(() => (respect.value ? blockedMethodIds(TRAINING_METHODS, reqCtx.value) : []))
 const withBlocked = (g) => ({ ...g, blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value })
 // What the suggested order is worked out with: the planner's own settings and adjustments, so it matches the plans on screen.
 const smartOpts = () => ({ globalStrategy: globalStrategy.value, gpValue: gpValue.value, extra: { blockedMethodIds: blockedIds.value, doneQuestIds: doneQuestIds.value } })
 // A new goal starts with the short XP quests that pay off for it (or that a method on its route needs anyway).
-const withSuggestedQuests = (g) => ({ ...g, quests: suggestedQuests(withBlocked(resolveGoal({ ...g, quests: [] }, globalStrategy.value, gpValue.value))) })
+const withSuggestedQuests = (g) => ({ ...g, quests: suggestedQuests(withBlocked(resolveGoal({ ...g, quests: [] }, globalStrategy.value, gpValue.value)), (q) => questFitsBuild(q, accountRules())) })
 const resolved = computed(() => liveGoals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
 const resolvedOriginal = computed(() => goals.value.map((g) => withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value))))
 const planCache = new Map()
@@ -812,10 +890,12 @@ function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
 }
-async function saveSettings({ name, strategy, hours, profile, members: wantMembers, iron: wantIron }) {
+async function saveSettings({ name, strategy, hours, profile, members: wantMembers, iron: wantIron, build: wantBuild, ironKind: wantIronKind }) {
   closeSettings()
   if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
   if (wantIron !== undefined && wantIron !== iron.value) setIron(wantIron)
+  if (wantIronKind !== undefined && wantIronKind !== ironKind.value) setIronKind(wantIronKind)
+  if (wantBuild !== undefined && wantBuild !== build.value) setBuild(wantBuild)
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
     currentPlanName.value = name.slice(0, 60)
@@ -887,7 +967,7 @@ function openAdd(skill) {
 function addGoalFrom(goal, wantMembers, wantIron) {
   if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
   if (wantIron !== undefined && wantIron !== iron.value) setIron(wantIron)
-  addGoal(goal)
+  addGoal(applyAccountRules([goal])[0] || goal)
 }
 function addGoal(goal) {
   if (goals.value.some((g) => g.skill === goal.skill)) return
@@ -896,7 +976,7 @@ function addGoal(goal) {
   // A plan still in the suggested order stays in it when a skill is added; one the player has arranged is left alone.
   const orderOpts = smartOpts()
   const wasSmart = !first && !smartOrderGoals(goals.value, orderOpts).changed
-  goals.value.push(...applyMembership([goal], members.value))
+  goals.value.push(...applyAccountRules([goal]))
   if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
   expanded.value = new Set([goal.skill])
   showAdd.value = false
@@ -1014,7 +1094,7 @@ function gpClass(gp) {
 
 // --- Share ------------------------------------------------------------------------
 function planState() {
-  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value, iron: iron.value }
+  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value }
 }
 // --- Saved plans (browser storage) ---------------------------------------------------
 const savedPlans = ref(listSavedPlans())
@@ -1068,6 +1148,8 @@ function currentSnapshotState() {
     hoursPerDay: hoursPerDay.value,
     members: members.value,
     iron: iron.value,
+    build: build.value,
+    ironKind: ironKind.value,
     smart: smartProfile.value,
     goals: goals.value,
   }
@@ -1125,8 +1207,8 @@ function personalizeTemplate() {
   if (!player.value?.latest) return
   // A recommended plan made before any player was known is rebuilt from the player's real stats (its goals depend on them).
   if (template.value?.recommendedId) {
-    const rec = recommendedPlans(player.value.latest.skills).find((r) => r.id === template.value.recommendedId)
-    if (rec) goals.value = applyMembership(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals, members.value)
+    const rec = recommendedPlans(player.value.latest.skills, accountRules()).find((r) => r.id === template.value.recommendedId)
+    if (rec) goals.value = applyAccountRules(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals)
     else goals.value = []
     statsAt.value = player.value.latest.capturedAt
     templatePending.value = false
@@ -1183,13 +1265,15 @@ function useRecommended(rec, { save = true } = {}) {
   keepCurrentPlanBefore(rec.title)
   members.value = membersPref()
   iron.value = ironPref()
+  build.value = buildPref()
+  ironKind.value = ironKindPref()
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   unsavedShareId.value = ''
   tab.value = 'overview'
   goalFilter.value = 'all'
   // A new plan starts in the suggested order (see utils/smartOrder.js), tailored to the player's stats.
-  goals.value = applyMembership(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals, members.value)
+  goals.value = applyAccountRules(smartOrderGoals(rec.goals.map(withSuggestedQuests), smartOpts()).goals)
   statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
   currentPlanId.value = ''
   currentPlanName.value = rec.title.slice(0, 60)
@@ -1219,6 +1303,8 @@ function useSmartPlan(plan) {
   // The settings first: everything that works the plan out (the order, the totals) reads them.
   members.value = plan.profile ? plan.profile.members !== false : plan.members !== false
   iron.value = plan.profile ? plan.profile.iron === true : plan.iron === true
+  build.value = cleanBuild(plan.profile ? plan.profile.build : plan.build)
+  ironKind.value = cleanIronKind(plan.profile ? plan.profile.ironKind : plan.ironKind)
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1234,10 +1320,12 @@ function useSmartPlan(plan) {
   afterCreate(name)
 }
 async function startSmart(profile) {
+  markSetupSeen()
   await loadTyped()
   // The Smart Planner is built on the player's real levels, so it does not start without them.
   if (!player.value?.latest) return showToast('The Smart Planner needs your RuneScape name to make a plan that fits you.')
-  const plan = planFromProfile(profile, player.value?.latest?.skills || null, { done: new Set(doneQuestIds.value) })
+  // The plan is for the account chosen above, whatever the Smart Planner last remembered.
+  const plan = planFromProfile({ ...profile, ...accountRules() }, player.value?.latest?.skills || null, { done: new Set(doneQuestIds.value) })
   if (!plan.goals.length) return showToast('Nothing to plan for those answers. Change one and try again.')
   useSmartPlan(plan)
 }
@@ -1281,7 +1369,7 @@ async function loadTemplate(slug) {
 
 // The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
 const paceShareLink = computed(() => {
-  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value })
+  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value })
   params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`
 })
@@ -1318,6 +1406,8 @@ function applyPlan(plan) {
   goals.value = plan.goals.map((g) => ({ ...g, quests: [...g.quests], ...(g.overrides ? { overrides: g.overrides.map((o) => ({ ...o })) } : {}) }))
   members.value = plan.members !== false
   iron.value = plan.iron === true
+  build.value = cleanBuild(plan.build)
+  ironKind.value = cleanIronKind(plan.ironKind)
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1352,6 +1442,8 @@ async function loadSaved(stored, { silent = false } = {}) {
 function startNew() {
   members.value = membersPref()
   iron.value = ironPref()
+  build.value = buildPref()
+  ironKind.value = ironKindPref()
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   goals.value = []
@@ -1444,15 +1536,17 @@ async function loadTyped({ force = false } = {}) {
 // A name typed in the search box but not loaded yet (they went straight for a plan) is loaded first, so the plan starts from
 // their own stats. With no name, or a name that cannot be found, the plan starts every skill from level 1.
 async function startFromPlan(rec, { save = true } = {}) {
+  markSetupSeen()
   await loadTyped()
   let plan = rec
   if (player.value?.latest) {
-    plan = recommendedPlans(player.value.latest.skills).find((r) => r.id === rec.id)
+    plan = recommendedPlans(player.value.latest.skills, accountRules()).find((r) => r.id === rec.id)
     if (!plan) return showToast('That plan is already done for this player. Pick another.')
   }
   useRecommended(plan, { save })
 }
 async function startCustom(skill) {
+  markSetupSeen()
   await loadTyped()
   openAdd(skill)
 }
@@ -1475,7 +1569,7 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, members, iron, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
+  [goals, hoursPerDay, members, iron, build, ironKind, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
   () => {
     calcAt.value = new Date()
     const state = planState()
@@ -1573,7 +1667,9 @@ const overviewProgress = computed(() => {
 function applyRestored(restored, keepScratch) {
   members.value = restored.members !== false
   iron.value = restored.iron === true
-  goals.value = applyMembership(restored.goals || [], members.value)
+  build.value = cleanBuild(restored.build)
+  ironKind.value = cleanIronKind(restored.ironKind)
+  goals.value = applyAccountRules(restored.goals || [])
   hoursPerDay.value = restored.hoursPerDay || 2
   username.value = restored.username || ''
   if (GLOBAL_STRATEGIES.includes(restored.strategy)) globalStrategy.value = restored.strategy

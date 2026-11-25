@@ -82,6 +82,12 @@ describe('planner preferences (hours a day)', () => {
     expect(sanitizeUserData({ plannerPrefs: { value: 4 } }).plannerPrefs).toBeUndefined()
     // Ironman is kept, and so are the settings of each profile (by lower-case name, bad names and values dropped).
     expect(sanitizeUserData({ plannerPrefs: { value: { members: false, iron: true } } }).plannerPrefs.value).toEqual({ members: false, iron: true })
+    // The kind of account: a fixed list of builds and ironman kinds, nothing else kept.
+    expect(sanitizeUserData({ plannerPrefs: { value: { build: 'skiller', iron: true, ironKind: 'hardcore' } } }).plannerPrefs.value).toEqual({ iron: true, build: 'skiller', ironKind: 'hardcore' })
+    expect(sanitizeUserData({ plannerPrefs: { value: { build: 'wizard', ironKind: '<b>' } } }).plannerPrefs.value).toEqual({})
+    const withProfiles = sanitizeUserData({ plannerPrefs: { value: { profiles: { 'alt one': { build: 'pure', members: false, ironKind: 'group' }, 'alt two': { build: 'nope' } } } } }).plannerPrefs.value
+    expect(withProfiles.profiles).toEqual({ 'alt one': { members: false, build: 'pure', ironKind: 'group' } })
+    expect(sanitizeUserData({ plannerProfile: { value: { build: 'zerker', ironKind: 'ultimate', iron: true } } }).plannerProfile.value).toEqual({ iron: true, build: 'zerker', ironKind: 'ultimate' })
     expect(
       sanitizeUserData({
         plannerPrefs: { value: { hours: 2, profiles: { 'Iron Zez': { members: true, iron: true, hours: 3.3 }, 'bad<name>': { iron: true }, main: { hours: 'lots' }, alt: { evil: 1 } } } },

@@ -212,7 +212,7 @@ const gpShort = (n) => formatGp(Math.round(n)).replace(/ gp$/, '')
 // "Make money" reads as "make money" mid-sentence, but a title that opens with an acronym ("AFK training") keeps its capitals
 const lower = (t) => (/^[A-Z]{2}/.test(t) ? t : `${t.charAt(0).toLowerCase()}${t.slice(1)}`)
 // "Make money" is not offered to an ironman (nothing can be sold).
-const goalChoices = computed(() => GOALS.filter((g) => !(profile.value.iron && g.key === 'money')))
+const goalChoices = computed(() => GOALS.filter((g) => !(profile.value.iron && g.key === 'money') && !(profile.value.build === 'skiller' && g.key === 'combat')))
 const goalLabel = computed(() => GOALS.find((g) => g.key === profile.value.goal)?.label || '')
 const gpLabel = computed(() => GP_LEVELS.find((g) => g.key === profile.value.gp)?.label || '')
 

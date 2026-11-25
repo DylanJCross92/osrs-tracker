@@ -4,14 +4,14 @@ import { mainProfileKey, plainSettings, profileEntry, profileKey, saveProfileEnt
 import { useAccountType } from '@/composables/useAccountType'
 import { usePlayHours } from '@/composables/usePlayHours'
 
-// The settings of each RuneScape profile the account owns: members or free-to-play, ironman, and hours played a day. They carry across
+// The settings of each RuneScape profile the account owns: members or free-to-play, ironman (and which kind), build, and hours played a day. They carry across
 // every feature: the main profile's settings are what planners and calculators start from, and the planner uses a profile's own when that
 // profile is loaded. Saved with the account's other planner preferences (see utils/profilePrefs.js).
 const version = ref(0)
 const bump = () => version.value++
 if (typeof window !== 'undefined') window.addEventListener(SYNCED_EVENT, bump)
 
-/** { members, iron, hours } for a profile: what was saved for it, else what the plain preferences say. */
+/** { members, iron, build, ironKind, hours } for a profile: what was saved for it, else what the plain preferences say. */
 export function settingsOf(name) {
   void version.value
   return { ...plainSettings(), ...(profileEntry(name) || {}) }
@@ -27,6 +27,8 @@ export function useProfileSettings() {
   function applyToPlain(s) {
     type.setMembersPref(s.members)
     type.setIronPref(s.iron)
+    type.setBuildPref(s.build)
+    type.setIronKindPref(s.ironKind)
     hours.setPlayHours(s.hours)
   }
 

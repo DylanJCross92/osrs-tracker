@@ -30,7 +30,9 @@
 
 <script setup>
 import { track } from '@/utils/analytics'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
+import { plannerAccountContext } from '@/composables/plannerAccountContext'
+import { questFitsBuild } from '@/utils/builds'
 import NewTag from '@/components/NewTag.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
@@ -48,6 +50,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const { loggedIn } = useAuth()
 const { doneQuestIds, setQuestDone } = useRequirements()
+// Quests that would break the account's build (a fight for a skiller, Defence experience for a pure) are not offered.
+const account = inject(plannerAccountContext, null)
 
 // Finished quests are not offered (they cannot give their reward again); they are listed so they can be undone.
 const doneList = computed(() => questsForSkill(props.skill).filter((q) => doneQuestIds.value.includes(q.id)))
@@ -60,6 +64,7 @@ const candidates = computed(() => {
   const done = new Set(doneQuestIds.value)
   return questsForSkill(props.skill)
     .filter((quest) => !done.has(quest.id))
+    .filter((quest) => !account?.value || questFitsBuild(quest, account.value))
     .filter((quest) => quest.rewards[props.skill] <= remaining || props.modelValue.includes(quest.id))
     // The biggest rewards are looked at (there are many quests now), then the ones you can do and that save the most come first.
     .slice(0, 14)

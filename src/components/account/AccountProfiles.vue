@@ -38,11 +38,25 @@
               @update:model-value="(v) => change(c.player, { members: v })"
               @update:iron="(v) => change(c.player, { iron: v })"
             />
+            <div class="acp-field">
+              <span class="acct-label">Build</span>
+              <select class="acp-select" :value="of(c.player).build" :aria-label="`Build of ${c.player.displayName}`" @change="change(c.player, { build: $event.target.value })">
+                <option v-for="b in BUILDS" :key="b.key" :value="b.key">{{ b.label }}</option>
+              </select>
+            </div>
+            <div v-if="of(c.player).iron" class="acp-field">
+              <span class="acct-label">Kind of ironman</span>
+              <select class="acp-select" :value="of(c.player).ironKind" :aria-label="`Kind of ironman for ${c.player.displayName}`" @change="change(c.player, { ironKind: $event.target.value })">
+                <option v-for="k in IRON_KINDS" :key="k.key" :value="k.key">{{ k.label }}</option>
+              </select>
+            </div>
+            <div class="acp-field">
             <span class="acct-label">Hours played a day</span>
             <div class="acp-hours" role="group" :aria-label="`Hours ${c.player.displayName} plays a day`">
               <button type="button" aria-label="Half an hour less" :disabled="of(c.player).hours <= MIN_PLAY_HOURS" @click="change(c.player, { hours: of(c.player).hours - 0.5 })">−</button>
               <b>{{ of(c.player).hours }} h</b>
               <button type="button" aria-label="Half an hour more" :disabled="of(c.player).hours >= MAX_PLAY_HOURS" @click="change(c.player, { hours: of(c.player).hours + 0.5 })">+</button>
+            </div>
             </div>
           </div>
         </li>
@@ -75,6 +89,8 @@ import { useRivals } from '@/composables/useRivals'
 import { MAX_PLAY_HOURS, MIN_PLAY_HOURS } from '@/composables/usePlayHours'
 import { useProfileSettings } from '@/composables/useProfileSettings'
 import { meForProfiles } from '@/utils/identity'
+import { BUILDS, IRON_KINDS } from '@/data/builds'
+import { profilePageApi } from '@/api/profilePage'
 import { track } from '@/utils/analytics'
 
 // The account's profiles, each with the settings that carry across the site: members or free-to-play, ironman, and the hours played a day.
@@ -93,6 +109,11 @@ const isMain = (player) => mainName.value.toLowerCase() === String(player.displa
 function change(player, patch) {
   settings.set(player.displayName, patch)
   track('profile_setting_changed', { setting: Object.keys(patch)[0] })
+  // The kind of account is also shown on the public profile, beside the name.
+  if ('build' in patch || 'iron' in patch || 'ironKind' in patch) {
+    const now = of(player)
+    profilePageApi.save(player.username, { build: now.build, ironKind: now.iron ? now.ironKind : null }).catch(() => {})
+  }
 }
 async function makeMain(player) {
   setMe(player.displayName)

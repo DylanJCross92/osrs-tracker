@@ -2,6 +2,9 @@
   <section class="ps" aria-label="Start a plan">
     <div v-if="$slots.saved" class="ps-saved"><slot name="saved" /></div>
 
+    <!-- What kind of account the plans are for: asked before any plan is shown -->
+    <AccountSetup v-if="!seen" :account="account" :skills="skills" :player-label="playerLabel" @change="(patch) => $emit('account', patch)" @done="markSeen" />
+
     <!-- Recommended plans: the top three, always shown; every plan is in the Ready-made plan window -->
     <div id="ps-start" class="ps-block">
       <header class="ps-head">
@@ -10,6 +13,7 @@
       <p class="rp-sub">Pick one and every goal is set up for you, worked out from {{ hasPlayer ? `${playerLabel}'s` : 'your' }} stats{{ hasPlayer ? '' : ' (every skill starts from level 1 until you add your name)' }}. Change anything afterwards.</p>
       <RecommendedPlans
         quiet
+        :account="account"
         featured
         :skills="skills"
         :has-player="hasPlayer"
@@ -30,7 +34,7 @@
         <p class="ps-split-sub">Pick a skill and set your own goal, then fine-tune the route.{{ hasPlayer ? ` The number is ${playerLabel}'s level now.` : '' }}</p>
         <div class="byo byo-split">
           <div class="byo-skills" role="group" aria-label="Start with a skill">
-            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" type="button" :title="s" :aria-label="`Start with ${s}`" @click="$emit('custom', s)">
+            <button v-for="s in SKILL_NAMES" :key="s" class="byo-skill" :class="{ 'is-locked': locked.has(s) }" type="button" :disabled="locked.has(s)" :title="locked.has(s) ? lockText(s) : s" :aria-label="locked.has(s) ? `${s}, locked for your account` : `Start with ${s}`" @click="$emit('custom', s)">
               <img :src="skillIconSrc(s)" alt="" width="26" height="26" />
               <span>{{ s }}</span>
               <i v-if="levelOf(s) != null" class="byo-lvl" :class="{ maxed: levelOf(s) >= 99 }" :title="`${playerLabel || 'Your'} level ${levelOf(s)}`">{{ levelOf(s) }}</i>
@@ -52,6 +56,7 @@
     <PlannerPlansModal
       v-if="showAll"
       :skills="skills"
+      :account="account"
       :has-player="hasPlayer"
       :player-label="playerLabel"
       :hours-per-day="hoursPerDay"
@@ -89,7 +94,11 @@
 
 <script setup>
 import { computed, nextTick, ref } from 'vue'
+import AccountSetup from '@/components/planner/AccountSetup.vue'
 import RecommendedPlans from '@/components/planner/RecommendedPlans.vue'
+import { buildOf } from '@/data/builds'
+import { useAccountSetupSeen } from '@/composables/useAccountSetupSeen'
+import { lockReason, lockedSkills } from '@/utils/builds'
 import SmartPlanner from '@/components/planner/SmartPlanner.vue'
 import PlannerPlansModal from '@/components/planner/PlannerPlansModal.vue'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
@@ -106,8 +115,10 @@ const props = defineProps({
   hoursPerDay: { type: Number, default: 2 },
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
+  // What kind of account the plans are for (the loaded player's own settings): { members, iron, ironKind, build }.
+  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', build: 'main' }) },
 })
-const emit = defineEmits(['use', 'open', 'custom', 'smart', 'smart-open'])
+const emit = defineEmits(['use', 'open', 'custom', 'smart', 'smart-open', 'account'])
 // The ready-made plans are at the top of the page; the links that point at them scroll there.
 async function showPlans(scroll = false) {
   if (!scroll) return
@@ -116,9 +127,15 @@ async function showPlans(scroll = false) {
 }
 defineExpose({ showPlans })
 
+// Skills the chosen build never trains are shown but cannot be picked.
+const { seen, markSeen } = useAccountSetupSeen()
+const locked = computed(() => new Set(lockedSkills(props.account)))
+const build = computed(() => props.account.build)
+const lockText = (s) => (lockReason(props.account, s) === 'members' ? `${s} is members-only` : `${s} is locked for a ${buildOf(build.value).short.toLowerCase()}`)
+
 // The player's current level in a skill, when a player is chosen
 const levelOf = (skill) => (props.hasPlayer ? props.skills?.[skill]?.level ?? null : null)
-const allCount = computed(() => recommendedPlans(props.skills).length)
+const allCount = computed(() => recommendedPlans(props.skills, props.account).length)
 const canShowAll = computed(() => allCount.value > 3)
 const showAll = ref(false)
 function onModalOpen(r) {

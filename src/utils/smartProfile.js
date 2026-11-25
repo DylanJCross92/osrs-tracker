@@ -1,8 +1,9 @@
 import { AUTO_BALANCED, AUTO_CHEAP, AUTO_FAST } from '@/utils/planner'
+import { buildOf, cleanBuild, cleanIronKind, ironKindOf } from '@/data/builds'
 
 // The answers to the Smart Planner's questions and what they are allowed to be. Kept apart from the planning (utils/smartPlanner.js) so the saved
 // plans and the account data can check answers without pulling the planner in.
-// Answers (the "profile"): { members, goal, hours, gp, experience, iron }.
+// Answers (the "profile"): { members, goal, hours, gp, experience, iron, build, ironKind }.
 
 export const GOALS = [
   { key: 'skills', label: 'Max my skills', hint: 'Bring every skill up, tier by tier' },
@@ -25,7 +26,7 @@ export const GP_LEVELS = [
   { key: 'rich', label: '100M or more', strategy: AUTO_FAST, gpValue: 6_000_000, budget: null },
 ]
 
-export const DEFAULT_PROFILE = { members: true, goal: 'skills', hours: 2, gp: 'low', experience: 'returning', iron: false }
+export const DEFAULT_PROFILE = { members: true, goal: 'skills', hours: 2, gp: 'low', experience: 'returning', iron: false, build: 'main', ironKind: 'standard' }
 
 /** Answers that are safe to use: anything unknown falls back to the default. */
 export function cleanProfile(raw) {
@@ -34,7 +35,10 @@ export function cleanProfile(raw) {
   const hours = Number(r.hours)
   const iron = typeof r.iron === 'boolean' ? r.iron : DEFAULT_PROFILE.iron
   // Making money is not something an ironman does (nothing can be sold), so that goal becomes the plain skills plan.
-  const goal = pick(r.goal, GOALS, DEFAULT_PROFILE.goal)
+  const picked = pick(r.goal, GOALS, DEFAULT_PROFILE.goal)
+  const build = cleanBuild(r.build)
+  // A level 3 skiller has no combat to plan, so that goal becomes the plain skills plan.
+  const goal = build === 'skiller' && picked === 'combat' ? DEFAULT_PROFILE.goal : picked
   return {
     members: typeof r.members === 'boolean' ? r.members : DEFAULT_PROFILE.members,
     goal: iron && goal === 'money' ? DEFAULT_PROFILE.goal : goal,
@@ -42,6 +46,8 @@ export function cleanProfile(raw) {
     gp: pick(r.gp, GP_LEVELS, DEFAULT_PROFILE.gp),
     experience: pick(r.experience, EXPERIENCE, DEFAULT_PROFILE.experience),
     iron,
+    build,
+    ironKind: cleanIronKind(r.ironKind),
   }
 }
 
@@ -50,5 +56,5 @@ const label = (list, key) => list.find((x) => x.key === key)?.label || ''
 /** The answers in a few words, for a line on the plan: "Members · Combat and bossing · 2 h a day · Veteran · Ironman". */
 export function describeProfile(raw) {
   const p = cleanProfile(raw)
-  return [p.members ? 'Members' : 'Free-to-play', label(GOALS, p.goal), `${p.hours} h a day`, label(EXPERIENCE, p.experience), p.iron ? 'Ironman' : null].filter(Boolean).join(' · ')
+  return [p.members ? 'Members' : 'Free-to-play', label(GOALS, p.goal), `${p.hours} h a day`, label(EXPERIENCE, p.experience), p.iron ? ironKindOf(p.ironKind).label : null, p.build !== 'main' ? buildOf(p.build).short : null].filter(Boolean).join(' · ')
 }

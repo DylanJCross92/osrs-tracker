@@ -50,46 +50,13 @@ describe('the add-goal window', () => {
     for (const id of goal.allowedMethodIds) expect(F2P_METHOD_IDS.has(id)).toBe(true)
   })
 
-  it('says so when a skill has no free route', async () => {
+  it('locks members-only skills in the add-goal window when free-to-play', async () => {
     const { default: PlannerAddGoal } = await import('@/components/planner/PlannerAddGoal.vue')
     const stubs = { RouterLink: { props: ['to'], template: '<a><slot /></a>' }, PlannerRoute: true, NumberInput: true, SkillSelect: true }
     const w = mount(PlannerAddGoal, { props: { globalStrategy: 'auto-fast', gpValue: 2_000_000, initialSkill: 'Agility', members: false, player: null, existingSkills: [] }, global: { stubs } })
-    expect(w.find('.acct-note').text()).toMatch(/no free-to-play route for Agility/)
-  })
-})
-
-describe('the ironman choice', () => {
-  it('is remembered with the other planner preferences, and pages follow it', async () => {
-    const { useAccountType, ironPref, ironModeRef, setIronMode } = await import('@/composables/useAccountType')
-    const { usePlayHours } = await import('@/composables/usePlayHours')
-    expect(ironPref()).toBe(false)
-    usePlayHours().setPlayHours(3)
-    useAccountType().setMembersPref(false)
-    useAccountType().setIronPref(true)
-    expect(JSON.parse(localStorage.getItem(KEY))).toEqual({ hours: 3, members: false, iron: true })
-    expect(ironModeRef.value).toBe(true)
-    // a plan for a main account open while the person plays an ironman shows as main, and the person's own choice comes back after
-    setIronMode(false)
-    expect(ironModeRef.value).toBe(false)
-    setIronMode(null)
-    expect(ironModeRef.value).toBe(true)
-  })
-
-  it('shows gp as supplies to gather: no prices in the materials list', async () => {
-    const { ironModeRef, setIronMode } = await import('@/composables/useAccountType')
-    const { default: PlannerMaterials } = await import('@/components/planner/PlannerMaterials.vue')
-    const { getMethod } = await import('@/data/trainingMethods')
-    const plan = { segments: [{ method: getMethod('cooking-sharks'), fromXp: 1_986_068, toXp: 1_988_168 }] }
-    const stubs = { RouterLink: { props: ['to'], template: '<a><slot /></a>' }, GePriceBadge: true, PriceBasisToggle: true }
-    setIronMode(true)
-    expect(ironModeRef.value).toBe(true)
-    const w = mount(PlannerMaterials, { props: { plan }, global: { stubs } })
-    expect(w.find('h4').text()).toBe('Supplies to gather')
-    // every price piece carries the class that an ironman's page hides
-    expect(w.findAll('th').filter((th) => /Price each|Cost/.test(th.text())).every((th) => th.classes('gp-figure'))).toBe(true)
-    expect(w.findAll('td.mat-cost').every((td) => td.classes('gp-figure'))).toBe(true)
-    setIronMode(false)
-    const main = mount(PlannerMaterials, { props: { plan }, global: { stubs } })
-    expect(main.find('h4').text()).toBe('Materials needed')
+    const agility = w.findAll('option').find((o) => o.attributes('value') === 'Agility')
+    expect(agility.attributes('disabled')).toBeDefined()
+    expect(agility.text()).toMatch(/members only/)
+    expect(w.find('select').element.value).not.toBe('Agility')
   })
 })

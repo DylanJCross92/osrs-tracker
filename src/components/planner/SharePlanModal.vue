@@ -117,6 +117,11 @@ const longUrl = computed(() => {
     gpValue: props.plan.gpValue,
     budget: null,
     statsAt: named ? props.plan.statsAt : null,
+    // The kind of account the plan is for goes in the link, so whoever opens it sees the same skills and methods.
+    members: props.plan.members !== false,
+    iron: props.plan.iron === true,
+    build: props.plan.build || 'main',
+    ironKind: props.plan.ironKind || 'standard',
   })
   if (!named) params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`

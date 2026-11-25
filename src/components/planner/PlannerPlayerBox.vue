@@ -11,6 +11,8 @@
         </span>
       </div>
       <div class="pt-player-actions">
+        <!-- The page can put the account option (members, ironman, build) here, as part of the player -->
+        <slot name="account" />
         <button class="pt-link" type="button" @click="$emit('change')">Change</button>
       </div>
     </div>
@@ -28,11 +30,14 @@
           </li>
         </ul>
       </div>
-      <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan without a name.</p>
-      <slot v-else name="hint">
-        <p v-if="lookingUp" class="pt-hint">Loading stats…</p>
-        <p v-else class="pt-hint">Press Enter to load a player<template v-if="player"> · <button class="btn-text" type="button" @click="$emit('cancel')">Cancel</button></template></p>
-      </slot>
+      <div class="ppb-foot">
+        <p v-if="lookupError" class="planner-error">{{ lookupError }} You can still plan without a name.</p>
+        <slot v-else name="hint">
+          <p v-if="lookingUp" class="pt-hint">Loading stats…</p>
+          <p v-else class="pt-hint">Press Enter to load a player<template v-if="player"> · <button class="btn-text" type="button" @click="$emit('cancel')">Cancel</button></template></p>
+        </slot>
+        <div v-if="$slots.account" class="ppb-foot-account"><slot name="account" /></div>
+      </div>
     </template>
   </div>
 </template>

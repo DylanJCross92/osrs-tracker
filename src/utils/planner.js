@@ -1,6 +1,7 @@
 import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 import { requirementsFor } from '@/data/methodRequirements'
 import { questId } from '@/utils/questSlug'
+import { cleanBuild, cleanIronKind } from '@/data/builds'
 import { QUESTS, getQuest, questChain, questXpFor, withPrerequisites } from '@/data/quests'
 
 export const MAX_XP = 200_000_000
@@ -362,7 +363,7 @@ export const formatDays = (n) => `${Number(n).toLocaleString('en-US')} ${Number(
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
 // Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.
-export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt, members = true, iron = false }) {
+export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt, members = true, iron = false, build = 'main', ironKind = 'standard' }) {
   const params = new URLSearchParams()
   if (username) params.set('u', username)
   params.set('h', String(hoursPerDay))
@@ -379,6 +380,9 @@ export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, bu
   if (members === false) params.set('m', '0')
   // i=1: an ironman's plan.
   if (iron === true) params.set('i', '1')
+  // bd: the build (a level 3 skiller, a pure...), ik: the kind of ironman. Left out for a plain account.
+  if (build && build !== 'main') params.set('bd', build)
+  if (iron === true && ironKind && ironKind !== 'standard') params.set('ik', ironKind)
   // When the goals' starting stats were captured: the baseline live progress is measured from.
   const at = statsAt ? new Date(statsAt).getTime() : NaN
   if (Number.isFinite(at)) params.set('t', String(at))
@@ -407,7 +411,7 @@ export function decodePlan(query, validSkills) {
   const budget = Math.min(Math.max(parseInt(query.b, 10) || 0, 0), 100_000_000_000)
   const t = parseInt(query.t, 10)
   const statsAt = Number.isFinite(t) && t > 0 && t <= Date.now() + 86_400_000 ? new Date(t).toISOString() : null
-  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt, members: query.m !== '0', iron: query.i === '1' }
+  return { username: typeof query.u === 'string' ? query.u.slice(0, 12) : '', hoursPerDay: hours, goals, strategy, gpValue, budget: budget || null, statsAt, members: query.m !== '0', iron: query.i === '1', build: cleanBuild(query.bd), ironKind: cleanIronKind(query.ik) }
 }
 
 /**
@@ -416,11 +420,11 @@ export function decodePlan(query, validSkills) {
  * Temple of the Eye, so its quests are done first and their XP skips the early levels), or the XP they give saves more time
  * and gp than the quests take. Quests already finished are left out.
  */
-export function suggestedQuests(goal) {
+export function suggestedQuests(goal, allowed = () => true) {
   const done = new Set(goal.doneQuestIds || [])
   const remaining = (goal.targetXp || 0) - (goal.currentXp || 0)
   if (remaining <= 0) return []
-  const candidates = QUESTS.filter((x) => x.suggest && x.rewards[goal.skill])
+  const candidates = QUESTS.filter((x) => x.suggest && x.rewards[goal.skill] && allowed(x))
   if (!candidates.length) return []
   const baseGoal = planGoal({ ...goal, quests: [] })
 

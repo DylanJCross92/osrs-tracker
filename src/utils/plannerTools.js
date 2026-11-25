@@ -9,6 +9,7 @@ import { ECONOMY } from '@/data/methodEconomy'
 import { itemsStatus } from '@/utils/methodItems'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { cleanProfile } from '@/utils/smartProfile'
+import { cleanBuild, cleanIronKind } from '@/data/builds'
 import { startOfGameDay } from '@/utils/gameDay'
 import {
   MAX_XP,
@@ -561,6 +562,8 @@ export function snapshotPlan(state, name, existing = {}) {
     hoursPerDay: state.hoursPerDay,
     ...(state.members === false ? { members: false } : {}),
     ...(state.iron === true ? { iron: true } : {}),
+    ...(cleanBuild(state.build) !== 'main' ? { build: cleanBuild(state.build) } : {}),
+    ...(state.iron === true && cleanIronKind(state.ironKind) !== 'standard' ? { ironKind: cleanIronKind(state.ironKind) } : {}),
     ...(state.smart ? { smart: cleanProfile(state.smart) } : {}),
     goals: state.goals.map((g) => ({
       skill: g.skill,
@@ -583,6 +586,8 @@ export function planFingerprint(p) {
     Number(p.gpValue),
     p.members === false ? 'free' : 'members',
     p.iron === true ? 'iron' : 'main',
+    cleanBuild(p.build),
+    p.iron === true ? cleanIronKind(p.ironKind) : 'standard',
     (p.goals || []).map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.customXpPerHour || 0, [...(g.quests || [])], g.allowedMethodIds?.length ? [...g.allowedMethodIds] : null, cleanOverrides(g.overrides).map((o) => [o.fromLevel, o.toLevel, o.methodId])]),
   ])
 }
@@ -689,6 +694,8 @@ export function validatePlan(raw) {
     hoursPerDay: num(src.hoursPerDay, 0.25, 24, 2),
     ...(src.members === false ? { members: false } : {}),
     ...(src.iron === true ? { iron: true } : {}),
+    ...(cleanBuild(src.build) !== 'main' ? { build: cleanBuild(src.build) } : {}),
+    ...(src.iron === true && cleanIronKind(src.ironKind) !== 'standard' ? { ironKind: cleanIronKind(src.ironKind) } : {}),
     ...(src.smart && typeof src.smart === 'object' ? { smart: cleanProfile(src.smart) } : {}),
     goals,
   }

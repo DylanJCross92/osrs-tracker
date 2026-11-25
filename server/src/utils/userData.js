@@ -63,6 +63,9 @@ function cleanSet(list) {
 const PLANNER_GOALS = ['skills', 'money', 'combat', 'quests', 'afk', 'hardcore']
 const PLANNER_GP = ['low', 'some', 'good', 'rich']
 const PLANNER_EXPERIENCE = ['new', 'returning', 'veteran']
+// The kinds of account (see src/data/builds.js): a fixed list, nothing free-form.
+const PLANNER_BUILDS = ['main', 'skiller', 'pure', 'zerker']
+const PLANNER_IRON_KINDS = ['standard', 'hardcore', 'ultimate', 'group']
 function cleanPlannerProfile(v) {
   if (!isObj(v)) return null
   const out = {}
@@ -71,6 +74,8 @@ function cleanPlannerProfile(v) {
   if (PLANNER_GOALS.includes(v.goal)) out.goal = v.goal
   if (Number.isFinite(Number(v.hours))) out.hours = Math.min(12, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
   if (PLANNER_GP.includes(v.gp)) out.gp = v.gp
+  if (PLANNER_BUILDS.includes(v.build)) out.build = v.build
+  if (PLANNER_IRON_KINDS.includes(v.ironKind)) out.ironKind = v.ironKind
   if (PLANNER_EXPERIENCE.includes(v.experience)) out.experience = v.experience
   if (typeof v.iron === 'boolean') out.iron = v.iron
   return out
@@ -87,6 +92,8 @@ function cleanAccountType(v) {
   if (Number.isFinite(Number(v.hours))) out.hours = Math.min(24, Math.max(0.5, Math.round(Number(v.hours) * 2) / 2))
   if (typeof v.members === 'boolean') out.members = v.members
   if (typeof v.iron === 'boolean') out.iron = v.iron
+  if (PLANNER_BUILDS.includes(v.build)) out.build = v.build
+  if (PLANNER_IRON_KINDS.includes(v.ironKind)) out.ironKind = v.ironKind
   return out
 }
 function cleanPlannerPrefs(v) {

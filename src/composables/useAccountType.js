@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
 import { mirrorToMain } from '@/utils/profilePrefs'
+import { cleanBuild, cleanIronKind } from '@/data/builds'
 
 // What kind of account the person plays, from the last time they chose it (on a plan's settings, in the add-goal window, a skill calculator or the Smart
 // Planner): free-to-play or members, and whether it is an ironman. Every planner and calculator starts from it, so nobody is asked again. Kept in this
@@ -23,15 +24,20 @@ function writePrefs(patch) {
   }
 }
 
-// Members and not an ironman until the person says otherwise.
+// Members and not an ironman until the person says otherwise. `build` is what kind of account it is (a level 3 skiller, a pure, see data/builds.js) and
+// `ironKind` what kind of ironman, when it is one.
 const members = ref(readPrefs().members !== false)
 const iron = ref(readPrefs().iron === true)
+const build = ref(cleanBuild(readPrefs().build))
+const ironKind = ref(cleanIronKind(readPrefs().ironKind))
 // Whether the page being looked at is for an ironman: the person's choice, unless a plan that says otherwise is open (see useIronMode in PlannerView).
 const ironMode = ref(iron.value)
 if (typeof window !== 'undefined') {
   window.addEventListener(SYNCED_EVENT, () => {
     members.value = readPrefs().members !== false
     iron.value = readPrefs().iron === true
+    build.value = cleanBuild(readPrefs().build)
+    ironKind.value = cleanIronKind(readPrefs().ironKind)
     ironMode.value = iron.value
   })
 }
@@ -39,6 +45,8 @@ if (typeof window !== 'undefined') {
 /** The account type a new plan or calculator starts with. */
 export const membersPref = () => members.value
 export const ironPref = () => iron.value
+export const buildPref = () => build.value
+export const ironKindPref = () => ironKind.value
 /** True when what is on screen is for an ironman: gp is left out and supplies are things to gather. */
 export const ironModeRef = ironMode
 /** A plan or page for a different account type than the person's own sets what is shown while it is open; null goes back to the person's choice. */
@@ -67,5 +75,23 @@ export function useAccountType() {
     mirrorToMain({ iron: next })
     return next
   }
-  return { members, iron, ironMode, membersPref, ironPref, setMembersPref, setIronPref }
+  /** Remember what kind of account it is (data/builds.js). Returns the build kept. */
+  function setBuildPref(value) {
+    const next = cleanBuild(value)
+    if (next === build.value) return next
+    build.value = next
+    writePrefs({ build: next })
+    mirrorToMain({ build: next })
+    return next
+  }
+  /** Remember what kind of ironman the account is. */
+  function setIronKindPref(value) {
+    const next = cleanIronKind(value)
+    if (next === ironKind.value) return next
+    ironKind.value = next
+    writePrefs({ ironKind: next })
+    mirrorToMain({ ironKind: next })
+    return next
+  }
+  return { members, iron, build, ironKind, ironMode, membersPref, ironPref, buildPref, ironKindPref, setMembersPref, setIronPref, setBuildPref, setIronKindPref }
 }

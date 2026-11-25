@@ -153,8 +153,8 @@ function onBlur() {
   if (!player.value && typed.value.trim().length > 1 && !suggestions.value.length) setTimeout(() => !suggestions.value.length && !player.value && load(typed.value, { typed: true }), 150)
 }
 
-const { members } = useAccountType()
-const list = computed(() => suggestNext(confirmations.value, levels.value, { members: members.value }))
+const { members, build } = useAccountType()
+const list = computed(() => suggestNext(confirmations.value, levels.value, { members: members.value, build: build.value }))
 const basis = computed(() => (levels.value ? 'Quests and diaries you can start now, ranked by what they open up in the planner.' : 'The most useful quests and diaries left, ranked by what they open up in the planner.'))
 
 // A short "thinking" beat when the page opens and when the player changes, like the Smart Planner.

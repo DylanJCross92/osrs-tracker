@@ -48,9 +48,10 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatDays, formatHours } from '@/utils/planner'
 import { summarizePlan } from '@/utils/plannerTools'
-import { MAX_TOTAL, groupedPlans, recommendedPlans } from '@/utils/recommendedPlans'
+import { groupedPlans, recommendedPlans } from '@/utils/recommendedPlans'
 
 const props = defineProps({
+  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', build: 'main' }) },
   skills: { type: Object, default: null },
   hasPlayer: { type: Boolean, default: false },
   playerLabel: { type: String, default: '' },
@@ -60,7 +61,7 @@ const props = defineProps({
 })
 const emit = defineEmits(['close', 'use', 'open'])
 
-const groups = computed(() => groupedPlans(recommendedPlans(props.skills)))
+const groups = computed(() => groupedPlans(recommendedPlans(props.skills, props.account)))
 const tabs = computed(() =>
   [
     { key: 'skills', label: 'Skill goals', hint: 'a level in every skill', plans: groups.value.skills },
@@ -77,7 +78,7 @@ const short = (r) => (r.description.split(/\.\s/)[0] || r.description).replace(/
 
 const MAX_ICONS = 8
 // Which picture a plan gets: the finish line goals, combat, a total level, or a plain level goal.
-const iconOf = (r) => (r.kind === 'combat' ? 'combat' : r.kind === 'total' ? (r.targetTotal === MAX_TOTAL ? 'max' : 'total') : r.id === 'all-99' || r.id.startsWith('virtual') || r.id === 'xp-200m' ? 'max' : 'levels')
+const iconOf = (r) => (r.kind === 'combat' ? 'combat' : r.kind === 'total' ? (r.title.startsWith('Max total') ? 'max' : 'total') : r.id === 'all-99' || r.id.startsWith('virtual') || r.id === 'xp-200m' ? 'max' : 'levels')
 
 const closeBtn = ref(null)
 const onKey = (e) => e.key === 'Escape' && emit('close')

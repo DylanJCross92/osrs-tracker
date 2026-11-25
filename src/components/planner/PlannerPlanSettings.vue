@@ -28,18 +28,14 @@
           </label>
         </div>
 
-        <!-- The kind of account, in compact chips -->
-        <div class="pset-field">
-          <span>Membership</span>
-          <OptionChips v-model="draftMembers" :options="MEMBERSHIP" label="Free-to-play or members" />
-        </div>
-        <div class="pset-field">
-          <span>Account type</span>
-          <OptionChips :model-value="draftIron" :options="ACCOUNT" label="Main account or ironman" @update:model-value="setIron" />
-          <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
-            We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
-          </p>
-        </div>
+        <!-- The kind of account: membership, main or ironman (and which kind) and the build -->
+        <AccountFields tight :members="draftMembers" :iron="draftIron" :iron-kind="draftIronKind" :build="draftBuild" :detected="detectedBuild" @update:members="(v) => (draftMembers = v)" @update:iron="setIron" @update:iron-kind="(v) => (draftIronKind = v)" @update:build="(v) => (draftBuild = v)" />
+        <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
+          We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
+        </p>
+        <p v-if="droppedByBuild.length" class="pset-note" role="status">
+          {{ droppedByBuild.join(', ') }} {{ droppedByBuild.length === 1 ? 'is' : 'are' }} locked for this account, so {{ droppedByBuild.length === 1 ? 'it comes' : 'they come' }} out of the plan when you save.
+        </p>
 
         <div class="pset-field">
           <span>Strategy for every skill</span>
@@ -71,6 +67,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { skillsWithoutFreeRoute } from '@/utils/membership'
 import OptionChips from '@/components/OptionChips.vue'
+import AccountFields from '@/components/planner/AccountFields.vue'
+import { isMembersSkill, lockedSkills } from '@/utils/builds'
 import { ironStrategy } from '@/utils/ironman'
 
 // The settings that belong to the whole plan, not one skill: its name, the strategy, how long you play, and who it is for.
@@ -85,6 +83,10 @@ const props = defineProps({
   // Free-to-play or members, and the skills in the plan (to say which ones a free player has no route for).
   members: { type: Boolean, default: true },
   iron: { type: Boolean, default: false },
+  // What kind of ironman, and the build (see data/builds.js); `detected` is the build the player's stats look like.
+  ironKind: { type: String, default: 'standard' },
+  build: { type: String, default: 'main' },
+  detected: { type: String, default: null },
   goalSkills: { type: Array, default: () => [] },
   // Only for a plan for a profile you own: { on, other, willSave, byDefault }. Shows the option to make this plan the goal on that profile.
   profile: { type: Object, default: null },
@@ -95,15 +97,11 @@ const draftStrategy = ref(props.strategy)
 const draftHours = ref(props.hoursPerDay)
 const draftMembers = ref(props.members)
 const draftIron = ref(props.iron)
-// The choices, with the icons the game itself uses where it has them.
-const MEMBERSHIP = [
-  { value: true, label: 'Members', icon: '/icons/ui/members.png', hint: 'Every skill and training method.' },
-  { value: false, label: 'Free-to-play', icon: '/icons/ui/free-to-play.png', hint: "Only free methods, from the wiki's free-to-play guides." },
-]
-const ACCOUNT = [
-  { value: false, label: 'Main account', icon: '/icons/ui/main-account.png', hint: 'You can buy and sell on the Grand Exchange.' },
-  { value: true, label: 'Ironman', icon: '/icons/ui/ironman.png', hint: 'You gather everything yourself: gp is left out and the cheapest routes lead.' },
-]
+const draftIronKind = ref(props.ironKind)
+const draftBuild = ref(props.build)
+const detectedBuild = computed(() => props.detected)
+// The skills in the plan that the chosen build never trains: they come out of the plan when the settings are saved.
+const droppedByBuild = computed(() => props.goalSkills.filter((skill) => lockedSkills({ build: draftBuild.value, members: draftMembers.value }).includes(skill)))
 const STRATEGY_LOOK = { 'auto-fast': { icon: '/icons/ui/fastest.png' }, 'auto-cheap': { icon: '/icons/ui/cheapest.png' }, 'auto-balanced': { svg: 'balance' } }
 const strategyChoices = computed(() => props.strategies.map((s) => ({ value: s.value, label: s.label, hint: s.hint, ...(STRATEGY_LOOK[s.value] || {}) })))
 // Choosing ironman also moves a strategy that assumes buying (fastest, profit) to cheapest, the way an ironman plays.
@@ -111,7 +109,7 @@ function setIron(on) {
   draftIron.value = on
   if (on) draftStrategy.value = ironStrategy(draftStrategy.value)
 }
-const noFreeRoute = computed(() => skillsWithoutFreeRoute(props.goalSkills.map((skill) => ({ skill }))))
+const noFreeRoute = computed(() => skillsWithoutFreeRoute(props.goalSkills.map((skill) => ({ skill }))).filter((skill) => !isMembersSkill(skill)))
 const draftProfile = ref(!!props.profile?.on || !!props.profile?.byDefault)
 const profileHint = computed(() => {
   if (props.profile?.other) return `This replaces "${props.profile.other}", the plan on your profile now.`
@@ -125,7 +123,7 @@ function setHours(v) {
 // How far along the slider is (0.5 to 12 hours), to colour the track up to the handle.
 const fill = computed(() => ((Math.min(Math.max(draftHours.value, 0.5), 12) - 0.5) / 11.5) * 100)
 function save() {
-  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value, iron: draftIron.value })
+  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value, iron: draftIron.value, ironKind: draftIronKind.value, build: draftBuild.value })
 }
 function cancel() {
   emit('close')

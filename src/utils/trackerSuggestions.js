@@ -12,6 +12,7 @@ import { resolveGoal } from '@/utils/plannerTools'
 import { completedQuestSlugs, questPoints } from '@/utils/questProgress'
 import { tierDone } from '@/utils/diaryProgress'
 import { combatLevel } from '@/utils/smartReasons'
+import { questFitsBuild } from '@/utils/builds'
 import { formatXp } from '@/utils/osrsSkills'
 
 /** Levels the player is short of for a { Skill: level } requirement: [{ skill, need, have }]. Empty when met, or when levels are not known. */
@@ -125,11 +126,13 @@ function diaryCandidates(confirmations, levels) {
  * The best things to do next, [{ kind, key, name, why, note, status, ... }], best first: up to `limit`, at most `maxDiaries` of them diary tiers so
  * quests are not crowded out. status is 'ready', 'almost' (a few levels short) or 'unknown' (no levels to check).
  */
-export function suggestNext(confirmations = {}, levels = null, { limit = 5, maxDiaries = 2, members = true } = {}) {
+export function suggestNext(confirmations = {}, levels = null, { limit = 5, maxDiaries = 2, members = true, build = 'main' } = {}) {
   // A free-to-play account is only offered free quests, and no diaries (they are members-only).
   const free = new Set(QUEST_LIST.filter((q) => q.type === 'F').map((q) => q.slug))
   const quests = questCandidates(confirmations, levels)
     .filter((q) => members || free.has(q.slug))
+    // A build leaves out the quests that would break it (a fight for a skiller, Defence experience for a pure).
+    .filter((q) => questFitsBuild(getQuest(q.slug), build))
     .sort((a, b) => b.score - a.score)
   const diaries = members ? diaryCandidates(confirmations, levels).sort((a, b) => b.score - a.score) : []
   const picked = []
@@ -155,7 +158,7 @@ const MAX_ON_THE_WAY = 3
  * their XP as of now; the hours come from the planner itself (the plan's hours with and without the quest's XP), so "saves about 3 h" is what the
  * plan would show. Returns the suggestion with { source: 'plan', saved, need, why }.
  */
-export function nextForPlan(confirmations = {}, levels = null, { goals = [], strategy, gpValue, blockedMethodIds = [], planName = '', members = true } = {}) {
+export function nextForPlan(confirmations = {}, levels = null, { goals = [], strategy, gpValue, blockedMethodIds = [], planName = '', members = true, build = 'main' } = {}) {
   const live = goals.filter((g) => g.targetXp > g.currentXp)
   if (!live.length) return null
   const prep = (g) => planGoal({ ...resolveGoal(g, strategy, gpValue), blockedMethodIds })
@@ -186,6 +189,7 @@ export function nextForPlan(confirmations = {}, levels = null, { goals = [], str
     if (!info) continue
     // A free-to-play account is only pointed at free quests.
     if (!members && !freeSlugs.has(c.slug)) continue
+    if (!questFitsBuild(info, build)) continue
     // 1. XP the plan would otherwise train for.
     let saved = 0
     const counted = []

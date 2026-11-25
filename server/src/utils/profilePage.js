@@ -35,12 +35,19 @@ export function cleanLink(link) {
 export const ACHIEVEMENT_KEY = /^[a-z_]{3,20}:[A-Za-z]{0,12}:\d{1,12}$/
 
 /** Keeps the known fields with valid values. A missing field stays missing so a partial save never wipes the rest. */
+// The kinds of account a profile can say it is (see src/data/builds.js).
+export const PAGE_BUILDS = ['main', 'skiller', 'pure', 'zerker']
+export const PAGE_IRON_KINDS = ['standard', 'hardcore', 'ultimate', 'group']
+
 export function sanitizeProfilePage(input) {
   const out = {}
   if (!input || typeof input !== 'object' || Array.isArray(input)) return out
   if ('bio' in input) out.bio = plain(input.bio, MAX_BIO)
   // '' clears the pin; anything that is not shaped like an achievement key is treated as clearing too.
   if ('pinnedAchievement' in input) out.pinnedAchievement = typeof input.pinnedAchievement === 'string' && ACHIEVEMENT_KEY.test(input.pinnedAchievement.trim()) ? input.pinnedAchievement.trim() : ''
+  if ('build' in input) out.build = PAGE_BUILDS.includes(input.build) ? input.build : 'main'
+  // null (or anything else) says it is not an ironman.
+  if ('ironKind' in input) out.ironKind = PAGE_IRON_KINDS.includes(input.ironKind) ? input.ironKind : null
   if (Array.isArray(input.links)) {
     const seen = new Set()
     out.links = []

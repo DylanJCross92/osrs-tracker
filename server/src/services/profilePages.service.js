@@ -18,7 +18,7 @@ export async function isOwner(userId, playerId) {
 /** The public parts of a profile's page. Everything has an empty default, so an uncustomised profile returns a blank page. */
 export async function getProfilePage(playerId) {
   const { rows } = await pool.query(
-    `SELECT bio, links, pinned_achievement, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
+    `SELECT bio, links, pinned_achievement, build, iron_kind, (avatar IS NOT NULL) AS has_avatar, extract(epoch from avatar_updated_at)::bigint AS avatar_v FROM profile_pages WHERE player_id = $1`,
     [playerId],
   )
   const r = rows[0]
@@ -26,6 +26,8 @@ export async function getProfilePage(playerId) {
     bio: r?.bio || '',
     links: r?.links || [],
     pinnedAchievement: r?.pinned_achievement || null,
+    build: r?.build || 'main',
+    ironKind: r?.iron_kind || null,
     hasAvatar: Boolean(r?.has_avatar),
     avatarV: r?.has_avatar ? Number(r.avatar_v) : null,
   }
@@ -50,6 +52,17 @@ export async function saveProfilePage(playerId, input) {
        updated_at = now()`,
     [playerId, patch.bio ?? null, patch.links ? JSON.stringify(patch.links) : null, hasPinned, hasPinned && patch.pinnedAchievement ? patch.pinnedAchievement : null],
   )
+  // The kind of account, written only when it was sent.
+  if ('build' in patch || 'ironKind' in patch) {
+    await pool.query(
+      `INSERT INTO profile_pages (player_id, build, iron_kind) VALUES ($1, $2::text, $3::text)
+       ON CONFLICT (player_id) DO UPDATE SET
+         build = CASE WHEN $4::boolean THEN $2::text ELSE profile_pages.build END,
+         iron_kind = CASE WHEN $5::boolean THEN $3::text ELSE profile_pages.iron_kind END,
+         updated_at = now()`,
+      [playerId, patch.build ?? null, patch.ironKind ?? null, 'build' in patch, 'ironKind' in patch],
+    )
+  }
   return getProfilePage(playerId)
 }
 
