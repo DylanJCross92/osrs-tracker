@@ -1,40 +1,38 @@
 <template>
   <div class="home">
-    <!-- 1. Hero -->
+    <!-- 1. Hero and username search -->
     <section class="home-hero" id="start">
-      <h1>The Free OSRS <span class="home-accent">XP Tracker</span></h1>
-      <p class="home-sub">Track every XP gain, explore your history, and plan your next 99.</p>
+      <h1>Track your gains. <span class="home-accent">Plan your next 99.</span></h1>
+      <p class="home-sub">The free OSRS XP tracker, Account Planner and live GE prices, in one place.</p>
 
       <div class="suggest-wrap home-suggest-wrap">
-      <form class="home-search" autocomplete="off" @submit.prevent="submitAdd">
-        <input
-          ref="searchInput"
-          v-model="newUsername"
-          type="search"
-          placeholder="Enter your OSRS name"
-          :disabled="adding"
-          autocomplete="off"
-          maxlength="12"
-          name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
-          aria-label="OSRS player name"
-          data-1p-ignore
-          data-lpignore="true"
-          @focus="searchFocused = true"
-          @blur="searchFocused = false"
-        />
-        <button v-if="newUsername.trim() || adding" class="btn btn-primary" type="submit" :disabled="adding || !newUsername.trim()">
-          {{ adding ? 'Adding…' : 'Start Tracking' }}
-        </button>
-      </form>
-      <RecentPlayers v-if="searchFocused && !newUsername.trim()" class="home-suggest" @pick="openRecent" />
-      <ul v-if="suggestions.length" class="search-suggest home-suggest">
-        <li class="suggest-head">Already tracked</li>
-        <li v-for="sg in suggestions" :key="sg.username">
-          <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' }); recordRecent(sg)">
-            <PlayerSuggestRow :player="sg" />
-          </RouterLink>
-        </li>
-      </ul>
+        <form class="home-search" autocomplete="off" @submit.prevent="submitAdd">
+          <input
+            ref="searchInput"
+            v-model="newUsername"
+            type="search"
+            placeholder="Enter your OSRS name"
+            :disabled="adding"
+            autocomplete="off"
+            maxlength="12"
+            name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"
+            aria-label="OSRS player name"
+            data-1p-ignore
+            data-lpignore="true"
+            @focus="searchFocused = true"
+            @blur="searchFocused = false"
+          />
+          <button class="btn btn-primary" type="submit" :disabled="adding || !newUsername.trim()">{{ adding ? 'Adding…' : 'Track Player' }}</button>
+        </form>
+        <RecentPlayers v-if="searchFocused && !newUsername.trim()" class="home-suggest" @pick="openRecent" />
+        <ul v-if="suggestions.length" class="search-suggest home-suggest">
+          <li class="suggest-head">Already tracked</li>
+          <li v-for="sg in suggestions" :key="sg.username">
+            <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' }); recordRecent(sg)">
+              <PlayerSuggestRow :player="sg" />
+            </RouterLink>
+          </li>
+        </ul>
       </div>
 
       <div v-if="trackedPlayer" class="home-tracked">
@@ -44,21 +42,21 @@
         <RouterLink :to="{ name: 'playerDetail', params: { username: trackedPlayer.username } }" class="btn btn-ghost">View profile →</RouterLink>
       </div>
 
-      <ul class="home-benefits">
-        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" /></svg>Free to use</li>
-        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 11-3-6.7L21 8M21 3v5h-5" /></svg>Automatic XP updates</li>
-        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>Historical XP imports</li>
-        <li><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" /></svg>Live GE prices</li>
-      </ul>
-      <p class="home-nosignup">No sign-up needed to start, just enter your RSN. A <RouterLink :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'hero' })">free account</RouterLink> saves your plans, goals and alerts.</p>
+      <p class="hm-hero-links">
+        <RouterLink :to="{ name: 'planner' }" @click="track('home_hero_link', { target: 'planner' })">Account Planner<span aria-hidden="true"> →</span></RouterLink>
+        <RouterLink :to="{ name: 'items' }" @click="track('home_hero_link', { target: 'prices' })">GE Prices<span aria-hidden="true"> →</span></RouterLink>
+      </p>
+      <p class="home-nosignup">No sign-up needed to start. A <RouterLink :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'hero' })">free account</RouterLink> saves your plans, goals and alerts.</p>
     </section>
+
+    <!-- 2. Interactive product preview -->
+    <HomePreview :example="example" :chart-points="chartPoints" :loading="loading" />
 
     <!-- Live community ticker -->
     <section v-if="liveEvents.length" class="home-live" aria-label="Live community activity">
       <div class="home-live-head">
         <span class="disc-live-dot" />
         <b>Live from the community</b>
-        <span class="home-live-count">{{ formatCount(community?.totalPlayers) }} players tracked</span>
         <RouterLink to="/discover" class="home-live-more" @click="track('home_view_discover')">See all activity →</RouterLink>
       </div>
       <div class="home-live-viewport">
@@ -110,23 +108,95 @@
 
     <FollowingStrip />
 
-    <!-- 2. Feature showcase -->
-    <section id="features" class="home-section">
-      <div class="home-features">
-        <RouterLink v-for="f in features" :key="f.title" :to="f.to" class="card home-feature" @click="track('home_feature', { feature: f.key })">
-          <div class="home-feature-top">
-            <span class="home-feature-icon" v-html="f.icon" />
-            <FeatureArt :kind="f.key" />
-          </div>
-          <h3>{{ f.title }}</h3>
-          <p>{{ f.text }}</p>
-          <span v-if="f.live" class="home-feature-live"><i class="gpb-dot" aria-hidden="true" />Live GE prices</span>
-          <span class="home-feature-link">{{ f.cta }}<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" /></svg></span>
-        </RouterLink>
+    <!-- 4. The three main features -->
+    <section class="home-section hm-primary" aria-label="Main features">
+      <RouterLink v-for="f in primary" :key="f.key" :to="f.to" class="hm-prime" @click="track('home_feature', { feature: f.key })">
+        <span class="hm-prime-ico" v-html="f.icon" />
+        <h3>{{ f.title }}</h3>
+        <p>{{ f.text }}</p>
+        <span class="hm-prime-cta">{{ f.cta }} <span aria-hidden="true">→</span></span>
+      </RouterLink>
+    </section>
+
+    <!-- 5. The other tools, compact -->
+    <section class="home-section" aria-label="More tools">
+      <h2 class="hm-h2">More tools</h2>
+      <ul class="hm-tools">
+        <li v-for="f in tools" :key="f.key">
+          <RouterLink :to="f.to" @click="track('home_feature', { feature: f.key })">
+            <span class="hm-tool-ico" v-html="f.icon" />
+            <span><b>{{ f.title }}</b><small>{{ f.text }}</small></span>
+          </RouterLink>
+        </li>
+      </ul>
+    </section>
+
+    <!-- 6. Community activity: what people are gaining and finishing, not how many there are -->
+    <section class="home-section" aria-label="Community activity">
+      <div class="home-community-head">
+        <h2 class="hm-h2">Community activity</h2>
+        <span v-if="community?.xpToday || community?.xpWeek" class="hm-xp-today"><b class="stat-gain">+{{ formatXp(community.xpToday || community.xpWeek) }} XP</b> gained {{ community.xpToday ? 'today' : 'this week' }}</span>
+        <RouterLink to="/discover" class="hm-more" @click="track('home_view_discover')">View Discover →</RouterLink>
+      </div>
+      <PageSkeleton v-if="loading" kind="home-community" />
+      <p v-else-if="error" class="empty-hint">Community activity isn't available right now.</p>
+      <div v-else-if="community" class="hm-community">
+        <div>
+          <h3>Top gainers {{ community.gainersPeriod === 'day' ? 'today' : 'this week' }}</h3>
+          <ol v-if="community.topGainers.length" class="hm-list">
+            <li v-for="(g, i) in community.topGainers" :key="g.username">
+              <RouterLink :to="{ name: 'playerDetail', params: { username: g.username } }">
+                <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
+                <span class="hm-list-name">{{ g.displayName }}<PlayerBadge :label="g.badge" :claimed="g.claimed" /></span>
+                <span class="stat-gain">+{{ formatXp(g.xp) }}</span>
+              </RouterLink>
+            </li>
+          </ol>
+          <p v-else class="empty-hint">No XP gained yet, check back after the next update.</p>
+        </div>
+        <div>
+          <h3>Recent achievements</h3>
+          <ul v-if="community.recentMilestones.length" class="hm-list">
+            <li v-for="m in community.recentMilestones" :key="m.key">
+              <RouterLink :to="{ name: 'playerDetail', params: { username: m.username } }">
+                <img v-if="m.skill" :src="skillIconSrc(m.skill)" :alt="m.skill" width="22" height="22" />
+                <span v-else class="disc-glyph">★</span>
+                <span class="hm-list-name"><b>{{ m.displayName }}</b> {{ m.title }}</span>
+                <small>{{ formatRelative(m.detectedAt) }}</small>
+              </RouterLink>
+            </li>
+          </ul>
+          <p v-else class="empty-hint">99s, 100M XP and other big moments appear here as they are detected.</p>
+        </div>
+        <div>
+          <h3>Active competitions</h3>
+          <ul v-if="competitions.length" class="hm-list">
+            <li v-for="c in competitions" :key="c.id">
+              <RouterLink :to="{ name: 'competition', params: { id: c.id } }" @click="track('home_competition')">
+                <img v-if="c.skill" :src="skillIconSrc(c.skill)" :alt="c.skill" width="22" height="22" />
+                <span v-else class="disc-glyph">★</span>
+                <span class="hm-list-name"><b>{{ c.title }}</b> <small>{{ c.clan.name }} · {{ c.entrants }} {{ c.entrants === 1 ? 'player' : 'players' }}</small></span>
+                <small>{{ competitionTime(c) }}</small>
+              </RouterLink>
+            </li>
+          </ul>
+          <p v-else class="empty-hint">None running right now. <RouterLink to="/clans">Start one with your clan</RouterLink>.</p>
+        </div>
       </div>
     </section>
 
-    <!-- What a free account adds: flat, between the features and the rest of the page -->
+    <!-- 7. How it works -->
+    <section id="how-it-works" class="home-section" aria-label="How it works">
+      <h2 class="hm-h2">How it works</h2>
+      <ol class="hm-steps">
+        <li v-for="(s, i) in steps" :key="s.title">
+          <span class="hm-step-n">{{ i + 1 }}</span>
+          <span><b>{{ s.title }}</b><small>{{ s.text }}</small></span>
+        </li>
+      </ol>
+    </section>
+
+    <!-- 8. Free account benefits -->
     <section class="home-section home-account" aria-label="Free account">
       <div class="home-account-copy">
         <h2>Make it yours with a free account</h2>
@@ -144,136 +214,11 @@
       </ul>
     </section>
 
-    <!-- Grand Exchange prices, and that the planners use them -->
-    <section class="home-section">
-      <GeBand />
-    </section>
-
-    <!-- 3. Profile preview -->
-    <section class="home-section">
-      <h2 class="home-h2">See what you get</h2>
-      <PageSkeleton v-if="loading" kind="home-example" />
-      <div v-else-if="example" class="card home-preview">
-        <div class="home-preview-main">
-          <div class="home-preview-head">
-            <span class="home-preview-avatar"><PlayerAvatar :name="example.username || example.displayName" /></span>
-            <div>
-              <span class="home-preview-label">Example profile</span>
-              <h3>{{ example.displayName }}<PlayerBadge :label="example.badge" :claimed="example.claimed" /></h3>
-            </div>
-          </div>
-          <div class="home-preview-stats">
-            <div><span>Overall</span><b>{{ example.overallLevel?.toLocaleString('en-US') }}</b></div>
-            <div v-if="example.weekXp"><span>Gained · 7 days</span><b class="stat-gain">+{{ example.weekXp.toLocaleString('en-US') }}</b></div>
-            <div class="wide"><span>Total XP</span><b>{{ example.overallXp?.toLocaleString('en-US') }}</b></div>
-          </div>
-          <div v-if="example.recentSkills.length" class="home-preview-gains">
-            <span class="home-preview-label">Recent XP gains</span>
-            <ul>
-              <li v-for="s in example.recentSkills" :key="s.skill"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="20" height="20" />{{ s.skill }}<b class="stat-gain">+{{ formatXp(s.xp) }}</b></li>
-            </ul>
-          </div>
-          <div v-if="example.featured || example.highest" class="home-preview-featured">
-            <span class="home-preview-label">{{ example.featured ? 'Featured achievement' : 'Highest skill' }}</span>
-            <span class="home-preview-feat">
-              <img :src="skillIconSrc(example.featured?.skill || example.highest.skill)" alt="" width="22" height="22" />
-              {{ example.featured ? example.featured.title : `${example.highest.skill} ${example.highest.level}` }}
-            </span>
-          </div>
-          <RouterLink :to="{ name: 'playerDetail', params: { username: example.username } }" class="btn btn-primary" @click="track('home_example_profile')">View Example Profile</RouterLink>
-        </div>
-        <div class="home-preview-chart">
-          <span class="home-preview-label">XP progression</span>
-          <XpLineChart v-if="chartPoints.length > 1" :points="chartPoints" aria-label="Example player's total experience over time" />
-          <p v-else class="empty-hint">History builds up as snapshots are saved.</p>
-        </div>
-      </div>
-      <div v-else class="card"><p class="empty-hint">Track a player above and your profile will look like this, charts, milestones and gains.</p></div>
-    </section>
-
-    <!-- 4. How it works -->
-    <section id="how-it-works" class="home-section">
-      <h2 class="home-h2">How it works</h2>
-      <ol class="home-steps">
-        <li v-for="(s, i) in steps" :key="s.title" class="card">
-          <span class="home-step-n">{{ i + 1 }}</span>
-          <h3>{{ s.title }}</h3>
-          <p>{{ s.text }}</p>
-        </li>
-      </ol>
-    </section>
-
-    <!-- 5. Community activity -->
-    <section class="home-section">
-      <div class="home-community-head">
-        <h2 class="home-h2">Community activity</h2>
-        <RouterLink to="/discover" class="btn btn-ghost" @click="track('home_view_discover')">View Discover →</RouterLink>
-      </div>
-      <PageSkeleton v-if="loading" kind="home-community" />
-      <p v-else-if="error" class="card empty-hint">Community activity isn't available right now.</p>
-      <template v-else-if="community && community.totalPlayers">
-        <div class="home-tiles">
-          <div class="card home-tile"><span>Players tracked</span><b>{{ community.totalPlayers.toLocaleString('en-US') }}</b></div>
-          <div class="card home-tile"><span>XP gained {{ community.xpToday ? 'today' : 'this week' }}</span><b class="stat-gain">+{{ formatXp(community.xpToday || community.xpWeek) }}</b></div>
-        </div>
-        <div class="home-community">
-          <div class="card">
-            <h3>Top gainers {{ community.gainersPeriod === 'day' ? 'today' : 'this week' }}</h3>
-            <ol v-if="community.topGainers.length" class="home-list">
-              <li v-for="(g, i) in community.topGainers" :key="g.username">
-                <RouterLink :to="{ name: 'playerDetail', params: { username: g.username } }">
-                  <span class="disc-rank" :class="`r${i + 1}`">{{ i + 1 }}</span>
-                  <span class="home-list-name">{{ g.displayName }}<PlayerBadge :label="g.badge" :claimed="g.claimed" /></span>
-                  <span class="stat-gain">+{{ formatXp(g.xp) }}</span>
-                </RouterLink>
-              </li>
-            </ol>
-            <p v-else class="empty-hint">No XP gained yet, check back after the next update.</p>
-          </div>
-          <div class="card">
-            <h3>Most trained skills this week</h3>
-            <ul v-if="community.topSkills.length" class="home-list">
-              <li v-for="s in community.topSkills" :key="s.skill">
-                <span class="home-list-row">
-                  <img :src="skillIconSrc(s.skill)" :alt="s.skill" width="22" height="22" />
-                  <span class="home-list-name">{{ s.skill }}</span>
-                  <small>{{ s.players.toLocaleString('en-US') }} player{{ s.players === 1 ? '' : 's' }}</small>
-                  <span class="stat-gain">+{{ formatXp(s.xp) }}</span>
-                </span>
-              </li>
-            </ul>
-            <p v-else class="empty-hint">Skill activity shows up after the first updates.</p>
-          </div>
-          <div class="card">
-            <h3>Recent milestones</h3>
-            <ul v-if="community.recentMilestones.length" class="home-list">
-              <li v-for="m in community.recentMilestones" :key="m.key">
-                <RouterLink :to="{ name: 'playerDetail', params: { username: m.username } }">
-                  <img v-if="m.skill" :src="skillIconSrc(m.skill)" :alt="m.skill" width="22" height="22" />
-                  <span v-else class="disc-glyph">★</span>
-                  <span class="home-list-name"><b>{{ m.displayName }}</b> {{ m.title }}</span>
-                  <small>{{ formatRelative(m.detectedAt) }}</small>
-                </RouterLink>
-              </li>
-            </ul>
-            <p v-else class="empty-hint">Big milestones, 99s, 100M XP, appear here as they're detected.</p>
-          </div>
-        </div>
-      </template>
-      <div v-else class="card"><p class="empty-hint">Be the first, track a player above and the community activity starts here.</p></div>
-    </section>
-
-    <!-- 6. Stay in the loop -->
-    <section v-if="showNews" class="card home-news" aria-label="Email updates">
-      <EmailSignup source="home" variant="card" heading="Be first to hear what's next" blurb="New features land often, from planner upgrades to clan tools. Leave your email and we'll let you know when they do." />
-    </section>
-
-    <!-- 7. Final CTA -->
-    <section class="card home-final">
-      <h2>Ready to Track Your Next 99?</h2>
-      <p>Free, and no sign-up to start. Add an account to save your plans and goals.</p>
+    <!-- 9. Final CTA (the footer carries the email sign-up) -->
+    <section class="home-final" aria-label="Get started">
+      <h2>Ready to track your next 99?</h2>
       <div class="home-final-actions">
-        <button class="btn btn-primary" type="button" @click="focusSearch">Start Tracking Your Player</button>
+        <button class="btn btn-primary" type="button" @click="focusSearch">Track a player</button>
         <RouterLink class="btn btn-ghost" :to="{ name: 'signup' }" @click="track('sign_up_click', { where: 'home_final' })">Create free account</RouterLink>
       </div>
     </section>
@@ -282,7 +227,6 @@
 
 <script setup>
 import PageSkeleton from '@/components/PageSkeleton.vue'
-import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
@@ -293,23 +237,16 @@ import { ApiError } from '@/api/client'
 import { setPageMeta } from '@/utils/pageMeta'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
-import { useAuth } from '@/composables/useAuth'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import RecentPlayers from '@/components/RecentPlayers.vue'
 import { recordRecent } from '@/composables/useRecentPlayers'
-import XpLineChart from '@/components/XpLineChart.vue'
 import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
 import { track } from '@/utils/analytics'
 import CheerPill from '@/components/CheerPill.vue'
-import EmailSignup from '@/components/EmailSignup.vue'
-import FeatureArt from '@/components/home/FeatureArt.vue'
-import GeBand from '@/components/home/GeBand.vue'
+import HomePreview from '@/components/home/HomePreview.vue'
 
 const router = useRouter()
-// The email sign-up card is for visitors without an account; signed-in accounts already gave us their email.
-const { ready: authReady, loggedIn } = useAuth()
-const showNews = computed(() => authReady.value && !loggedIn.value)
 const store = usePlayersStore()
 const { showToast } = useToast()
 
@@ -365,24 +302,37 @@ const agoText = (iso) => {
   void now.value
   return iso ? formatRelative(iso) : ''
 }
-const formatCount = (n) => (n == null ? '' : n.toLocaleString('en-US'))
 const community = computed(() => home.value?.community || null)
+const competitions = computed(() => community.value?.competitions || [])
+// "ends in 3 d", "starts in 5 h": how long until a competition starts or ends.
+function competitionTime(c) {
+  void now.value
+  const running = c.status === 'running'
+  const ms = new Date(running ? c.endsAt : c.startsAt).getTime() - Date.now()
+  const h = Math.max(1, Math.round(ms / 3_600_000))
+  const span = h >= 48 ? `${Math.round(h / 24)} d` : `${h} h`
+  return `${running ? 'ends in' : 'starts in'} ${span}`
+}
 const example = computed(() => home.value?.example || null)
 const chartPoints = computed(() => (example.value?.series || []).map((p) => ({ x: p.t, y: p.xp })))
 
 // --- features / steps ---
 const exampleTo = (tab) =>
   example.value ? { name: 'playerDetail', params: { username: example.value.username }, query: tab ? { tab } : {} } : { path: '/discover' }
-const svg = (d) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
-const features = computed(() => [
-  { key: 'tracking', title: 'Automatic XP Tracking', text: 'Track skill XP, levels, and progress with automatic updates every hour while a player is active.', cta: 'See a live profile', to: exampleTo('stats'), icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
-  { key: 'history', title: 'Historical XP Data', text: 'Import available Wise Old Man history to view previous progress.', cta: 'Browse history', to: exampleTo('history'), icon: svg('<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />') },
-  { key: 'planner', title: 'Account Planner', text: 'Build a training plan with the date you reach each level, unlock each method and hit your goal, with costs and profit from real prices.', cta: 'Plan a goal', live: true, to: { path: '/planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
-  { key: 'tracker', title: 'Quest & Diary Tracker', text: 'Tick off the quests and diaries you have done. Plans skip the XP you already took, and it suggests what to do next.', cta: 'Open the tracker', to: { name: 'quests' }, icon: svg('<path d="M9 6h11M9 12h11M9 18h11" /><path d="M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8" />') },
-  { key: 'calculators', title: 'Skill Calculators', text: 'Quick XP, time and gp calculators for every skill, with training methods and costs from real prices.', cta: 'Open calculators', live: true, to: { path: '/calculators' }, icon: svg('<rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2" />') },
-  { key: 'discover', title: 'Player Discovery', text: 'Explore leaderboards, player achievements, and recent activity.', cta: 'Open Discover', to: { path: '/discover' }, icon: svg('<circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />') },
-  { key: 'clans', title: 'Clans & Competitions', text: 'Start a clan, share an invite link and run XP competitions with live leaderboards.', cta: 'Browse clans', to: { path: '/clans' }, icon: svg('<circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><circle cx="17" cy="9" r="2.6" /><path d="M17 14c2.8 0 5 2.2 5 5" />') },
-  { key: 'compare', title: 'Compare Players', text: 'Put two players side by side, skill by skill, and send a friend a challenge link.', cta: 'Compare players', to: { path: '/compare' }, icon: svg('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4" />') },
+const svg = (d) => `<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
+// The three things the site is for, then the rest in a compact list.
+const primary = computed(() => [
+  { key: 'tracking', title: 'XP Tracking', text: 'Hourly snapshots, gains and full hiscores history for any player.', cta: 'See a live profile', to: exampleTo('stats'), icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
+  { key: 'planner', title: 'Account Planner', text: 'The date you reach each level, the methods to unlock, and what it costs.', cta: 'Plan a goal', to: { name: 'planner' }, icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
+  { key: 'ge', title: 'GE Prices', text: 'Live prices for 4,500 items, after tax, behind every gp figure.', cta: 'Browse prices', to: { name: 'items' }, icon: svg('<circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" />') },
+])
+const tools = computed(() => [
+  { key: 'tracker', title: 'Quest & Diary Tracker', text: 'Tick off what you have done; plans skip it.', to: { name: 'quests' }, icon: svg('<path d="M9 6h11M9 12h11M9 18h11" /><path d="M3.5 6l1.2 1.2L7 4.8M3.5 12l1.2 1.2L7 10.8M3.5 18l1.2 1.2L7 16.8" />') },
+  { key: 'calculators', title: 'Skill Calculators', text: 'XP, time and gp for every skill.', to: { path: '/calculators' }, icon: svg('<rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2" />') },
+  { key: 'history', title: 'Historical XP', text: 'Imported Wise Old Man history.', to: exampleTo('history'), icon: svg('<circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />') },
+  { key: 'discover', title: 'Player Discovery', text: 'Leaderboards and recent activity.', to: { path: '/discover' }, icon: svg('<circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" />') },
+  { key: 'clans', title: 'Clans & Competitions', text: 'Run XP competitions with live boards.', to: { path: '/clans' }, icon: svg('<circle cx="9" cy="8" r="3.2" /><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6" /><circle cx="17" cy="9" r="2.6" /><path d="M17 14c2.8 0 5 2.2 5 5" />') },
+  { key: 'compare', title: 'Compare Players', text: 'Side by side, skill by skill.', to: { path: '/compare' }, icon: svg('<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4" />') },
 ])
 const accountBenefits = [
   { title: 'Plans and goals that stay.', text: 'Save them once and they follow you to any device.' },
@@ -391,9 +341,9 @@ const accountBenefits = [
   { title: 'Your own profile.', text: 'Claim your RuneScape name to make it yours.' },
 ]
 const steps = [
-  { title: 'Enter Your RSN', text: 'Search for your OSRS character.' },
-  { title: 'Track Automatically', text: 'TickGains records XP snapshots every hour (daily when a player is inactive) and imports available historical data.' },
-  { title: 'Explore Your Progress', text: 'View charts, milestones, and plan future goals.' },
+  { title: 'Enter your RSN', text: 'Search for your OSRS character.' },
+  { title: 'Tracked automatically', text: 'Snapshots every hour (daily when inactive), plus imported history.' },
+  { title: 'Explore and plan', text: 'Charts, milestones, and a plan for your next goal.' },
 ]
 
 // --- tracking (unchanged behaviour) ---

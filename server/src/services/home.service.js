@@ -42,6 +42,35 @@ async function exampleSeries(playerId) {
   return []
 }
 
+// Competitions running now (or about to start) in any clan, soonest to finish first, for the homepage's community section. The home
+// page must never fail because of this, so a database problem just means none are shown.
+async function activeCompetitions() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.id, c.title, c.metric, c.skill, c.status, c.starts_at, c.ends_at, cl.name AS clan_name, cl.slug AS clan_slug,
+              (SELECT count(*)::int FROM competition_members m WHERE m.competition_id = c.id) AS entrants
+       FROM competitions c JOIN clans cl ON cl.id = c.clan_id
+       WHERE c.status IN ('running', 'scheduled') AND c.ends_at > now()
+       ORDER BY (c.status = 'running') DESC, c.ends_at ASC
+       LIMIT 3`,
+    )
+    return rows.map((r) => ({
+      id: r.id,
+      title: r.title,
+      metric: r.metric,
+      skill: r.skill || '',
+      status: r.status,
+      startsAt: new Date(r.starts_at).toISOString(),
+      endsAt: new Date(r.ends_at).toISOString(),
+      clan: { name: r.clan_name, slug: r.clan_slug },
+      entrants: r.entrants,
+    }))
+  } catch (err) {
+    console.warn('[home] could not load competitions:', err.message)
+    return []
+  }
+}
+
 async function build() {
   const discover = await getDiscover()
   const players = discover.players || []
@@ -74,6 +103,7 @@ async function build() {
     key: a.key, username: a.username, displayName: a.displayName, badge: a.badge, claimed: a.claimed, skill: a.skill, title: a.title, detectedAt: a.detectedAt,
   }))
 
+  const competitions = await activeCompetitions()
   const ex = pickExample(players)
   let example = null
   if (ex) {
@@ -99,7 +129,7 @@ async function build() {
 
   return {
     generatedAt: new Date().toISOString(),
-    community: { totalPlayers: players.length, xpToday, xpWeek, topSkills, topGainers, gainersPeriod: period, recentMilestones },
+    community: { totalPlayers: players.length, xpToday, xpWeek, topSkills, topGainers, gainersPeriod: period, recentMilestones, competitions },
     example,
     // Newest events for the homepage live ticker (same feed as Discover).
     activity: (discover.activity || []).slice(0, 30),

@@ -5,13 +5,13 @@ const prices = vi.fn()
 vi.mock('@/api/ge', () => ({ geApi: { prices: (...a) => prices(...a) } }))
 vi.mock('@/utils/analytics', () => ({ track: vi.fn() }))
 
-import GeBand from '@/components/home/GeBand.vue'
+import HomeGePrices from '@/components/home/HomeGePrices.vue'
 
 const stubs = { RouterLink: { props: ['to'], template: '<a><slot /></a>' } }
 
 beforeEach(() => prices.mockReset())
 
-describe('the welcome page Grand Exchange band', () => {
+describe('the welcome page Grand Exchange prices', () => {
   it('shows live prices for the items it can price, and says the planners use them', async () => {
     prices.mockResolvedValue({
       updatedAt: new Date().toISOString(),
@@ -21,22 +21,23 @@ describe('the welcome page Grand Exchange band', () => {
         'nature rune': [168, 167, 'nature-rune', null],
       },
     })
-    const w = mount(GeBand, { global: { stubs } })
+    const w = mount(HomeGePrices, { global: { stubs } })
     await flushPromises()
     expect(w.text()).toContain('planners and calculators')
-    const items = w.findAll('.geb-items li').map((li) => li.text())
+    const items = w.findAll('.hp-ge-items li').map((li) => li.text())
     expect(items).toHaveLength(3)
     expect(items[0]).toContain('Dragon bones')
     expect(items[0]).toContain('3,685')
   })
-  it('stays hidden when the prices cannot be loaded or there are too few', async () => {
+  it('shows a short note instead of a list when the prices cannot be loaded or there are too few', async () => {
     prices.mockRejectedValue(new Error('down'))
-    const w = mount(GeBand, { global: { stubs } })
+    const w = mount(HomeGePrices, { global: { stubs } })
     await flushPromises()
-    expect(w.find('.geb').exists()).toBe(false)
+    expect(w.find('.hp-ge-items').exists()).toBe(false)
+    expect(w.text()).toContain('not available right now')
     prices.mockResolvedValue({ prices: { shark: [717, 701, 'shark', null] } })
-    const w2 = mount(GeBand, { global: { stubs } })
+    const w2 = mount(HomeGePrices, { global: { stubs } })
     await flushPromises()
-    expect(w2.find('.geb').exists()).toBe(false)
+    expect(w2.find('.hp-ge-items').exists()).toBe(false)
   })
 })
