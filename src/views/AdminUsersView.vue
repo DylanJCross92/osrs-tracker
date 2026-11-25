@@ -9,8 +9,6 @@
         <button v-for="d in RANGES" :key="d" type="button" class="st-range-btn" :class="{ on: days === d }" :aria-pressed="days === d" @click="days = d">{{ d }} days</button>
       </div>
     </header>
-    <BroadcastPanel />
-    <AnnouncementPanel />
     <UsersList :days="days" @go="openVisitor" />
   </div>
 </template>
@@ -19,8 +17,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import UsersList from '@/components/admin/users/UsersList.vue'
-import AnnouncementPanel from '@/components/admin/users/AnnouncementPanel.vue'
-import BroadcastPanel from '@/components/admin/users/BroadcastPanel.vue'
 import { setPageMeta } from '@/utils/pageMeta'
 
 setPageMeta({ title: 'User Management', description: 'Accounts that have signed up.', path: '/admin/users', noindex: true })

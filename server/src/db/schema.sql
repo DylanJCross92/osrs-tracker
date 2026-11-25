@@ -596,8 +596,7 @@ CREATE TABLE IF NOT EXISTS ge_status (
   latest_at TIMESTAMPTZ
 );
 
--- Who has been sent which one-off announcement email (see services/announcements.service.js), so pressing send twice, or again after a
--- restart part way through, never emails anyone twice. email is lower case.
+-- Who was sent which one-off announcement email (the Graveyard quest announcement of 25 Nov 2026 was the first), kept as a record. email is lower case.
 CREATE TABLE IF NOT EXISTS announcement_sends (
   key TEXT NOT NULL,
   email TEXT NOT NULL,

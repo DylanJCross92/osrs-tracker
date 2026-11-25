@@ -12,6 +12,9 @@ describe('noticeKind', () => {
     expect(noticeKind('claims_waiting').action).toBe('Review')
     expect(noticeKind('record').action).toBe('')
   })
+  it('keeps the weekly race notice that was sent to everyone looking right in their bell', () => {
+    expect(noticeKind('race_open')).toMatchObject({ tone: 'gold', action: 'Join' })
+  })
   it('falls back to a plain bell for an unknown type', () => {
     expect(noticeKind('something_new').paths.length).toBeGreaterThan(0)
   })

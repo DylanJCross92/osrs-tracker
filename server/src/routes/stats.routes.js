@@ -11,8 +11,6 @@ import { funnelsOverview } from '../services/funnels.service.js'
 import { SEGMENTS } from '../utils/funnels.js'
 import { AuthError, adminDeleteAccount } from '../services/auth.service.js'
 import { sendClaimNudgeToUser } from '../services/claimNudge.service.js'
-import { announcementStatus, sendAnnouncementTest, startAnnouncement } from '../services/announcements.service.js'
-import { broadcastStatus, sendBroadcast } from '../services/broadcasts.service.js'
 import { hasRole } from '../utils/roles.js'
 import { attachUser, requireRole } from './auth.routes.js'
 
@@ -163,54 +161,6 @@ const sendLimiter = rateLimit({ windowMs: 60_000, max: 20, message: 'Too many em
 statsRouter.post('/admin/users/:id/claim-email', ...adminOnly, sendLimiter, async (req, res, next) => {
   try {
     res.json(await sendClaimNudgeToUser(req.params.id))
-  } catch (err) {
-    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
-    next(err)
-  }
-})
-
-// For the site owner only: the one-off announcement email. Preview and numbers, a test to your own address, and the send to everyone.
-const ownerOnly = [attachUser, requireRole('owner'), rateLimit({ windowMs: 60_000, max: 30 })]
-const announceSendLimiter = rateLimit({ windowMs: 60_000, max: 6, message: 'Too many tries. Wait a minute.' })
-statsRouter.get('/admin/announcements/:key', ...ownerOnly, async (req, res, next) => {
-  try {
-    res.set('Cache-Control', 'no-store')
-    res.json(await announcementStatus(req.params.key))
-  } catch (err) {
-    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
-    next(err)
-  }
-})
-statsRouter.post('/admin/announcements/:key/test', ...ownerOnly, announceSendLimiter, async (req, res, next) => {
-  try {
-    res.json(await sendAnnouncementTest(req.params.key, req.user.email))
-  } catch (err) {
-    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
-    next(err)
-  }
-})
-statsRouter.post('/admin/announcements/:key/send', ...ownerOnly, announceSendLimiter, async (req, res, next) => {
-  try {
-    res.json(await startAnnouncement(req.params.key))
-  } catch (err) {
-    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
-    next(err)
-  }
-})
-
-// For the site owner only: a one-off in-app notice to every account (it shows in the notification bell, not by email).
-statsRouter.get('/admin/broadcasts/:key', ...ownerOnly, async (req, res, next) => {
-  try {
-    res.set('Cache-Control', 'no-store')
-    res.json(await broadcastStatus(req.params.key))
-  } catch (err) {
-    if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
-    next(err)
-  }
-})
-statsRouter.post('/admin/broadcasts/:key/send', ...ownerOnly, announceSendLimiter, async (req, res, next) => {
-  try {
-    res.json(await sendBroadcast(req.params.key))
   } catch (err) {
     if (err instanceof AuthError) return res.status(err.status).json({ error: err.message })
     next(err)
