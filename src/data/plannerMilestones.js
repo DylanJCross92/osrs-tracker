@@ -18,6 +18,11 @@ export const F2P_METHOD_IDS = new Set([
   'mining-early', 'mining-iron', 'mining-guild-iron',
   'runecraft-early', 'runecraft-tiaras',
   'prayer-bones-ashes', 'prayer-boneyard',
+  // Free-to-play combat (see the note in data/trainingMethods.js)
+  ...['attack', 'strength', 'defence'].flatMap((skill) => ['cows', 'frogs', 'frogs-high', 'moss-giants', 'moss-giants-high', 'brutus', 'brutus-mid', 'brutus-high'].map((id) => `${skill}-${id}`)),
+  ...['cows', 'frogs', 'frogs-high', 'moss-giants', 'moss-giants-high', 'brutus', 'brutus-mid', 'brutus-high'].map((id) => `hitpoints-f2p-${id}`),
+  'ranged-f2p-early', 'ranged-f2p-frogs', 'ranged-f2p-brutus', 'ranged-f2p-moss-giants',
+  'hitpoints-f2p-ranged-early', 'hitpoints-f2p-ranged-frogs', 'hitpoints-f2p-ranged-brutus', 'hitpoints-f2p-ranged-moss-giants',
 ])
 
 // "Bring everything up to N": the levels a player works through. With stats to go on, the planner picks the first of these that still has

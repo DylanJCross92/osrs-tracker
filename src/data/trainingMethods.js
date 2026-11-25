@@ -43,6 +43,39 @@ const m = (skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, descripti
 const melee = (id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false) =>
   ['Attack', 'Strength', 'Defence'].map((skill) => m(skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements, maxLevel, fastest))
 
+// --- Free-to-play combat ---------------------------------------------------------------------------------------------
+// The wiki's free-to-play Melee and Ranged guides name the monsters to fight at each level but give no hourly rates, except two for Ranged (Brutus,
+// 45K to 50K at 63; moss giants, 35K to 37K at 72). Attack, Strength and Defence (4 xp for every point of damage, whichever of the three the attack style
+// trains) are therefore worked out from the wiki's own monster pages (hitpoints, defence, respawn) with the game's combat formulas, a scimitar of the best
+// free tier for the level, an amulet of strength from 20 and a strength potion from 60, no prayer, ten ticks lost between kills and an hour in which
+// 85% of the time is spent fighting (food, banking and world hops), then rounded down. Brutus gives double combat xp (the wiki). Hitpoints gets a third of
+// the xp from the same fighting (1.33 xp a point). Ranged for the levels the wiki gives no rate for is a rough estimate (marked in each description).
+// [id, name, from level, to level, melee xp an hour, effort, description, requirements, hitpoints xp an hour]
+const F2P_MELEE = [
+  ['cows', 'Cows (Lumbridge)', 1, 19, 3500, 'Medium', 'Kill cows in the Lumbridge cow field with the best scimitar you have. Slow, but the beginner monsters of the wiki guide.', '', 1100],
+  ['frogs', 'Giant frogs (Lumbridge Swamp)', 20, 39, 9500, 'Medium', 'Giant frogs: lots of hitpoints and almost no defence, and they drop big bones for Prayer. An estimate from their stats; the wiki names them for levels 20 to 40.', '', 3100],
+  ['frogs-high', 'Giant frogs (Lumbridge Swamp), stronger', 40, 59, 15000, 'Medium', 'Giant frogs with a rune scimitar. An estimate from their stats.', '', 5000],
+  ['moss-giants', 'Moss giants (Varrock Sewers or Crandor)', 60, 79, 26000, 'Medium', 'Safespot moss giants: the free-to-play guide for the high levels. An estimate from their stats.', '', 8700],
+  ['moss-giants-high', 'Moss giants (Varrock Sewers or Crandor), maxed gear', 80, 99, 31000, 'Medium', 'Moss giants with a strength potion and the best free-to-play gear. An estimate from their stats.', '', 10300],
+  ['brutus', 'Brutus (Lumbridge cow pen)', 30, 49, 26000, 'High', 'Brutus gives double combat xp and is the fastest free-to-play combat training on the wiki. Needs the cowbell amulet from The Ides of Milk to respawn quickly. An estimate from his stats.', 'The Ides of Milk', 8700],
+  ['brutus-mid', 'Brutus (Lumbridge cow pen), mid levels', 50, 79, 40000, 'High', 'Brutus with a rune scimitar: double combat xp, dodging his telegraphed attacks. An estimate from his stats.', 'The Ides of Milk', 13300],
+  ['brutus-high', 'Brutus (Lumbridge cow pen), maxed gear', 80, null, 48000, 'High', 'Brutus with a strength potion and the best free-to-play gear. An estimate from his stats.', 'The Ides of Milk', 16000],
+]
+const F2P_COMBAT = [
+  ...F2P_MELEE.flatMap(([id, name, from, to, xph, effort, desc, req]) => ['Attack', 'Strength', 'Defence'].map((skill) => m(skill, id, name, from, xph, null, effort, desc, req, to))),
+  ...F2P_MELEE.map(([id, name, from, to, , effort, desc, req, hp]) => m('Hitpoints', `f2p-${id}`, name, from, hp, null, effort, `Comes with the fighting: a third of the combat xp. ${desc}`, req, to)),
+  // Ranged: Brutus and moss giants are the wiki's own observed rates; the lower levels are rough estimates.
+  m('Ranged', 'f2p-early', 'Cows and chickens (ranged)', 1, 3000, null, 'Medium', 'Shoot cows or chickens with a shortbow and bronze or iron arrows. A rough estimate: the wiki gives no rate.', '', 25),
+  m('Ranged', 'f2p-frogs', 'Giant frogs (ranged)', 26, 12000, null, 'Medium', 'Giant frogs are the fastest free-to-play Ranged xp from level 26 to 56 on the wiki (23 hitpoints, 6 defence). A rough estimate: the wiki gives no rate.', '', 56),
+  m('Ranged', 'f2p-brutus', 'Brutus (ranged)', 57, 47000, null, 'High', 'The wiki puts Brutus at about 45K to 50K xp an hour at Ranged 63 with adamant arrows, collecting arrows and burying bones: the best free-to-play xp in the game. Click-intensive.', 'The Ides of Milk'),
+  m('Ranged', 'f2p-moss-giants', 'Moss giants (ranged)', 57, 36000, null, 'Medium', 'Safespotted moss giants: the wiki gives 35K to 37K xp an hour at Ranged 72 with adamant arrows and no pickups.'),
+  // Hitpoints comes with Ranged too, a third of each method's xp.
+  m('Hitpoints', 'f2p-ranged-early', 'Cows and chickens (ranged)', 1, 1000, null, 'Medium', 'A third of the Ranged xp from the same fighting.', '', 25),
+  m('Hitpoints', 'f2p-ranged-frogs', 'Giant frogs (ranged)', 26, 4000, null, 'Medium', 'A third of the Ranged xp from the same fighting.', '', 56),
+  m('Hitpoints', 'f2p-ranged-brutus', 'Brutus (ranged)', 57, 15600, null, 'High', 'A third of the Ranged xp from the same fighting.', 'The Ides of Milk'),
+  m('Hitpoints', 'f2p-ranged-moss-giants', 'Moss giants (ranged)', 57, 12000, null, 'Medium', 'A third of the Ranged xp from the same fighting.'),
+]
+
 export const TRAINING_METHODS = [
   // --- Melee (Attack / Strength / Defence) ---
   ...melee('crabs', 'Rock / Ammonite Crabs', 1, 35000, 0, 'AFK', 'Fight low-defence crabs for long, low-effort stretches.', '', 69),
@@ -382,6 +415,7 @@ export const TRAINING_METHODS = [
   m('Sailing', 'courier-lunar', 'Courier route: Lunar Isle', 76, 145000, null, 'Low', 'Lunar Isle delivery route with many tasks.', '', null),
   m('Sailing', 'salvage-fremennik', 'Fremennik shipwrecks', 80, 75000, null, 'Low', 'Salvage Fremennik wrecks.', '', 86),
   m('Sailing', 'salvage-merchant', 'Merchant shipwrecks', 87, 82000, null, 'Low', 'Salvage merchant wrecks.'),
+  ...F2P_COMBAT,
 ]
 
 export function methodsForSkill(skill) {

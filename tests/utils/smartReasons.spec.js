@@ -94,6 +94,8 @@ describe('hours', () => {
   it('is more for a longer way, and null for a skill with no route in the catalogue', () => {
     const s = at({ all: 1 }).find((x) => x.skill === 'Woodcutting')
     expect(hoursBetween(s, 40, members)).toBeLessThan(hoursBetween(s, 60, members))
-    expect(hoursBetween(at({ all: 1 }).find((x) => x.skill === 'Attack'), 40, free)).toBeNull()
+    // Slayer has no free-to-play route; Attack now does (see the free-to-play combat methods)
+    expect(hoursBetween(at({ all: 1 }).find((x) => x.skill === 'Slayer'), 40, free)).toBeNull()
+    expect(hoursBetween(at({ all: 1 }).find((x) => x.skill === 'Attack'), 40, free)).toBeGreaterThan(0)
   })
 })

@@ -158,7 +158,8 @@ describe('phases and the plan', () => {
 
 describe('free-to-play', () => {
   it('only uses free-to-play skills and routes, and says what is left out', () => {
-    const r = recommend({ members: false, experience: 'new' }, skills({ all: 1 }))
+    // Runecraft 60 is past where the free-to-play methods run out (51), so it is left out and said so.
+    const r = recommend({ members: false, experience: 'new' }, skills({ all: 1, Runecraft: 60 }))
     expect(r.goals.length).toBeGreaterThan(0)
     for (const g of r.goals) {
       expect(F2P_SKILLS).toContain(g.skill)
@@ -169,7 +170,7 @@ describe('free-to-play', () => {
   })
   it('never goes past where the free-to-play methods run out', () => {
     expect(f2pCap('Slayer')).toBe(0)
-    expect(f2pCap('Attack')).toBe(0)
+    expect(f2pCap('Runecraft')).toBeLessThan(99)
     expect(f2pCap('Woodcutting')).toBeGreaterThan(30)
   })
 })
@@ -280,5 +281,17 @@ describe('ironman plans', () => {
   })
   it('starts from the cheapest routes', () => {
     expect(settingsFor(cleanProfile({ iron: true, gp: 'rich' })).globalStrategy).toBe('auto-cheap')
+  })
+})
+
+describe('free-to-play combat', () => {
+  it('has free-to-play routes all the way up for the combat skills', () => {
+    for (const skill of ['Attack', 'Strength', 'Defence', 'Hitpoints', 'Ranged']) expect(f2pCap(skill), skill).toBe(99)
+  })
+  it('puts combat in a free-to-play combat plan, with free methods only', () => {
+    const r = recommend({ members: false, goal: 'combat', hours: 2, gp: 'rich', experience: 'new', iron: false }, skills({ all: 1, Hitpoints: 10 }))
+    const names = r.goals.map((g) => g.skill)
+    for (const skill of ['Attack', 'Strength', 'Defence']) expect(names, skill).toContain(skill)
+    expect(r.notes.join(' ')).not.toMatch(/routes for[^.]*(Attack|Strength|Defence|Ranged)/)
   })
 })
