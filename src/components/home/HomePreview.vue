@@ -23,7 +23,7 @@
       <!-- XP tracking: a real profile from the site -->
       <template v-if="tab === 'tracking'">
         <div class="hf-head">
-          <span class="hf-label">Example profile</span>
+          <span class="hf-label">Example profile<span class="hf-live"><i aria-hidden="true" />Updated hourly</span></span>
           <RouterLink v-if="example" class="hf-open" :to="{ name: 'playerDetail', params: { username: example.username } }" @click="track('home_example_profile')">Open this profile <span aria-hidden="true">→</span></RouterLink>
           <RouterLink v-else class="hf-open" :to="{ path: '/discover' }" @click="track('home_preview_open', { tab: 'tracking' })">Explore Discover <span aria-hidden="true">→</span></RouterLink>
         </div>
@@ -36,11 +36,16 @@
             </div>
             <dl class="hf-stats">
               <div><dt>Overall</dt><dd>{{ example.overallLevel?.toLocaleString('en-US') }}</dd></div>
-              <div v-if="example.weekXp"><dt>Gained · 7 days</dt><dd class="stat-gain">+{{ example.weekXp.toLocaleString('en-US') }}</dd></div>
-              <div><dt>Total XP</dt><dd>{{ example.overallXp?.toLocaleString('en-US') }}</dd></div>
+              <div v-if="example.weekXp"><dt>Gained · 7 days</dt><dd class="stat-gain hf-up"><span aria-hidden="true">▲</span> {{ example.weekXp.toLocaleString('en-US') }}</dd></div>
+              <div class="hf-total"><dt>Total XP</dt><dd>{{ example.overallXp?.toLocaleString('en-US') }}</dd></div>
             </dl>
-            <ul v-if="example.recentSkills.length" class="hf-gains">
-              <li v-for="s in example.recentSkills" :key="s.skill"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="18" height="18" />{{ s.skill }} <b class="stat-gain">+{{ formatXp(s.xp) }}</b></li>
+            <ul v-if="example.recentSkills.length" class="hf-gains" aria-label="Biggest gains this week">
+              <li v-for="s in example.recentSkills" :key="s.skill">
+                <img :src="skillIconSrc(s.skill)" :alt="s.skill" width="20" height="20" />
+                <span class="hf-gain-name">{{ s.skill }}</span>
+                <span class="hf-gain-bar" aria-hidden="true"><i :style="{ width: `${Math.max(8, (s.xp / maxGain) * 100)}%` }" /></span>
+                <b class="stat-gain">+{{ formatXp(s.xp) }}</b>
+              </li>
             </ul>
           </div>
           <div class="hf-chart">
@@ -94,7 +99,7 @@ import { track } from '@/utils/analytics'
 // The welcome page's three main features, as tabs: each says what it is in a line, and opens a small live preview with a way into
 // it (a real profile, a plan worked out by the planner itself, live prices). Only the open tab is drawn, except the prices, which load
 // up front; the sample plan is worked out the first time its tab opens, so the planner code is not loaded for visitors who never look.
-defineProps({
+const props = defineProps({
   example: { type: Object, default: null },
   chartPoints: { type: Array, default: () => [] },
   loading: { type: Boolean, default: false },
@@ -122,6 +127,8 @@ function onKey(e) {
   pick(tabs[(next + tabs.length) % tabs.length].key)
   document.getElementById(`hf-tab-${tab.value}`)?.focus()
 }
+
+const maxGain = computed(() => Math.max(1, ...(props.example?.recentSkills || []).map((r) => r.xp)))
 
 const plan = ref(null)
 const maxHours = computed(() => Math.max(1, ...(plan.value?.rows || []).map((r) => r.hours)))
