@@ -66,6 +66,7 @@ const PLANNER_EXPERIENCE = ['new', 'returning', 'veteran']
 // The kinds of account (see src/data/builds.js): a fixed list, nothing free-form.
 const PLANNER_BUILDS = ['main', 'skiller', 'pure', 'zerker']
 const PLANNER_IRON_KINDS = ['standard', 'hardcore', 'ultimate', 'group']
+const PLANNER_WORLDS = ['normal', 'hardcore']
 function cleanPlannerProfile(v) {
   if (!isObj(v)) return null
   const out = {}
@@ -76,6 +77,7 @@ function cleanPlannerProfile(v) {
   if (PLANNER_GP.includes(v.gp)) out.gp = v.gp
   if (PLANNER_BUILDS.includes(v.build)) out.build = v.build
   if (PLANNER_IRON_KINDS.includes(v.ironKind)) out.ironKind = v.ironKind
+  if (PLANNER_WORLDS.includes(v.world)) out.world = v.world
   if (PLANNER_EXPERIENCE.includes(v.experience)) out.experience = v.experience
   if (typeof v.iron === 'boolean') out.iron = v.iron
   return out
@@ -94,6 +96,7 @@ function cleanAccountType(v) {
   if (typeof v.iron === 'boolean') out.iron = v.iron
   if (PLANNER_BUILDS.includes(v.build)) out.build = v.build
   if (PLANNER_IRON_KINDS.includes(v.ironKind)) out.ironKind = v.ironKind
+  if (PLANNER_WORLDS.includes(v.world)) out.world = v.world
   return out
 }
 function cleanPlannerPrefs(v) {

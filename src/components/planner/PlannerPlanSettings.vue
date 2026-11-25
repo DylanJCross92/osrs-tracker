@@ -29,7 +29,7 @@
         </div>
 
         <!-- The kind of account: membership, main or ironman (and which kind) and the build -->
-        <AccountFields tight :members="draftMembers" :iron="draftIron" :iron-kind="draftIronKind" :build="draftBuild" :detected="detectedBuild" @update:members="(v) => (draftMembers = v)" @update:iron="setIron" @update:iron-kind="(v) => (draftIronKind = v)" @update:build="(v) => (draftBuild = v)" />
+        <AccountFields tight :members="draftMembers" :iron="draftIron" :world="draftWorld" :iron-kind="draftIronKind" :build="draftBuild" :detected="detectedBuild" @update:members="(v) => (draftMembers = v)" @update:iron="setIron" @update:iron-kind="(v) => (draftIronKind = v)" @update:world="(v) => { draftWorld = v; if (v === 'hardcore') draftMembers = true }" @update:build="(v) => (draftBuild = v)" />
         <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
           We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
         </p>
@@ -85,6 +85,7 @@ const props = defineProps({
   iron: { type: Boolean, default: false },
   // What kind of ironman, and the build (see data/builds.js); `detected` is the build the player's stats look like.
   ironKind: { type: String, default: 'standard' },
+  world: { type: String, default: 'normal' },
   build: { type: String, default: 'main' },
   detected: { type: String, default: null },
   goalSkills: { type: Array, default: () => [] },
@@ -98,6 +99,7 @@ const draftHours = ref(props.hoursPerDay)
 const draftMembers = ref(props.members)
 const draftIron = ref(props.iron)
 const draftIronKind = ref(props.ironKind)
+const draftWorld = ref(props.world)
 const draftBuild = ref(props.build)
 const detectedBuild = computed(() => props.detected)
 // The skills in the plan that the chosen build never trains: they come out of the plan when the settings are saved.
@@ -123,7 +125,7 @@ function setHours(v) {
 // How far along the slider is (0.5 to 12 hours), to colour the track up to the handle.
 const fill = computed(() => ((Math.min(Math.max(draftHours.value, 0.5), 12) - 0.5) / 11.5) * 100)
 function save() {
-  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value, iron: draftIron.value, ironKind: draftIronKind.value, build: draftBuild.value })
+  emit('save', { name: draftName.value.trim(), strategy: draftStrategy.value, hours: draftHours.value, profile: draftProfile.value, members: draftMembers.value, iron: draftIron.value, ironKind: draftIronKind.value, world: draftWorld.value, build: draftBuild.value })
 }
 function cancel() {
   emit('close')

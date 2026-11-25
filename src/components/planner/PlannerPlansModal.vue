@@ -51,7 +51,7 @@ import { summarizePlan } from '@/utils/plannerTools'
 import { groupedPlans, recommendedPlans } from '@/utils/recommendedPlans'
 
 const props = defineProps({
-  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', build: 'main' }) },
+  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', world: 'normal', build: 'main' }) },
   skills: { type: Object, default: null },
   hasPlayer: { type: Boolean, default: false },
   playerLabel: { type: String, default: '' },

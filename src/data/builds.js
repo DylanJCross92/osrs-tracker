@@ -71,5 +71,14 @@ export const IRON_KINDS = [
 
 export const buildOf = (key) => BUILDS.find((b) => b.key === key) || BUILDS[0]
 export const cleanBuild = (value) => (BUILDS.some((b) => b.key === value) ? value : 'main')
+// Which worlds the account plays on. Hardcore Worlds (released 4 Nov 2026) is one life on its own servers; its characters are main accounts (a Grand
+// Exchange, trading) so it is its own choice next to Main account and Ironman, never both. A death means Reset (all progress gone) or Transfer, so the plan
+// keeps to the methods a hardcore ironman would use.
+export const WORLDS = [
+  { key: 'normal', label: 'Normal worlds', blurb: 'The usual worlds.' },
+  { key: 'hardcore', label: 'Hardcore Worlds', blurb: 'One life. Methods that can kill you are left out, and gp is an estimate because Hardcore Worlds have their own economy.' },
+]
+export const cleanWorld = (value) => (value === 'hardcore' ? 'hardcore' : 'normal')
+
 export const cleanIronKind = (value) => (IRON_KINDS.some((k) => k.key === value) ? value : 'standard')
 export const ironKindOf = (key) => IRON_KINDS.find((k) => k.key === key) || IRON_KINDS[0]

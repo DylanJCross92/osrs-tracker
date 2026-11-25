@@ -9,7 +9,7 @@ import { ECONOMY } from '@/data/methodEconomy'
 import { itemsStatus } from '@/utils/methodItems'
 import { SKILL_NAMES } from '@/utils/osrsSkills'
 import { cleanProfile } from '@/utils/smartProfile'
-import { cleanBuild, cleanIronKind } from '@/data/builds'
+import { cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
 import { startOfGameDay } from '@/utils/gameDay'
 import {
   MAX_XP,
@@ -564,6 +564,7 @@ export function snapshotPlan(state, name, existing = {}) {
     ...(state.iron === true ? { iron: true } : {}),
     ...(cleanBuild(state.build) !== 'main' ? { build: cleanBuild(state.build) } : {}),
     ...(state.iron === true && cleanIronKind(state.ironKind) !== 'standard' ? { ironKind: cleanIronKind(state.ironKind) } : {}),
+    ...(state.iron !== true && cleanWorld(state.world) === 'hardcore' ? { world: 'hardcore' } : {}),
     ...(state.smart ? { smart: cleanProfile(state.smart) } : {}),
     goals: state.goals.map((g) => ({
       skill: g.skill,
@@ -588,6 +589,7 @@ export function planFingerprint(p) {
     p.iron === true ? 'iron' : 'main',
     cleanBuild(p.build),
     p.iron === true ? cleanIronKind(p.ironKind) : 'standard',
+    p.iron !== true && cleanWorld(p.world) === 'hardcore' ? 'hardcore' : 'normal',
     (p.goals || []).map((g) => [g.skill, g.currentXp, g.targetXp, g.methodId, g.customXpPerHour || 0, [...(g.quests || [])], g.allowedMethodIds?.length ? [...g.allowedMethodIds] : null, cleanOverrides(g.overrides).map((o) => [o.fromLevel, o.toLevel, o.methodId])]),
   ])
 }
@@ -696,6 +698,7 @@ export function validatePlan(raw) {
     ...(src.iron === true ? { iron: true } : {}),
     ...(cleanBuild(src.build) !== 'main' ? { build: cleanBuild(src.build) } : {}),
     ...(src.iron === true && cleanIronKind(src.ironKind) !== 'standard' ? { ironKind: cleanIronKind(src.ironKind) } : {}),
+    ...(src.iron !== true && cleanWorld(src.world) === 'hardcore' ? { world: 'hardcore' } : {}),
     ...(src.smart && typeof src.smart === 'object' ? { smart: cleanProfile(src.smart) } : {}),
     goals,
   }

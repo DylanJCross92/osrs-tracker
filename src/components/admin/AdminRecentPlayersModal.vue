@@ -21,7 +21,7 @@
           <RouterLink class="adm-row" :to="{ name: 'playerDetail', params: { username: p.username } }" @click="$emit('close')">
             <span class="adm-av" aria-hidden="true"><PlayerAvatar :name="p.username" /></span>
             <span class="adm-main">
-              <b><span class="adm-name">{{ p.displayName }}</span><PlayerBadge :label="p.badge" :claimed="p.claimed" /></b>
+              <b><span class="adm-name">{{ p.displayName }}</span><PlayerBadge :label="p.badge" :claimed="p.claimed" /><HardcoreTag v-if="p.mode === 'hardcore'" short /></b>
               <small>{{ p.level ? `Overall ${p.level.toLocaleString('en-US')} · ${formatXp(p.xp)} XP` : 'Not synced yet' }}</small>
             </span>
             <span class="adm-when" :title="new Date(p.trackedAt).toLocaleString()">{{ formatRelative(p.trackedAt) }}</span>
@@ -37,6 +37,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import DailyPlayersChart from '@/components/admin/DailyPlayersChart.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
 import { ApiError } from '@/api/client'
 import { statsApi } from '@/api/stats'
 import { formatXp } from '@/utils/osrsSkills'

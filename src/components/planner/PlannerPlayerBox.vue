@@ -3,7 +3,7 @@
     <div v-if="player && !editing" class="pt-player">
       <RouterLink class="pt-avatar pt-profile-link" :to="{ name: 'playerDetail', params: { username: player.username } }" :aria-label="`Open ${player.displayName}'s profile`"><PlayerAvatar :name="player.username" /></RouterLink>
       <div class="pt-player-main">
-        <RouterLink class="pt-name" :to="{ name: 'playerDetail', params: { username: player.username } }">{{ player.displayName }}</RouterLink>
+        <span class="pt-name-row"><RouterLink class="pt-name" :to="{ name: 'playerDetail', params: { username: player.username }, ...(player.mode === 'hardcore' ? { query: { world: 'hardcore' } } : {}) }">{{ player.displayName }}</RouterLink><HardcoreTag v-if="player.mode === 'hardcore'" /></span>
         <span class="pt-stats">
           <span class="ovr"><img class="ovr-ic" :src="skillIconSrc('Overall')" alt="" width="16" height="16" />Overall <i>{{ player.latest.overallLevel.toLocaleString('en-US') }}</i></span>
           <span><i>{{ formatNum(player.latest.overallXp) }}</i> XP</span>
@@ -44,6 +44,7 @@
 
 <script setup>
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import RecentPlayers from '@/components/RecentPlayers.vue'
 import { skillIconSrc } from '@/utils/osrsSkills'

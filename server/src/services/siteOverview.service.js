@@ -44,7 +44,7 @@ export async function siteOverview(days) {
               (SELECT count(*)::int FROM users WHERE email_verified_at IS NOT NULL AND last_seen_day >= ${STATS_TODAY} - 6) AS active_week`,
     ),
     Promise.all([
-      pool.query(`SELECT created_at AS at, display_name AS text FROM players ORDER BY created_at DESC LIMIT ${FEED_EACH}`),
+      pool.query(`SELECT created_at AS at, display_name AS text FROM players p WHERE (p.mode = 'main' OR NOT EXISTS (SELECT 1 FROM players m WHERE m.username = p.username AND m.mode = 'main')) ORDER BY created_at DESC LIMIT ${FEED_EACH}`),
       pool.query(`SELECT created_at AS at, email AS text, (email_verified_at IS NOT NULL) AS verified FROM users ORDER BY created_at DESC LIMIT ${FEED_EACH}`),
       pool.query(
         `SELECT coalesce(c.decided_at, c.created_at) AS at, p.display_name AS text, c.status AS detail

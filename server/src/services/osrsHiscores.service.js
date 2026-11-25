@@ -1,6 +1,13 @@
 // Thin client for the official OSRS hiscores lite feed. No API key, it's a
 // public endpoint Jagex also uses for the in-game hiscores widget.
-const HISCORES_URL = 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.json'
+// Each game mode has its own table; Hardcore Worlds (released 4 Nov 2026) is 'hardcore'. The feed has the same shape for both.
+export const MODES = ['main', 'hardcore']
+const HISCORES_URLS = {
+  main: 'https://secure.runescape.com/m=hiscore_oldschool/index_lite.json',
+  hardcore: 'https://secure.runescape.com/m=hiscore_oldschool_hardcore_mains/index_lite.json',
+}
+const MODE_NAMES = { main: 'OSRS hiscores', hardcore: 'Hardcore Worlds hiscores' }
+export const cleanMode = (mode) => (mode === 'hardcore' ? 'hardcore' : 'main')
 
 // Every trainable skill, in no particular order (the JSON feed is keyed by
 // name, unlike the old CSV feed where order mattered).
@@ -88,15 +95,16 @@ function normalizeEntry(entry) {
  * { overall: {level, xp, rank}, skills: { [skillName]: {level, xp, rank} } }.
  * Throws PlayerNotFoundError for an unknown/never-logged-in RSN.
  */
-export async function fetchHiscores(username) {
-  const url = `${HISCORES_URL}?player=${encodeURIComponent(username)}`
+export async function fetchHiscores(username, mode = 'main') {
+  const m = cleanMode(mode)
+  const url = `${HISCORES_URLS[m]}?player=${encodeURIComponent(username)}`
   const res = await fetchWithRetry(url)
 
   if (res.status === 404) {
-    throw new PlayerNotFoundError(`"${username}" wasn't found on the OSRS hiscores.`)
+    throw new PlayerNotFoundError(`"${username}" wasn't found on the ${MODE_NAMES[m]}.`)
   }
   if (!res.ok) {
-    throw new Error(`OSRS hiscores request failed with status ${res.status}.`)
+    throw new Error(`${MODE_NAMES[m]} request failed with status ${res.status}.`)
   }
 
   const data = await res.json()

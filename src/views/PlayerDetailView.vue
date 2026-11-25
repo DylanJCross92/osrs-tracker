@@ -12,28 +12,28 @@
           >
             {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
           </button>
-          <RouterLink v-if="player" class="btn btn-ghost" :to="compareLink" @click="track('compare_open', { source: 'profile' })">
+          <RouterLink v-if="player && !isHardcore" class="btn btn-ghost" :to="compareLink" @click="track('compare_open', { source: 'profile' })">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
             Compare
           </RouterLink>
-          <button v-if="player && isProfileOwner" class="btn btn-ghost" type="button" @click="customizeOpen = true">
+          <button v-if="player && !isHardcore && isProfileOwner" class="btn btn-ghost" type="button" @click="customizeOpen = true">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" /></svg>
             Customize
           </button>
-          <button v-if="player && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" :title="loggedIn || isFollowing(player.displayName) ? '' : 'Following needs a free account'" @click="toggleFollow">
+          <button v-if="player && !isHardcore && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" :title="loggedIn || isFollowing(player.displayName) ? '' : 'Following needs a free account'" @click="toggleFollow">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1.1 8.7 3 5 6.4 5c2 0 3.4 1.1 4.2 2.4h2.8C14.2 6.1 15.6 5 17.6 5 21 5 22.9 8.7 21.3 11.9 19 16.4 12 21 12 21z" /></svg>
             {{ isFollowing(player.displayName) ? 'Following' : 'Follow' }}
             <svg v-if="!loggedIn && !isFollowing(player.displayName)" class="btn-lock" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Needs a free account"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
           </button>
-          <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
+          <button v-if="player && !isHardcore && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
             {{ claim.mine === 'pending' ? 'Finish claim' : 'Claim' }}
           </button>
-          <button class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
+          <button v-if="!isHardcore" class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5L18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" /></svg>
             Challenge
           </button>
-          <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
+          <button v-if="!isHardcore" class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
             Share
           </button>
@@ -57,8 +57,9 @@
         <CombatBadge :skills="latest?.skills" />
       </div>
       <div class="detail-info">
-        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
+        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /><HardcoreTag v-if="isHardcore" class="hw-tag-lg" /></h1>
         <AccountBadge :build="page.build" :iron-kind="page.ironKind" />
+        <WorldSwitch v-if="hardcore && mainPlayer" :world="world" :character="hardcore" :rank="Number(hardcorePlayer?.latest?.overallRank) || 0" @update:world="setWorld" />
         <div v-if="followCounts || profile" class="pp-meta">
           <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
             <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
@@ -109,8 +110,9 @@
 
   <template v-else-if="snapshots.length">
     <nav class="profile-tabs" aria-label="Profile sections">
-      <button v-for="t in TABS" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
+      <button v-for="t in visibleTabs" :key="t.key" :class="{ active: tab === t.key }" @click="setTab(t.key)">{{ t.label }}</button>
     </nav>
+    <div v-if="isHardcore && hardcore" class="hl-wrap"><HardcoreLives :character="hardcore" /></div>
     <ProfileOverview v-if="tab === 'overview'" :player="player" :snapshots="snapshots" :profile="profile" :week-days="weekDays" @view-history="setTab('history')" @day="(d) => (recapDay = d)" @skill="openPlanner" @records="setTab('records')" @challenge="openChallenge('overview')" />
     <ProfileAchievements v-else-if="tab === 'achievements'" :profile="profile" />
     <ProfileRecords v-else-if="tab === 'records'" :player="player" />
@@ -319,6 +321,9 @@ import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'
 import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vue'
 import ProfileFlair from '@/components/profile/ProfileFlair.vue'
 import AccountBadge from '@/components/profile/AccountBadge.vue'
+import WorldSwitch from '@/components/profile/WorldSwitch.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
+import HardcoreLives from '@/components/profile/HardcoreLives.vue'
 import ProfileGoalsPublic from '@/components/profile/ProfileGoalsPublic.vue'
 import GoalShareModal from '@/components/profile/GoalShareModal.vue'
 import { goalsApi } from '@/api/goals'
@@ -367,19 +372,48 @@ const { showToast } = useToast()
 // (/player/Dylanz297), we still resolve it to the player's id client-side
 // since the API itself is id-based.
 const usernameParam = computed(() => route.params.username ?? '')
-const player = computed(
-  () => store.players.find((p) => p.username.toLowerCase() === usernameParam.value.toLowerCase()) ?? null,
-)
+// Hardcore Worlds: a name can have a second character with its own hiscores table. ?world=hardcore shows it, with the same page and the same
+// per-player data (it is just another tracked player), minus the things that belong to the person rather than the character.
+const world = computed(() => (route.query.world === 'hardcore' ? 'hardcore' : 'main'))
+// A name that only exists on Hardcore Worlds (no normal character is tracked) opens on its Hardcore Worlds character.
+const hardcoreOnly = computed(() => !mainPlayer.value && !!hardcorePlayer.value)
+const isHardcore = computed(() => world.value === 'hardcore' || hardcoreOnly.value)
+const lower = (v) => String(v || '').toLowerCase()
+const mainPlayer = computed(() => store.players.find((p) => lower(p.username) === lower(usernameParam.value)) ?? null)
+const hardcorePlayer = computed(() => store.hardcorePlayers.find((p) => lower(p.username) === lower(usernameParam.value)) ?? null)
+const player = computed(() => (isHardcore.value ? hardcorePlayer.value : mainPlayer.value))
 const playerId = computed(() => player.value?.id ?? null)
+
+// The name's Hardcore Worlds character, or null when it has none (looked for once a day on the server).
+const hardcore = ref(null)
+async function loadHardcore() {
+  const id = mainPlayer.value?.id ?? hardcorePlayer.value?.id
+  hardcore.value = null
+  if (!id) return
+  try {
+    const { character } = await playersApi.hardcore(id)
+    hardcore.value = character
+    if (character && !store.hardcorePlayers.some((p) => p.id === character.id)) await store.loadHardcore()
+  } catch {
+    hardcore.value = null
+  }
+}
+function setWorld(next) {
+  const query = { ...route.query }
+  if (next === 'hardcore') query.world = 'hardcore'
+  else delete query.world
+  delete query.tab
+  router.replace({ query })
+}
 
 watch(
   [player, usernameParam],
   ([p, username]) => {
     const name = p?.displayName || username
     setPageMeta({
-      title: `${name} | OSRS Player Profile`,
+      title: `${name} | OSRS ${p?.mode === 'hardcore' ? 'Hardcore Worlds ' : ''}Player Profile`,
       description: `Explore ${name}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`,
-      path: `/player/${encodeURIComponent(username)}`,
+      path: `/player/${encodeURIComponent(username)}${p?.mode === 'hardcore' ? '?world=hardcore' : ''}`,
     })
   },
   { immediate: true },
@@ -429,6 +463,8 @@ const TABS = [
   { key: 'goals', label: 'Goals' },
   { key: 'history', label: 'History' },
 ]
+// Records and goals belong to the person, not a character, so the Hardcore Worlds view leaves them out.
+const visibleTabs = computed(() => (isHardcore.value ? TABS.filter((t) => !['records', 'goals'].includes(t.key)) : TABS))
 const tab = ref(TABS.some((t) => t.key === route.query.tab) ? route.query.tab : 'overview')
 function setTab(key) {
   tab.value = key
@@ -625,9 +661,20 @@ function openPlanner(skill) {
   plannerSkill.value = skill
 }
 
+// A Hardcore Worlds character starts over when it resets: the page shows the life it is on now (earlier ones are in the Lives list).
+const currentLife = (rows) => {
+  if (!isHardcore.value || !rows.length) return rows
+  const top = Math.max(...rows.map((r) => r.life || 1))
+  return rows.filter((r) => (r.life || 1) === top)
+}
+
 async function load() {
   loading.value = true
   if (!store.loaded) await store.loadPlayers()
+  // A name with no normal character might be a Hardcore Worlds one, so look there before saying it is not tracked.
+  if ((isHardcore.value || !mainPlayer.value) && !store.hardcoreLoaded) await store.loadHardcore().catch(() => {})
+  if (!tab.value || !visibleTabs.value.some((t) => t.key === tab.value)) tab.value = 'overview'
+  loadHardcore()
 
   if (!playerId.value) {
     // Unknown RSN in the URL, nothing to fetch.
@@ -637,7 +684,7 @@ async function load() {
   }
 
   try {
-    snapshots.value = await store.fetchSnapshots(playerId.value)
+    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
   } catch {
     showToast("Could not load this player's history.")
     snapshots.value = []
@@ -652,7 +699,8 @@ async function load() {
   checkingForUpdates.value = true
   try {
     await store.refreshPlayer(playerId.value)
-    snapshots.value = await store.fetchSnapshots(playerId.value)
+    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
+    if (isHardcore.value) store.loadHardcore().catch(() => {})
   } catch {
     // Non-fatal, the page already has the last saved data.
   } finally {
@@ -661,7 +709,7 @@ async function load() {
 }
 onMounted(load)
 
-watch(() => route.params.username, load)
+watch(() => [route.params.username, route.query.world], load)
 
 const latest = computed(() => snapshots.value[snapshots.value.length - 1] ?? null)
 
@@ -833,7 +881,7 @@ async function refresh() {
   refreshing.value = true
   try {
     await store.refreshPlayer(playerId.value)
-    snapshots.value = await store.fetchSnapshots(playerId.value)
+    snapshots.value = currentLife(await store.fetchSnapshots(playerId.value))
     showToast('Synced the latest hiscores.')
   } catch {
     showToast('Could not refresh right now.')

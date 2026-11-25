@@ -204,7 +204,7 @@
     </template>
 
     <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
-    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :iron-kind="ironKind" :build="build" :detected="detectedBuild" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
+    <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :iron-kind="ironKind" :world="world" :build="build" :detected="detectedBuild" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
         <PlannerPlayerBox
           v-model:username="username"
@@ -224,7 +224,7 @@
       </template>
     </PlannerPlanSettings>
     <SharePlanModal v-if="sharing" :plan="sharing" :auto-publish="sharingAuto" @close="sharing = null" />
-    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" :iron="iron" :build="build" :iron-kind="ironKind" @add="addGoalFrom" @close="showAdd = false" />
+    <PlannerAddGoal v-if="showAdd" :initial-skill="addSkill" :player="player" :existing-skills="goals.map((g) => g.skill)" :global-strategy="globalStrategy" :gp-value="gpValue" :blocked-method-ids="blockedIds" :done-quest-ids="doneQuestIds" :members="members" :iron="iron" :build="build" :iron-kind="ironKind" :world="world" @add="addGoalFrom" @close="showAdd = false" />
   </div>
 </template>
 
@@ -297,8 +297,8 @@ import { useAccountSetupSeen } from '@/composables/useAccountSetupSeen'
 import { useProfileSettings } from '@/composables/useProfileSettings'
 import { plannerAccountContext } from '@/composables/plannerAccountContext'
 import { applyRules, detectBuild, questFitsBuild } from '@/utils/builds'
-import { buildOf, cleanBuild, cleanIronKind } from '@/data/builds'
-import { buildPref, ironKindPref, ironPref, membersPref, setIronMode, useAccountType } from '@/composables/useAccountType'
+import { buildOf, cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
+import { buildPref, ironKindPref, ironPref, membersPref, setIronMode, useAccountType, worldPref } from '@/composables/useAccountType'
 import { ironStrategy } from '@/utils/ironman'
 import { referrerSource } from '@/utils/shareEvents'
 import { plannedQuestReqIds } from '@/data/quests'
@@ -477,7 +477,13 @@ async function loadPlayer({ typed = false } = {}) {
       await store.addPlayer(name)
       track('player_added', { source: 'planner', is_new_player: true, player: name, player_name: name })
     }
-    const found = find()
+    let found = find()
+    // A name that only exists on Hardcore Worlds is tracked as that character (see the server's addPlayer): plan for it on Hardcore Worlds.
+    if (!found) {
+      await store.loadHardcore().catch(() => {})
+      found = store.hardcorePlayers.find((p) => p.username.toLowerCase() === name.toLowerCase())
+      if (found) world.value = 'hardcore'
+    }
     track('planner_player_loaded', { result: wasNew ? 'new' : 'existing' })
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     const previous = player.value
@@ -489,6 +495,7 @@ async function loadPlayer({ typed = false } = {}) {
       if (typeof own.iron === 'boolean') iron.value = own.iron
       if (own.build) build.value = own.build
       if (own.ironKind) ironKind.value = own.ironKind
+      if (own.world) world.value = own.world
       if (own.hours) hoursPerDay.value = own.hours
     }
     player.value = found
@@ -531,7 +538,7 @@ const goals = ref([])
 const { playHours, setPlayHours } = usePlayHours()
 const hoursPerDay = ref(playHours())
 // Free-to-play (false) or members: a free-to-play plan trains with free methods only (see utils/membership.js).
-const { setMembersPref, setIronPref, setBuildPref, setIronKindPref } = useAccountType()
+const { setMembersPref, setIronPref, setBuildPref, setIronKindPref, setWorldPref } = useAccountType()
 // A new plan starts with the account type last chosen anywhere on the site.
 const members = ref(membersPref())
 // An ironman plan leaves gp out and starts from the cheapest routes (see utils/ironman.js). What is on screen follows the plan open now.
@@ -540,7 +547,9 @@ const iron = ref(ironPref())
 // (see utils/builds.js). Like the two above they start from the last choice made anywhere on the site.
 const build = ref(buildPref())
 const ironKind = ref(ironKindPref())
-const accountRules = () => ({ members: members.value, build: build.value, iron: iron.value, ironKind: ironKind.value })
+// Hardcore Worlds (one life, see data/builds.js): 'hardcore' or 'normal'. A Hardcore Worlds character is a main account, so never together with ironman.
+const world = ref(worldPref())
+const accountRules = () => ({ members: members.value, build: build.value, iron: iron.value, ironKind: ironKind.value, world: world.value })
 // The same, for the start page and the account option at the top.
 const accountNow = computed(() => accountRules())
 const { seen: setupSeen, markSeen: markSetupSeen } = useAccountSetupSeen()
@@ -553,6 +562,7 @@ function rememberAccount(patch) {
   if ('members' in patch) setMembersPref(patch.members)
   if ('iron' in patch) setIronPref(patch.iron)
   if ('ironKind' in patch) setIronKindPref(patch.ironKind)
+  if ('world' in patch) setWorldPref(patch.world)
   if ('build' in patch) setBuildPref(patch.build)
 }
 // The start page and the account option report choices as small patches: { build: 'skiller' }.
@@ -560,8 +570,33 @@ function applyAccountPatch(patch) {
   if ('members' in patch) setMembers(patch.members)
   if ('iron' in patch) setIron(patch.iron)
   if ('ironKind' in patch) setIronKind(patch.ironKind)
+  if ('world' in patch) setWorld(patch.world)
   if ('build' in patch) setBuild(patch.build)
 }
+// A Hardcore Worlds plan starts from the Hardcore Worlds character's stats when the name has one, and a normal plan from the normal character's.
+// (Both are tracked players with the same name, so this only swaps which one the page reads.)
+async function useWorldStats() {
+  const p = player.value
+  if (!p) return
+  if (world.value === 'hardcore' && p.mode !== 'hardcore') {
+    try {
+      const { character } = await playersApi.hardcore(p.id)
+      if (!character) return
+      if (!store.hardcorePlayers.some((x) => x.id === character.id)) await store.loadHardcore()
+      const hc = store.hardcorePlayers.find((x) => x.id === character.id)
+      if (hc?.latest && world.value === 'hardcore' && player.value?.id === p.id) {
+        player.value = hc
+        showToast(`Using ${hc.displayName}'s Hardcore Worlds stats.`)
+      }
+    } catch {
+      // No Hardcore Worlds stats right now: the plan keeps the normal character's.
+    }
+  } else if (world.value !== 'hardcore' && p.mode === 'hardcore') {
+    const main = store.players.find((x) => x.username.toLowerCase() === p.username.toLowerCase())
+    if (main) player.value = main
+  }
+}
+watch([world, () => player.value?.id], useWorldStats)
 // The goals made to fit the account: locked skills dropped, targets held at the build's caps, methods cut to what the account may use. `prev` is the
 // rules they were last given, so a change can undo what it set before.
 const applyAccountRules = (list, prev = null) => applyRules(list, accountRules(), prev, freeMethodIds)
@@ -584,6 +619,11 @@ function setIron(value) {
   const prev = accountRules()
   iron.value = value === true
   rememberAccount({ iron: iron.value })
+  // A Hardcore Worlds character is a main account: choosing ironman leaves it.
+  if (iron.value && world.value === 'hardcore') {
+    world.value = 'normal'
+    rememberAccount({ world: 'normal' })
+  }
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   goals.value = applyAccountRules(goals.value, prev)
   track('planner_ironman', { iron: iron.value })
@@ -600,9 +640,28 @@ function setMembers(value) {
   const before = goals.value
   members.value = value !== false
   rememberAccount({ members: members.value })
+  // Hardcore Worlds are members-only: going free-to-play leaves them.
+  if (!members.value && world.value === 'hardcore') {
+    world.value = 'normal'
+    rememberAccount({ world: 'normal' })
+  }
   goals.value = applyAccountRules(goals.value, prev)
   noteDropped(before, goals.value, `members-only skills cannot be trained free-to-play`)
   track('planner_members', { members: members.value })
+}
+function setWorld(value) {
+  const prev = accountRules()
+  world.value = cleanWorld(value)
+  rememberAccount({ world: world.value })
+  // ...and choosing Hardcore Worlds leaves ironman.
+  if (world.value === 'hardcore' && iron.value) {
+    iron.value = false
+    rememberAccount({ iron: false })
+  }
+  // Hardcore Worlds are members-only (the free world only has Death's Office).
+  if (world.value === 'hardcore' && !members.value) setMembers(true)
+  goals.value = applyAccountRules(goals.value, prev)
+  track('planner_world', { world: world.value })
 }
 function setBuild(value) {
   const prev = accountRules()
@@ -890,11 +949,12 @@ function closeSettings() {
   showSettings.value = false
   editingPlayer.value = false
 }
-async function saveSettings({ name, strategy, hours, profile, members: wantMembers, iron: wantIron, build: wantBuild, ironKind: wantIronKind }) {
+async function saveSettings({ name, strategy, hours, profile, members: wantMembers, iron: wantIron, build: wantBuild, ironKind: wantIronKind, world: wantWorld }) {
   closeSettings()
   if (wantMembers !== undefined && wantMembers !== members.value) setMembers(wantMembers)
   if (wantIron !== undefined && wantIron !== iron.value) setIron(wantIron)
   if (wantIronKind !== undefined && wantIronKind !== ironKind.value) setIronKind(wantIronKind)
+  if (wantWorld !== undefined && wantWorld !== world.value) setWorld(wantWorld)
   if (wantBuild !== undefined && wantBuild !== build.value) setBuild(wantBuild)
   if (name && name !== currentPlanName.value) {
     if (currentPlanId.value) renameSaved(currentPlanId.value, name)
@@ -1094,7 +1154,7 @@ function gpClass(gp) {
 
 // --- Share ------------------------------------------------------------------------
 function planState() {
-  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value }
+  return { username: player.value?.username || username.value, hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: statsAt.value, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value, world: world.value }
 }
 // --- Saved plans (browser storage) ---------------------------------------------------
 const savedPlans = ref(listSavedPlans())
@@ -1150,6 +1210,7 @@ function currentSnapshotState() {
     iron: iron.value,
     build: build.value,
     ironKind: ironKind.value,
+    world: world.value,
     smart: smartProfile.value,
     goals: goals.value,
   }
@@ -1267,6 +1328,7 @@ function useRecommended(rec, { save = true } = {}) {
   iron.value = ironPref()
   build.value = buildPref()
   ironKind.value = ironKindPref()
+  world.value = worldPref()
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   unsavedShareId.value = ''
@@ -1305,6 +1367,7 @@ function useSmartPlan(plan) {
   iron.value = plan.profile ? plan.profile.iron === true : plan.iron === true
   build.value = cleanBuild(plan.profile ? plan.profile.build : plan.build)
   ironKind.value = cleanIronKind(plan.profile ? plan.profile.ironKind : plan.ironKind)
+  world.value = cleanWorld(plan.profile ? plan.profile.world : plan.world)
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1369,7 +1432,7 @@ async function loadTemplate(slug) {
 
 // The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
 const paceShareLink = computed(() => {
-  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value })
+  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value, world: world.value })
   params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`
 })
@@ -1408,6 +1471,7 @@ function applyPlan(plan) {
   iron.value = plan.iron === true
   build.value = cleanBuild(plan.build)
   ironKind.value = cleanIronKind(plan.ironKind)
+  world.value = cleanWorld(plan.world)
   hoursPerDay.value = plan.hoursPerDay
   globalStrategy.value = plan.globalStrategy
   gpValue.value = plan.gpValue
@@ -1444,6 +1508,7 @@ function startNew() {
   iron.value = ironPref()
   build.value = buildPref()
   ironKind.value = ironKindPref()
+  world.value = worldPref()
   if (iron.value) globalStrategy.value = ironStrategy(globalStrategy.value)
   hoursPerDay.value = playHours()
   goals.value = []
@@ -1569,7 +1634,7 @@ function setRobots(content) {
 }
 
 watch(
-  [goals, hoursPerDay, members, iron, build, ironKind, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
+  [goals, hoursPerDay, members, iron, build, ironKind, world, player, globalStrategy, gpValue, statsAt, currentPlanId, unsavedShareId, scratch, loggedIn],
   () => {
     calcAt.value = new Date()
     const state = planState()
@@ -1669,6 +1734,7 @@ function applyRestored(restored, keepScratch) {
   iron.value = restored.iron === true
   build.value = cleanBuild(restored.build)
   ironKind.value = cleanIronKind(restored.ironKind)
+  world.value = cleanWorld(restored.world)
   goals.value = applyAccountRules(restored.goals || [])
   hoursPerDay.value = restored.hoursPerDay || 2
   username.value = restored.username || ''

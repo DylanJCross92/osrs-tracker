@@ -114,6 +114,7 @@ const props = defineProps({
   // The kind of account (see data/builds.js): skills it never trains are locked here, and others stop at the level it allows.
   build: { type: String, default: 'main' },
   ironKind: { type: String, default: 'standard' },
+  world: { type: String, default: 'normal' },
 })
 const emit = defineEmits(['add', 'close'])
 
@@ -215,7 +216,7 @@ const baseGoal = computed(() => {
   return applyRules([goal], rulesNow(), null, freeMethodIds)[0] || null
 })
 // What the account may do: free-to-play or members, the build and the kind of ironman.
-const rulesNow = () => ({ members: draftMembers.value, build: props.build, iron: draftIron.value, ironKind: props.ironKind })
+const rulesNow = () => ({ members: draftMembers.value, build: props.build, iron: draftIron.value, ironKind: props.ironKind, world: props.world })
 const suggested = computed(() => (baseGoal.value ? suggestedQuests(baseGoal.value, (q) => questFitsBuild(q, accountRulesNow())) : []))
 const preview = computed(() => (baseGoal.value ? planGoal({ ...baseGoal.value, quests: suggested.value }) : null))
 

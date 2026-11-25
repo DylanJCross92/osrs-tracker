@@ -184,3 +184,25 @@ describe('free-to-play locks members content', () => {
     expect(plans.find((p) => p.id === 'all-70').title).toBe('All free-to-play skills to 70')
   })
 })
+
+describe('Hardcore Worlds', () => {
+  it('leaves out methods that can kill you, like a hardcore ironman, but is still a main account', async () => {
+    const { methodFits, methodBlockReason, accountLabel } = await import('../../src/utils/builds.js')
+    const risky = ['Slayer', 'Prayer', 'Hitpoints', 'Magic', 'Ranged'].flatMap((s) => methodsForSkill(s)).find((m) => /wilderness|revenant/i.test(`${m.id} ${m.name} ${m.requirements || ''}`))
+    expect(risky).toBeTruthy()
+    expect(methodFits(risky, { world: 'normal' })).toBe(true)
+    expect(methodFits(risky, { world: 'hardcore' })).toBe(false)
+    expect(methodBlockReason(risky, { world: 'hardcore' })).toBe('Too risky on Hardcore Worlds')
+    expect(accountLabel({ world: 'hardcore' })).toBe('Members · Hardcore Worlds')
+    expect(accountLabel({ iron: true, world: 'hardcore' })).toBe('Members · Ironman')
+  })
+  it('keeps the world in the share link, and never with an ironman', async () => {
+    const { encodePlan, decodePlan } = await import('../../src/utils/planner.js')
+    const base = { username: '', hoursPerDay: 2, goals: [], strategy: 'auto-fast', gpValue: 0, budget: null, statsAt: null }
+    expect(encodePlan({ ...base, world: 'hardcore' }).get('hw')).toBe('1')
+    expect(encodePlan({ ...base, iron: true, world: 'hardcore' }).get('hw')).toBeNull()
+    const q = Object.fromEntries(encodePlan({ ...base, world: 'hardcore' }))
+    expect(decodePlan(q, []).world).toBe('hardcore')
+    expect(decodePlan({ ...q, i: '1' }, []).world).toBe('normal')
+  })
+})

@@ -29,8 +29,8 @@ describe('profile settings', () => {
     const { util, mod } = await load('Main One')
     util.saveProfileEntry('Alt Iron', { iron: true, members: false })
     const { settingsOf } = mod
-    expect(settingsOf('alt iron')).toEqual({ members: false, iron: true, build: 'main', ironKind: 'standard', hours: 2 })
-    expect(settingsOf('Main One')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', hours: 2 })
+    expect(settingsOf('alt iron')).toEqual({ members: false, iron: true, build: 'main', ironKind: 'standard', world: 'normal', hours: 2 })
+    expect(settingsOf('Main One')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', world: 'normal', hours: 2 })
     expect(prefs().profiles['alt iron']).toEqual({ iron: true, members: false })
   })
 
@@ -46,7 +46,7 @@ describe('profile settings', () => {
     type.useAccountType().setMembersPref(false)
     expect(util.profileEntry('Main One').members).toBe(false)
     // The alt was not touched by any of it.
-    expect(util.profileEntry('Alt Iron')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', hours: 2 })
+    expect(util.profileEntry('Alt Iron')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', world: 'normal', hours: 2 })
   })
 
   it("changing another profile's settings leaves the plain preferences alone", async () => {
@@ -56,7 +56,7 @@ describe('profile settings', () => {
     s.set('Alt Iron', { iron: true, members: false, hours: 6 })
     expect(type.ironPref()).toBe(false)
     expect(prefs().hours ?? 2).toBe(2)
-    expect(mod.settingsOf('Alt Iron')).toEqual({ members: false, iron: true, build: 'main', ironKind: 'standard', hours: 6 })
+    expect(mod.settingsOf('Alt Iron')).toEqual({ members: false, iron: true, build: 'main', ironKind: 'standard', world: 'normal', hours: 6 })
   })
 
   it('does not grow a profile for a visitor: a planner switch with no saved main profile only changes the plain preferences', async () => {
@@ -97,7 +97,7 @@ describe('profile settings', () => {
     await w.findAll('.acp-item')[1].find('button.acp-makemain').trigger('click')
     await flushPromises()
     // The profile that stopped being the main one keeps its own settings.
-    expect(util.profileEntry('Main One')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', hours: 2 })
+    expect(util.profileEntry('Main One')).toEqual({ members: true, iron: false, build: 'main', ironKind: 'standard', world: 'normal', hours: 2 })
     expect(JSON.parse(localStorage.getItem('tickgains:me'))).toBe('Alt Iron')
     expect(type.ironPref()).toBe(true)
     expect(prefs().hours).toBe(5)

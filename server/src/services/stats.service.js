@@ -58,26 +58,32 @@ export async function trafficOverview(days) {
   return summarizeTraffic(rows, itemRows, days, today(), before[0].n)
 }
 
+// Tracked players, counted by name: every normal character, plus names that only exist on Hardcore Worlds (a name with both is one player).
+// Used for the counts and lists of who is tracked; `p` must be the players table.
+export const COUNTED_PLAYER = `(p.mode = 'main' OR NOT EXISTS (SELECT 1 FROM players m WHERE m.username = p.username AND m.mode = 'main'))`
+
 /** The players most recently added to the tracker, newest first, with where they stand now (for the admin view on Discover). */
 export async function recentPlayers(limit = 25) {
   const n = Math.min(Math.max(Math.floor(Number(limit)) || 25, 1), 100)
   const [{ rows }, { rows: total }] = await Promise.all([
     pool.query(
-      `SELECT p.username, p.display_name, p.badge, p.created_at, s.overall_level, s.overall_xp,
+      `SELECT p.username, p.display_name, p.badge, p.created_at, p.mode, s.overall_level, s.overall_xp,
               EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed
        FROM players p
        LEFT JOIN LATERAL (SELECT overall_level, overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) s ON true
+       WHERE ${COUNTED_PLAYER}
        ORDER BY p.created_at DESC, p.id DESC
        LIMIT $1`,
       [n],
     ),
-    pool.query('SELECT count(*)::int AS n FROM players'),
+    pool.query(`SELECT count(*)::int AS n FROM players p WHERE ${COUNTED_PLAYER}`),
   ])
   return {
     total: total[0].n,
     players: rows.map((r) => ({
       username: r.username,
       displayName: r.display_name,
+      mode: r.mode,
       badge: r.badge,
       claimed: Boolean(r.claimed),
       trackedAt: r.created_at,
@@ -90,7 +96,7 @@ export async function recentPlayers(limit = 25) {
 /** How many players were being tracked at the end of each of the last `days` game days, oldest first, ending today. */
 export async function dailyPlayers(days = 30) {
   const n = Math.min(Math.max(Math.floor(Number(days)) || 30, 7), 60)
-  const { rows } = await pool.query('SELECT created_at FROM players')
+  const { rows } = await pool.query(`SELECT p.created_at FROM players p WHERE ${COUNTED_PLAYER}`)
   return { days: playersByDay(rows.map((r) => r.created_at), n, localDay(Date.now())) }
 }
 
@@ -107,6 +113,7 @@ export async function dailyXp(days = 30) {
        -- A few days of padding, so the first snapshot in the window still has one before it to measure against.
        WHERE s.captured_at >= now() - ($2::int + 10) * interval '1 day'
          AND s.captured_at >= p.created_at - interval '1 minute'
+         AND p.mode = 'main'
      ), deltas AS (
        SELECT player_id,
               (date_trunc('day', (captured_at AT TIME ZONE $1) - interval '6 hours'))::date AS day,

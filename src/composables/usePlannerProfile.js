@@ -2,7 +2,7 @@ import { ref, watch } from 'vue'
 import { cleanProfile, DEFAULT_PROFILE } from '@/utils/smartPlanner'
 import { KEYS, SYNCED_EVENT } from '@/utils/accountData'
 import { playHours, usePlayHours } from '@/composables/usePlayHours'
-import { buildPref, ironKindPref, ironPref, membersPref, useAccountType } from '@/composables/useAccountType'
+import { buildPref, ironKindPref, ironPref, membersPref, useAccountType, worldPref } from '@/composables/useAccountType'
 
 // The answers to the Smart Planner's questions. Kept in this browser and, when signed in, in the account (see utils/accountData.js), so a
 // returning player finds them as they left them. `touched` is whether anything was ever answered (until then the steps are for a typical player).
@@ -21,7 +21,7 @@ const saved = read()
 // Never answered: the hours start as the last amount chosen on a plan's settings.
 // The account kind (members, ironman and its kind, the build) is always what was chosen last anywhere on the site, so the Smart Planner never disagrees with
 // the account setup above it.
-const accountNow = () => ({ members: membersPref(), iron: ironPref(), build: buildPref(), ironKind: ironKindPref() })
+const accountNow = () => ({ members: membersPref(), iron: ironPref(), build: buildPref(), ironKind: ironKindPref(), world: worldPref() })
 const profile = ref(cleanProfile(saved ? { ...saved, ...accountNow() } : { hours: Math.min(12, playHours()), ...accountNow() }))
 const touched = ref(!!saved && Object.keys(saved).length > 0)
 
@@ -50,7 +50,7 @@ if (typeof window !== 'undefined') {
 
 // Another page changed the account kind: the answers follow.
 const account = useAccountType()
-watch([account.members, account.iron, account.build, account.ironKind], () => {
+watch([account.members, account.iron, account.build, account.ironKind, account.world], () => {
   const next = cleanProfile({ ...profile.value, ...accountNow() })
   if (JSON.stringify(next) !== JSON.stringify(profile.value)) profile.value = next
 })
@@ -65,6 +65,7 @@ export function usePlannerProfile() {
     if (patch.iron != null) useAccountType().setIronPref(patch.iron)
     if (patch.build != null) useAccountType().setBuildPref(patch.build)
     if (patch.ironKind != null) useAccountType().setIronKindPref(patch.ironKind)
+    if (patch.world != null) useAccountType().setWorldPref(patch.world)
     profile.value = cleanProfile({ ...profile.value, ...patch })
     touched.value = true
   }

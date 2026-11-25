@@ -10,7 +10,7 @@
         <div v-if="players.length" class="disc-stat-tiles">
           <component :is="isAdmin ? 'button' : 'div'" class="disc-stat-tile" :class="{ 'is-action': isAdmin }" :type="isAdmin ? 'button' : undefined" :aria-label="isAdmin ? 'Show the most recently tracked players' : undefined" @click="isAdmin && (recentOpen = true)">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
-            <span><b>{{ players.length.toLocaleString('en-US') }}</b><small>players</small></span>
+            <span><b>{{ (data.trackedTotal ?? players.length).toLocaleString('en-US') }}</b><small>players</small></span>
           </component>
           <button type="button" class="disc-stat-tile is-action" aria-label="Show the XP gained on the site over the last 24 hours, 7 days and 30 days" @click="xpOpen = true; track('discover_xp_total_open')">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>

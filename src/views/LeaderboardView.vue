@@ -2,16 +2,20 @@
   <div class="lb">
     <section class="card lb-head">
       <div>
-        <h1>Leaderboard</h1>
-        <p class="lb-sub">Every tracked OSRS player, ranked. Pick a time window and a skill, or rank by all-time totals.</p>
+        <h1>{{ isHardcore ? 'Hardcore Worlds leaderboard' : 'Leaderboard' }}</h1>
+        <p class="lb-sub">{{ isHardcore ? 'Every tracked Hardcore Worlds character, ranked. One life each: a character that dies and resets starts again from nothing.' : 'Every tracked OSRS player, ranked. Pick a time window and a skill, or rank by all-time totals.' }}</p>
+        <div class="ws-tabs lb-world" role="group" aria-label="Which characters">
+          <button type="button" :class="{ on: !isHardcore }" :aria-pressed="!isHardcore" @click="setWorld('main')">Main</button>
+          <button type="button" :class="{ on: isHardcore }" :aria-pressed="isHardcore" @click="setWorld('hardcore')">Hardcore Worlds</button>
+        </div>
       </div>
-      <span v-if="data.generatedAt" class="lb-updated">{{ players.length.toLocaleString('en-US') }} players · updated {{ ago(data.generatedAt) }}</span>
+      <span v-if="data.generatedAt" class="lb-updated">{{ players.length.toLocaleString('en-US') }} {{ players.length === 1 ? (isHardcore ? 'character' : 'player') : isHardcore ? 'characters' : 'players' }} · updated {{ ago(data.generatedAt) }}</span>
     </section>
 
     <section class="card lb-board">
       <div class="lb-controls">
         <div class="range-tabs">
-          <button v-for="m in modes" :key="m.key" :class="{ active: mode === m.key }" @click="setMode(m.key)">{{ m.label }}</button>
+          <button v-for="m in shownModes" :key="m.key" :class="{ active: mode === m.key }" @click="setMode(m.key)">{{ m.label }}</button>
         </div>
         <div class="lb-controls-row">
           <label v-if="mode === 'gains'" class="period-select">
@@ -20,7 +24,7 @@
               <option v-for="p in periods" :key="p.key" :value="p.key">{{ p.long }}</option>
             </select>
           </label>
-          <label v-if="mode !== 'level'" class="period-select">
+          <label v-if="!['level', 'life', 'resets'].includes(mode)" class="period-select">
             <span class="period-select-label">Skill</span>
             <select v-model="skill">
               <option value="Overall">Overall</option>
@@ -36,14 +40,14 @@
       <template v-else>
         <ol class="disc-board-list lb-list">
           <li v-for="r in shown" :key="r.p.id" :class="{ 'lb-me': r.p.username === highlight }">
-            <RouterLink :to="{ name: 'playerDetail', params: { username: r.p.username } }" @click="track('leaderboard_player_click', { rank: r.rank, mode })">
+            <RouterLink :to="{ name: 'playerDetail', params: { username: r.p.username }, ...(isHardcore ? { query: { world: 'hardcore' } } : {}) }" @click="track('leaderboard_player_click', { rank: r.rank, mode })">
               <span class="disc-rank" :class="`r${r.rank}`">{{ r.rank.toLocaleString('en-US') }}</span>
               <span class="disc-board-main">
-                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /></span>
+                <span class="disc-board-name">{{ r.p.displayName }}<PlayerBadge :label="r.p.badge" :claimed="r.p.claimed" /><HardcoreTag v-if="isHardcore" short /></span>
                 <span class="disc-bar"><span :style="{ width: `${(r.value / max) * 100}%` }" /></span>
               </span>
               <span class="lb-meta"><img v-if="skill === 'Overall' && mode !== 'level' && r.meta" class="ovr-ic" :src="skillIconSrc('Overall')" alt="" width="16" height="16" />{{ r.meta }}</span>
-              <span class="disc-board-xp" :class="{ dim: !r.value, 'lb-plain': mode !== 'gains' }">{{ valueText(r) }}</span>
+              <span class="disc-board-xp" :class="{ dim: !r.value && mode !== 'life', 'lb-plain': mode !== 'gains' }">{{ valueText(r) }}</span>
             </RouterLink>
           </li>
         </ol>
@@ -62,6 +66,7 @@ import PageSkeleton from '@/components/PageSkeleton.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
 import { playersApi } from '@/api/players'
 import { setPageMeta } from '@/utils/pageMeta'
 import { SKILL_NAMES, formatXp, skillIconSrc } from '@/utils/osrsSkills'
@@ -81,6 +86,9 @@ const modes = [
   { key: 'gains', label: 'XP gained' },
   { key: 'xp', label: 'Total XP' },
   { key: 'level', label: 'Total level' },
+  // Only for Hardcore Worlds: how long the current life has lasted, and how many times a character has started again.
+  { key: 'life', label: 'Longest life', hardcore: true },
+  { key: 'resets', label: 'Most resets', hardcore: true },
 ]
 const periods = [
   { key: 'day', label: 'Today', long: 'Today' },
@@ -90,7 +98,10 @@ const periods = [
 
 // State lives in the URL so any view can be shared as a link.
 const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback)
-const mode = ref(pick(route.query.mode, modes.map((m) => m.key), 'gains'))
+const world = ref(route.query.world === 'hardcore' ? 'hardcore' : 'main')
+const isHardcore = computed(() => world.value === 'hardcore')
+const shownModes = computed(() => modes.filter((m) => !m.hardcore || isHardcore.value))
+const mode = ref(pick(route.query.mode, modes.filter((m) => !m.hardcore || world.value === 'hardcore').map((m) => m.key), 'gains'))
 const period = ref(pick(route.query.period, periods.map((p) => p.key), 'day'))
 const skill = ref(pick(route.query.skill, ['Overall', ...SKILL_NAMES], 'Overall'))
 const query = ref('')
@@ -105,15 +116,24 @@ watch(query, (q) => {
   clearTimeout(searchTimer)
   if (q) searchTimer = setTimeout(() => track('leaderboard_search', { username_length: q.length }), 800)
 })
-watch([mode, period, skill], () => {
+watch([mode, period, skill, world], () => {
   const q = { mode: mode.value, skill: skill.value }
+  if (world.value === 'hardcore') q.world = 'hardcore'
   if (mode.value === 'gains') q.period = period.value
   router.replace({ query: q })
   track('leaderboard_view', { mode: mode.value, period: period.value, skill: skill.value })
 })
 function setMode(m) {
   mode.value = m
-  if (m === 'level') skill.value = 'Overall'
+  if (m !== 'gains' && m !== 'xp') skill.value = 'Overall'
+}
+function setWorld(next) {
+  if (world.value === next) return
+  world.value = next
+  if (next !== 'hardcore' && ['life', 'resets'].includes(mode.value)) mode.value = 'gains'
+  loading.value = true
+  data.value = { players: [] }
+  load(true)
 }
 
 const data = ref({ players: [] })
@@ -125,7 +145,7 @@ let timer = null
 let tick = null
 async function load(initial = false) {
   try {
-    data.value = await playersApi.discover()
+    data.value = await playersApi.discover(world.value)
     error.value = ''
   } catch {
     if (initial) error.value = 'Could not load the leaderboard right now.'
@@ -156,9 +176,14 @@ watch(players, (list) => {
 const valueOf = (p) => {
   if (mode.value === 'gains') return skill.value === 'Overall' ? p.gains?.[period.value]?.xp || 0 : p.skillGains?.[period.value]?.[skill.value] || 0
   if (mode.value === 'xp') return skill.value === 'Overall' ? p.overallXp || 0 : p.skillLevels?.[skill.value]?.xp || 0
+  if (mode.value === 'life') return p.status === 'left' ? 0 : daysSince(p.lifeStartedAt)
+  if (mode.value === 'resets') return p.resets || 0
   return p.overallLevel || 0
 }
+const daysSince = (iso) => (iso ? Math.max(0, Math.floor((now.value - new Date(iso).getTime()) / 86_400_000)) : 0)
 const metaOf = (p) => {
+  if (mode.value === 'life') return `Life ${p.life || 1} · total ${p.overallLevel ? p.overallLevel.toLocaleString('en-US') : '-'}`
+  if (mode.value === 'resets') return p.status === 'left' ? 'Left Hardcore Worlds' : `On life ${p.life || 1}`
   if (mode.value === 'level') return `${Math.round(p.overallXp || 0).toLocaleString('en-US')} XP`
   if (skill.value === 'Overall') return p.overallLevel ? `Overall ${p.overallLevel.toLocaleString('en-US')}` : ''
   const lv = p.skillLevels?.[skill.value]?.level
@@ -179,6 +204,8 @@ const rows = computed(() => {
 const shown = computed(() => rows.value.slice(0, limit.value))
 const max = computed(() => Math.max(ranked.value[0]?.value || 0, 1))
 const valueText = (r) => {
+  if (mode.value === 'life') return r.p.status === 'left' ? 'Left' : `${r.value} ${r.value === 1 ? 'day' : 'days'}`
+  if (mode.value === 'resets') return String(r.value)
   if (!r.value) return '-'
   if (mode.value === 'gains') return `+${formatXp(r.value)}`
   return `${Math.round(r.value).toLocaleString('en-US')}${mode.value === 'level' ? '' : ' XP'}`

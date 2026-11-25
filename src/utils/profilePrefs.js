@@ -5,7 +5,7 @@
 //
 // Plain functions on localStorage (no Vue), so the preference modules can call them without importing each other.
 import { KEYS } from '@/utils/accountData'
-import { cleanBuild, cleanIronKind } from '@/data/builds'
+import { cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
 
 const KEY = KEYS.plannerPrefs
 const ME_KEY = 'tickgains:me'
@@ -40,6 +40,7 @@ function cleanEntry(raw) {
   if (typeof raw.iron === 'boolean') out.iron = raw.iron
   if (typeof raw.build === 'string') out.build = cleanBuild(raw.build)
   if (typeof raw.ironKind === 'string') out.ironKind = cleanIronKind(raw.ironKind)
+  if (typeof raw.world === 'string') out.world = cleanWorld(raw.world)
   const hours = hoursOf(raw.hours)
   if (hours != null) out.hours = hours
   return out
@@ -55,7 +56,7 @@ export function mainProfileKey() {
   }
 }
 
-/** What was saved for a profile ({ members, iron, build, ironKind, hours }, any of them), or null when nothing was. */
+/** What was saved for a profile ({ members, iron, build, ironKind, world, hours }, any of them), or null when nothing was. */
 export function profileEntry(name) {
   const entry = cleanEntry(readPrefs().profiles?.[profileKey(name)])
   return entry && Object.keys(entry).length ? entry : null
@@ -64,7 +65,7 @@ export function profileEntry(name) {
 /** What the plain preferences say: members unless chosen otherwise, not an ironman, 2 hours until chosen. */
 export function plainSettings() {
   const prefs = readPrefs()
-  return { members: prefs.members !== false, iron: prefs.iron === true, build: cleanBuild(prefs.build), ironKind: cleanIronKind(prefs.ironKind), hours: hoursOf(prefs.hours) ?? 2 }
+  return { members: prefs.members !== false, iron: prefs.iron === true, build: cleanBuild(prefs.build), ironKind: cleanIronKind(prefs.ironKind), world: cleanWorld(prefs.world), hours: hoursOf(prefs.hours) ?? 2 }
 }
 
 /** Saves some of a profile's settings (merged with what was saved). Returns the entry kept, or null for a name that cannot be kept. */

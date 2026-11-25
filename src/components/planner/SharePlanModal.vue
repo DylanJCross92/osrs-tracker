@@ -122,6 +122,7 @@ const longUrl = computed(() => {
     iron: props.plan.iron === true,
     build: props.plan.build || 'main',
     ironKind: props.plan.ironKind || 'standard',
+    world: props.plan.world || 'normal',
   })
   if (!named) params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`

@@ -16,12 +16,14 @@
         :members="account.members"
         :iron="account.iron"
         :iron-kind="account.ironKind"
+        :world="account.world"
         :build="account.build"
         :detected="detected"
         compact
         @update:members="(v) => $emit('change', { members: v })"
         @update:iron="(v) => $emit('change', { iron: v })"
         @update:iron-kind="(v) => $emit('change', { ironKind: v })"
+        @update:world="(v) => $emit('change', { world: v })"
         @update:build="(v) => $emit('change', { build: v })"
       />
     </div>

@@ -1,7 +1,7 @@
 // What a build (data/builds.js) does to a plan: which skills are locked or capped, which methods and quests would break it, how a goal is trimmed
 // to fit, and which build a player's stats already look like. Pure functions, so they are easy to test.
 import { QUEST_DATA } from '@/data/questData.generated'
-import { buildOf, cleanBuild, cleanIronKind } from '@/data/builds'
+import { buildOf, cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
 import { requirementsFor } from '@/data/methodRequirements'
 import { getQuest, questChain } from '@/data/quests'
 import { methodsForSkill } from '@/data/trainingMethods'
@@ -68,7 +68,7 @@ export function questFitsBuild(quest, rules) {
 }
 
 /** Whether a training method can be used by an account with this build (and, for an ironman, this kind). */
-export function methodFits(method, { build = 'main', iron = false, ironKind = 'standard' } = {}) {
+export function methodFits(method, { build = 'main', iron = false, ironKind = 'standard', world = 'normal' } = {}) {
   if (!method) return false
   const b = buildOf(build)
   if (isLocked(build, method.skill) || method.minLevel > skillCap(build, method.skill)) return false
@@ -83,6 +83,7 @@ export function methodFits(method, { build = 'main', iron = false, ironKind = 's
     if (b.noFights && isRisky(method)) return false
   }
   if (iron && ironKind === 'hardcore' && isRisky(method)) return false
+  if (world === 'hardcore' && isRisky(method)) return false
   return true
 }
 
@@ -91,6 +92,7 @@ export function methodBlockReason(method, rules) {
   if (methodFits(method, rules)) return ''
   // Only the hardcore rule: it would be fine for a plain ironman.
   if (rules?.iron && rules.ironKind === 'hardcore' && methodFits(method, { ...rules, iron: false })) return 'Too risky for a hardcore ironman'
+  if (rules?.world === 'hardcore' && methodFits(method, { ...rules, world: 'normal' })) return 'Too risky on Hardcore Worlds'
   return `Not for a ${buildOf(rules?.build).short.toLowerCase()}`
 }
 
@@ -99,9 +101,9 @@ export function methodBlockReason(method, rules) {
  * keeps to free methods (given in `freeIds`), a build and a hardcore ironman take out what would break them.
  */
 export function ruleIdsFor(skill, rules, freeIds = null) {
-  const { members = true, build = 'main', iron = false, ironKind = 'standard' } = rules || {}
+  const { members = true, build = 'main', iron = false, ironKind = 'standard', world = 'normal' } = rules || {}
   const all = methodsForSkill(skill)
-  const fit = all.filter((m) => methodFits(m, { build, iron, ironKind })).map((m) => m.id)
+  const fit = all.filter((m) => methodFits(m, { build, iron, ironKind, world })).map((m) => m.id)
   const limited = fit.length !== all.length
   if (members !== false && !limited) return null
   // Free-to-play: only free methods (an empty list means this skill has no free route at all).
@@ -155,9 +157,10 @@ export function detectBuild(levels) {
 }
 
 /** The label for an account's settings, such as "Members · Hardcore ironman · Level 3 skiller". */
-export function accountLabel({ members = true, build = 'main', iron = false, ironKind = 'standard' } = {}, kinds) {
+export function accountLabel({ members = true, build = 'main', iron = false, ironKind = 'standard', world = 'normal' } = {}, kinds) {
   const parts = [members === false ? 'Free-to-play' : 'Members']
   if (iron) parts.push(kinds?.[cleanIronKind(ironKind)] || 'Ironman')
+  else if (cleanWorld(world) === 'hardcore') parts.push('Hardcore Worlds')
   if (cleanBuild(build) !== 'main') parts.push(buildOf(build).short)
   return parts.join(' · ')
 }

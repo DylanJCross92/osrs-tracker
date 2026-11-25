@@ -19,7 +19,7 @@ export async function backfillTopGainers() {
        SELECT s.player_id, s.captured_at, s.overall_xp,
               (date_trunc('day', (s.captured_at AT TIME ZONE $1) - interval '6 hours'))::date AS day
        FROM snapshots s JOIN players p ON p.id = s.player_id
-       WHERE s.captured_at >= p.created_at - interval '1 minute'
+       WHERE s.captured_at >= p.created_at - interval '1 minute' AND p.mode = 'main'
      ), deltas AS (
        SELECT player_id, day, overall_xp - LAG(overall_xp) OVER (PARTITION BY player_id ORDER BY captured_at) AS delta
        FROM tracked

@@ -34,7 +34,7 @@ import { startClaimNudgeJob } from './jobs/claimNudges.js'
 import { startGePricesJob } from './jobs/gePrices.js'
 import { listPlayers, getPlayerByUsername, getLatestSnapshot } from './services/players.service.js'
 import { getWeeklyCardData, getFrozenCard, normalizePeriod } from './services/cards.service.js'
-import { getDiscover } from './services/discover.service.js'
+import { getDiscover, getHardcoreBoard } from './services/discover.service.js'
 import { getPlayerRecords } from './services/records.service.js'
 import { getTopGainerStats } from './services/topGainers.service.js'
 import { topGainerHeadline } from './utils/topGainers.js'
@@ -86,7 +86,8 @@ app.get('/api/home', async (req, res, next) => {
 })
 app.get('/api/discover', async (req, res, next) => {
   try {
-    res.json(await getDiscover())
+    // ?world=hardcore is the Hardcore Worlds leaderboard (tracked characters only).
+    res.json(req.query.world === 'hardcore' ? await getHardcoreBoard() : await getDiscover())
   } catch (err) {
     next(err)
   }

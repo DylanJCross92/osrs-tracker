@@ -2,8 +2,8 @@
 // notices added later) always arrives.
 export const NOTICE_GROUPS = {
   records: ['record'],
-  mine: ['goal_reached', 'milestone'],
-  following: ['follow_goal', 'follow_milestone'],
+  mine: ['goal_reached', 'milestone', 'hardcore_reset'],
+  following: ['follow_goal', 'follow_milestone', 'follow_hardcore_reset'],
   social: ['new_follower', 'challenge_accepted', 'cheer'],
 }
 

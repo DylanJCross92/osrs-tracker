@@ -38,7 +38,7 @@ import { featuredPlans, recommendedPlans, suggestedPlans } from '@/utils/recomme
 
 const props = defineProps({
   // What kind of account the plans are for: { members, iron, ironKind, build }.
-  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', build: 'main' }) },
+  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', world: 'normal', build: 'main' }) },
   // Lead with the featured plans (All skills to 70, Combat to 99, Max account) instead of the whole catalogue.
   featured: { type: Boolean, default: false },
   // No hint line (the screen around the cards already says it).
@@ -64,7 +64,7 @@ const MAX_ICONS = 8
 const KIND_LABELS = { levels: 'All skills', combat: 'Combat', total: 'Total level' }
 
 // The plans are for the account chosen on the setup above them: its build decides which skills they cover and where they stop.
-const rules = computed(() => ({ members: props.account.members, build: props.account.build, iron: props.account.iron, ironKind: props.account.ironKind }))
+const rules = computed(() => ({ members: props.account.members, build: props.account.build, iron: props.account.iron, ironKind: props.account.ironKind, world: props.account.world }))
 const all = computed(() => recommendedPlans(props.skills, props.account))
 const shown = computed(() => (props.featured ? featuredPlans(all.value) : props.limit ? suggestedPlans(all.value, props.limit) : all.value))
 // Time for each card, worked out with the plan's own settings, from the player's stats (or from level 1 with no player).

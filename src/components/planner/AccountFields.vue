@@ -7,7 +7,7 @@
 
     <div class="pset-field">
       <span>Account type</span>
-      <OptionChips :model-value="iron" :options="ACCOUNT" label="Main account or ironman" :hide-hint="tight" @update:model-value="(v) => $emit('update:iron', v)" />
+      <OptionChips :model-value="accountType" :options="ACCOUNT" label="Main account, ironman or Hardcore Worlds" :hide-hint="tight" @update:model-value="setAccountType" />
       <template v-if="iron">
         <OptionChips class="af-sub" :model-value="ironKind" :options="IRON_OPTIONS" label="Kind of ironman" @update:model-value="(v) => $emit('update:ironKind', v)" />
       </template>
@@ -38,6 +38,8 @@ import { BUILDS, IRON_KINDS, buildOf } from '@/data/builds'
 const props = defineProps({
   members: { type: Boolean, default: true },
   iron: { type: Boolean, default: false },
+  // 'hardcore' for Hardcore Worlds (a main account that only has one life), else 'normal'. Never together with ironman.
+  world: { type: String, default: 'normal' },
   ironKind: { type: String, default: 'standard' },
   build: { type: String, default: 'main' },
   detected: { type: String, default: null },
@@ -46,16 +48,23 @@ const props = defineProps({
   // Membership and account type side by side, no hints or effect lists: for a window that has other things to fit (the plan settings).
   tight: { type: Boolean, default: false },
 })
-defineEmits(['update:members', 'update:iron', 'update:ironKind', 'update:build'])
+const emit = defineEmits(['update:members', 'update:iron', 'update:ironKind', 'update:world', 'update:build'])
 
 const MEMBERSHIP = [
   { value: true, label: 'Members', icon: '/icons/ui/members.png', hint: 'Every skill and training method.' },
   { value: false, label: 'Free-to-play', icon: '/icons/ui/free-to-play.png', hint: "Only free methods, from the wiki's free-to-play guides. Members-only skills and quests are locked." },
 ]
+// Main account, ironman and Hardcore Worlds exclude each other (a Hardcore Worlds character is a main account), so it is one choice with three answers.
 const ACCOUNT = [
-  { value: false, label: 'Main account', icon: '/icons/ui/main-account.png', hint: 'You can buy and sell on the Grand Exchange.' },
-  { value: true, label: 'Ironman', icon: '/icons/ui/ironman.png', hint: 'You gather everything yourself: gp is left out and the cheapest routes lead.' },
+  { value: 'main', label: 'Main account', icon: '/icons/ui/main-account.png', hint: 'You can buy and sell on the Grand Exchange.' },
+  { value: 'iron', label: 'Ironman', icon: '/icons/ui/ironman.png', hint: 'You gather everything yourself: gp is left out and the cheapest routes lead.' },
+  { value: 'hardcore', label: 'Hardcore Worlds', hint: 'One life. Methods that can kill you are left out, and gp is an estimate because Hardcore Worlds have their own economy.' },
 ]
+const accountType = computed(() => (props.iron ? 'iron' : props.world === 'hardcore' ? 'hardcore' : 'main'))
+function setAccountType(v) {
+  emit('update:iron', v === 'iron')
+  emit('update:world', v === 'hardcore' ? 'hardcore' : 'normal')
+}
 const IRON_OPTIONS = IRON_KINDS.map((k) => ({ value: k.key, label: k.label, hint: k.blurb }))
 const BUILD_OPTIONS = BUILDS.map((b) => ({ value: b.key, label: b.label, hint: b.blurb }))
 const current = computed(() => buildOf(props.build))

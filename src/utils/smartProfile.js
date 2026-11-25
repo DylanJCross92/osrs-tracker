@@ -1,5 +1,5 @@
 import { AUTO_BALANCED, AUTO_CHEAP, AUTO_FAST } from '@/utils/planner'
-import { buildOf, cleanBuild, cleanIronKind, ironKindOf } from '@/data/builds'
+import { buildOf, cleanBuild, cleanIronKind, cleanWorld, ironKindOf } from '@/data/builds'
 
 // The answers to the Smart Planner's questions and what they are allowed to be. Kept apart from the planning (utils/smartPlanner.js) so the saved
 // plans and the account data can check answers without pulling the planner in.
@@ -26,7 +26,7 @@ export const GP_LEVELS = [
   { key: 'rich', label: '100M or more', strategy: AUTO_FAST, gpValue: 6_000_000, budget: null },
 ]
 
-export const DEFAULT_PROFILE = { members: true, goal: 'skills', hours: 2, gp: 'low', experience: 'returning', iron: false, build: 'main', ironKind: 'standard' }
+export const DEFAULT_PROFILE = { members: true, goal: 'skills', hours: 2, gp: 'low', experience: 'returning', iron: false, build: 'main', ironKind: 'standard', world: 'normal' }
 
 /** Answers that are safe to use: anything unknown falls back to the default. */
 export function cleanProfile(raw) {
@@ -48,6 +48,8 @@ export function cleanProfile(raw) {
     iron,
     build,
     ironKind: cleanIronKind(r.ironKind),
+    // Hardcore Worlds characters are main accounts, so it never goes with ironman.
+    world: iron ? 'normal' : cleanWorld(r.world),
   }
 }
 
@@ -56,5 +58,5 @@ const label = (list, key) => list.find((x) => x.key === key)?.label || ''
 /** The answers in a few words, for a line on the plan: "Members · Combat and bossing · 2 h a day · Veteran · Ironman". */
 export function describeProfile(raw) {
   const p = cleanProfile(raw)
-  return [p.members ? 'Members' : 'Free-to-play', label(GOALS, p.goal), `${p.hours} h a day`, label(EXPERIENCE, p.experience), p.iron ? ironKindOf(p.ironKind).label : null, p.build !== 'main' ? buildOf(p.build).short : null].filter(Boolean).join(' · ')
+  return [p.members ? 'Members' : 'Free-to-play', label(GOALS, p.goal), `${p.hours} h a day`, label(EXPERIENCE, p.experience), p.iron ? ironKindOf(p.ironKind).label : p.world === 'hardcore' ? 'Hardcore Worlds' : null, p.build !== 'main' ? buildOf(p.build).short : null].filter(Boolean).join(' · ')
 }

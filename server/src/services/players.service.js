@@ -1,5 +1,7 @@
 import { pool } from '../db.js'
-import { fetchHiscores } from './osrsHiscores.service.js'
+import { fetchHiscores, cleanMode, PlayerNotFoundError } from './osrsHiscores.service.js'
+import { detectLifeChange } from '../utils/hardcore.js'
+import { startNewLife, markHardcoreJoined } from './hardcore.service.js'
 import { fetchWomHistory } from './wiseOldMan.service.js'
 import { syncMilestonesSafe } from './milestones.service.js'
 import { checkRecordsSafe } from './recordsNotify.service.js'
@@ -64,6 +66,9 @@ function mapPlayerRow(row, { skillGains = false } = {}) {
     id: row.id,
     username: row.username,
     displayName: row.display_name,
+    // 'main', or 'hardcore' for a Hardcore Worlds character (its own row, see schema.sql); hardcoreStatus is 'active' or 'left' for those.
+    mode: row.mode || 'main',
+    hardcoreStatus: row.hardcore_status || null,
     badge: row.badge || null,
     // True when a verified owner has claimed this profile (see claims.service.js). Never says by whom.
     claimed: Boolean(row.claimed),
@@ -78,6 +83,7 @@ function mapPlayerRow(row, { skillGains = false } = {}) {
           overallLevel: row.overall_level,
           overallRank: row.overall_rank,
           skills: row.skills,
+          life: row.life ?? 1,
         }
       : null,
     gains,
@@ -94,6 +100,7 @@ function mapSnapshotRow(row) {
     overallLevel: row.overall_level,
     overallRank: row.overall_rank,
     skills: row.skills,
+    life: row.life ?? 1,
   }
 }
 
@@ -124,7 +131,7 @@ function baselineJoinSql(period) {
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id AND ${tracked} AND captured_at < ${cutoff}
+        WHERE player_id = p.id AND life = s.life AND ${tracked} AND captured_at < ${cutoff}
         ORDER BY captured_at DESC
         LIMIT 1
       )
@@ -132,7 +139,7 @@ function baselineJoinSql(period) {
       (
         SELECT captured_at, overall_xp, skills
         FROM snapshots
-        WHERE player_id = p.id AND ${tracked}
+        WHERE player_id = p.id AND life = s.life AND ${tracked}
         ORDER BY captured_at ASC
         LIMIT 1
       )
@@ -141,7 +148,11 @@ function baselineJoinSql(period) {
   `
 }
 
-export async function listPlayers({ skillGains = false, ids = null } = {}) {
+/**
+ * Every tracked player with their latest stats and gains. `mode` picks which characters ('main' by default, so Hardcore Worlds characters never turn up in
+ * the normal lists); a list of `ids` is returned whatever their mode.
+ */
+export async function listPlayers({ skillGains = false, ids = null, mode = 'main' } = {}) {
   const baselineColumns = GAIN_PERIODS.map(
     (period) =>
       `b_${period}.captured_at AS baseline_captured_at_${period}, ` +
@@ -151,25 +162,25 @@ export async function listPlayers({ skillGains = false, ids = null } = {}) {
 
   const result = await pool.query(
     `
-    SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at,
+    SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at, p.mode, p.hardcore_status,
            EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed,
            (SELECT extract(epoch from pp.avatar_updated_at)::bigint FROM profile_pages pp WHERE pp.player_id = p.id AND pp.avatar IS NOT NULL) AS avatar_v,
            p.wom_import_status, p.wom_imported_count,
-           s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills,
+           s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills, s.life,
            ${baselineColumns}
     FROM players p
     LEFT JOIN LATERAL (
-      SELECT captured_at, overall_xp, overall_level, overall_rank, skills
+      SELECT captured_at, overall_xp, overall_level, overall_rank, skills, life
       FROM snapshots
       WHERE player_id = p.id
       ORDER BY captured_at DESC
       LIMIT 1
     ) s ON true
     ${GAIN_PERIODS.map(baselineJoinSql).join('\n')}
-    ${ids ? 'WHERE p.id = ANY($2::int[])' : ''}
+    ${ids ? 'WHERE p.id = ANY($2::int[])' : 'WHERE p.mode = $2'}
     ORDER BY p.display_name ASC
   `,
-    ids ? [APP_TIMEZONE, ids] : [APP_TIMEZONE],
+    ids ? [APP_TIMEZONE, ids] : [APP_TIMEZONE, cleanMode(mode)],
   )
   const players = result.rows.map((row) => mapPlayerRow(row, { skillGains }))
   // Most xp gained today first; players with no gain (or no data to
@@ -184,29 +195,26 @@ export async function listPlayers({ skillGains = false, ids = null } = {}) {
 }
 
 export async function getPlayer(id) {
-  const result = await pool.query('SELECT id, username, display_name, created_at FROM players WHERE id = $1', [id])
-  return result.rows[0]
-    ? {
-        id: result.rows[0].id,
-        username: result.rows[0].username,
-        displayName: result.rows[0].display_name,
-        createdAt: result.rows[0].created_at,
-      }
-    : null
+  const result = await pool.query('SELECT id, username, display_name, created_at, mode, hardcore_status FROM players WHERE id = $1', [id])
+  return result.rows[0] ? mapPlayerBase(result.rows[0]) : null
 }
 
-export async function getPlayerByUsername(username) {
-  const result = await pool.query('SELECT id, username, display_name, created_at FROM players WHERE lower(username) = lower($1)', [
-    username,
-  ])
-  return result.rows[0]
-    ? {
-        id: result.rows[0].id,
-        username: result.rows[0].username,
-        displayName: result.rows[0].display_name,
-        createdAt: result.rows[0].created_at,
-      }
-    : null
+const mapPlayerBase = (row) => ({
+  id: row.id,
+  username: row.username,
+  displayName: row.display_name,
+  createdAt: row.created_at,
+  mode: row.mode || 'main',
+  hardcoreStatus: row.hardcore_status || null,
+})
+
+/** A player by RSN. `mode` is 'main' (the default, so every existing caller is unchanged) or 'hardcore' for the Hardcore Worlds character. */
+export async function getPlayerByUsername(username, mode = 'main') {
+  const result = await pool.query(
+    'SELECT id, username, display_name, created_at, mode, hardcore_status FROM players WHERE lower(username) = lower($1) AND mode = $2',
+    [username, cleanMode(mode)],
+  )
+  return result.rows[0] ? mapPlayerBase(result.rows[0]) : null
 }
 
 // True if a fetched hiscores result has nothing new over a prior snapshot
@@ -238,14 +246,22 @@ function ranksUnchanged(prevRow, stats) {
  * the current rank stays accurate without a new row per check.
  */
 export async function recordSnapshot(playerId, stats) {
-  // The hiscores fetch already succeeded, note the check even if nothing changed.
-  await pool.query('UPDATE players SET last_checked_at = now() WHERE id = $1', [playerId])
+  // The hiscores fetch already succeeded, note the check even if nothing changed (and that a Hardcore Worlds character was on the table).
+  const checked = await pool.query(
+    'UPDATE players SET last_checked_at = now(), hardcore_misses = 0, hardcore_miss_at = NULL WHERE id = $1 RETURNING mode, hardcore_status',
+    [playerId],
+  )
+  const hardcore = checked.rows[0]?.mode === 'hardcore'
+  if (hardcore && checked.rows[0].hardcore_status === 'left') await markHardcoreJoined(playerId)
 
   const prev = await pool.query(
-    `SELECT id, overall_xp, overall_level, overall_rank, skills
+    `SELECT id, overall_xp, overall_level, overall_rank, skills, life
      FROM snapshots WHERE player_id = $1 ORDER BY captured_at DESC LIMIT 1`,
     [playerId],
   )
+  // A Hardcore Worlds character that started again (any skill has less xp than before) begins a new life: its milestones start over too.
+  const reset = hardcore && prev.rowCount > 0 && detectLifeChange(prev.rows[0], stats)
+  const life = reset ? await startNewLife(playerId, prev.rows[0], stats) : prev.rows[0]?.life ?? 1
   if (prev.rowCount > 0 && progressUnchanged(prev.rows[0], stats)) {
     if (!ranksUnchanged(prev.rows[0], stats)) {
       await pool.query('UPDATE snapshots SET overall_rank = $2, skills = $3 WHERE id = $1', [
@@ -258,13 +274,13 @@ export async function recordSnapshot(playerId, stats) {
   }
 
   await pool.query(
-    `INSERT INTO snapshots (player_id, overall_xp, overall_level, overall_rank, skills)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
+    `INSERT INTO snapshots (player_id, overall_xp, overall_level, overall_rank, skills, life)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [playerId, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills), life],
   )
   // Seeing xp go up (or the very first snapshot) is what keeps a player in the
-  // hourly sync tier, see jobs/sync.js.
-  if (prev.rowCount === 0 || stats.overall.xp > Number(prev.rows[0].overall_xp)) {
+  // hourly sync tier, see jobs/sync.js. Starting again counts as being active too.
+  if (reset || prev.rowCount === 0 || stats.overall.xp > Number(prev.rows[0].overall_xp)) {
     await pool.query('UPDATE players SET last_xp_gain_at = now() WHERE id = $1', [playerId])
   }
   syncMilestonesSafe(playerId)
@@ -280,15 +296,34 @@ export async function addPlayer(rawUsername) {
     throw err
   }
 
-  const existing = await pool.query('SELECT id FROM players WHERE lower(username) = lower($1)', [username])
-  if (existing.rowCount > 0) {
+  // A name is looked up on the normal hiscores first; one that is only on Hardcore Worlds (a character made there) is tracked as that.
+  let mode = 'main'
+  let stats
+  const existing = await pool.query('SELECT id, mode FROM players WHERE lower(username) = lower($1)', [username])
+  if (existing.rows.some((r) => r.mode === 'main')) {
     const err = new Error(`"${username}" is already being tracked.`)
     err.status = 409
     throw err
   }
-
   // Fetch first so a bad RSN never creates a row with no data behind it.
-  const stats = await fetchHiscores(username)
+  try {
+    stats = await fetchHiscores(username, 'main')
+  } catch (err) {
+    if (!(err instanceof PlayerNotFoundError)) throw err
+    // Only on Hardcore Worlds and already tracked there: the same answer as any name that is already tracked, so callers just open its profile.
+    if (existing.rows.some((r) => r.mode === 'hardcore')) {
+      const dup = new Error(`"${username}" is already being tracked (on Hardcore Worlds).`)
+      dup.status = 409
+      throw dup
+    }
+    try {
+      stats = await fetchHiscores(username, 'hardcore')
+      mode = 'hardcore'
+    } catch (second) {
+      if (second instanceof PlayerNotFoundError) throw err
+      throw second
+    }
+  }
 
   const client = await pool.connect()
   let playerId
@@ -296,8 +331,8 @@ export async function addPlayer(rawUsername) {
   try {
     await client.query('BEGIN')
     const inserted = await client.query(
-      "INSERT INTO players (username, display_name, wom_import_status, last_checked_at, last_xp_gain_at) VALUES ($1, $2, 'pending', now(), now()) RETURNING id",
-      [username, username],
+      "INSERT INTO players (username, display_name, wom_import_status, last_checked_at, last_xp_gain_at, mode, hardcore_status) VALUES ($1, $2, $3, now(), now(), $4, $5) RETURNING id",
+      [username, username, mode === 'hardcore' ? 'done' : 'pending', mode, mode === 'hardcore' ? 'active' : null],
     )
     playerId = inserted.rows[0].id
     const snapshot = await client.query(
@@ -322,9 +357,13 @@ export async function addPlayer(rawUsername) {
   // so it runs in the background rather than blocking the response, the
   // player is already saved above. The UI polls wom_import_status to show
   // progress. Deliberately not awaited.
-  runWomImportInBackground(playerId, username, liveCapturedAt)
+  if (mode === 'main') {
+    runWomImportInBackground(playerId, username, liveCapturedAt)
+    // Look for a Hardcore Worlds character under the same name, in the background.
+    ensureHardcoreRow(playerId).catch((err) => console.error(`[hardcore] lookup failed for "${username}":`, err.message))
+  }
 
-  return { playerId }
+  return { playerId, mode }
 }
 
 // Manual trigger for the "Check Wise Old Man" button, only for a player
@@ -416,7 +455,7 @@ async function importWomHistory(playerId, username, beforeDate) {
 
 export async function getSnapshots(playerId) {
   const result = await pool.query(
-    `SELECT captured_at, overall_xp, overall_level, overall_rank, skills
+    `SELECT captured_at, overall_xp, overall_level, overall_rank, skills, life
      FROM snapshots
      WHERE player_id = $1
      ORDER BY captured_at ASC`,
@@ -428,7 +467,7 @@ export async function getSnapshots(playerId) {
 /** Just the most recent snapshot, for callers that don't need the full history. */
 export async function getLatestSnapshot(playerId) {
   const result = await pool.query(
-    `SELECT captured_at, overall_xp, overall_level, overall_rank, skills
+    `SELECT captured_at, overall_xp, overall_level, overall_rank, skills, life
      FROM snapshots
      WHERE player_id = $1
      ORDER BY captured_at DESC
@@ -445,6 +484,46 @@ export async function refreshPlayer(id) {
     err.status = 404
     throw err
   }
-  const stats = await fetchHiscores(player.username)
+  const stats = await fetchHiscores(player.username, player.mode)
   await recordSnapshot(player.id, stats)
+}
+
+const HARDCORE_PROBE_GAP_MS = 24 * 3_600_000
+
+/**
+ * Looks for a Hardcore Worlds character under a tracked name and starts tracking it when there is one. Cheap to call often: a name is only
+ * looked up once every 24 hours (hcw_checked_at), and a character that is already tracked is left to the sync. Returns the character's player id or null.
+ */
+export async function ensureHardcoreRow(mainId) {
+  const { rows } = await pool.query(
+    "SELECT id, username, display_name, mode, hcw_checked_at, (SELECT id FROM players h WHERE h.username = p.username AND h.mode = 'hardcore') AS hardcore_id FROM players p WHERE id = $1",
+    [mainId],
+  )
+  const main = rows[0]
+  if (!main || main.mode !== 'main') return null
+  if (main.hardcore_id) return main.hardcore_id
+  if (main.hcw_checked_at && Date.now() - new Date(main.hcw_checked_at).getTime() < HARDCORE_PROBE_GAP_MS) return null
+  await pool.query('UPDATE players SET hcw_checked_at = now() WHERE id = $1', [mainId])
+
+  let stats
+  try {
+    stats = await fetchHiscores(main.username, 'hardcore')
+  } catch (err) {
+    if (err instanceof PlayerNotFoundError) return null
+    throw err
+  }
+  const inserted = await pool.query(
+    `INSERT INTO players (username, display_name, wom_import_status, last_checked_at, last_xp_gain_at, mode, hardcore_status)
+     VALUES ($1, $2, 'done', now(), now(), 'hardcore', 'active') ON CONFLICT (username, mode) DO NOTHING RETURNING id`,
+    [main.username, main.display_name],
+  )
+  if (!inserted.rows[0]) return null
+  const id = inserted.rows[0].id
+  await pool.query(
+    `INSERT INTO snapshots (player_id, overall_xp, overall_level, overall_rank, skills) VALUES ($1, $2, $3, $4, $5)`,
+    [id, stats.overall.xp, stats.overall.level, stats.overall.rank, JSON.stringify(stats.skills)],
+  )
+  await pool.query("INSERT INTO hardcore_events (player_id, kind, life, new_level, new_xp) VALUES ($1, 'joined', 1, $2, $3)", [id, stats.overall.level, stats.overall.xp])
+  syncMilestonesSafe(id)
+  return id
 }

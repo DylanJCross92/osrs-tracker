@@ -6,6 +6,7 @@ import { recordTopGainer, getTopGainerStats } from './topGainers.service.js'
 import { combatLevelFromSkills } from '../utils/combat.js'
 import { pickTopGainer } from '../utils/topGainers.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
+import { COUNTED_PLAYER } from './stats.service.js'
 
 function card(p, featured = null) {
   const skills = p.latest?.skills || {}
@@ -15,6 +16,7 @@ function card(p, featured = null) {
     id: p.id,
     username: p.username,
     displayName: p.displayName,
+    mode: p.mode || 'main',
     badge: p.badge,
     claimed: p.claimed,
     overallLevel: p.latest?.overallLevel ?? null,
@@ -34,6 +36,7 @@ function compact(p) {
     id: p.id,
     username: p.username,
     displayName: p.displayName,
+    mode: p.mode || 'main',
     badge: p.badge,
     claimed: p.claimed,
     overallLevel: l?.overallLevel ?? null,
@@ -141,6 +144,7 @@ let insightsCache = { value: null, at: 0, promise: null }
 
 export function invalidateDiscoverCache() {
   liveCache.at = 0
+  hardcoreCache.at = 0
   insightsCache.at = 0
 }
 
@@ -162,6 +166,38 @@ async function cached(cache, ttl, build) {
 
 export function getDiscover() {
   return cached(liveCache, LIVE_TTL, buildDiscover)
+}
+
+let hardcoreCache = { value: null, at: 0, promise: null }
+
+/**
+ * The leaderboard for Hardcore Worlds characters (the same player shape as the main one, so the page can rank it the same ways), plus what only
+ * they have: when the current life began and how many times the character has started again. Tracked characters only.
+ */
+export function getHardcoreBoard() {
+  return cached(hardcoreCache, LIVE_TTL, buildHardcoreBoard)
+}
+
+async function buildHardcoreBoard() {
+  const all = (await listPlayers({ skillGains: true, mode: 'hardcore' })).filter((p) => p.latest)
+  const { rows } = await pool.query(
+    `SELECT player_id,
+            COUNT(*) FILTER (WHERE kind = 'reset')::int AS resets,
+            MAX(occurred_at) FILTER (WHERE kind IN ('reset', 'joined')) AS life_started_at
+     FROM hardcore_events WHERE player_id = ANY($1::int[]) GROUP BY player_id`,
+    [all.map((p) => p.id)],
+  )
+  const byId = new Map(rows.map((r) => [r.player_id, r]))
+  return {
+    generatedAt: new Date().toISOString(),
+    players: all.map((p) => ({
+      ...compact(p),
+      resets: byId.get(p.id)?.resets ?? 0,
+      lifeStartedAt: byId.get(p.id)?.life_started_at ?? p.createdAt,
+      status: p.hardcoreStatus || 'active',
+      life: p.latest.life ?? 1,
+    })),
+  }
 }
 
 /** Public discovery data: interactive leaderboards + a live activity feed + curated lists + insights. */
@@ -218,8 +254,12 @@ async function buildDiscover() {
   const activity = await getActivity(byId)
   const insights = await cached(insightsCache, INSIGHTS_TTL, () => buildInsights({ players, activity, byId }))
 
+  // Everyone tracked, by name: the normal characters (the lists here) plus names that only exist on Hardcore Worlds.
+  const { rows: counted } = await pool.query(`SELECT count(*)::int AS n FROM players p WHERE ${COUNTED_PLAYER}`)
+
   return {
     generatedAt: new Date().toISOString(),
+    trackedTotal: counted[0].n,
     players: players.map(compact),
     activity,
     recentlyTracked,
@@ -241,6 +281,8 @@ export async function searchPlayers(rawQuery) {
     `SELECT p.id, p.username, p.display_name, p.badge
      FROM players p
      WHERE p.username ILIKE $1 ESCAPE '\\'
+       -- Normal characters, plus names that only exist on Hardcore Worlds (a name with both is found once, as the normal one).
+       AND (p.mode = 'main' OR NOT EXISTS (SELECT 1 FROM players m WHERE m.username = p.username AND m.mode = 'main'))
      ORDER BY (lower(p.username) = lower($2)) DESC, (p.username ILIKE $3 ESCAPE '\\') DESC, p.username ASC
      LIMIT 8`,
     [`%${escaped}%`, q, `${escaped}%`],
@@ -257,6 +299,8 @@ export async function searchPlayers(rawQuery) {
     return {
       username: r.username,
       displayName: r.display_name,
+      // 'hardcore' for a Hardcore Worlds character (its stats are not from the main hiscores).
+      mode: d?.mode || 'main',
       badge: r.badge,
       claimed: Boolean(d?.claimed),
       overallLevel: latest?.overallLevel ?? null,

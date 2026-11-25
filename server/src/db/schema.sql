@@ -608,3 +608,38 @@ CREATE TABLE IF NOT EXISTS announcement_sends (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (key, email)
 );
+
+-- Hardcore Worlds (released 4 Nov 2026). Every RSN can have a normal character and a Hardcore Worlds one, each with its own hiscores table, so a
+-- Hardcore Worlds character is its own `players` row (same username, mode 'hardcore'). Everything that works by player id (snapshots, gains,
+-- milestones, cards, records) then works for it unchanged; lists of players only show mode 'main' unless they ask for hardcore.
+-- hardcore_status: 'active' while it is on the Hardcore Worlds hiscores, 'left' after it fell off (a Transfer). hardcore_misses counts checks in a
+-- row where the table did not have it. hcw_checked_at (main rows) is when we last looked for a Hardcore Worlds character.
+ALTER TABLE players ADD COLUMN IF NOT EXISTS mode TEXT NOT NULL DEFAULT 'main';
+ALTER TABLE players ADD COLUMN IF NOT EXISTS hardcore_status TEXT;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS hardcore_misses INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS hardcore_miss_at TIMESTAMPTZ;
+ALTER TABLE players ADD COLUMN IF NOT EXISTS hcw_checked_at TIMESTAMPTZ;
+-- The new uniqueness first, so there is never a moment without it, then the old one (one row per name) goes.
+CREATE UNIQUE INDEX IF NOT EXISTS players_username_mode_idx ON players (username, mode);
+ALTER TABLE players DROP CONSTRAINT IF EXISTS players_username_key;
+CREATE INDEX IF NOT EXISTS players_mode_idx ON players (mode);
+
+-- Which life of a Hardcore Worlds character a snapshot belongs to (a reset starts a new life; always 1 for a normal character).
+ALTER TABLE snapshots ADD COLUMN IF NOT EXISTS life INTEGER NOT NULL DEFAULT 1;
+
+-- What happened to a Hardcore Worlds character, worked out from its snapshots (the hiscores do not say): 'reset' = it started again from nothing,
+-- 'left' = it fell off the table (a Transfer), 'joined' = it came back. life is the life the event ended (reset) or started. summary keeps what the
+-- ended life had earned (top skills, milestones) because the milestones of a character are cleared when it starts again.
+CREATE TABLE IF NOT EXISTS hardcore_events (
+  id SERIAL PRIMARY KEY,
+  player_id INTEGER NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  life INTEGER NOT NULL DEFAULT 1,
+  prev_level INTEGER,
+  prev_xp BIGINT,
+  new_level INTEGER,
+  new_xp BIGINT,
+  summary JSONB
+);
+CREATE INDEX IF NOT EXISTS hardcore_events_player_idx ON hardcore_events (player_id, occurred_at);

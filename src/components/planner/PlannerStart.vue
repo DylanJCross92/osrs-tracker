@@ -116,7 +116,7 @@ const props = defineProps({
   globalStrategy: { type: String, default: 'auto-fast' },
   gpValue: { type: Number, default: 2_000_000 },
   // What kind of account the plans are for (the loaded player's own settings): { members, iron, ironKind, build }.
-  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', build: 'main' }) },
+  account: { type: Object, default: () => ({ members: true, iron: false, ironKind: 'standard', world: 'normal', build: 'main' }) },
 })
 const emit = defineEmits(['use', 'open', 'custom', 'smart', 'smart-open', 'account'])
 // The ready-made plans are at the top of the page; the links that point at them scroll there.

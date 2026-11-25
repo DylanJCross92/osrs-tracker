@@ -22,6 +22,9 @@ const KINDS = {
   follow_milestone: { icon: 'star', tone: 'gold' },
   goal_reached: { icon: 'target', tone: 'gold' },
   follow_goal: { icon: 'target', tone: 'gold' },
+  // A Hardcore Worlds character started again (a death followed by Reset).
+  hardcore_reset: { icon: 'shieldX', tone: 'rose' },
+  follow_hardcore_reset: { icon: 'shieldX', tone: 'rose' },
   cheer: { icon: 'heart', tone: 'rose' },
   new_follower: { icon: 'userPlus', tone: 'green' },
   challenge_accepted: { icon: 'bolt', tone: 'blue' },

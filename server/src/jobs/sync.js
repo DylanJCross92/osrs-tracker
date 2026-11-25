@@ -1,7 +1,8 @@
 import cron from 'node-cron'
 import { pool } from '../db.js'
 import { fetchHiscores, HiscoresUnavailableError, PlayerNotFoundError } from '../services/osrsHiscores.service.js'
-import { recordSnapshot } from '../services/players.service.js'
+import { recordSnapshot, ensureHardcoreRow } from '../services/players.service.js'
+import { recordHardcoreMiss } from '../services/hardcore.service.js'
 import { invalidateDiscoverCache, getDiscover } from '../services/discover.service.js'
 import { invalidateHomeCache } from '../services/home.service.js'
 
@@ -47,7 +48,8 @@ let running = false
  */
 export async function selectDuePlayers() {
   const { rows } = await pool.query(
-    `SELECT id, username,
+    `SELECT id, username, mode,
+            EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = players.id AND pc.status = 'verified') AS claimed,
             (COALESCE(last_xp_gain_at, created_at) >= now() - ($1::int * interval '1 day')) AS active
      FROM players
      WHERE last_checked_at IS NULL
@@ -95,10 +97,12 @@ export async function syncAllPlayers() {
 
     for (const player of players) {
       try {
-        const stats = await fetchHiscores(player.username)
+        const stats = await fetchHiscores(player.username, player.mode)
         const result = await recordSnapshot(player.id, stats)
         result.saved ? summary.saved++ : summary.unchanged++
         outages = 0
+        // Owners of a claimed profile get their Hardcore Worlds character found without anyone having to open the page (at most one look a day).
+        if (player.mode === 'main' && player.claimed) await ensureHardcoreRow(player.id).catch((err) => console.error(`[sync] hardcore lookup for "${player.username}": ${err.message}`))
       } catch (err) {
         if (err instanceof HiscoresUnavailableError) {
           summary.failed++
@@ -110,9 +114,11 @@ export async function syncAllPlayers() {
             break
           }
         } else if (err instanceof PlayerNotFoundError) {
-          // Renamed / banned / never-logged-in accounts aren't an outage.
+          // Renamed / banned / never-logged-in accounts aren't an outage. A Hardcore Worlds character that is no longer on its table
+          // has probably left (a Transfer): two misses a day apart mark it, see services/hardcore.service.js.
           summary.notFound++
           outages = 0
+          if (player.mode === 'hardcore') await recordHardcoreMiss(player.id).catch((e) => console.error(`[sync] hardcore miss for "${player.username}": ${e.message}`))
           console.error(`[sync] "${player.username}": ${err.message}`)
         } else {
           // One player's bad data shouldn't stop the rest of the batch.

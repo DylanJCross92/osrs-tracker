@@ -7,7 +7,9 @@ import {
   getSnapshots,
   refreshPlayer,
   startWomImport,
+  ensureHardcoreRow,
 } from '../services/players.service.js'
+import { getHardcoreCharacter } from '../services/hardcore.service.js'
 import { syncAllPlayers } from '../jobs/sync.js'
 import { getProfileAchievements, getCelebrations, addCheer, markCelebrationSeen, visitorHash } from '../services/milestones.service.js'
 import { searchPlayers } from '../services/discover.service.js'
@@ -30,6 +32,34 @@ function handleKnownErrors(err, res, next) {
 playersRouter.get('/', async (req, res, next) => {
   try {
     res.json(await listPlayers())
+  } catch (err) {
+    next(err)
+  }
+})
+
+// Hardcore Worlds characters that are tracked (the normal list above never has them), same shape as the normal list.
+playersRouter.get('/hardcore', async (req, res, next) => {
+  try {
+    res.json(await listPlayers({ mode: 'hardcore' }))
+  } catch (err) {
+    next(err)
+  }
+})
+
+// A name's Hardcore Worlds character: { character: { id, status, life, resets, rank, events } } or { character: null } when it has none. Asking
+// also looks for one on the hiscores (at most once a day per name), waiting a few seconds for the answer so a first visit can already show it.
+playersRouter.get('/:id/hardcore', async (req, res, next) => {
+  try {
+    const player = await getPlayer(req.params.id)
+    if (!player) return res.status(404).json({ error: 'Player not found.' })
+    let character = await getHardcoreCharacter(player.username)
+    if (!character && player.mode === 'main') {
+      const lookup = ensureHardcoreRow(player.id).catch((err) => console.error(`[hardcore] lookup failed for "${player.username}":`, err.message))
+      await Promise.race([lookup, new Promise((resolve) => setTimeout(resolve, 4000))])
+      character = await getHardcoreCharacter(player.username)
+    }
+    res.set('Cache-Control', 'no-store')
+    res.json({ character })
   } catch (err) {
     next(err)
   }

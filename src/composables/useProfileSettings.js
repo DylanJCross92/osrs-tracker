@@ -11,7 +11,7 @@ const version = ref(0)
 const bump = () => version.value++
 if (typeof window !== 'undefined') window.addEventListener(SYNCED_EVENT, bump)
 
-/** { members, iron, build, ironKind, hours } for a profile: what was saved for it, else what the plain preferences say. */
+/** { members, iron, build, ironKind, world, hours } for a profile: what was saved for it, else what the plain preferences say. */
 export function settingsOf(name) {
   void version.value
   return { ...plainSettings(), ...(profileEntry(name) || {}) }
@@ -29,6 +29,7 @@ export function useProfileSettings() {
     type.setIronPref(s.iron)
     type.setBuildPref(s.build)
     type.setIronKindPref(s.ironKind)
+    type.setWorldPref(s.world)
     hours.setPlayHours(s.hours)
   }
 

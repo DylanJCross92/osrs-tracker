@@ -6,6 +6,9 @@ const POLL_INTERVAL_MS = 5000
 
 export const usePlayersStore = defineStore('players', () => {
   const players = ref([])
+  // Hardcore Worlds characters, loaded only when a page asks for them.
+  const hardcorePlayers = ref([])
+  const hardcoreLoaded = ref(false)
   const loaded = ref(false)
   let pollTimer = null
 
@@ -34,6 +37,11 @@ export const usePlayersStore = defineStore('players', () => {
     ensurePolling()
   }
 
+  async function loadHardcore() {
+    hardcorePlayers.value = await playersApi.hardcoreList()
+    hardcoreLoaded.value = true
+  }
+
   async function addPlayer(username) {
     players.value = await playersApi.add(username)
     ensurePolling()
@@ -57,5 +65,5 @@ export const usePlayersStore = defineStore('players', () => {
     return playersApi.snapshots(id)
   }
 
-  return { players, loaded, loadPlayers, addPlayer, refreshPlayer, checkWomHistory, syncAll, fetchSnapshots, ensurePolling }
+  return { players, loaded, hardcorePlayers, hardcoreLoaded, loadHardcore, loadPlayers, addPlayer, refreshPlayer, checkWomHistory, syncAll, fetchSnapshots, ensurePolling }
 })
