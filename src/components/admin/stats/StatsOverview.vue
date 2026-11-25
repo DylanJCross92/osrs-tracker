@@ -8,6 +8,9 @@
       </template>
     </section>
 
+    <!-- Who is around right now, today and this week -->
+    <StatsActive />
+
     <!-- The headline numbers, each with how the latest stretch compares with the one before -->
     <section class="st-tiles is-six" aria-label="Summary">
       <div v-for="t in tiles" :key="t.key" class="st-tile">
@@ -175,6 +178,7 @@ import StatSpark from './StatSpark.vue'
 import { conversion, funnelRows, peopleSummary, sharingSummary, trend, trendLabel } from './overviewData'
 import { ago, compact, count, dayLong, fmt, lastDays } from './statsFormat'
 import { useStatsLoad } from './useStatsLoad'
+import StatsActive from './StatsActive.vue'
 
 const props = defineProps({ days: { type: Number, required: true } })
 // 'go' asks the page to open one of the other tabs, optionally on one visitor.

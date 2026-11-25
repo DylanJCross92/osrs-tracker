@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ago, compact, lastDays, niceMax } from '../../src/components/admin/stats/statsFormat.js'
+import { ago, busiestHour, compact, lastDays, niceMax, routeLabel } from '../../src/components/admin/stats/statsFormat.js'
 
 describe('niceMax', () => {
   it.each([[0, 4], [3, 4], [7, 8], [80, 80], [81, 100], [100, 100], [130, 200], [1240, 2000]])('%s -> %s', (max, top) => expect(niceMax(max)).toBe(top))
@@ -33,5 +33,23 @@ describe('ago', () => {
   const now = Date.parse('2026-01-10T12:00:00Z')
   it('speaks in minutes, hours and days', () => {
     expect([ago('2026-01-10T11:59:50Z', now), ago('2026-01-10T11:55:00Z', now), ago('2026-01-10T09:00:00Z', now), ago('2026-01-08T12:00:00Z', now)]).toEqual(['just now', '5 min ago', '3 h ago', '2 d ago'])
+  })
+})
+
+describe('routeLabel', () => {
+  it('names the known areas and splits any other route name into words', () => {
+    expect(routeLabel('playerDetail')).toBe('Player profiles')
+    expect(routeLabel('plannerPlan')).toBe('Account Planner')
+    expect(routeLabel('releaseNotes')).toBe('Release notes')
+    expect(routeLabel('')).toBe('Other')
+  })
+})
+
+describe('busiestHour', () => {
+  it('is the hour with the most people, the later one on a tie, and null when quiet', () => {
+    const hours = [{ at: 'a', people: 3 }, { at: 'b', people: 9 }, { at: 'c', people: 9 }, { at: 'd', people: 1 }]
+    expect(busiestHour(hours).at).toBe('c')
+    expect(busiestHour([{ at: 'a', people: 0 }])).toBeNull()
+    expect(busiestHour(undefined)).toBeNull()
   })
 })

@@ -5,6 +5,7 @@ import { dailyPlayers, dailyXp, plansByPlayer, recentPlayers, recordShare, recor
 import { askedNotToTrack, cleanEvents, cleanVisitorId, isCrawler } from '../utils/events.js'
 import { activeAccounts, dailyActive, deleteVisitor, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
+import { activePeople } from '../services/activePeople.service.js'
 import { accountsOverview } from '../services/accounts.service.js'
 import { funnelsOverview } from '../services/funnels.service.js'
 import { SEGMENTS } from '../utils/funnels.js'
@@ -95,6 +96,15 @@ statsRouter.get('/admin/stats/overview', ...adminOnly, async (req, res, next) =>
   try {
     res.set('Cache-Control', 'no-store')
     res.json(await siteOverview(askedDays(req)))
+  } catch (err) {
+    next(err)
+  }
+})
+// For the site owner: how many different people were active in the last hour, 24 hours and 7 days, and who they were.
+statsRouter.get('/admin/stats/active', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    res.json(await activePeople())
   } catch (err) {
     next(err)
   }

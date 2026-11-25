@@ -41,3 +41,42 @@ export function lastDays(n, now = Date.now()) {
   const end = Date.parse(`${statsDayFmt.format(new Date(now))}T12:00:00Z`)
   return Array.from({ length: n }, (_, i) => new Date(end - (n - 1 - i) * 86_400_000).toISOString().slice(0, 10))
 }
+
+const AREA_LABELS = {
+  players: 'Home and dashboard',
+  playerDetail: 'Player profiles',
+  planner: 'Account Planner',
+  plannerNew: 'Account Planner',
+  plannerPlan: 'Account Planner',
+  plannerSkill: 'Account Planner',
+  plannerEdit: 'Account Planner',
+  plannerEditSkill: 'Account Planner',
+  items: 'GE prices',
+  item: 'GE item pages',
+  quests: 'Quest and diary tracker',
+  calculators: 'Skill calculators',
+  skillCalculator: 'Skill calculators',
+  discover: 'Discover',
+  leaderboard: 'Leaderboards',
+  clans: 'Clans',
+  clan: 'Clan pages',
+  compare: 'Compare',
+  account: 'Account',
+  login: 'Log in',
+  signup: 'Sign up',
+}
+
+/** A route name as the owner reads it: 'playerDetail' -> 'Player profiles', and any other camelCase name split into words. */
+export function routeLabel(name) {
+  const key = String(name || '')
+  if (AREA_LABELS[key]) return AREA_LABELS[key]
+  const words = key.replace(/([a-z0-9])([A-Z])/g, '$1 $2').toLowerCase()
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Other'
+}
+
+/** The busiest of the hours ({ at, people }), or null when nobody was around. Ties go to the later hour. */
+export function busiestHour(hours) {
+  let best = null
+  for (const h of hours || []) if (h.people > 0 && (!best || h.people >= best.people)) best = h
+  return best
+}

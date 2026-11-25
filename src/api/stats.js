@@ -8,6 +8,8 @@ export const statsApi = {
   shares: (days = 30) => api.get(`/admin/stats/shares?days=${days}`),
   // Site owner only: { days, labels, growth: [{ key, label, total, added, daily }], unverified, pendingClaims, activeWeek, feed: [{ at, kind, text, detail? }] }.
   overview: (days = 30) => api.get(`/admin/stats/overview?days=${days}`),
+  // Site owner only: { generatedAt, online, windows: [{ key, label, people, signedIn, visitors, newAccounts, logins, events, untracked }], hourly: [{ at, people }], areas: [{ route, people, views }] }.
+  active: () => api.get('/admin/stats/active'),
   // Site owner only: every product event with its counts, and one event in detail.
   events: (days = 30) => api.get(`/admin/stats/events?days=${days}`),
   // Site owner only: { total, players: [{ username, displayName, badge, claimed, trackedAt, level, xp }] }, newest first.
