@@ -2,16 +2,18 @@
   <div class="home">
     <!-- 1. Hero and username search -->
     <section class="home-hero" id="start">
+      <p class="hero-eyebrow">Free OSRS XP tracker</p>
       <h1>Track your gains. <span class="home-accent">Plan your next 99.</span></h1>
       <p class="home-sub">The free OSRS XP tracker, Account Planner and live GE prices, in one place.</p>
 
       <div class="suggest-wrap home-suggest-wrap">
         <form class="home-search" autocomplete="off" @submit.prevent="submitAdd">
+          <svg class="home-search-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
           <input
             ref="searchInput"
             v-model="newUsername"
             type="search"
-            placeholder="Enter your OSRS name"
+            placeholder="Your OSRS name"
             :disabled="adding"
             autocomplete="off"
             maxlength="12"

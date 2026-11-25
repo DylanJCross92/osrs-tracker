@@ -5,8 +5,6 @@
   <div v-else class="gx gxh">
     <p v-if="stale" class="gx-stale" role="status">Prices are a little behind right now. They update every few minutes.</p>
 
-    <ItemTicker :rows="tickerRows" />
-
     <section class="gxh-hero">
       <p class="gxh-eyebrow">OSRS Grand Exchange</p>
       <h1>Grand Exchange prices</h1>
@@ -17,6 +15,8 @@
         <RouterLink v-for="r in popular" :key="r.id" :to="{ name: 'item', params: { slug: r.slug } }" class="gxh-chip" @click="track('items_item_click', { source: 'popular' })">{{ r.name }}</RouterLink>
       </p>
     </section>
+
+    <ItemTicker :rows="tickerRows" />
 
     <WatchlistCard v-if="watched.length" class="gxh-watch" :rows="watched" variant="ge" />
 
