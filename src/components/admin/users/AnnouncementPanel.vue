@@ -36,8 +36,8 @@
       <p v-if="message" class="ann-ok" role="status">{{ message }}</p>
 
       <div v-if="!asking" class="ann-actions">
-        <button type="button" class="btn btn-ghost" :disabled="busy || !data.configured" @click="sendTest">{{ busy === 'test' ? 'Sending…' : 'Send me a test' }}</button>
-        <button type="button" class="btn btn-primary" :disabled="busy || running || !data.configured || !data.ownSender || !data.remaining" @click="asking = true">
+        <button type="button" class="btn btn-ghost" :disabled="!!busy || !data.configured" @click="sendTest">{{ busy === 'test' ? 'Sending…' : 'Send me a test' }}</button>
+        <button type="button" class="btn btn-primary" :disabled="!!busy || running || !data.configured || !data.ownSender || !data.remaining" @click="asking = true">
           {{ data.alreadySent && data.remaining ? `Send to the ${data.remaining.toLocaleString('en-US')} left` : `Send to ${data.remaining.toLocaleString('en-US')} ${data.remaining === 1 ? 'person' : 'people'}` }}
         </button>
       </div>
@@ -45,7 +45,7 @@
         <p id="ann-confirm-h"><b>Email {{ data.remaining.toLocaleString('en-US') }} {{ data.remaining === 1 ? 'person' : 'people' }} now?</b> This cannot be undone. It is a real email to real people.</p>
         <div class="ann-actions">
           <button type="button" class="btn btn-ghost" @click="asking = false">Cancel</button>
-          <button type="button" class="btn btn-primary" :disabled="busy" @click="send">{{ busy === 'send' ? 'Starting…' : 'Yes, send it' }}</button>
+          <button type="button" class="btn btn-primary" :disabled="!!busy" @click="send">{{ busy === 'send' ? 'Starting…' : 'Yes, send it' }}</button>
         </div>
       </div>
     </template>
