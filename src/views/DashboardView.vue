@@ -114,6 +114,9 @@
             <DashSkeleton v-if="firstLoad" kind="next" />
             <DashNext v-else :items="nextItems" />
           </template>
+
+          <!-- The quest tracker and what to do next in it: in the wide column, so the sidebar stays short -->
+          <TrackerLink place="dashboard" :pick="questPick" />
         </div>
 
         <aside class="dash-side">
@@ -127,7 +130,6 @@
           <DashSkeleton v-if="current && firstLoad" kind="milestones" />
           <DashMilestones v-else-if="current" :events="milestones" :to="{ name: 'playerDetail', params: { username: current.username }, query: { tab: 'achievements' } }" />
           <!-- Goals -->
-          <TrackerLink place="dashboard" variant="side" :pick="questPick" />
           <DashSkeleton v-if="current && firstLoad" kind="goals" />
           <!-- Goals come from a plan shown on a claimed profile: for anyone else the card is there, locked, saying what unlocks it -->
           <section v-else-if="current && profiles.length" class="card dash-card" aria-labelledby="dash-goals-h">
