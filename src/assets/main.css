@@ -7567,7 +7567,7 @@ body:has(.gsb) .fb { bottom: calc(56px + env(safe-area-inset-bottom)); }
 
 /* An ironman's page leaves gp figures out: they are things to buy and sell, which an ironman cannot do. */
 html.iron-mode .gp-figure { display: none !important; }
-.acct-toggle .range-tabs + .range-tabs { margin-left: 6px; padding-left: 14px; border-left: 1px solid var(--border-strong, var(--border)); }
+.acct-label-2 { margin-left: 14px; }
 
 /* Compact choices with a game icon each (plan settings), and a line for what the chosen one means. */
 .oc { display: flex; flex-direction: column; gap: 6px; }

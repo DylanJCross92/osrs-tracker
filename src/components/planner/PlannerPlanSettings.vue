@@ -30,12 +30,12 @@
 
         <!-- The kind of account, in compact chips -->
         <div class="pset-field">
-          <span>Account</span>
-          <div class="pset-chips">
-            <OptionChips v-model="draftMembers" :options="MEMBERSHIP" label="Free-to-play or members" hide-hint />
-            <OptionChips :model-value="draftIron" :options="ACCOUNT" label="Main account or ironman" hide-hint @update:model-value="setIron" />
-          </div>
-          <small class="oc-hint">{{ accountHint }}</small>
+          <span>Membership</span>
+          <OptionChips v-model="draftMembers" :options="MEMBERSHIP" label="Free-to-play or members" />
+        </div>
+        <div class="pset-field">
+          <span>Account type</span>
+          <OptionChips :model-value="draftIron" :options="ACCOUNT" label="Main account or ironman" @update:model-value="setIron" />
           <p v-if="!draftMembers && noFreeRoute.length" class="pset-note" role="status">
             We have no free-to-play route for {{ noFreeRoute.join(', ') }}. {{ noFreeRoute.length === 1 ? 'It stays' : 'They stay' }} in the plan, worked out with members methods, so you may want to take {{ noFreeRoute.length === 1 ? 'it' : 'them' }} out.
           </p>
@@ -104,7 +104,6 @@ const ACCOUNT = [
   { value: false, label: 'Main account', icon: '/icons/ui/main-account.png', hint: 'You can buy and sell on the Grand Exchange.' },
   { value: true, label: 'Ironman', icon: '/icons/ui/ironman.png', hint: 'You gather everything yourself: gp is left out and the cheapest routes lead.' },
 ]
-const accountHint = computed(() => `${MEMBERSHIP.find((o) => o.value === draftMembers.value)?.hint} ${ACCOUNT.find((o) => o.value === draftIron.value)?.hint}`)
 const STRATEGY_LOOK = { 'auto-fast': { icon: '/icons/ui/fastest.png' }, 'auto-cheap': { icon: '/icons/ui/cheapest.png' }, 'auto-balanced': { svg: 'balance' } }
 const strategyChoices = computed(() => props.strategies.map((s) => ({ value: s.value, label: s.label, hint: s.hint, ...(STRATEGY_LOOK[s.value] || {}) })))
 // Choosing ironman also moves a strategy that assumes buying (fastest, profit) to cheapest, the way an ironman plays.
