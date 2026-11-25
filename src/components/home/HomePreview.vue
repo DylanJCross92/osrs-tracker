@@ -1,5 +1,9 @@
 <template>
   <section class="hf" aria-label="What TickGains does">
+    <div class="hf-intro">
+      <h2 class="hm-h2">Your entire OSRS journey, connected.</h2>
+      <p>Your stats inform your plans. Your plans use live prices. Your progress updates automatically.</p>
+    </div>
     <div class="hf-tabs" role="tablist" aria-label="Main features" @keydown="onKey">
       <button
         v-for="t in tabs"
@@ -15,7 +19,7 @@
         @click="pick(t.key)"
       >
         <span class="hf-ico" aria-hidden="true" v-html="t.icon" />
-        <span class="hf-tab-text"><b>{{ t.label }}</b><small>{{ t.text }}</small></span>
+        <span class="hf-tab-text"><i class="hf-step">{{ t.step }}</i><b>{{ t.label }}</b><small>{{ t.text }}</small></span>
       </button>
     </div>
 
@@ -137,9 +141,9 @@ const props = defineProps({
 
 const svg = (d) => `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`
 const tabs = [
-  { key: 'tracking', label: 'XP Tracking', text: 'Hourly snapshots, gains and hiscores history for any player.', icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
-  { key: 'planner', label: 'Account Planner', text: 'The date you reach each level, the methods to unlock, what it costs.', icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
-  { key: 'prices', label: 'GE Prices', text: 'Live prices for 4,500 items, after tax, behind every gp figure.', icon: svg('<circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" />') },
+  { key: 'tracking', step: 'Track', label: 'XP Tracking', text: 'Your actual XP and progress, saved every hour for any player.', icon: svg('<path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" />') },
+  { key: 'planner', step: 'Plan', label: 'Account Planner', text: 'Personalized training routes, built from your own stats.', icon: svg('<circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="4.5" /><circle cx="12" cy="12" r="0.8" fill="currentColor" />') },
+  { key: 'prices', step: 'Optimize', label: 'GE Prices', text: 'Costs from live prices on 4,500 items, in every plan.', icon: svg('<circle cx="12" cy="12" r="9" /><path d="M14.8 9.2C14.3 8.4 13.3 8 12 8c-1.7 0-2.8.8-2.8 2s1 1.7 2.8 2c1.8.3 2.8.8 2.8 2s-1.1 2-2.8 2c-1.4 0-2.4-.5-2.9-1.4" /><path d="M12 6.5V8m0 8v1.5" />') },
 ]
 
 const tab = ref('tracking')

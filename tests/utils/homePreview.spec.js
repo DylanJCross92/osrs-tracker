@@ -35,6 +35,12 @@ describe('the welcome page feature tabs', () => {
     expect(w.text()).toContain('Zezima')
     expect(w.text()).toContain('Open this profile')
   })
+  it('says how the tools connect: Track, then Plan, then Optimize', () => {
+    const w = mountIt()
+    expect(w.find('h2').text()).toBe('Your entire OSRS journey, connected.')
+    expect(w.text()).toContain('Your stats inform your plans. Your plans use live prices. Your progress updates automatically.')
+    expect(w.findAll('.hf-step').map((e) => e.text())).toEqual(['Track', 'Plan', 'Optimize'])
+  })
   it('shows a plan from the planner on the Account Planner tab, and says which tab was opened', async () => {
     const w = mountIt()
     await w.findAll('[role="tab"]')[1].trigger('click')
