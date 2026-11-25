@@ -7,7 +7,7 @@
     <label v-for="o in options" :key="o.quest.id" class="planner-quest" :class="{ locked: o.locked }">
       <input type="checkbox" :value="o.quest.id" :checked="modelValue.includes(o.quest.id)" :disabled="o.locked" @change="toggle(o.quest.id)" />
       <span class="planner-quest-name">
-        {{ o.quest.name }}<i v-if="o.quest.suggest" class="planner-quest-tag">Short</i>
+        {{ o.quest.name }}<NewTag :id="o.quest.id" /><i v-if="o.quest.suggest" class="planner-quest-tag">Short</i>
         <small v-if="o.locked">needs {{ o.lockText }}</small>
         <small v-else-if="o.quest.needs">needs {{ o.quest.needs }}</small>
         <small v-if="o.minutes">takes about {{ o.minutes }} min<template v-if="o.chainNames.length"> with {{ o.chainNames.join(' and ') }}</template></small>
@@ -31,6 +31,7 @@
 <script setup>
 import { track } from '@/utils/analytics'
 import { computed } from 'vue'
+import NewTag from '@/components/NewTag.vue'
 import { useAuth } from '@/composables/useAuth'
 import { useRequirements } from '@/composables/useRequirements'
 import { getQuest, questChain, questsForSkill, withPrerequisites, withoutQuest } from '@/data/quests'

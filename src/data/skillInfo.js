@@ -132,7 +132,7 @@ export const SKILL_INFO = [
   // --- Support ---
   s('Agility', 'Support', 'Laps, marks of grace and hours for Agility.', 'Laps & Time', 'Calculate how many laps, hours and marks of grace you need to reach your next Agility goal.',
     [
-      'Agility has no resource cost, only time. Rooftop courses are the standard route, from Draynor to Ardougne, with the Wilderness course and Hallowed Sepulchre as faster, riskier options and the Agility Pyramid as a coin-based alternative. Brimhaven is a low-effort option at mid levels.',
+      'Agility has no resource cost, only time. Rooftop courses are the standard route, from Draynor to Ardougne, with the Wilderness course and Hallowed Sepulchre as faster, riskier options and the Agility Pyramid as a coin-based alternative. Brimhaven is a low-effort option at mid levels. The Prison of R\u00e6un, a hybrid course unlocked by The Graveyard quest (released 25 November 2026), takes level 65 Agility and is built around Marks of Grace.',
       'Lap counts use each rooftop\'s xp per lap, and marks of grace use the rooftop averages from the wiki. Rates depend on your diaries, so a range is shown. Hallowed Sepulchre, Wilderness and Pyramid profits come from loot, not marks.',
     ], 'Laps and marks'),
   s('Thieving', 'Support', 'XP, hours and profit for Thieving.', 'Time & GP', 'Plan your Thieving goal with stalls, pickpocketing, blackjacking and Rogues\' Castle.',

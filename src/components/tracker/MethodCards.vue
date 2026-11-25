@@ -4,7 +4,7 @@
       <img v-if="icon(u)" :src="icon(u)" alt="" width="28" height="28" loading="lazy" />
       <img v-else :src="skillIconSrc(u.skills[0])" alt="" width="24" height="24" loading="lazy" />
       <span class="trk-methods-main">
-        <b>{{ u.name }}</b>
+        <b>{{ u.name }}<NewTag :id="u.method.id" /></b>
         <small>{{ u.melee ? 'Attack, Strength, Defence' : u.skills.join(', ') }}<template v-if="u.method.xpPerHour"> · {{ formatNum(u.method.xpPerHour) }} xp/h</template></small>
       </span>
     </li>
@@ -14,6 +14,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import NewTag from '@/components/NewTag.vue'
 import { methodIconSrc } from '@/data/methodIcons'
 import { skillIconSrc } from '@/utils/osrsSkills'
 import { formatNum } from '@/utils/planner'

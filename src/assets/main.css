@@ -7972,3 +7972,24 @@ html.iron-mode .gp-figure { display: none !important; }
 .sa-area-bar i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); }
 .sa-areas b { font-variant-numeric: tabular-nums; }
 @media (max-width: 860px) { .sa-tiles { grid-template-columns: 1fr; } .sa-lower { grid-template-columns: 1fr; gap: 20px; } }
+
+/* "New" next to a quest or training method added in the last 7 days (components/NewTag.vue) */
+.new-pill { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); color: var(--gold-ink); font-style: normal; font-size: 0.64rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; vertical-align: middle; line-height: 1.5; box-shadow: 0 0 10px rgba(217, 175, 82, 0.4); white-space: nowrap; }
+.mpick-tags .new-pill { margin-left: 0; }
+
+/* Owner's announcement email panel (User Management) */
+.ann { margin: 0 0 22px; padding: 0 0 20px; border-bottom: 1px solid var(--border); }
+.ann-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.ann-head h2 { margin: 0; font-size: 1.05rem; }
+.ann-sub { margin: 2px 0 0; color: var(--muted); font-size: 0.88rem; max-width: none; }
+.ann-frame { display: block; width: 100%; height: 520px; margin: 0 0 14px; border: 1px solid var(--border-strong); border-radius: 12px; background: #0e0c09; }
+.ann-facts { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; max-width: none; line-height: 1.55; }
+.ann-facts b { color: var(--text); }
+.ann-warn { margin: 0 0 10px; color: #e0a870; font-size: 0.9rem; max-width: none; }
+.ann-ok { margin: 0 0 10px; color: var(--xp-green); font-size: 0.9rem; max-width: none; }
+.ann-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.ann-confirm { margin-top: 12px; padding: 12px 0 0; border-top: 1px solid var(--border); }
+.ann-confirm p { margin: 0; max-width: none; }
+.ann-progress { display: flex; align-items: center; gap: 12px; margin: 6px 0 8px; color: var(--text); font-size: 0.9rem; }
+.ann-bar { flex: 0 0 180px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.ann-bar i { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); transition: width 0.4s; }

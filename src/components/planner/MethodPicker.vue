@@ -36,6 +36,7 @@
             <span class="mpick-name">
               <b>{{ m.name }}</b>
               <span class="mpick-tags">
+                <NewTag :id="m.id" />
                 <i v-if="off(m)" class="mpick-tag tag-off">{{ off(m) }}</i>
                 <i v-else-if="note(m)" class="mpick-tag tag-soft">{{ note(m) }}</i>
                 <i v-if="m.id === fastestId" class="mpick-tag tag-xp">Fastest XP</i>
@@ -71,6 +72,7 @@
 
 <script setup>
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import NewTag from '@/components/NewTag.vue'
 import { formatNum, formatGp } from '@/utils/planner'
 import { methodAvailability, unmetText } from '@/utils/requirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'

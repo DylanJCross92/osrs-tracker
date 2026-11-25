@@ -195,6 +195,7 @@ const RAW = [
   ["The Writing's on the Wall", 'M'],
   ["A Shell of a Friend", 'M'],
   ["The Birds and the Wasps", 'M'],
+  ["The Graveyard", 'M'],
   ["Alfred Grimhand's Barcrawl", 'MQ'],
   ["Enter the Abyss", 'MQ'],
   ["The General's Shadow", 'MQ'],

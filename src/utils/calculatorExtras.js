@@ -14,6 +14,8 @@ const AGILITY_COURSES = {
   'agility-rellekka': { name: 'Rellekka Rooftop', xpPerLap: 780, marks: [13, 19.5] },
   'agility-ardougne': { name: 'Ardougne Rooftop', xpPerLap: 793, marks: [16.8, 22.1] },
   'agility-wilderness': { name: 'Wilderness Agility Course', xpPerLap: 571 },
+  // The slow, no-shortcut route (2,960 xp a lap on the Wiki). Its marks of grace depend on the route you choose at each decision point, so none are counted.
+  'agility-prison-of-raun': { name: 'Prison of R\u00e6un', xpPerLap: 2960 },
 }
 
 /**

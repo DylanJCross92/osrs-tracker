@@ -10,6 +10,10 @@ export const statsApi = {
   overview: (days = 30) => api.get(`/admin/stats/overview?days=${days}`),
   // Site owner only: { generatedAt, online, windows: [{ key, label, people, signedIn, visitors, newAccounts, logins, events, untracked }], hourly: [{ at, people }], areas: [{ route, people, views }] }.
   active: () => api.get('/admin/stats/active'),
+  // Site owner only: the one-off announcement email. Status: { subject, html, audience: { accounts, subscribers, total }, alreadySent, remaining, configured, ownSender, run }.
+  announcement: (key) => api.get(`/admin/announcements/${key}`),
+  announcementTest: (key) => api.post(`/admin/announcements/${key}/test`),
+  announcementSend: (key) => api.post(`/admin/announcements/${key}/send`),
   // Site owner only: every product event with its counts, and one event in detail.
   events: (days = 30) => api.get(`/admin/stats/events?days=${days}`),
   // Site owner only: { total, players: [{ username, displayName, badge, claimed, trackedAt, level, xp }] }, newest first.

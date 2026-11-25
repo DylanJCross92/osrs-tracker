@@ -34,7 +34,7 @@
                 <span class="trk-box" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span>
               </label>
               <button type="button" class="trk-name" :aria-expanded="open.has(r.slug)" @click="flip(r.slug)">
-                <b>{{ r.name }}</b>
+                <b>{{ r.name }}<NewTag :id="r.slug" /></b>
                 <small v-if="r.state === 'missing'" class="trk-flag" title="You told the planner you have not done this quest. Ticking the box changes that.">marked not done</small>
                 <span class="trk-meta">
                   <span v-if="r.info?.difficulty">{{ r.info.difficulty }}</span>
@@ -127,6 +127,7 @@ import TrackerSearch from '@/components/tracker/TrackerSearch.vue'
 import SkillReqGrid from '@/components/tracker/SkillReqGrid.vue'
 import PlanLevels from '@/components/tracker/PlanLevels.vue'
 import MethodCards from '@/components/tracker/MethodCards.vue'
+import NewTag from '@/components/NewTag.vue'
 
 const props = defineProps({ focus: { type: Object, default: null } })
 const emit = defineEmits(['focused'])

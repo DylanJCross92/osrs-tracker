@@ -592,3 +592,12 @@ CREATE TABLE IF NOT EXISTS ge_status (
   id SMALLINT PRIMARY KEY DEFAULT 1,
   latest_at TIMESTAMPTZ
 );
+
+-- Who has been sent which one-off announcement email (see services/announcements.service.js), so pressing send twice, or again after a
+-- restart part way through, never emails anyone twice. email is lower case.
+CREATE TABLE IF NOT EXISTS announcement_sends (
+  key TEXT NOT NULL,
+  email TEXT NOT NULL,
+  sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (key, email)
+);

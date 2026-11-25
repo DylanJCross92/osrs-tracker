@@ -10,6 +10,15 @@ export const KINDS = { new: 'New', improved: 'Improved', fixed: 'Fixed' }
 
 export const RELEASE_NOTES = [
   {
+    date: '2026-11-25',
+    items: [
+      { kind: 'new', text: 'The Graveyard, released today, is in the quest tracker and the planners: a Master quest (3 quest points, 35,000 Agility, 35,000 Sailing, 15,000 Runecraft and 10,000 Fletching XP, plus two lamps of 75,000 XP) that needs Sailing 65, Agility 65, Woodcutting 56, Fletching 54 and Olaf\'s Quest, The Fremennik Exiles and Pandemonium. The Smart Planner only suggests it once your combat level is up to it.' },
+      { kind: 'new', text: 'The new Prison of R\u00e6un Agility course (level 65, unlocked by The Graveyard) is an Agility method in the planners and calculators, counted at the Wiki\'s 2,960 XP a lap on the slow route. Jagex\'s Marks of Grace rates are in its description.' },
+      { kind: 'fixed', text: 'Quest tracker: sorting by type, A to Z now puts every group in alphabetical order.' },
+      { kind: 'improved', text: 'The feedback button is now a labelled Feedback button, and a small note asks for a bug or an idea once.' },
+    ],
+  },
+  {
     date: '2026-11-24',
     items: [
       { kind: 'new', text: 'Free-to-play plans now cover Attack, Strength, Defence, Hitpoints and Ranged: cows and giant frogs, moss giants and Brutus for melee, and frogs and Brutus for Ranged. The wiki gives hourly rates only for Ranged on Brutus and moss giants; the melee rates are estimates from each monster\'s stats, and say so.' },

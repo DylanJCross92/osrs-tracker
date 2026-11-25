@@ -372,6 +372,9 @@ export const TRAINING_METHODS = [
   m('Agility', 'wilderness', 'Wilderness Agility Course', 52, 55000, 1991000, 'Medium', 'Course with strong xp and a big profit from Wilderness loot.', 'Wilderness access', 71),
   m('Agility', 'seers', 'Seers\' Village Rooftop', 60, 53000, 0, 'Medium', 'Easy rooftop, no quest requirement.', '', 69),
   m('Agility', 'werewolf', 'Werewolf Agility Course', 60, 58000, 0, 'Medium', 'Strong mid-level xp.', 'Creature of Fenkenstrain', 79),
+  // Released 25 November 2026 with The Graveyard. The Wiki gives 2,960 xp a lap on the slow route with no shortcuts (about 3:45 a lap, so roughly 16 laps and
+  // 47,000 xp an hour); Jagex gave no xp/hr and the all-shortcuts route's lap time is not published, so that faster route is not counted here.
+  m('Agility', 'prison-of-raun', 'Prison of R\u00e6un', 65, 47000, 0, 'Medium', 'Hybrid course on The Graveyard island. The slow no-shortcut route is counted here. Jagex says the fast, high-intensity route gives 30+ Marks of Grace an hour and the slower one 12 to 14.', 'The Graveyard'),
   m('Agility', 'colossal-wyrm-adv', 'Colossal Wyrm Agility (advanced)', 62, 42000, null, 'Medium', 'Advanced Varlamore course.', '', 79),
   m('Agility', 'pollnivneach', 'Pollnivneach Rooftop', 70, 55000, 0, 'Medium', 'Mid-level rooftop.', '', 79),
   m('Agility', 'pyramid-high', 'Agility Pyramid (high level)', 70, 44000, 260000, 'Medium', 'Faster pyramid runs with better coin pouches.', 'Desert access', 89),

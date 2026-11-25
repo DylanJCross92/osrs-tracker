@@ -23,10 +23,10 @@ const safeUrl = (u) => (/^https?:\/\//i.test(String(u)) ? String(u) : '')
 /**
  * title: the heading. paragraphs: plain strings, or { text, strong } to bold a part (strong must appear in text).
  * features: [{ title, text, image?: { src, alt } }] shown as a short list with a tick beside each, and an optional picture under the text. button: { label, url }. rows: [{ label, value }] shown as a small table. note: small muted text under the button.
- * unsubscribeUrl: for emails that are not about the account itself, a link in the footer to stop them. preheader: the preview line some inboxes show next to the subject.
+ * unsubscribeUrl: for emails that are not about the account itself, a link in the footer to stop them (unsubscribeLabel words it). preheader: the preview line some inboxes show next to the subject.
  * Returns { html, text }.
  */
-export function renderEmail({ preheader = '', title, paragraphs = [], features = [], afterFeatures = [], button = null, rows = [], note = '', unsubscribeUrl = '' }) {
+export function renderEmail({ preheader = '', title, paragraphs = [], features = [], afterFeatures = [], button = null, rows = [], note = '', unsubscribeUrl = '', unsubscribeLabel = 'Unsubscribe from reminder emails' }) {
   const site = SITE()
   const url = button ? safeUrl(button.url) : ''
 
@@ -65,7 +65,7 @@ export function renderEmail({ preheader = '', title, paragraphs = [], features =
     : ''
 
   const unsub = safeUrl(unsubscribeUrl)
-  const unsubHtml = unsub ? `<br><a href="${esc(unsub)}" target="_blank" style="color:${C.muted};text-decoration:underline;">Unsubscribe from reminder emails</a>` : ''
+  const unsubHtml = unsub ? `<br><a href="${esc(unsub)}" target="_blank" style="color:${C.muted};text-decoration:underline;">${esc(unsubscribeLabel)}</a>` : ''
 
   const noteHtml = note ? `<p style="margin:0;font-size:13px;line-height:1.6;color:${C.muted};">${esc(note)}</p>` : ''
 
@@ -122,7 +122,7 @@ export function renderEmail({ preheader = '', title, paragraphs = [], features =
     ...(note ? ['', note] : []),
     '',
     `TickGains - ${site}`,
-    ...(unsub ? [`Unsubscribe from reminder emails: ${unsub}`] : []),
+    ...(unsub ? [`${unsubscribeLabel}: ${unsub}`] : []),
   ]
   return { html, text: textParts.join('\n') }
 }

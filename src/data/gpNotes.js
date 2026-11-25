@@ -13,6 +13,7 @@ const SPECIFIC = {
   'agility-seers': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
   'agility-pollnivneach': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
   'agility-rellekka': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
+  'agility-prison-of-raun': 'Pays in Marks of Grace (30+ an hour on the high-intensity route), Fremennik and ghostly sail fabric and Sunken Treasure, none of which are counted here, and uses no supplies, so it breaks even.',
   'agility-ardougne': 'Rooftop courses pay in marks of grace, which are not counted here, and use no supplies, so they break even.',
   'agility-prifddinas': 'Crystal shards are not counted, and the course uses no supplies, so it breaks even.',
   'construction-gnome-benches': 'Six mahogany planks go into every bench and are used up when you remove it.',
