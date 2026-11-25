@@ -32,6 +32,16 @@
       </g>
     </template>
 
+    <!-- Quest and diary tracker: what is ticked off, and what comes next -->
+    <template v-else-if="kind === 'tracker'">
+      <g v-for="(r, i) in ticks" :key="r.n" :transform="`translate(0 ${i * 17.5})`">
+        <rect class="fa-box" :class="{ 'fa-box-done': r.done }" x="4" y="2" width="11" height="11" rx="3" />
+        <path v-if="r.done" class="fa-tick" d="M6.6 7.8 L9 10.2 L12.6 5.4" />
+        <text class="fa-text" :class="{ 'fa-strong': r.done }" x="22" y="10.5">{{ r.n }}</text>
+        <text class="fa-text" :class="r.done ? 'fa-good' : 'fa-gold'" x="124" y="10.5" text-anchor="end">{{ r.t }}</text>
+      </g>
+    </template>
+
     <!-- Skill calculators: level to level, then the route split into methods -->
     <template v-else-if="kind === 'calculators'">
       <rect class="fa-chip" x="4" y="2" width="30" height="17" rx="5" />
@@ -94,6 +104,11 @@ const goals = [
   { n: 'Slayer', p: 0.82, h: '12 h' },
   { n: 'Herblore', p: 0.55, h: '40 h' },
   { n: 'Farming', p: 0.28, h: '85 h' },
+]
+const ticks = [
+  { n: 'Dragon Slayer II', t: 'done', done: true },
+  { n: 'Ardougne Hard', t: 'done', done: true },
+  { n: 'Desert Treasure II', t: 'next', done: false },
 ]
 const rank = [
   { p: 1, g: '+1.8M' },

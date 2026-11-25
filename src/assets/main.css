@@ -2080,7 +2080,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
   background: radial-gradient(120% 90% at 0% 0%, rgba(240, 201, 118, 0.09), transparent 55%), linear-gradient(180deg, var(--panel-alt), var(--panel));
   border-radius: 16px;
 }
-.home-feature:nth-child(n + 4) { grid-column: span 3; }
+.home-feature:nth-child(n + 7) { grid-column: span 3; }
 .home-feature::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); opacity: 0; transition: opacity 0.2s; }
 .home-feature:hover { transform: translateY(-3px); box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(217, 175, 82, 0.25); }
 .home-feature:hover::before { opacity: 1; }
@@ -2093,7 +2093,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .home-feature:hover .home-feature-link svg { transform: translateX(5px); }
 @media (max-width: 980px) {
   .home-features { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .home-feature, .home-feature:nth-child(n + 4) { grid-column: span 1; }
+  .home-feature, .home-feature:nth-child(n + 7) { grid-column: span 1; }
 }
 @media (max-width: 560px) {
   .home-features { grid-template-columns: 1fr; }
@@ -2111,6 +2111,9 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .fa .fa-chip-gold { fill: var(--gold); stroke: var(--gold-bright); }
 .fa .fa-text { font-size: 8.5px; font-weight: 600; font-family: inherit; fill: var(--muted); }
 .fa .fa-good { fill: var(--xp-green); }
+.fa .fa-box { fill: none; stroke: var(--border-strong); stroke-width: 1.3; stroke-dasharray: 2.2 2; }
+.fa .fa-box-done { fill: var(--xp-green); stroke: var(--xp-green); stroke-dasharray: none; }
+.fa .fa-tick { fill: none; stroke: #0e0c09; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 .fa .fa-gold { fill: var(--gold-bright); }
 .fa .fa-strong { fill: var(--text); font-size: 10px; font-weight: 700; }
 .fa .fa-ink { fill: var(--gold-ink); }
