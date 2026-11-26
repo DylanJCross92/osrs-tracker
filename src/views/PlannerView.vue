@@ -1655,10 +1655,15 @@ watch(
       /* storage unavailable, URL sharing still works */
     }
     // history.replaceState (not router.replace) so syncing the URL never triggers the router's scroll-to-top.
-    // A saved plan has its own address and carries nothing in it. A plan that is not saved (at /planner/new) carries itself in the
-    // address while signed out, so the link can be copied; signed in, it is kept in the account and this browser instead.
+    // A saved plan has its own address and carries nothing in it. A plan that is not saved (at /planner/new) carries itself in the address, signed in or not,
+    // so the link can be copied, bookmarked and reloaded; a plan opened from a share link stays marked as one (from=share).
     if (mode.value === 'new') {
-      const qs = goals.value.length && !loggedIn.value && !currentPlanId.value ? `?${encodePlan({ ...state, summary: linkSummary() }).toString()}` : ''
+      let qs = ''
+      if (goals.value.length && !currentPlanId.value) {
+        const params = encodePlan({ ...state, summary: linkSummary() })
+        if (template.value?.name === 'Shared plan') params.set('from', 'share')
+        qs = `?${params.toString()}`
+      }
       window.history.replaceState(window.history.state, '', `${route.path}${qs}`)
     }
     setRobots(mode.value === 'overview' || (mode.value === 'new' && !goals.value.length) ? 'index, follow' : 'noindex, follow')
