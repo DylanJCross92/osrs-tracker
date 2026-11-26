@@ -4,6 +4,7 @@ import { attachUser, requireUser } from './auth.routes.js'
 import { SharePlanError } from '../utils/sharedPlans.js'
 import { getPublicShare, listMyShares, recordShareEvent, shareMyPlan, stopSharing } from '../services/sharedPlans.service.js'
 import { renderPlanCardPng } from '../services/cardImage.service.js'
+import { parsePlanLink, planLinkText } from '../utils/planLink.js'
 
 export const plansRouter = Router()
 
@@ -55,6 +56,27 @@ plansRouter.get(
     res.set('Content-Type', 'image/png')
     // The link carries a version (?v=) that changes when the owner updates the plan.
     res.set('Cache-Control', 'public, max-age=300')
+    res.send(png)
+  }),
+)
+
+// The picture a planner link (/planner/new?g=...) unfurls into, drawn from the link's own address (see utils/planLink.js).
+plansRouter.get(
+  '/plans/link-card.png',
+  readLimiter,
+  handle(async (req, res) => {
+    const p = parsePlanLink(req.query)
+    if (!p) return res.status(404).end()
+    const { name } = planLinkText(p)
+    const png = await renderPlanCardPng({
+      name,
+      rsn: p.who,
+      mode: 'static',
+      summary: { goals: p.goals, totalHours: p.hours, netGp: p.netGp, days: p.days, totalXp: p.totalXp },
+      plan: { hoursPerDay: p.hoursPerDay, goals: p.goals },
+    })
+    res.set('Content-Type', 'image/png')
+    res.set('Cache-Control', 'public, max-age=86400')
     res.send(png)
   }),
 )

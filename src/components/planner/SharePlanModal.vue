@@ -84,6 +84,7 @@ import { useSharedPlans } from '@/composables/useSharedPlans'
 import { useToast } from '@/composables/useToast'
 import { track } from '@/utils/analytics'
 import { encodePlan } from '@/utils/planner'
+import { summarizePlan } from '@/utils/plannerTools'
 
 const props = defineProps({
   plan: { type: Object, required: true },
@@ -104,6 +105,15 @@ const busy = ref(false)
 const error = ref('')
 const confirmStop = ref(false)
 
+// The plan's hours, days and gp go in the link too, so it can be described when it is pasted somewhere (null if the plan cannot be worked out).
+function planSummary() {
+  try {
+    return summarizePlan({ goals: props.plan.goals, globalStrategy: props.plan.globalStrategy, gpValue: props.plan.gpValue, hoursPerDay: props.plan.hoursPerDay })
+  } catch {
+    return null
+  }
+}
+
 // The plan carried in the link itself. Only names the player when asked to.
 const withName = ref(false)
 const canName = computed(() => !!props.plan.player?.rsn)
@@ -123,6 +133,7 @@ const longUrl = computed(() => {
     build: props.plan.build || 'main',
     ironKind: props.plan.ironKind || 'standard',
     world: props.plan.world || 'normal',
+    summary: planSummary(),
   })
   if (!named) params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`

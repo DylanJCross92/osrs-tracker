@@ -363,7 +363,7 @@ export const formatDays = (n) => `${Number(n).toLocaleString('en-US')} ${Number(
 
 // --- Shareable-URL encoding: ?u=name&h=3&g=Agility~6400000~13034431~agility-ardougne,... ---
 // Optional extras (older links simply lack them): s = global strategy, v = gp value per hour, b = gp budget.
-export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt, members = true, iron = false, build = 'main', ironKind = 'standard', world = 'normal' }) {
+export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, budget, statsAt, members = true, iron = false, build = 'main', ironKind = 'standard', world = 'normal', summary = null }) {
   const params = new URLSearchParams()
   if (username) params.set('u', username)
   params.set('h', String(hoursPerDay))
@@ -383,6 +383,13 @@ export function encodePlan({ username, hoursPerDay, goals, strategy, gpValue, bu
   // bd: the build (a level 3 skiller, a pure...), ik: the kind of ironman. Left out for a plain account.
   if (build && build !== 'main') params.set('bd', build)
   if (iron === true && ironKind && ironKind !== 'standard') params.set('ik', ironKind)
+  // sh / sd / sg: the plan's hours, days and net gp, so a link pasted into a chat can say what the plan is (the server has no planner engine to work it out).
+  // Nothing reads them back: the plan is worked out again when the link is opened.
+  if (summary && Number.isFinite(summary.totalHours)) {
+    params.set('sh', String(Math.round(summary.totalHours * 10) / 10))
+    if (Number.isFinite(summary.days)) params.set('sd', String(Math.round(summary.days)))
+    if (Number.isFinite(summary.netGp)) params.set('sg', String(Math.round(summary.netGp)))
+  }
   // hw=1: a Hardcore Worlds character's plan.
   if (iron !== true && world === 'hardcore') params.set('hw', '1')
   // When the goals' starting stats were captured: the baseline live progress is measured from.

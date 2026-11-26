@@ -15,6 +15,7 @@ import { claimsRouter } from './routes/claims.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
 import { challengesRouter } from './routes/challenges.routes.js'
 import { wantedMode } from './routes/cards.routes.js'
+import { parsePlanLink, planLinkText } from './utils/planLink.js'
 import { followsRouter } from './routes/follows.routes.js'
 import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
@@ -945,28 +946,31 @@ if (distExists) {
   // link unfurls; parameterized plan URLs share the same page (the client
   // marks those noindex).
   app.get(['/planner', '/planner/new'], (req, res) => {
-    // A shared plan link names the player and skills in its description;
-    // the bare page keeps the generic one. Query parsing is defensive,
-    // it's user-controlled text that ends up in HTML meta (escaped by injectCardMeta).
-    const who = typeof req.query.u === 'string' ? req.query.u.slice(0, 12).trim() : ''
-    const skills = (typeof req.query.g === 'string' ? req.query.g.split(',') : [])
-      .map((chunk) => chunk.split('~')[0])
-      .filter((name) => /^[A-Za-z]{3,12}$/.test(name))
-      .slice(0, 6)
+    // A planner link that carries goals (a shared plan) says what the plan is: the skills, levels and, when the link has them, hours and gp, with a
+    // picture drawn from the same link. The bare page keeps the generic text. Everything read from the address is validated (utils/planLink.js)
+    // and escaped by injectCardMeta, it is user-controlled text that ends up in HTML meta.
+    const plan = parsePlanLink(req.query)
     let title = 'OSRS Account Planner & XP Calculator | TickGains'
     let description =
       'Plan your Old School RuneScape skill goals. Calculate XP remaining, training hours, and GP costs using your OSRS username. Free OSRS account planner.'
-    if (skills.length) {
-      title = `${who ? `${who}'s ` : ''}OSRS Training Plan | TickGains`
-      description = `${who ? `${who}'s` : 'A'} OSRS training plan for ${skills.join(', ')}, XP remaining, training hours, GP and days to finish, built with the TickGains Account Planner.`
+    let imageUrl = `${SITE_URL}/og-planner.png`
+    let pageUrl = `${SITE_URL}/planner`
+    if (plan) {
+      ;({ title, description } = planLinkText(plan))
+      // Only the parts of the address the plan is made of go into the picture's address.
+      const qs = new URLSearchParams()
+      for (const key of ['g', 'h', 'u', 'sh', 'sd', 'sg', 'm', 'i', 'ik', 'bd', 'hw']) if (typeof req.query[key] === 'string' && req.query[key]) qs.set(key, req.query[key].slice(0, 2000))
+      imageUrl = `${SITE_URL}/api/plans/link-card.png?${qs.toString()}`
+      pageUrl = `${SITE_URL}/planner/new?${qs.toString()}`
     }
     res.send(
       injectCardMeta(indexHtmlTemplate, {
         title,
         description,
-        imageUrl: `${SITE_URL}/og-planner.png`,
-        pageUrl: `${SITE_URL}/planner`,
-        bodyHtml: skills.length ? undefined : pageBody('OSRS Account Planner and XP Calculator', [description], '/planner'),
+        imageUrl,
+        pageUrl,
+        noindex: Boolean(plan),
+        bodyHtml: plan ? undefined : pageBody('OSRS Account Planner and XP Calculator', [description], '/planner'),
       }),
     )
   })

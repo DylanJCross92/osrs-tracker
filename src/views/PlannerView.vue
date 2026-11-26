@@ -1433,8 +1433,16 @@ async function loadTemplate(slug) {
 }
 
 // The address that opens this plan for someone else (no player name in it), for sharing the pace chart.
+// The plan's hours, days and gp for a link to carry, so the link can be described when it is pasted into a chat (see encodePlan).
+function linkSummary() {
+  try {
+    return summarizePlan({ goals: goals.value, globalStrategy: globalStrategy.value, gpValue: gpValue.value, hoursPerDay: hoursPerDay.value })
+  } catch {
+    return null
+  }
+}
 const paceShareLink = computed(() => {
-  const params = encodePlan({ username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value, world: world.value })
+  const params = encodePlan({ summary: linkSummary(), username: '', hoursPerDay: hoursPerDay.value, goals: goals.value, strategy: globalStrategy.value, gpValue: gpValue.value, budget: null, statsAt: null, members: members.value, iron: iron.value, build: build.value, ironKind: ironKind.value, world: world.value })
   params.set('from', 'share')
   return `${window.location.origin}/planner/new?${params.toString()}`
 })
@@ -1650,7 +1658,7 @@ watch(
     // A saved plan has its own address and carries nothing in it. A plan that is not saved (at /planner/new) carries itself in the
     // address while signed out, so the link can be copied; signed in, it is kept in the account and this browser instead.
     if (mode.value === 'new') {
-      const qs = goals.value.length && !loggedIn.value && !currentPlanId.value ? `?${encodePlan(state).toString()}` : ''
+      const qs = goals.value.length && !loggedIn.value && !currentPlanId.value ? `?${encodePlan({ ...state, summary: linkSummary() }).toString()}` : ''
       window.history.replaceState(window.history.state, '', `${route.path}${qs}`)
     }
     setRobots(mode.value === 'overview' || (mode.value === 'new' && !goals.value.length) ? 'index, follow' : 'noindex, follow')

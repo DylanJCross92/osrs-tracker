@@ -1039,9 +1039,11 @@ async function buildPlanCardTree({ name, rsn, mode, summary, plan }) {
 
       node('div', { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }, [
         node('div', { display: 'flex', gap: 14 }, [
-          tile('Training time', planHours(summary.totalHours), COLORS.cream),
-          tile('Net GP', planGp(summary.netGp), summary.netGp != null && summary.netGp < 0 ? '#e58a7c' : COLORS.green),
-          tile(`At ${plan.hoursPerDay} h/day`, days, COLORS.gold),
+          // A plan link without the totals (made before they were added to links) shows the XP to go instead of blanks.
+          ...(summary.totalHours == null && summary.totalXp ? [tile('XP to go', formatXp(summary.totalXp), COLORS.cream), tile('Skills', String(goals.length), COLORS.gold)] : []),
+          ...(summary.totalHours != null ? [tile('Training time', planHours(summary.totalHours), COLORS.cream)] : []),
+          ...(summary.totalHours != null || summary.netGp != null ? [tile('Net GP', planGp(summary.netGp), summary.netGp != null && summary.netGp < 0 ? '#e58a7c' : COLORS.green)] : []),
+          ...(summary.totalHours != null ? [tile(`At ${plan.hoursPerDay} h/day`, days, COLORS.gold)] : []),
         ]),
         node('div', { display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }, [
           node('div', { display: 'flex', fontSize: 24, fontWeight: 800, color: COLORS.gold, whiteSpace: 'nowrap' }, 'Use this plan, free'),
