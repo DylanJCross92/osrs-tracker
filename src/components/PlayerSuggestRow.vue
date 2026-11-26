@@ -1,7 +1,7 @@
 <template>
   <span class="sg-avatar" aria-hidden="true"><PlayerAvatar :name="player.username" /></span>
   <span class="sg-main">
-    <span class="sg-name">{{ player.displayName }}<PlayerBadge :label="player.badge" :claimed="player.claimed" /><HardcoreTag v-if="player.mode === 'hardcore'" short /><span v-else-if="player.hasBoth" class="sg-main-tag" title="The main hiscores character">Main</span></span>
+    <span class="sg-name is-rich"><span class="sg-name-text">{{ player.displayName }}</span><PlayerBadge :label="player.badge" :claimed="player.claimed" /><HardcoreTag v-if="player.mode === 'hardcore'" short /><span v-else-if="player.hasBoth" class="sg-main-tag" title="The main hiscores character">Main</span></span>
     <small class="sg-sub"><OverallLevel :level="player.overallLevel" /><template v-if="player.overallXp != null"> · {{ formatXp(player.overallXp) }} XP</template></small>
   </span>
   <span v-if="player.weekGain > 0" class="sg-gain"><b>+{{ formatXp(player.weekGain) }}</b><small>this week</small></span>

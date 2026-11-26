@@ -2353,8 +2353,8 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 
 /* player suggestions under the matchup inputs */
 .cmp-field { position: relative; }
-.cmp-suggest { position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; width: min(360px, 100%); min-width: 280px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 16px; background: var(--panel-alt); border: 1px solid var(--border-strong); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6); text-align: left; }
-.cmp-suggest-right { left: auto; right: 0; }
+.cmp-suggest { position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; width: min(480px, calc(100vw - 32px)); min-width: 320px; display: flex; flex-direction: column; gap: 2px; padding: 8px; border-radius: 16px; background: var(--panel-alt); border: 1px solid var(--border-strong); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6); text-align: left; }
+.cmp-suggest-right { left: 0; right: auto; }
 .cmp-suggest-head { padding: 4px 10px 6px; color: var(--muted); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
 .cmp-suggest-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: none; border-radius: 10px; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .cmp-suggest-item.active, .cmp-suggest-item:hover { background: var(--bg); }
@@ -2388,12 +2388,12 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 
 /* compare suggestions share the row design above */
 .cmp-suggest-item { gap: 12px; padding: 9px 12px; border-radius: 12px; }
-.cmp-suggest { width: min(400px, 100%); }
+.cmp-suggest { width: min(480px, calc(100vw - 32px)); }
 .search-suggest .sg-sub, .cmp-suggest .sg-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* recent players: the last few opened, each with a remove button */
 .suggest-recent, .cmp-suggest-row { position: relative; }
-.search-suggest .suggest-recent a.suggest-row, .cmp-suggest-row .cmp-suggest-item { padding-right: 48px; }
+.search-suggest .suggest-recent a.suggest-row, .cmp-suggest-row.has-del .cmp-suggest-item { padding-right: 48px; }
 .suggest-del { position: absolute; top: 50%; right: 10px; transform: translateY(-50%); width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: none; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; }
 .suggest-del:hover, .suggest-del:focus-visible { background: var(--bg); color: var(--text); }
 
@@ -8271,3 +8271,8 @@ html.iron-mode .gp-figure { display: none !important; }
 /* A name with both characters keeps the header the same height on either side (the Hardcore Worlds one has a rank chip that makes the chips wrap). */
 .profile-chips.has-world { min-height: 62px; align-content: flex-start; }
 .sg-main-tag { margin-left: 8px; padding: 1px 8px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--muted); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em; line-height: 1.5; vertical-align: middle; }
+
+/* A suggestion row's name shrinks (with an ellipsis) before its tags do, so Main / HC Worlds is never cut off. */
+.sg-name.is-rich { display: flex; align-items: center; overflow: visible; text-overflow: clip; min-width: 0; }
+.sg-name.is-rich .sg-name-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sg-name.is-rich > .hw-tag, .sg-name.is-rich > .sg-main-tag, .sg-name.is-rich > .player-badge { flex: none; }

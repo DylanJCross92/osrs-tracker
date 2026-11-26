@@ -33,7 +33,7 @@
         <div v-if="hero" class="suggest-row suggest-claim">
           <PlayerSuggestRow :player="sg" />
           <span v-if="sg.claimed" class="suggest-taken">Already claimed</span>
-          <button v-else class="btn btn-primary suggest-claim-btn" type="button" :disabled="busy" @click="$emit('claim', sg); close()">Claim</button>
+          <button v-else class="btn btn-primary suggest-claim-btn" type="button" :disabled="busy" :title="sg.hasBoth ? 'A claim covers the name, so both characters' : null" @click="$emit('claim', sg); close()">Claim</button>
         </div>
         <a v-else href="#" class="suggest-row" @click.prevent="go(sg)"><PlayerSuggestRow :player="sg" /></a>
       </li>
@@ -93,7 +93,7 @@ watch(query, (q) => {
   }
   timer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term, { both: !props.hero })
+      const rows = await playersApi.search(term, { both: true })
       if (query.value.trim() === term) {
         suggestions.value = rows
         track('player_search', { player: term, source, username_length: term.length, matches: rows.length })

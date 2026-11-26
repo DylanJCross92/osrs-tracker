@@ -20,7 +20,7 @@ challengesRouter.post('/challenges/accepted', limiter, async (req, res, next) =>
     if (!player) return res.json({ ok: true })
     const ownerId = await ownerOfPlayer(player.id)
     if (ownerId) {
-      const { rows } = await pool.query('SELECT username, display_name FROM players WHERE lower(username) = lower($1) AND mode = \'main\'', [opponent])
+      const { rows } = await pool.query('SELECT username, display_name FROM players WHERE lower(username) = lower($1) ORDER BY (mode = \'main\') DESC LIMIT 1', [opponent])
       const name = rows[0]?.display_name || opponent
       const day = new Date().toISOString().slice(0, 10)
       await addNotification(ownerId, {

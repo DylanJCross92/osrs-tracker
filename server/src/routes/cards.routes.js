@@ -11,8 +11,11 @@ export const cardsRouter = Router()
 // Every picture costs real memory to draw, so one address cannot ask for more than a steady stream of them.
 const imageLimiter = rateLimit({ windowMs: 60_000, max: 90, message: 'Too many pictures requested, try again in a minute.' })
 
+// ?mode=hardcore (or ?world=hardcore) asks for a name's Hardcore Worlds character; otherwise the normal one, or the Hardcore Worlds one when that is all there is.
+export const wantedMode = (req) => (req.query.mode === 'hardcore' || req.query.world === 'hardcore' ? 'hardcore' : 'main')
+
 async function resolvePlayer(req, res) {
-  const player = await getPlayerByUsername(req.params.username)
+  const player = await getPlayerByUsername(req.params.username, wantedMode(req))
   if (!player) {
     res.status(404).json({ error: 'Player not found.' })
     return null

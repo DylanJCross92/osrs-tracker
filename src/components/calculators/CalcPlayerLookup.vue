@@ -1,14 +1,14 @@
 <template>
   <div class="calc-lookup">
     <div v-if="player && !editing" class="calc-lookup-loaded">
-      <b>{{ player.displayName }}</b>
+      <b>{{ player.displayName }}</b><HardcoreTag v-if="player.mode === 'hardcore'" />
       <span>{{ skill }} level {{ level }} · {{ formatNum(xp) }} XP</span>
       <span class="calc-muted">Stats updated {{ formatRelative(player.latest.capturedAt) }}</span>
       <button class="btn-text" type="button" @click="editing = true">Change player</button>
       <button class="btn-text" type="button" @click="clear">Clear</button>
     </div>
     <div v-else class="suggest-wrap">
-      <form class="add-player-form" autocomplete="off" @submit.prevent="find">
+      <form class="add-player-form" autocomplete="off" @submit.prevent="find()">
         <input v-model="name" type="search" name="osrs-player-lookup" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search" placeholder="OSRS name (optional)" autocomplete="off" maxlength="12" :disabled="loading" aria-label="OSRS player name" data-1p-ignore data-lpignore="true" @focus="searchFocused = true" @blur="searchFocused = false" />
         <button class="btn btn-primary" type="submit" :disabled="loading || !name.trim()">{{ loading ? 'Finding…' : 'Load my stats' }}</button>
         <button v-if="player" class="btn btn-ghost" type="button" @click="editing = false">Cancel</button>
@@ -16,7 +16,7 @@
       <RecentPlayers v-if="searchFocused && !name.trim()" @pick="pick" />
       <ul v-if="suggestions.length" class="search-suggest">
         <li class="suggest-head">Already tracked</li>
-        <li v-for="sg in suggestions" :key="sg.username">
+        <li v-for="sg in suggestions" :key="characterKey(sg)">
           <a href="#" class="suggest-row" @click.prevent="pick(sg)"><PlayerSuggestRow :player="sg" /></a>
         </li>
       </ul>
@@ -32,6 +32,8 @@ import { usePlayersStore } from '@/stores/players'
 import { playersApi } from '@/api/players'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
 import RecentPlayers from '@/components/RecentPlayers.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
+import { characterKey, ensureHardcoreLoaded, findCharacter } from '@/utils/characters'
 import { recordRecent } from '@/composables/useRecentPlayers'
 import { track } from '@/utils/analytics'
 import { formatRelative } from '@/utils/time'
@@ -63,7 +65,7 @@ watch(name, (q) => {
   }
   timer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: true })
       if ((name.value || '').trim() === term) suggestions.value = rows
     } catch {
       suggestions.value = []
@@ -74,10 +76,12 @@ watch(name, (q) => {
 function pick(sg) {
   suggestions.value = []
   name.value = sg.displayName
-  find()
+  find(sg.mode)
 }
 
-async function find() {
+// `mode` is the character to use ('hardcore' for a Hardcore Worlds one); typing a name and pressing Enter uses the normal character, or the Hardcore Worlds one
+// when that is all the name has.
+async function find(mode = 'main') {
   suggestions.value = []
   const rsn = name.value.trim()
   if (!rsn) return
@@ -90,12 +94,17 @@ async function find() {
   track('calc_lookup', { skill: props.skill })
   try {
     if (!store.loaded) await store.loadPlayers()
-    const lookup = () => store.players.find((p) => p.username.toLowerCase() === rsn.toLowerCase())
+    await ensureHardcoreLoaded(store)
+    let side = mode === 'hardcore' ? 'hardcore' : 'main'
+    const lookup = () => findCharacter(store, rsn, side)
     // Unknown names go through the normal tracking flow (Hiscores lookup and history import).
-    if (!lookup()) {
+    if (!lookup() && !(side === 'main' && findCharacter(store, rsn, 'hardcore'))) {
       await store.addPlayer(rsn)
       track('player_added', { source: 'calculator', is_new_player: true, player: rsn, player_name: rsn })
+      await store.loadHardcore().catch(() => {})
     }
+    // A name that only exists on Hardcore Worlds is used as that character.
+    if (!lookup() && side === 'main') side = 'hardcore'
     const found = lookup()
     if (!found?.latest) throw new Error('No stats found for that player yet.')
     player.value = found

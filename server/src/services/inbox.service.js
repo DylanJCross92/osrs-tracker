@@ -65,15 +65,26 @@ export async function addOrRefreshNotification(userId, { type, text, link = '', 
   }
 }
 
+// A claim and a follow are on the name, so they cover both characters of it (a normal one and a Hardcore Worlds one): these look at every character with the
+// same name as the player asked about.
+
 /** The account that owns a profile (verified claim), or null. */
 export async function ownerOfPlayer(playerId) {
-  const { rows } = await pool.query(`SELECT user_id FROM profile_claims WHERE player_id = $1 AND status = 'verified'`, [playerId])
+  const { rows } = await pool.query(
+    `SELECT c.user_id FROM profile_claims c JOIN players p ON p.id = c.player_id
+     WHERE c.status = 'verified' AND p.username = (SELECT username FROM players WHERE id = $1) LIMIT 1`,
+    [playerId],
+  )
   return rows[0]?.user_id ?? null
 }
 
 /** Accounts that follow a player. */
 export async function followersOfPlayer(playerId) {
-  const { rows } = await pool.query('SELECT user_id FROM follows WHERE player_id = $1', [playerId])
+  const { rows } = await pool.query(
+    `SELECT DISTINCT f.user_id FROM follows f JOIN players p ON p.id = f.player_id
+     WHERE p.username = (SELECT username FROM players WHERE id = $1)`,
+    [playerId],
+  )
   return rows.map((r) => r.user_id)
 }
 

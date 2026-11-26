@@ -5,15 +5,6 @@ import { addNotification, dayStamp, followersOfPlayer, ownerOfPlayer } from './i
 // Hardcore Worlds characters (see schema.sql and utils/hardcore.js). The character is its own `players` row (mode 'hardcore'); these are the things
 // that only make sense for one: lives, resets, leaving, and telling the people who follow the account.
 
-/** The main (normal) row for the same name, which is where followers and the owner of a profile are attached. */
-async function mainIdFor(playerId) {
-  const { rows } = await pool.query(
-    `SELECT m.id FROM players h JOIN players m ON m.username = h.username AND m.mode = 'main' WHERE h.id = $1`,
-    [playerId],
-  )
-  return rows[0]?.id ?? null
-}
-
 const num = (v) => (v == null ? null : Number(v))
 const mapEvent = (r) => ({
   id: r.id,
@@ -61,10 +52,8 @@ export async function startNewLife(playerId, prev, stats) {
 async function notifyReset(playerId, { life, level }) {
   const { rows } = await pool.query('SELECT username, display_name FROM players WHERE id = $1', [playerId])
   if (!rows[0]) return
-  const mainId = await mainIdFor(playerId)
-  if (!mainId) return
-  const ownerId = await ownerOfPlayer(mainId)
-  const followers = (await followersOfPlayer(mainId)).filter((id) => id !== ownerId)
+  const ownerId = await ownerOfPlayer(playerId)
+  const followers = (await followersOfPlayer(playerId)).filter((id) => id !== ownerId)
   const link = `/player/${encodeURIComponent(rows[0].username)}?world=hardcore`
   const key = `hcw-reset:${playerId}:${dayStamp()}`
   const total = Number(level) ? ` at total level ${Number(level).toLocaleString('en-US')}` : ''

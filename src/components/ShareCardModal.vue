@@ -45,6 +45,8 @@ import { SKILL_NAMES } from '@/utils/osrsSkills'
 
 const props = defineProps({
   username: { type: String, required: true },
+  // 'hardcore' to share the name's Hardcore Worlds character.
+  mode: { type: String, default: 'main' },
   initialSkill: { type: String, default: 'Overall' },
 })
 defineEmits(['close'])
@@ -62,7 +64,7 @@ const copyingLive = ref(false)
 const freezing = ref(false)
 
 const periodPhrase = computed(() => ({ day: 'today so far', week: 'the last 7 days', month: 'the last 30 days' })[period.value])
-const previewUrl = computed(() => cardsApi.weeklyImageUrl(props.username, skill.value, period.value))
+const previewUrl = computed(() => cardsApi.weeklyImageUrl(props.username, skill.value, period.value, props.mode))
 
 async function copyToClipboard(url) {
   try {
@@ -76,7 +78,7 @@ async function copyToClipboard(url) {
 function copyLiveLink() {
   track('share_card', { method: 'live', period: period.value, skill: skill.value, item: props.username.toLowerCase() })
   copyingLive.value = true
-  const path = `/player/${encodeURIComponent(props.username)}/card/weekly${cardsApi.cardQuery(skill.value, period.value)}`
+  const path = `/player/${encodeURIComponent(props.username)}/card/weekly${cardsApi.cardQuery(skill.value, period.value, props.mode)}`
   copyToClipboard(`${window.location.origin}${path}`).finally(() => (copyingLive.value = false))
 }
 
@@ -84,7 +86,7 @@ async function copySnapshotLink() {
   track('share_card', { method: 'snapshot', period: period.value, skill: skill.value, item: props.username.toLowerCase() })
   freezing.value = true
   try {
-    const frozen = await cardsApi.freezeWeekly(props.username, skill.value, period.value)
+    const frozen = await cardsApi.freezeWeekly(props.username, skill.value, period.value, props.mode)
     await copyToClipboard(`${window.location.origin}/player/${encodeURIComponent(props.username)}/card/weekly/${frozen.slug}`)
   } catch {
     showToast('Could not create a share link right now.')

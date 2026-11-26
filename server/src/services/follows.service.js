@@ -77,7 +77,7 @@ export async function unfollowPlayer(userId, playerId) {
  */
 export async function setFollows(userId, names) {
   const clean = [...new Set((Array.isArray(names) ? names : []).filter((n) => typeof n === 'string' && NAME_RE.test(n.trim())).map((n) => n.trim().toLowerCase()))].slice(0, SAFETY_MAX)
-  const { rows } = clean.length ? await pool.query("SELECT id FROM players WHERE lower(username) = ANY($1::text[]) AND mode = 'main'", [clean]) : { rows: [] }
+  const { rows } = clean.length ? await pool.query("SELECT DISTINCT ON (lower(username)) id FROM players WHERE lower(username) = ANY($1::text[]) ORDER BY lower(username), (mode = 'main') DESC", [clean]) : { rows: [] }
   const ids = rows.map((r) => r.id)
   await pool.query('DELETE FROM follows WHERE user_id = $1 AND NOT (player_id = ANY($2::int[]))', [userId, ids])
   for (const id of ids) {
@@ -97,7 +97,7 @@ const FEED_DAYS = 30
 export async function getFollowingFeed(rawNames) {
   const names = [...new Set((Array.isArray(rawNames) ? rawNames : []).map((n) => String(n).trim()).filter((n) => NAME_RE.test(n)))].slice(-FEED_MAX)
   if (!names.length) return { players: [], events: [] }
-  const found = await pool.query("SELECT id FROM players WHERE lower(username) = ANY($1::text[]) AND mode = 'main'", [names.map((n) => n.toLowerCase())])
+  const found = await pool.query("SELECT DISTINCT ON (lower(username)) id FROM players WHERE lower(username) = ANY($1::text[]) ORDER BY lower(username), (mode = 'main') DESC", [names.map((n) => n.toLowerCase())])
   const ids = found.rows.map((r) => r.id)
   if (!ids.length) return { players: [], events: [] }
 

@@ -401,11 +401,10 @@ function onSearchBlur() {
 }
 function pickSuggestion(sg) {
   track('search_suggestion_selected', { source: 'planner' })
-  // A name shown with both characters: the row picked says which one the plan is for.
-  const choseWorld = suggestions.value.some((s) => s.username === sg.username && s.mode !== sg.mode)
+  // A name with both characters: the row picked (a suggestion or a recent one) says which one the plan is for.
   suggestions.value = []
   username.value = sg.displayName
-  if (choseWorld) setWorld(sg.mode === 'hardcore' ? 'hardcore' : 'normal')
+  if (sg.hasBoth) setWorld(sg.mode === 'hardcore' ? 'hardcore' : 'normal')
   loadTyped({ force: true })
 }
 

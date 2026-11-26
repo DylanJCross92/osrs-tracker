@@ -163,7 +163,7 @@ export async function listPlayers({ skillGains = false, ids = null, mode = 'main
   const result = await pool.query(
     `
     SELECT p.id, p.username, p.display_name, p.badge, p.created_at, p.last_checked_at, p.mode, p.hardcore_status,
-           EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed,
+           EXISTS (SELECT 1 FROM profile_claims pc JOIN players cp ON cp.id = pc.player_id WHERE cp.username = p.username AND pc.status = 'verified') AS claimed,
            (SELECT extract(epoch from pp.avatar_updated_at)::bigint FROM profile_pages pp WHERE pp.player_id = p.id AND pp.avatar IS NOT NULL) AS avatar_v,
            p.wom_import_status, p.wom_imported_count,
            s.captured_at, s.overall_xp, s.overall_level, s.overall_rank, s.skills, s.life,
@@ -208,12 +208,22 @@ const mapPlayerBase = (row) => ({
   hardcoreStatus: row.hardcore_status || null,
 })
 
-/** A player by RSN. `mode` is 'main' (the default, so every existing caller is unchanged) or 'hardcore' for the Hardcore Worlds character. */
+/**
+ * A player by RSN. By default (`mode` 'main') the name's normal character, or its Hardcore Worlds character when that is the only one tracked, so
+ * everything that works by name (profile pages, follows, claims, goals) also works for a name that only exists on Hardcore Worlds. `mode` 'hardcore' asks
+ * for the Hardcore Worlds character specifically.
+ */
 export async function getPlayerByUsername(username, mode = 'main') {
-  const result = await pool.query(
-    'SELECT id, username, display_name, created_at, mode, hardcore_status FROM players WHERE lower(username) = lower($1) AND mode = $2',
-    [username, cleanMode(mode)],
-  )
+  const result =
+    cleanMode(mode) === 'hardcore'
+      ? await pool.query(
+          "SELECT id, username, display_name, created_at, mode, hardcore_status FROM players WHERE lower(username) = lower($1) AND mode = 'hardcore'",
+          [username],
+        )
+      : await pool.query(
+          "SELECT id, username, display_name, created_at, mode, hardcore_status FROM players WHERE lower(username) = lower($1) ORDER BY (mode = 'main') DESC LIMIT 1",
+          [username],
+        )
   return result.rows[0] ? mapPlayerBase(result.rows[0]) : null
 }
 

@@ -32,11 +32,11 @@
           <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.3-4.3" /></svg>
           <input v-model="query" type="search" name="osrs-player-search" placeholder="Search for a player" autocomplete="off" maxlength="12" @keydown.enter="onEnter" @focus="searchFocused = true" @blur="searchFocused = false" />
         </label>
-        <RecentPlayers v-if="searchFocused && !query.trim()" @pick="(o) => router.push(profileTo(o.username))" />
+        <RecentPlayers v-if="searchFocused && !query.trim()" @pick="(o) => router.push(profileLocation(o))" />
         <ul v-if="suggestions.length || showNewRow" class="search-suggest">
           <li v-if="suggestions.length" class="suggest-head">Tracked players</li>
-          <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink class="suggest-row" :to="profileTo(sg.username)" @click="track('search_suggestion_selected', { source: 'discover' }); recordRecent(sg)"><PlayerSuggestRow :player="sg" /></RouterLink>
+          <li v-for="sg in suggestions" :key="characterKey(sg)">
+            <RouterLink class="suggest-row" :to="profileLocation(sg)" @click="track('search_suggestion_selected', { source: 'discover' }); recordRecent(sg)"><PlayerSuggestRow :player="sg" /></RouterLink>
           </li>
           <li v-if="showNewRow" class="suggest-new">
             <template v-if="addedPlayer">
@@ -345,6 +345,7 @@ import { skillIconSrc, formatXp, SKILL_NAMES } from '@/utils/osrsSkills'
 import { xpAtLevel } from '@/utils/planner'
 import { formatRelative } from '@/utils/time'
 import { track } from '@/utils/analytics'
+import { characterKey, profileLocation } from '@/utils/characters'
 
 setPageMeta({
   title: 'Discover OSRS Players',
@@ -501,7 +502,7 @@ watch(query, (q) => {
   }
   searchTimer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: true })
       if (query.value.trim() === term) {
         suggestions.value = rows
         track('player_search', { player: term, source: 'discover', username_length: term.length, matches: rows.length })

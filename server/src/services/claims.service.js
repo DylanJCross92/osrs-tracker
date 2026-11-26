@@ -47,7 +47,12 @@ const CLAIM_SELECT = `SELECT c.*, p.username, p.display_name, u.email,
   JOIN players p ON p.id = c.player_id JOIN users u ON u.id = c.user_id`
 
 async function ownerRow(playerId) {
-  const { rows } = await pool.query(`SELECT user_id FROM profile_claims WHERE player_id = $1 AND status = 'verified'`, [playerId])
+  // A claim covers the name, so a normal and a Hardcore Worlds character of it have the same owner.
+  const { rows } = await pool.query(
+    `SELECT c.user_id FROM profile_claims c JOIN players p ON p.id = c.player_id
+     WHERE c.status = 'verified' AND p.username = (SELECT username FROM players WHERE id = $1) LIMIT 1`,
+    [playerId],
+  )
   return rows[0] || null
 }
 

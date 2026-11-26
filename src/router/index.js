@@ -51,9 +51,11 @@ const routes = [
     redirect: (to) => {
       const them = to.params.username
       const { me } = useRivals()
-      if (me.value && me.value.toLowerCase() === String(them).toLowerCase()) return { name: 'playerDetail', params: { username: them } }
-      if (me.value) return { name: 'compare', params: { a: me.value, b: them }, query: { from: 'challenge' } }
-      return { name: 'compare', query: { vs: them, from: 'challenge' } }
+      // A challenge from a Hardcore Worlds character (?world=hardcore) compares with that character.
+      const hw = to.query.world === 'hardcore' ? { bw: 'hardcore' } : {}
+      if (me.value && me.value.toLowerCase() === String(them).toLowerCase() && !hw.bw) return { name: 'playerDetail', params: { username: them } }
+      if (me.value) return { name: 'compare', params: { a: me.value, b: them }, query: { from: 'challenge', ...hw } }
+      return { name: 'compare', query: { vs: them, from: 'challenge', ...hw } }
     },
   },
   // Accounts. Logging in, signing up and resetting a password share one view; the account page needs a login.

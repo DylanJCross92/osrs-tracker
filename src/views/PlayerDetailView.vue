@@ -12,28 +12,28 @@
           >
             {{ checkingWomHistory ? 'Checking…' : 'Check for Historical' }}
           </button>
-          <RouterLink v-if="player && !isHardcore" class="btn btn-ghost" :to="compareLink" @click="track('compare_open', { source: 'profile' })">
+          <RouterLink v-if="player" class="btn btn-ghost" :to="compareLink" @click="track('compare_open', { source: 'profile' })">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4" /></svg>
             Compare
           </RouterLink>
-          <button v-if="player && !isHardcore && isProfileOwner" class="btn btn-ghost" type="button" @click="customizeOpen = true">
+          <button v-if="player && isProfileOwner" class="btn btn-ghost" type="button" @click="customizeOpen = true">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z" /></svg>
             Customize
           </button>
-          <button v-if="player && !isHardcore && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" :title="loggedIn || isFollowing(player.displayName) ? '' : 'Following needs a free account'" @click="toggleFollow">
+          <button v-if="player && !isProfileOwner" class="btn btn-ghost" :class="{ 'is-following': isFollowing(player.displayName) }" type="button" :aria-pressed="isFollowing(player.displayName)" :title="loggedIn || isFollowing(player.displayName) ? '' : 'Following needs a free account'" @click="toggleFollow">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.6-9.3-9.1C1.1 8.7 3 5 6.4 5c2 0 3.4 1.1 4.2 2.4h2.8C14.2 6.1 15.6 5 17.6 5 21 5 22.9 8.7 21.3 11.9 19 16.4 12 21 12 21z" /></svg>
             {{ isFollowing(player.displayName) ? 'Following' : 'Follow' }}
             <svg v-if="!loggedIn && !isFollowing(player.displayName)" class="btn-lock" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Needs a free account"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
           </button>
-          <button v-if="player && !isHardcore && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
+          <button v-if="player && claim && !claim.claimed" class="btn btn-ghost" @click="openClaim">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5l8-3z" /><path d="M9 12l2 2 4-4" /></svg>
             {{ claim.mine === 'pending' ? 'Finish claim' : 'Claim' }}
           </button>
-          <button v-if="!isHardcore" class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
+          <button class="btn btn-ghost" :disabled="!player" @click="openChallenge('header')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5L18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2" /></svg>
             Challenge
           </button>
-          <button v-if="!isHardcore" class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
+          <button class="btn btn-ghost" :disabled="!player" @click="shareModalOpen = true; track('share_card_open')">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
             Share
           </button>
@@ -95,9 +95,9 @@
   <GoalShareModal v-if="shareGoal && player" :username="player.username" :display-name="player.displayName" :goal="shareGoal" @close="shareGoal = null" />
   <CustomizeProfileModal v-if="customizeOpen && player && isProfileOwner" :username="player.username" :page="page" :achievements="profile?.achievements || []" @saved="(p) => (page = p)" @close="customizeOpen = false" />
   <ClaimProfileModal v-if="claimOpen && player && claim" :username="player.username" :display-name="player.displayName" :state="claim" :logged-in="loggedIn" @update="(c) => (claim = c)" @close="claimOpen = false" />
-  <ChallengeModal v-if="challengeOpen && player" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
+  <ChallengeModal v-if="challengeOpen && player" :mode="isHardcore ? 'hardcore' : 'main'" :username="player.username" :display-name="player.displayName" :week-xp="weekGainXp" :source="challengeSource" @close="challengeOpen = false" />
   <Level99ShareModal v-if="share99Skill && player" :username="player.username" :display-name="player.displayName" :skill="share99Skill" :preview="fakeNinetyNine.length > 0" @close="share99Skill = ''" />
-  <ShareCardModal v-if="shareModalOpen && player" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
+  <ShareCardModal v-if="shareModalOpen && player" :mode="isHardcore ? 'hardcore' : 'main'" :username="player.username" :initial-skill="shareSkill" @close="shareModalOpen = false" />
 
   <ProfileCelebrations v-if="player && shownCelebrations.length" :player-id="player.id" :name="player.displayName" :celebrations="shownCelebrations" @share="openShare" @share99="(skill) => (share99Skill = skill)" />
 
@@ -438,9 +438,13 @@ const { me: myName } = useRivals()
 const compareLink = computed(() => {
   const name = player.value?.username || usernameParam.value
   const mine = myName.value
-  return mine && mine.toLowerCase() !== name.toLowerCase()
-    ? `/compare/${encodeURIComponent(mine)}/${encodeURIComponent(name)}`
-    : `/compare/${encodeURIComponent(name)}`
+  const enc = encodeURIComponent
+  // Comparing a Hardcore Worlds character: it is the second player (bw=hardcore); on its own it is the first (aw=hardcore).
+  if (isHardcore.value) {
+    if (mine) return `/compare/${enc(mine)}/${enc(name)}?bw=hardcore`
+    return `/compare/${enc(name)}?aw=hardcore`
+  }
+  return mine && mine.toLowerCase() !== name.toLowerCase() ? `/compare/${enc(mine)}/${enc(name)}` : `/compare/${enc(name)}`
 })
 
 const isImportingWomHistory = computed(

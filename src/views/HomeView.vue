@@ -29,8 +29,8 @@
         <RecentPlayers v-if="searchFocused && !newUsername.trim()" class="home-suggest" @pick="openRecent" />
         <ul v-if="suggestions.length" class="search-suggest home-suggest">
           <li class="suggest-head">Already tracked</li>
-          <li v-for="sg in suggestions" :key="sg.username">
-            <RouterLink class="suggest-row" :to="{ name: 'playerDetail', params: { username: sg.username } }" @click="track('search_suggestion_selected', { source: 'home' }); recordRecent(sg)">
+          <li v-for="sg in suggestions" :key="characterKey(sg)">
+            <RouterLink class="suggest-row" :to="profileLocation(sg)" @click="track('search_suggestion_selected', { source: 'home' }); recordRecent(sg)">
               <PlayerSuggestRow :player="sg" />
             </RouterLink>
           </li>
@@ -237,6 +237,7 @@ import { recordRecent } from '@/composables/useRecentPlayers'
 import { playersApi } from '@/api/players'
 import { api } from '@/api/client'
 import { track } from '@/utils/analytics'
+import { characterKey, profileLocation } from '@/utils/characters'
 import CheerPill from '@/components/CheerPill.vue'
 import HomePreview from '@/components/home/HomePreview.vue'
 
@@ -400,7 +401,7 @@ watch(
 const searchFocused = ref(false)
 function openRecent(o) {
   track('search_suggestion_selected', { source: 'home_recent' })
-  router.push({ name: 'playerDetail', params: { username: o.username } })
+  router.push(profileLocation(o))
 }
 
 // Typeahead: partial, case-insensitive matches among already-tracked players.
@@ -420,7 +421,7 @@ watch(newUsername, (q) => {
   }
   suggestTimer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: true })
       if ((newUsername.value || '').trim() === term) {
         suggestions.value = rows
         if (rows.length) track('search_suggestions_shown', { source: 'home', count: rows.length })

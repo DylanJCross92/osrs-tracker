@@ -68,7 +68,7 @@ export async function recentPlayers(limit = 25) {
   const [{ rows }, { rows: total }] = await Promise.all([
     pool.query(
       `SELECT p.username, p.display_name, p.badge, p.created_at, p.mode, s.overall_level, s.overall_xp,
-              EXISTS (SELECT 1 FROM profile_claims pc WHERE pc.player_id = p.id AND pc.status = 'verified') AS claimed
+              EXISTS (SELECT 1 FROM profile_claims pc JOIN players cp ON cp.id = pc.player_id WHERE cp.username = p.username AND pc.status = 'verified') AS claimed
        FROM players p
        LEFT JOIN LATERAL (SELECT overall_level, overall_xp FROM snapshots WHERE player_id = p.id ORDER BY captured_at DESC LIMIT 1) s ON true
        WHERE ${COUNTED_PLAYER}

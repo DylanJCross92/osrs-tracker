@@ -14,6 +14,7 @@ import { authRouter } from './routes/auth.routes.js'
 import { claimsRouter } from './routes/claims.routes.js'
 import { notificationsRouter } from './routes/notifications.routes.js'
 import { challengesRouter } from './routes/challenges.routes.js'
+import { wantedMode } from './routes/cards.routes.js'
 import { followsRouter } from './routes/follows.routes.js'
 import { profilePagesRouter } from './routes/profilePages.routes.js'
 import { goalsRouter } from './routes/goals.routes.js'
@@ -222,8 +223,11 @@ if (distExists) {
   // name, level, and recent gains instead of the generic site description.
   app.get('/player/:username', async (req, res, next) => {
     try {
-      const player = await getPlayerByUsername(req.params.username)
+      const player = await getPlayerByUsername(req.params.username, wantedMode(req))
       if (!player) return res.sendFile(path.join(distPath, 'index.html'))
+      // A Hardcore Worlds character is its own page (?world=hardcore) with its own card and title.
+      const hw = player.mode === 'hardcore'
+      const worldQuery = hw ? '?world=hardcore' : ''
 
       // One canonical URL per player: /player/dylanz297 and /player/Dylanz297
       // must not be two indexable pages, so any other casing redirects.
@@ -236,12 +240,12 @@ if (distExists) {
         getWeeklyCardData(player.id, 'Overall').catch(() => null),
       ])
 
-      const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}`
+      const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}${worldQuery}`
       // The preview picture is drawn per player (see services/profileCard.service.js). The ?v= changes with every new
       // snapshot and picture, so Discord and X fetch a fresh one instead of showing an old copy.
       const version = latest ? `${new Date(latest.capturedAt).getTime()}` : ''
       const imageUrl = latest
-        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/profile/image.png?v=${version}`
+        ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/profile/image.png?v=${version}${hw ? '&mode=hardcore' : ''}`
         : `${SITE_URL}/og-default.png`
 
       let description = `Explore ${player.displayName}'s Old School RuneScape stats, XP history, achievements, and progression on TickGains.`
@@ -258,7 +262,7 @@ if (distExists) {
       res.send(
         injectCardMeta(indexHtmlTemplate, {
           // No level or other changing number in the title: analytics groups page views by title, so one profile must always have the same one.
-          title: `${player.displayName} | OSRS Player Profile | TickGains`,
+          title: `${player.displayName} | OSRS ${hw ? 'Hardcore Worlds ' : ''}Player Profile | TickGains`,
           description,
           imageUrl,
           pageUrl,
@@ -400,7 +404,7 @@ if (distExists) {
   // Challenge pages are noindex, they exist to be sent to a friend.
   app.get('/challenge/:username', async (req, res, next) => {
     try {
-      const player = await getPlayerByUsername(req.params.username)
+      const player = await getPlayerByUsername(req.params.username, wantedMode(req))
       if (!player) return res.sendFile(path.join(distPath, 'index.html'))
       const weekly = await getWeeklyCardData(player.id, 'Overall', 'week').catch(() => null)
       const name = player.displayName
@@ -411,8 +415,8 @@ if (distExists) {
           description: gained
             ? `${name} gained ${formatXp(weekly.xpGained)} XP in Old School RuneScape this week. Think you can beat it? Compare your week head to head on TickGains, no sign-up needed.`
             : `${name} is challenging you in Old School RuneScape. Compare your stats head to head on TickGains, no sign-up needed.`,
-          imageUrl: weekly ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/challenge/image.png` : `${SITE_URL}/og-default.png`,
-          pageUrl: `${SITE_URL}/challenge/${encodeURIComponent(player.username)}`,
+          imageUrl: weekly ? `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/challenge/image.png${player.mode === 'hardcore' ? '?mode=hardcore' : ''}` : `${SITE_URL}/og-default.png`,
+          pageUrl: `${SITE_URL}/challenge/${encodeURIComponent(player.username)}${player.mode === 'hardcore' ? '?world=hardcore' : ''}`,
           noindex: true,
         }),
       )
@@ -969,7 +973,7 @@ if (distExists) {
 
   app.get('/player/:username/card/weekly', async (req, res, next) => {
     try {
-      const player = await getPlayerByUsername(req.params.username)
+      const player = await getPlayerByUsername(req.params.username, wantedMode(req))
       if (!player) return res.sendFile(path.join(distPath, 'index.html'))
 
       const skill = req.query.skill
@@ -978,6 +982,7 @@ if (distExists) {
       const qs = new URLSearchParams()
       if (data && data.skill !== 'Overall') qs.set('skill', data.skill)
       if (period !== 'week') qs.set('period', period)
+      if (player.mode === 'hardcore') qs.set('mode', 'hardcore')
       const skillQuery = qs.toString() ? `?${qs.toString()}` : ''
       const pageUrl = `${SITE_URL}/player/${encodeURIComponent(player.username)}/card/weekly${skillQuery}`
       const imageUrl = `${SITE_URL}/api/players/${encodeURIComponent(player.username)}/card/weekly/image.png${skillQuery}`

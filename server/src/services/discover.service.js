@@ -295,6 +295,15 @@ export async function searchPlayers(rawQuery, { both = false } = {}) {
   // Level, XP, rank and this week's gain come from the same query the rest of the site uses, so a suggestion can
   // never disagree with the player's own page.
   const detail = new Map((await listPlayers({ ids: rows.map((r) => r.id) })).map((p) => [p.id, p]))
+  // A claim is on the name, not a character: either character of a claimed name counts as claimed.
+  const claimedNames = new Set(
+    (
+      await pool.query(
+        `SELECT DISTINCT p.username FROM profile_claims c JOIN players p ON p.id = c.player_id WHERE c.status = 'verified' AND p.username = ANY($1::text[])`,
+        [rows.map((r) => r.username)],
+      )
+    ).rows.map((r) => r.username),
+  )
   return rows.map((r) => {
     const d = detail.get(r.id)
     const latest = d?.latest
@@ -308,7 +317,7 @@ export async function searchPlayers(rawQuery, { both = false } = {}) {
       // The name has a character on both the normal and the Hardcore Worlds hiscores (only set when both rows are asked for).
       hasBoth: both && rows.some((o) => o.username === r.username && o.id !== r.id),
       badge: r.badge,
-      claimed: Boolean(d?.claimed),
+      claimed: Boolean(d?.claimed) || claimedNames.has(r.username),
       overallLevel: latest?.overallLevel ?? null,
       overallXp: latest?.overallXp ?? null,
       overallRank: latest?.overallRank > 0 ? latest.overallRank : null,

@@ -10,7 +10,8 @@
       <form class="cmp-form" @submit.prevent="submit">
         <label class="cmp-field cmp-field-a">
           <i class="cmp-key cmp-key-a" aria-hidden="true" />
-          <input ref="elA" v-model="inputA" type="search" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" aria-autocomplete="list" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true" @keydown="onKey('a', $event)" />
+          <input ref="elA" v-model="inputA" type="search" maxlength="12" placeholder="Player one" aria-label="First player" autocomplete="off" name="rsn-one" role="combobox" aria-autocomplete="list" :aria-expanded="focused === 'a' && options.length > 0" @focus="openList('a')" @blur="closeList('a')" @input="typed.a = true; modeA = 'main'" @keydown="onKey('a', $event)" />
+          <HardcoreTag v-if="shownMode('a') === 'hardcore'" short />
           <CompareSuggest v-if="focused === 'a' && (options.length || newNameFor('a'))" :options="options" :heading="heading" :active="hi" :new-name="newNameFor('a')" :adding="adding" :error="failed.k === 'a' ? failed.message : ''" @pick="pick('a', $event)" @hover="hi = $event" @remove="removeRecentPlayer" @track="trackNew('a')" />
         </label>
         <button type="button" class="cmp-swap" aria-label="Swap the two players" title="Swap players" @click="swapInputs">
@@ -19,7 +20,8 @@
         </button>
         <label class="cmp-field cmp-field-b">
           <i class="cmp-key cmp-key-b" aria-hidden="true" />
-          <input ref="elB" v-model="inputB" type="search" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true" @keydown="onKey('b', $event)" />
+          <input ref="elB" v-model="inputB" type="search" maxlength="12" placeholder="Player two" aria-label="Second player" autocomplete="off" name="rsn-two" role="combobox" :aria-expanded="focused === 'b' && options.length > 0" @focus="openList('b')" @blur="closeList('b')" @input="typed.b = true; modeB = 'main'" @keydown="onKey('b', $event)" />
+          <HardcoreTag v-if="shownMode('b') === 'hardcore'" short />
           <CompareSuggest v-if="focused === 'b' && (options.length || newNameFor('b'))" :options="options" :heading="heading" :active="hi" :new-name="newNameFor('b')" :adding="adding" :error="failed.k === 'b' ? failed.message : ''" class="cmp-suggest-right" @pick="pick('b', $event)" @hover="hi = $event" @remove="removeRecentPlayer" @track="trackNew('b')" />
         </label>
         <button class="btn btn-primary cmp-go" type="submit" :disabled="!canSubmit || adding">{{ adding ? 'Checking…' : 'Compare' }}</button>
@@ -61,7 +63,7 @@
             <div class="cmp-head-grid">
               <div v-for="s in [sideA, sideB]" :key="s.key" class="cmp-player" :class="{ 'is-lead': leader === s.key }">
                 <span class="cb-wrap"><span class="cmp-avatar" aria-hidden="true"><PlayerAvatar :name="s.player.username" /></span><CombatBadge :skills="s.latest?.skills" size="sm" /></span>
-                <RouterLink class="cmp-name" :to="{ name: 'playerDetail', params: { username: s.player.username } }">{{ s.player.displayName }}</RouterLink>
+                <RouterLink class="cmp-name" :to="{ name: 'playerDetail', params: { username: s.player.username }, ...(s.player.mode === 'hardcore' ? { query: { world: 'hardcore' } } : {}) }">{{ s.player.displayName }}</RouterLink><HardcoreTag v-if="s.player.mode === 'hardcore'" short />
                 <span class="cmp-meta"><OverallLevel :level="s.latest.overallLevel" /> · {{ formatXp(s.latest.overallXp) }} XP</span>
                 <span v-if="leader === s.key" class="cmp-crown">Ahead {{ periodPhrase }}</span>
               </div>
@@ -92,7 +94,7 @@
             </div>
             <div class="cmp-actions">
               <button class="btn btn-ghost" @click="copyLink">Copy link</button>
-              <RouterLink class="btn btn-ghost" :to="pairLink(sideB.player.username, sideA.player.username)">Swap</RouterLink>
+              <RouterLink class="btn btn-ghost" :to="pairLink(sideB.player.username, sideA.player.username, sideB.player.mode, sideA.player.mode)">Swap</RouterLink>
               <button v-if="!isMe(sideA.player.username) && !profiles.length" class="btn btn-ghost" @click="iAm(sideA.player.displayName)">I am {{ sideA.player.displayName }}</button>
               <button v-if="!isMe(sideB.player.username)" class="btn btn-ghost" @click="toggleRival(sideB.player.displayName)">{{ isFollowing(sideB.player.displayName) ? `Unfollow ${sideB.player.displayName}` : `Follow ${sideB.player.displayName}` }}</button>
             </div>
@@ -141,6 +143,8 @@ import CompareDays from '@/components/compare/CompareDays.vue'
 import CompareTape from '@/components/compare/CompareTape.vue'
 import CompareHighlights from '@/components/compare/CompareHighlights.vue'
 import CompareSkills from '@/components/compare/CompareSkills.vue'
+import HardcoreTag from '@/components/HardcoreTag.vue'
+import { ensureHardcoreLoaded, findCharacter, sameCharacter } from '@/utils/characters'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,6 +163,21 @@ const PERIODS = [
 const PHRASE = { day: 'today', week: 'in the last 7 days', month: 'in the last 30 days' }
 const periodPhrase = computed(() => PHRASE[period.value])
 
+// Which character of each name is compared: a name can have a normal and a Hardcore Worlds one (?aw=hardcore, ?bw=hardcore).
+const modeOfQuery = (v) => (v === 'hardcore' ? 'hardcore' : 'main')
+const modeA = ref(modeOfQuery(route.query.aw))
+const modeB = ref(modeOfQuery(route.query.bw))
+const modeRef = (k) => (k === 'a' ? modeA : modeB)
+// What a box shows: the character picked, or (for a name that only exists on Hardcore Worlds) the one the comparison loaded for what is typed there.
+const shownMode = (k) => {
+  if (modeRef(k).value === 'hardcore') return 'hardcore'
+  const side = k === 'a' ? sideA : sideB
+  return side.player?.mode === 'hardcore' && side.name.toLowerCase() === (k === 'a' ? inputA : inputB).value.trim().toLowerCase() ? 'hardcore' : 'main'
+}
+watch(() => [route.query.aw, route.query.bw], ([aw, bw]) => {
+  modeA.value = modeOfQuery(aw)
+  modeB.value = modeOfQuery(bw)
+})
 const nameA = computed(() => String(route.params.a || '').trim())
 const nameB = computed(() => String(route.params.b || '').trim())
 const hasNames = computed(() => !!(nameA.value && nameB.value))
@@ -173,7 +192,8 @@ const inputB = ref(nameB.value || String(route.query.vs || ''))
 const canSubmit = computed(() => {
   const a = inputA.value.trim()
   const b = inputB.value.trim()
-  return !!a && !!b && a.toLowerCase() !== b.toLowerCase()
+  // The same name can be compared with itself when it is a normal and a Hardcore Worlds character.
+  return !!a && !!b && (a.toLowerCase() !== b.toLowerCase() || modeA.value !== modeB.value)
 })
 
 // Your own name is filled into the first box. It can change after the page opens (the account's verified profile is read a
@@ -205,13 +225,17 @@ const adding = ref(false)
 const failed = reactive({ k: '', name: '', message: '' })
 const clearFailed = () => Object.assign(failed, { k: '', name: '', message: '' })
 let searchTimer = null
+let foundFor = ''
 const inputOf = (k) => (k === 'a' ? inputA : inputB)
 const termOf = (k) => inputOf(k).value.trim()
 const otherName = (k) => (k === 'a' ? inputB : inputA).value.trim().toLowerCase()
+const otherMode = (k) => (k === 'a' ? modeB : modeA).value
 const asOption = (p) => {
-  const tracked = store.players.find((x) => x.username.toLowerCase() === p.username.toLowerCase())
+  const tracked = findCharacter(store, p.username, p.mode === 'hardcore' ? 'hardcore' : 'main') || store.players.find((x) => x.username.toLowerCase() === p.username.toLowerCase())
   return {
     username: p.username,
+    mode: p.mode === 'hardcore' ? 'hardcore' : 'main',
+    hasBoth: !!p.hasBoth,
     displayName: p.displayName || p.username,
     badge: p.badge ?? tracked?.badge ?? null,
     overallLevel: p.overallLevel ?? tracked?.latest?.overallLevel ?? null,
@@ -231,7 +255,10 @@ const { options: recentOptions, remove: removeRecentPlayer } = useRecentPlayers(
 const options = computed(() => {
   if (!focused.value) return []
   const skip = otherName(focused.value)
-  const ok = (o) => o.username.toLowerCase() !== skip
+  const skipMode = otherMode(focused.value)
+  // The player already in the other box is left out, but their other character is still offered.
+  // A name with only one character is left out whichever side the other box has; a name with both still offers the other character.
+  const ok = (o) => !(o.username.toLowerCase() === skip && (!o.hasBoth || (o.mode === 'hardcore' ? 'hardcore' : 'main') === skipMode))
   if (typing.value) return found.value.map(asOption).filter(ok).slice(0, 6)
   // Empty box: your recent players first, then the biggest recent gainers to fill the list.
   const recents = recentOptions.value.filter(ok)
@@ -244,6 +271,10 @@ const heading = computed(() => (typing.value ? 'Matching players' : 'Recommended
 function openList(k) {
   focused.value = k
   hi.value = -1
+  // The matches belong to the box they were searched for: switching boxes starts with what is already typed in this one (and keeps the
+  // matches already found for exactly that text, so the list does not blink empty while they are fetched again).
+  if (foundFor !== `${k}:${termOf(k)}`) found.value = []
+  onType(k)
   if (!store.loaded) store.loadPlayers().catch(() => {})
 }
 function closeList(k) {
@@ -252,7 +283,12 @@ function closeList(k) {
   }, 120)
 }
 function onType(k) {
-  if (focused.value !== k) return
+  // Picking a player closes the list but leaves the cursor in the box, so typing there again has to open it again.
+  if (focused.value !== k) {
+    const el = k === 'a' ? elA.value : elB.value
+    if (el && document.activeElement === el && typed[k]) focused.value = k
+    else return
+  }
   hi.value = -1
   clearTimeout(searchTimer)
   searched.value = false
@@ -263,9 +299,10 @@ function onType(k) {
   }
   searchTimer = setTimeout(async () => {
     try {
-      const rows = await playersApi.search(term)
+      const rows = await playersApi.search(term, { both: true })
       if (focused.value === k && termOf(k) === term) {
         found.value = rows
+        foundFor = `${k}:${term}`
         searched.value = true
       }
     } catch {
@@ -325,12 +362,19 @@ function pick(k, o) {
   if (typing.value || o.recent) recordRecent(o)
   typed[k] = false
   inputOf(k).value = o.displayName
+  modeRef(k).value = o.mode === 'hardcore' ? 'hardcore' : 'main'
   found.value = []
   focused.value = ''
   track('compare_suggestion_selected', { side: k, source: typing.value ? 'search' : o.recent ? 'recent' : 'recommended' })
   // Move on to the other box when it is still empty, so picking two players takes two taps.
   const next = k === 'a' ? elB : elA
   if (!inputOf(k === 'a' ? 'b' : 'a').value.trim()) next.value?.focus()
+  // A comparison is already on screen and this pick changes it (a different player, or the same name's other character, which looks the same in the box): show it
+  // straight away instead of waiting for Compare.
+  else if (hasNames.value && canSubmit.value && (inputOf(k).value.trim().toLowerCase() !== (k === 'a' ? nameA : nameB).value.toLowerCase() || modeRef(k).value !== modeOfQuery(k === 'a' ? route.query.aw : route.query.bw))) {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    nextTick(submit)
+  }
 }
 function onKey(k, e) {
   const n = options.value.length
@@ -349,13 +393,20 @@ function onKey(k, e) {
 }
 
 const enc = encodeURIComponent
-const pairLink = (a, b) => `/compare/${enc(a)}/${enc(b)}`
+// aw / bw: which character of each name, only written for a Hardcore Worlds one.
+const pairLink = (a, b, aw = 'main', bw = 'main') => {
+  const q = [aw === 'hardcore' ? 'aw=hardcore' : '', bw === 'hardcore' ? 'bw=hardcore' : ''].filter(Boolean).join('&')
+  return `/compare/${enc(a)}/${enc(b)}${q ? `?${q}` : ''}`
+}
 const rivalLink = (r) => (me.value && me.value.toLowerCase() !== r.toLowerCase() ? pairLink(me.value, r) : `/compare/${enc(r)}`)
 
 function swapInputs() {
   const a = inputA.value
   inputA.value = inputB.value
   inputB.value = a
+  const m = modeA.value
+  modeA.value = modeB.value
+  modeB.value = m
 }
 
 async function submit() {
@@ -383,7 +434,10 @@ async function submit() {
     if (hit) recordRecent(hit)
     typed[k] = false
   }
-  router.push({ path: pairLink(inputA.value.trim(), inputB.value.trim()), query: fromChallenge.value ? { from: 'challenge' } : {} })
+  router.push({
+    path: `/compare/${enc(inputA.value.trim())}/${enc(inputB.value.trim())}`,
+    query: { ...(modeA.value === 'hardcore' ? { aw: 'hardcore' } : {}), ...(modeB.value === 'hardcore' ? { bw: 'hardcore' } : {}), ...(fromChallenge.value ? { from: 'challenge' } : {}) },
+  })
 }
 
 // A few real matchups for first-time visitors: the biggest recent gainers, paired off.
@@ -406,7 +460,11 @@ const tracking = ref('')
 let runId = 0
 
 
-const findPlayer = (name) => store.players.find((p) => p.username.toLowerCase() === name.toLowerCase()) ?? null
+const findPlayer = (name, mode = 'main') => {
+  const hit = findCharacter(store, name, mode === 'hardcore' ? 'hardcore' : 'main')
+  // A name with no normal character that is tracked on Hardcore Worlds is compared as that character.
+  return hit ?? (mode === 'main' ? findCharacter(store, name, 'hardcore') : null)
+}
 
 function applySnapshots(side, snaps) {
   side.snaps = snaps
@@ -418,17 +476,23 @@ function applySnapshots(side, snaps) {
 
 async function loadSide(key, name, id) {
   const side = sideOf(key)
-  Object.assign(side, emptySide(key), { name, status: 'loading' })
-  const player = findPlayer(name)
+  // The characters being compared are the ones in the address; the boxes only change it when the form is submitted.
+  const mode = modeOfQuery(key === 'a' ? route.query.aw : route.query.bw)
+  const player = findPlayer(name, mode)
+  // Only the first load shows the skeleton: when a comparison is already on screen it stays until the new one is ready, so switching players
+  // swaps the page in one go instead of flashing empty.
+  if (side.status !== 'ready') Object.assign(side, emptySide(key), { name, status: 'loading' })
   if (!player) {
-    side.status = 'untracked'
+    Object.assign(side, emptySide(key), { name, status: 'untracked' })
     return
   }
-  side.player = player
   try {
-    applySnapshots(side, await store.fetchSnapshots(player.id))
+    const snaps = await store.fetchSnapshots(player.id)
+    if (id !== runId) return
+    Object.assign(side, emptySide(key), { name, player })
+    applySnapshots(side, snaps)
   } catch {
-    side.status = 'untracked'
+    Object.assign(side, emptySide(key), { name, status: 'untracked' })
     showToast(`Could not load ${name}.`)
     return
   }
@@ -436,8 +500,10 @@ async function loadSide(key, name, id) {
   try {
     await store.refreshPlayer(player.id)
     if (id !== runId) return
-    side.player = findPlayer(name) || side.player
-    applySnapshots(side, await store.fetchSnapshots(player.id))
+    const fresh = await store.fetchSnapshots(player.id)
+    if (id !== runId) return
+    side.player = findPlayer(name, mode) || side.player
+    applySnapshots(side, fresh)
   } catch {
     // Non-fatal, the saved data is already on screen.
   }
@@ -452,6 +518,7 @@ async function loadBoth() {
     return
   }
   if (!store.loaded) await store.loadPlayers().catch(() => {})
+  await ensureHardcoreLoaded(store)
   await Promise.all([loadSide('a', nameA.value, id), loadSide('b', nameB.value, id)])
   if (id === runId) {
     track('compare_view', { both_tracked: sideA.status === 'ready' && sideB.status === 'ready' })
@@ -461,7 +528,7 @@ async function loadBoth() {
 }
 
 watch(
-  [nameA, nameB],
+  [nameA, nameB, () => route.query.aw, () => route.query.bw],
   () => {
     inputA.value = nameA.value || inputA.value
     inputB.value = nameB.value || String(route.query.vs || '')

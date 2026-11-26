@@ -42,6 +42,7 @@ const username = computed(() => route.params.username)
 const slug = computed(() => route.params.slug || null)
 const isFrozen = computed(() => Boolean(slug.value))
 const skillParam = computed(() => route.query.skill || 'Overall')
+const modeParam = computed(() => (route.query.mode === 'hardcore' ? 'hardcore' : 'main'))
 const periodParam = computed(() => (['day', 'month'].includes(route.query.period) ? route.query.period : 'week'))
 const PERIOD_ADJ = { day: 'Daily', week: 'Weekly', month: 'Monthly' }
 const PERIOD_PHRASE = { day: 'today', week: 'this week', month: 'in the last 30 days' }
@@ -54,7 +55,7 @@ const copied = ref(false)
 const skillSuffix = computed(() => (card.value?.skill && card.value.skill !== 'Overall' ? ` ${card.value.skill}` : ''))
 
 const imageUrl = computed(() =>
-  isFrozen.value ? cardsApi.frozenImageUrl(slug.value) : cardsApi.weeklyImageUrl(username.value, skillParam.value, periodParam.value),
+  isFrozen.value ? cardsApi.frozenImageUrl(slug.value) : cardsApi.weeklyImageUrl(username.value, skillParam.value, periodParam.value, modeParam.value),
 )
 const canNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function'
 
@@ -62,7 +63,7 @@ onMounted(async () => {
   try {
     card.value = isFrozen.value
       ? await cardsApi.getFrozen(slug.value)
-      : await cardsApi.getWeeklyData(username.value, skillParam.value, periodParam.value)
+      : await cardsApi.getWeeklyData(username.value, skillParam.value, periodParam.value, modeParam.value)
   } catch {
     card.value = null
   } finally {
@@ -70,7 +71,7 @@ onMounted(async () => {
   }
 
   if (card.value) {
-    const skillQuery = cardsApi.cardQuery(card.value.skill, cardPeriod.value)
+    const skillQuery = cardsApi.cardQuery(card.value.skill, cardPeriod.value, modeParam.value)
     setPageMeta({
       title: `${card.value.displayName}'s ${PERIOD_ADJ[cardPeriod.value]}${skillSuffix.value} XP Gains`,
       description: `${card.value.displayName} gained ${formatXp(card.value.xpGained)}${skillSuffix.value} XP ${PERIOD_PHRASE[cardPeriod.value]} on TickGains.`,

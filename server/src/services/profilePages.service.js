@@ -11,7 +11,7 @@ export class PageError extends Error {
 
 /** Whether this account owns this profile (a verified claim). */
 export async function isOwner(userId, playerId) {
-  const { rows } = await pool.query(`SELECT 1 FROM profile_claims WHERE user_id = $1 AND player_id = $2 AND status = 'verified'`, [userId, playerId])
+  const { rows } = await pool.query(`SELECT 1 FROM profile_claims c JOIN players p ON p.id = c.player_id WHERE c.user_id = $1 AND c.status = 'verified' AND p.username = (SELECT username FROM players WHERE id = $2)`, [userId, playerId])
   return rows.length > 0
 }
 

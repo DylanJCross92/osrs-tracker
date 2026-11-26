@@ -33,6 +33,8 @@ import { track } from '@/utils/analytics'
 
 const props = defineProps({
   username: { type: String, required: true },
+  // 'hardcore' to challenge as the name's Hardcore Worlds character.
+  mode: { type: String, default: 'main' },
   displayName: { type: String, required: true },
   // XP gained in the last 7 days, for the message. 0 when unknown.
   weekXp: { type: Number, default: 0 },
@@ -43,8 +45,8 @@ const { showToast } = useToast()
 
 const copyingImage = ref(false)
 
-const imageUrl = computed(() => challengeImageUrl(props.username))
-const link = computed(() => challengeUrl(props.username))
+const imageUrl = computed(() => challengeImageUrl(props.username, props.mode))
+const link = computed(() => challengeUrl(props.username, props.mode))
 const text = computed(() => challengeText(props.displayName, props.weekXp))
 const xUrl = computed(() => `https://twitter.com/intent/tweet?text=${encodeURIComponent(text.value)}&url=${encodeURIComponent(link.value)}&hashtags=OSRS,OldSchoolRuneScape`)
 const redditUrl = computed(() => `https://www.reddit.com/submit?url=${encodeURIComponent(link.value)}&title=${encodeURIComponent(text.value)}`)
