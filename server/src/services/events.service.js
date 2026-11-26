@@ -1,7 +1,7 @@
 import { pool } from '../db.js'
 import { RETENTION_DAYS, askedNotToTrack, summarizeBreakdown, summarizeEvents } from '../utils/events.js'
 import { fillDailyActive } from '../utils/dailyActive.js'
-import { ANON_KEY, buildJourney, parsePersonKey } from '../utils/journeys.js'
+import { ANON_KEY, INTERACTION_EVENT, buildJourney, parsePersonKey, silentVisitor } from '../utils/journeys.js'
 import { hasRole } from '../utils/roles.js'
 import { SQL_STATS_TODAY, statsDay } from '../utils/statsDay.js'
 import { describeOwners, findPlanOwners } from '../utils/planMatch.js'
@@ -59,8 +59,9 @@ export async function visitors(days) {
   const { rows } = await pool.query(
     `SELECT CASE WHEN ${PERSON} IS NOT NULL THEN 'a:' || ${PERSON} ELSE 'v:' || e.visitor_id END AS key,
             ${PERSON} AS account_id,
-            count(*)::int AS events,
+            count(*) FILTER (WHERE e.name <> '${INTERACTION_EVENT}')::int AS events,
             count(*) FILTER (WHERE e.name = 'spa_page_view')::int AS pages,
+            bool_or(e.name = '${INTERACTION_EVENT}') AS interacted,
             min(e.at) AS first, max(e.at) AS last
      FROM events e LEFT JOIN visitor_links l ON l.visitor_id = e.visitor_id
      WHERE e.at > now() - $1::int * interval '1 day' AND (e.visitor_id IS NOT NULL OR e.account_id IS NOT NULL)
@@ -69,6 +70,7 @@ export async function visitors(days) {
      LIMIT 150`,
     [days],
   )
+  const shipAt = await interactionShipped()
   const ids = rows.filter((r) => r.account_id).map((r) => r.account_id)
   const who = new Map()
   if (ids.length) {
@@ -82,7 +84,7 @@ export async function visitors(days) {
     for (const a of accounts) who.set(a.id, a)
   }
   const { rows: anon } = await pool.query(
-    `SELECT count(*)::int AS events, count(*) FILTER (WHERE name = 'spa_page_view')::int AS pages, min(at) AS first, max(at) AS last
+    `SELECT count(*) FILTER (WHERE name <> '${INTERACTION_EVENT}')::int AS events, count(*) FILTER (WHERE name = 'spa_page_view')::int AS pages, min(at) AS first, max(at) AS last
      FROM events WHERE at > now() - $1::int * interval '1 day' AND visitor_id IS NULL AND account_id IS NULL`,
     [days],
   )
@@ -102,6 +104,7 @@ export async function visitors(days) {
         pages: r.pages,
         first: new Date(r.first).toISOString(),
         last: new Date(r.last).toISOString(),
+        silent: silentVisitor({ interacted: r.interacted, first: r.first, shipAt, kind: r.account_id ? 'account' : 'visitor' }),
       }
     })].sort((a, b) => new Date(b.last) - new Date(a.last)),
   }
@@ -160,14 +163,22 @@ export async function journeyOf(key, days) {
   ])
   await addPlanOwners(rows, key)
   const a = info[0]
+  const journey = buildJourney(rows, days, today())
   return {
     key,
     kind: person.kind,
     label: person.kind === 'anon' ? 'Not followed' : a ? a.email : `Visitor ${String(person.id).slice(0, 6)}`,
     players: a?.players || '',
     days,
-    ...buildJourney(rows, days, today()),
+    ...journey,
+    silent: silentVisitor({ interacted: journey.interacted, first: journey.first, shipAt: await interactionShipped(), kind: person.kind }),
   }
+}
+
+/** When the first interaction was ever recorded (null before the site started recording them): visitors from before it cannot be called silent. */
+async function interactionShipped() {
+  const { rows } = await pool.query('SELECT min(at) AS at FROM events WHERE name = $1', [INTERACTION_EVENT])
+  return rows[0]?.at || null
 }
 
 /** Every event seen in the last `days` days: total, different accounts (overall and today), today and a count per day. */

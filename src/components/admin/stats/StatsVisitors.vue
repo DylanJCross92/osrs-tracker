@@ -10,6 +10,10 @@
             <h2 id="vz-people">Visitors</h2>
             <input v-model.trim="filter" class="st-search" type="search" placeholder="Find a visitor" aria-label="Find a visitor" />
           </div>
+          <label v-if="silentCount" class="vz-hide">
+            <input v-model="hideSilent" type="checkbox" />
+            <span>Hide {{ silentCount }} with no interaction <small>(opened the page, never clicked, scrolled or typed: often a link scanner)</small></span>
+          </label>
           <p v-if="!list.visitors.length" class="st-empty">Nobody has been followed in this time yet. Visitors appear here from the first visit after this page shipped.</p>
           <p v-else-if="!shown.length" class="st-empty">No visitor matches "{{ filter }}".</p>
           <ul v-else class="vz-people">
@@ -20,7 +24,7 @@
                   <b>{{ v.label }}</b>
                   <small v-if="v.players">{{ v.players }}</small>
                   <small v-else-if="v.note">{{ v.note }}</small>
-                  <small>{{ count(v.events, 'step') }} · {{ ago(v.last) }}</small>
+                  <small>{{ count(v.events, 'step') }} · {{ ago(v.last) }}<template v-if="v.silent"> · no interaction</template></small>
                 </span>
               </button>
             </li>
@@ -40,6 +44,7 @@
                 </div>
                 <div class="vz-head-side">
                   <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : journey.kind === 'anon' ? 'Several people, not told apart' : 'Not signed in' }}</span>
+                  <span v-if="journey.silent" class="vz-kind vz-silent" title="The page was opened but nothing a person does (a click, a scroll, a key) was seen. Often a link scanner or a very quick bounce.">No interaction</span>
                   <button v-if="journey.kind === 'visitor'" class="btn-text vz-delete" type="button" @click="asking = true">Delete visitor</button>
                 </div>
               </div>
@@ -131,9 +136,12 @@ const selected = ref('')
 const detail = ref(null)
 const openSessions = reactive(new Set([0]))
 
+// Visitors that opened a page and did nothing a person does: kept in the list, but they can be hidden.
+const hideSilent = ref(false)
+const silentCount = computed(() => (list.value?.visitors || []).filter((v) => v.silent).length)
 const shown = computed(() => {
   const q = filter.value.toLowerCase()
-  const all = list.value?.visitors || []
+  const all = (list.value?.visitors || []).filter((v) => !(hideSilent.value && v.silent))
   return q ? all.filter((v) => v.label.toLowerCase().includes(q) || v.players.toLowerCase().includes(q)) : all
 })
 

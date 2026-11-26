@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildJourney, parsePersonKey } from '../../server/src/utils/journeys.js'
+import { buildJourney, parsePersonKey, silentVisitor } from '../../server/src/utils/journeys.js'
 import { cleanEvents, cleanVisitorId } from '../../server/src/utils/events.js'
 
 const id = 'a'.repeat(32)
@@ -74,5 +74,24 @@ describe('requests nobody made by hand', () => {
       { name: 'spa_page_view', props: { page_path: '/planner' } },
     ]
     expect(cleanEvents({ events }).events.map((e) => e.props.page_path)).toEqual(['/planner'])
+  })
+})
+
+describe('visitors that never interacted', () => {
+  it('does not count the interaction as a step, but knows it happened', () => {
+    const at = (m) => `2026-11-18T12:0${m}:00Z`
+    const j = buildJourney([{ at: at(0), name: 'spa_page_view', props: {} }, { at: at(1), name: 'page_interacted', props: {} }], 3, '2026-11-18')
+    expect(j.count).toBe(1)
+    expect(j.interacted).toBe(true)
+    expect(buildJourney([{ at: at(0), name: 'spa_page_view', props: {} }], 3, '2026-11-18').interacted).toBe(false)
+  })
+
+  it('calls a visitor silent only if the site was already recording interactions when they came', () => {
+    const shipAt = '2026-11-20T00:00:00Z'
+    expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', shipAt, kind: 'visitor' })).toBe(true)
+    expect(silentVisitor({ interacted: true, first: '2026-11-21T00:00:00Z', shipAt, kind: 'visitor' })).toBe(false)
+    expect(silentVisitor({ interacted: false, first: '2026-11-19T00:00:00Z', shipAt, kind: 'visitor' })).toBe(false) // before it shipped
+    expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', shipAt: null, kind: 'visitor' })).toBe(false)
+    expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', shipAt, kind: 'account' })).toBe(false)
   })
 })

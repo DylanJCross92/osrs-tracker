@@ -8315,3 +8315,9 @@ html.iron-mode .gp-figure { display: none !important; }
 /* The skill editor's goal: a Level / XP switch, and what each box is worth in the other unit under it. */
 .se-mode { align-self: flex-start; }
 .se-equiv { color: var(--muted); font-size: 0.78rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+/* Admin visitors: the ones that never interacted */
+.vz-hide { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; font-size: 0.82rem; color: var(--muted); cursor: pointer; }
+.vz-hide input { margin-top: 3px; }
+.vz-hide small { display: block; font-size: 0.74rem; opacity: 0.8; }
+.vz-silent { color: var(--muted); border-style: dashed; }

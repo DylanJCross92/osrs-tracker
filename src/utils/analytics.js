@@ -62,3 +62,23 @@ export function track(event, params = {}) {
     /* analytics must never break the app */
   }
 }
+
+// A real person leaves a trace on the page: a click, a key, a touch, a scroll or the mouse moving, made by the browser itself (a script that
+// only loads the page, as a link scanner does, makes none). The first one on a page is recorded once, so the owner can tell a person who
+// looked and left from something that only opened the link. Nothing about the interaction is kept, only that it happened.
+let watchingInteraction = false
+export function watchInteraction() {
+  if (watchingInteraction || typeof window === 'undefined') return
+  watchingInteraction = true
+  const kinds = ['pointerdown', 'keydown', 'touchstart', 'wheel', 'scroll', 'mousemove']
+  const onFirst = (e) => {
+    if (e && e.isTrusted === false) return
+    kinds.forEach((k) => window.removeEventListener(k, onFirst, true))
+    try {
+      if (!isInternalTraffic()) logEvent('page_interacted')
+    } catch {
+      /* analytics must never break the app */
+    }
+  }
+  kinds.forEach((k) => window.addEventListener(k, onFirst, { capture: true, passive: true }))
+}
