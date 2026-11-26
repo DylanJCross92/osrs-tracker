@@ -17,8 +17,8 @@
             <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? '· 24 hours' : '· 7 days' }}</small></span>
           </button>
           <div class="disc-stat-tile">
-            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
-            <span><b>{{ levelUps.count.toLocaleString('en-US') }}</b><small>Levels gained · {{ levelUps.label }}</small></span>
+            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg></span>
+            <span><b>{{ activePlayers.count.toLocaleString('en-US') }}</b><small>Active · {{ activePlayers.label }}</small></span>
           </div>
         </div>
 
@@ -454,12 +454,11 @@ const xpOpen = ref(false)
 // The hero numbers are for the last 24 hours (a rolling window), so they do not start over at 6 AM.
 const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.h24?.xp || 0, 0), 0))
 const totalWeek = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.week?.xp || 0, 0), 0))
-// Counted on the server over every level-up (the live feed only holds the newest 60 events); like the XP tile, 24 hours, or 7 days on a quiet day.
-const levelUps = computed(() => {
-  const l = data.value.levelsGained
-  if (l) return l.h24 ? { count: l.h24, label: '24 hours' } : { count: l.week, label: '7 days' }
-  const count = (data.value.activity || []).filter((e) => e.kind === 'levelup' || e.kind === 'max').reduce((n, e) => n + (e.to - e.from), 0)
-  return { count, label: 'recent' }
+// Players who gained XP: in the last 24 hours, or over 7 days on a quiet day (like the XP tile).
+const activePlayers = computed(() => {
+  const day = players.value.filter((p) => p.gains?.h24?.xp > 0).length
+  if (day) return { count: day, label: '24 hours' }
+  return { count: players.value.filter((p) => p.gains?.week?.xp > 0).length, label: '7 days' }
 })
 // Two spotlights: highest XP gain today and highest XP gain this week.
 const spotlights = computed(() =>

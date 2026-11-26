@@ -73,9 +73,6 @@ async function getActivity(byId) {
     [ACTIVITY_WINDOW_DAYS],
   )
   const events = []
-  // Every level gained in the window, counted before the feed is cut down to its newest 60 events.
-  const levels = { h24: 0, week: 0 }
-  const dayAgo = Date.now() - 24 * 3_600_000
   let prev = null
   for (const row of snaps.rows) {
     const p = byId.get(row.player_id)
@@ -85,8 +82,6 @@ async function getActivity(byId) {
       for (const [skill, s] of Object.entries(row.skills || {})) {
         const before = prev.skills?.[skill]?.level
         if (before != null && s.level > before) {
-          levels.week += s.level - before
-          if (row.captured_at.getTime() >= dayAgo) levels.h24 += s.level - before
           events.push({ id: `lvl:${row.player_id}:${skill}:${s.level}`, kind: s.level >= 99 ? 'max' : 'levelup', playerId: p.id, skill, from: before, to: s.level, at, ...(s.level >= 99 ? { cheer: { type: 'skill_level', value: 99 } } : {}) })
         }
       }
@@ -135,7 +130,7 @@ async function getActivity(byId) {
     const byKey = new Map(counts.rows.map((r) => [`${r.player_id}|${r.milestone_type}|${r.skill}|${Number(r.value)}`, r.n]))
     for (const e of cheerable) e.cheer.count = byKey.get(`${e.playerId}|${e.cheer.type}|${e.skill || ''}|${e.cheer.value}`) || 0
   }
-  return { feed, levels }
+  return feed
 }
 
 // Cached: live pieces for 45s (the page polls every minute), the heavier
@@ -256,7 +251,7 @@ async function buildDiscover() {
     console.error('[top-gainer] could not record:', err.message)
   }
 
-  const { feed: activity, levels: levelsGained } = await getActivity(byId)
+  const activity = await getActivity(byId)
   const insights = await cached(insightsCache, INSIGHTS_TTL, () => buildInsights({ players, activity, byId }))
 
   // Everyone tracked, by name: the normal characters (the lists here) plus names that only exist on Hardcore Worlds.
@@ -267,7 +262,6 @@ async function buildDiscover() {
     trackedTotal: counted[0].n,
     players: players.map(compact),
     activity,
-    levelsGained,
     recentlyTracked,
     recent99,
     topWeek: gainsBy('week'),
