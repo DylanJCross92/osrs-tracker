@@ -28,13 +28,13 @@
             </span>
           </span>
           <span v-if="progress[p.id]" class="po-prog" :class="{ done: progress[p.id].pct >= 1 }">
-            <span class="po-prog-top"><span>{{ progress[p.id].pct >= 1 ? 'Complete' : 'Progress' }} · {{ progress[p.id].done }} of {{ progress[p.id].total }} done</span><span v-if="progress[p.id].badge" class="dash-badge po-badge" :class="`is-${progress[p.id].badge.kind}`">{{ progress[p.id].badge.text }}</span><b>{{ pctText(progress[p.id].pct) }}</b></span>
+            <span class="po-prog-top"><span class="po-prog-label">{{ progress[p.id].pct >= 1 ? 'Complete' : `${progress[p.id].done} of ${progress[p.id].total} done` }}</span><span v-if="progress[p.id].badge" class="dash-badge po-badge" :class="`is-${progress[p.id].badge.kind}`">{{ progress[p.id].badge.text }}</span><b>{{ pctText(progress[p.id].pct) }}</b></span>
             <span class="po-bar" role="progressbar" :aria-valuenow="Math.round(progress[p.id].pct * 100)" aria-valuemin="0" aria-valuemax="100" :aria-label="`${p.name} progress`"><i :style="{ width: progress[p.id].pct * 100 + '%' }" /></span>
           </span>
           <span v-else class="po-prog po-prog-none"><small>{{ progressLoading && p.hasPlayer ? 'Checking progress…' : p.hasPlayer ? 'This player is not tracked yet' : 'No player linked, so progress is not tracked' }}</small></span>
           <dl class="po-stats">
-            <div><dt>Time</dt><dd>{{ formatHours(p.summary.totalHours) }}<small v-if="progress[p.id]" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${formatHours(progress[p.id].hoursLeft)} left` : 'Nothing left' }}</small></dd></div>
-            <div><dt>At {{ p.hours }} h/day</dt><dd>{{ p.summary.days == null ? '-' : formatDays(p.summary.days) }}<small v-if="progress[p.id] && progress[p.id].daysLeft != null" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${progress[p.id].daysLeft.toLocaleString('en-US')} ${progress[p.id].daysLeft === 1 ? 'day' : 'days'} left` : 'Nothing left' }}</small></dd></div>
+            <div><dt>Time</dt><dd>{{ formatHours(p.summary.totalHours) }}<small v-if="progress[p.id] && progress[p.id].start !== 'not-started'" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${formatHours(progress[p.id].hoursLeft)} left` : 'Nothing left' }}</small></dd></div>
+            <div><dt>At {{ p.hours }} h/day</dt><dd>{{ p.summary.days == null ? '-' : formatDays(p.summary.days) }}<small v-if="progress[p.id] && progress[p.id].start !== 'not-started' && progress[p.id].daysLeft != null" class="po-left">{{ progress[p.id].hoursLeft > 0 ? `${progress[p.id].daysLeft.toLocaleString('en-US')} ${progress[p.id].daysLeft === 1 ? 'day' : 'days'} left` : 'Nothing left' }}</small></dd></div>
             <div v-if="p.summary.netGp != null" class="gp-figure"><dt>{{ p.summary.netGp >= 0 ? 'Profit' : 'GP cost' }}</dt><dd :class="p.summary.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(p.summary.netGp) }}</dd></div>
           </dl>
         </RouterLink>
@@ -44,6 +44,11 @@
           </button>
           <div v-if="menuFor === p.id" class="po-menu-list" role="menu" :aria-label="`Options for ${p.name}`" @click.stop>
             <RouterLink class="po-item" role="menuitem" :to="{ name: 'plannerEdit', params: { id: p.id } }">Edit</RouterLink>
+            <template v-if="progress[p.id]">
+              <button v-if="progress[p.id].start === 'not-started'" class="po-item" role="menuitem" type="button" @click="setStart(p.id, 'now')">Start now</button>
+              <button v-else class="po-item" role="menuitem" type="button" @click="setStart(p.id, 'hold')">Mark as not started</button>
+              <button v-if="progress[p.id].startManual" class="po-item" role="menuitem" type="button" @click="setStart(p.id, 'auto')">Start automatically</button>
+            </template>
             <button class="po-item" role="menuitem" type="button" @click="duplicate(p.id)">Duplicate</button>
             <button v-if="onProfile.available(p.id)" class="po-item" role="menuitem" type="button" :disabled="onProfile.busy.value" @click="profileToggle(p.id)">{{ onProfile.isOn(p.id) ? 'Remove from profile' : 'Show on profile' }}</button>
             <button class="po-item po-item-danger" role="menuitem" type="button" @click="askDelete(p)">Delete</button>
@@ -88,7 +93,7 @@ const props = defineProps({
   // { [planId]: totals } worked out the way the plan page does (methods the player cannot use are skipped); a card without one works out its own.
   summaries: { type: Object, default: () => ({}) },
 })
-const emit = defineEmits(['duplicate', 'delete'])
+const emit = defineEmits(['duplicate', 'delete', 'start'])
 
 // Which plan is the goal on your profile, and showing or removing one from the card's menu.
 const onProfile = useProfilePlansFor(computed(() => props.plans))
@@ -102,6 +107,11 @@ const MAX_ICONS = 5
 const menuFor = ref('')
 function toggleMenu(id) {
   menuFor.value = menuFor.value === id ? '' : id
+}
+// Starting a plan (or holding it back) from the card's menu: see utils/planStart.js. 'now', 'hold' (not started yet) or 'auto' (starts by itself on the first XP).
+function setStart(id, mode) {
+  menuFor.value = ''
+  emit('start', id, mode)
 }
 function duplicate(id) {
   menuFor.value = ''

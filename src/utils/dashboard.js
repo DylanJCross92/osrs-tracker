@@ -3,6 +3,7 @@
 // places. Pure, so it can be tested without a page.
 import { AUTO_FAST, DEFAULT_GP_VALUE, formatNum, levelAtXp, planGoal, xpAtLevel } from '@/utils/planner'
 import { buildProgress, liveGoalFor, projectFinish, resolveGoal, summarizePlan } from '@/utils/plannerTools'
+import { planStartInfo } from '@/utils/planStart'
 import { blockedMethodIds } from '@/utils/requirements'
 import { TRAINING_METHODS } from '@/data/trainingMethods'
 import { plannedQuestReqIds } from '@/data/quests'
@@ -36,6 +37,9 @@ const span = (days) => {
 /** The small badge on a plan: how the pace compares to the schedule. Null when there is nothing to say yet. */
 export function planBadge(status) {
   if (!status?.tracked || status.progress.complete) return null
+  // A plan that has not started (or is paused) is neither on schedule nor behind it.
+  if (status.start?.state === 'not-started') return { kind: 'idle', text: 'Not started' }
+  if (status.start?.state === 'paused') return { kind: 'idle', text: 'Paused' }
   const pr = status.projection
   if (pr && pr.status !== 'none') {
     if (pr.status === 'on') return { kind: 'on', text: 'On pace' }
@@ -63,10 +67,12 @@ export function planStatus(plan, { latest = null, history = null, confirmations 
   const liveGoals = goals.map((g) => liveGoalFor(g, latest.skills[g.skill]?.xp))
   const originalPlans = goals.map((g) => planGoal(prepare(g)))
   const livePlans = liveGoals.map((g) => planGoal(prepare(g)))
-  const progress = buildProgress(goals, liveGoals, originalPlans, livePlans, plan.hoursPerDay, plan.statsAt, now)
+  // Whether it has really started (XP gained in its skills, or the person said so): the schedule counts from then, without breaks.
+  const start = planStartInfo(plan, { history, latest }, now)
+  const progress = buildProgress(goals, liveGoals, originalPlans, livePlans, plan.hoursPerDay, plan.statsAt, now, start.activeDays)
 
   let projection = null
-  if (!progress.complete && history?.length) {
+  if (!progress.complete && history?.length && start.state === 'active') {
     const hpd = Number(plan.hoursPerDay)
     projection = projectFinish({
       snapshots: history,
@@ -81,7 +87,7 @@ export function planStatus(plan, { latest = null, history = null, confirmations 
   }
   // The skill being trained now: the first goal in the plan that is not finished.
   const next = progress.per.find((p) => !p.done) || null
-  return { tracked: true, progress, projection, next, hoursLeft: progress.liveHours }
+  return { tracked: true, progress, projection, next, hoursLeft: progress.liveHours, start }
 }
 
 /**

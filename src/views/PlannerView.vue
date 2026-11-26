@@ -1,7 +1,7 @@
 <template>
   <div class="planner">
     <!-- /planner with plans: your plans, each linking to its own address -->
-    <PlannerOverview v-if="showOverview" :plans="savedPlans" :progress="overviewProgress" :summaries="overviewSummaries" :progress-loading="progressLoading" @duplicate="duplicateSaved" @delete="deleteSaved" />
+    <PlannerOverview v-if="showOverview" :plans="savedPlans" :progress="overviewProgress" :summaries="overviewSummaries" :progress-loading="progressLoading" @duplicate="duplicateSaved" @start="setPlanStart" @delete="deleteSaved" />
 
     <!-- No plan yet: the player, then a recommended plan or a skill to start from -->
     <template v-else-if="showStart">
@@ -150,6 +150,10 @@
         :finish="finishInfo"
         :updated-at="player?.latest?.capturedAt || ''"
         :baseline-at="statsAt || ''"
+        :start="startInfo"
+        :goal-skills="goals.map((g) => g.skill)"
+        :can-start="!!currentSaved"
+        @start="(mode) => setPlanStart(currentPlanId, mode)"
         :today="gainedTodayNow"
         :hours-per-day="hoursPerDay"
         :projection="shownProjection"
@@ -319,8 +323,10 @@ import {
   deletePlan,
   renamePlan,
   duplicatePlan,
+  patchPlan,
   validatePlan,
 } from '@/utils/plannerTools'
+import { planStartInfo } from '@/utils/planStart'
 import { useLivePrices } from '@/composables/useLivePrices'
 import GePriceBadge from '@/components/GePriceBadge.vue'
 import { priceVersion } from '@/utils/priceBook'
@@ -753,7 +759,20 @@ watch(plans, (list) => {
 const originalPlans = computed(() => resolvedOriginal.value.map((g) => memo(planCache, goalKey(g, true), () => planGoal(g))))
 // A plan that is just being explored (not saved to anything) is not tracked: progress only starts once it is saved.
 const scratch = ref(false)
-const progress = computed(() => (tracking.value && goals.value.length && !(scratch.value && !currentPlanId.value) ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value) : null))
+// A plan that is just being explored (not saved to anything) is not tracked.
+const trackedPlan = computed(() => tracking.value && goals.value.length > 0 && !(scratch.value && !currentPlanId.value))
+// Whether the saved plan has really started: XP gained in its skills, or what the person said (see utils/planStart.js). The schedule counts from then.
+const currentSaved = computed(() => savedPlans.value.find((p) => p.id === currentPlanId.value) || null)
+const startInfo = computed(() =>
+  trackedPlan.value
+    ? planStartInfo(
+        { statsAt: statsAt.value, createdAt: currentSaved.value?.createdAt, goals: goals.value, startedAt: currentSaved.value?.startedAt, startHold: currentSaved.value?.startHold },
+        { history: history.value.id === player.value?.id ? history.value.rows : null, latest: player.value?.latest },
+        new Date(),
+      )
+    : null,
+)
+const progress = computed(() => (trackedPlan.value ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value, new Date(), startInfo.value ? startInfo.value.activeDays : undefined) : null))
 // How fast the player has really been gaining XP in these skills (their tracked daily history) and what that means for the finish date.
 const history = ref({ id: null, rows: [] })
 watch(
@@ -773,14 +792,15 @@ watch(
   { immediate: true },
 )
 const projection = computed(() => {
-  if (!progress.value || progress.value.complete || history.value.id !== player.value?.id) return null
+  if (!progress.value || progress.value.complete || history.value.id !== player.value?.id || startInfo.value?.state !== 'active') return null
   const hpd = Number(hoursPerDay.value)
   return projectFinish({
     snapshots: history.value.rows,
     goals: goals.value,
     remainingXp: progress.value.remainingXp,
     plannedDays: hpd > 0 ? progress.value.originalHours / hpd : null,
-    baselineAt: statsAt.value,
+    // The pace is measured from when the plan really started, not from when it was made.
+    baselineAt: startInfo.value?.startedAt || statsAt.value,
     per: progress.value.per,
     liveHours: progress.value.liveHours,
   })
@@ -790,14 +810,15 @@ const projection = computed(() => {
 const focusSkill = ref('')
 const focusIdx = computed(() => (progress.value && focusSkill.value ? goals.value.findIndex((g) => g.skill === focusSkill.value) : -1))
 const series = computed(() => {
-  if (!progress.value || progress.value.complete) return null
+  if (!progress.value || progress.value.complete || startInfo.value?.state === 'not-started') return null
   return paceSeries({
     only: focusIdx.value,
     snapshots: history.value.id === player.value?.id ? history.value.rows : [],
     goals: goals.value,
     progress: progress.value,
     hoursPerDay: hoursPerDay.value,
-    baselineAt: statsAt.value,
+    // The pace is measured from when the plan really started, not from when it was made.
+    baselineAt: startInfo.value?.startedAt || statsAt.value,
     projection: projection.value,
   })
 })
@@ -997,6 +1018,10 @@ const finishInfo = computed(() => {
   const t = timeline.value
   if (!(t.totalHours > 0) || !t.finishDate) return { dateText: 'Nothing left to train', untilText: 'Every goal is already reached.' }
   const d = t.totalDays == null ? null : Math.ceil(t.totalDays)
+  // Not started: there is no finish date yet, only how long it takes once training begins.
+  if (startInfo.value?.state === 'not-started') {
+    return { dateText: 'Not started yet', untilText: d == null ? 'Starts when you gain XP in its skills.' : `About ${d.toLocaleString('en-US')} ${d === 1 ? 'day' : 'days'} at ${hoursPerDay.value} h/day once you start` }
+  }
   return {
     dateText: t.finishDate.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }),
     untilText: d == null ? '' : d <= 1 ? `Within a day at ${hoursPerDay.value} h/day` : `In about ${d.toLocaleString('en-US')} days at ${hoursPerDay.value} h/day`,
@@ -1548,6 +1573,15 @@ function afterCreate(name) {
 function openPlan(stored) {
   router.push(planLocation(stored.id))
 }
+// Start a saved plan, hold it back, or let it start by itself (see utils/planStart.js). The choice is kept with the plan.
+function setPlanStart(id, mode) {
+  const patch = mode === 'now' ? { startedAt: new Date().toISOString(), startHold: null } : mode === 'hold' ? { startedAt: null, startHold: true } : { startedAt: null, startHold: null }
+  const p = patchPlan(id, patch)
+  if (!p) return
+  refreshSaved()
+  showToast(mode === 'now' ? `Started "${p.name}".` : mode === 'hold' ? `"${p.name}" is not started. It starts when you start it.` : `"${p.name}" starts by itself when you gain XP in its skills.`)
+  track('planner_plan_start', { mode })
+}
 function duplicateSaved(id) {
   const copy = duplicatePlan(id)
   refreshSaved()
@@ -1675,6 +1709,8 @@ watch(
 // The same "% complete" the plan page shows: how much of the planned training time is behind the player, from their tracked XP.
 const progressLoading = ref(false)
 let overviewLoaded = false
+// The tracked history of each player behind a plan card, by player id: it tells a plan that has not started (or is paused) from one being trained.
+const overviewHistory = ref({})
 async function loadOverviewPlayers() {
   if (overviewLoaded || !savedPlans.value.some((p) => p.player?.rsn)) return
   overviewLoaded = true
@@ -1682,6 +1718,20 @@ async function loadOverviewPlayers() {
   try {
     await store.loadPlayers()
     playersFreshened = true
+    const ids = new Set()
+    for (const p of savedPlans.value) {
+      const rsn = p.player?.rsn
+      const found = rsn ? store.players.find((x) => sameName(x.username, rsn) || sameName(x.displayName, rsn)) : null
+      if (found) ids.add(found.id)
+    }
+    await Promise.all(
+      [...ids].map((id) =>
+        playersApi
+          .snapshots(id)
+          .then((rows) => (overviewHistory.value = { ...overviewHistory.value, [id]: rows }))
+          .catch(() => {}),
+      ),
+    )
   } catch {
     /* no progress shown without the players */
   } finally {
@@ -1699,21 +1749,23 @@ function cardContext(p) {
   if (skills) for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
   const ctx = { levels: skills ? levels : null, planned: Object.fromEntries((p.goals || []).map((g) => [g.skill, levelAtXp(g.targetXp, true)])), plannedQuests: plannedQuestReqIds(p.goals || []), confirmations: confirmations.value }
   const blocked = respect.value ? blockedMethodIds(TRAINING_METHODS, ctx) : []
-  return { skills, blocked, prep: (g) => ({ ...resolveGoal(g, p.globalStrategy, p.gpValue), blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value }) }
+  return { found, skills, blocked, prep: (g) => ({ ...resolveGoal(g, p.globalStrategy, p.gpValue), blockedMethodIds: blocked, doneQuestIds: doneQuestIds.value }) }
 }
 function cardProgress(p) {
-  const { skills, prep } = cardContext(p)
+  const { found, skills, prep } = cardContext(p)
   const baseline = p.statsAt || p.createdAt || p.updatedAt
   if (!skills || !baseline || !p.goals?.length) return null
   const live = p.goals.map((g) => liveGoalFor(g, skills[g.skill]?.xp))
   const original = p.goals.map((g) => planGoal(prep(g)))
   const now = live.map((g) => planGoal(prep(g)))
-  const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline)
+  // Not started (nothing gained in its skills yet) or paused: no schedule to be behind (see utils/planStart.js).
+  const start = planStartInfo({ ...p, statsAt: baseline }, { history: overviewHistory.value[found?.id] || null, latest: found?.latest || { skills } }, new Date())
+  const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline, new Date(), start.activeDays)
   // What is still to train, worked out the way the plan page does: the card also shows it beside the plan's whole time.
   const left = planTotals(now, p.hoursPerDay)
   // On schedule, ahead or behind, from the same schedule the plan page shows (null once the plan is complete or has no schedule yet).
-  const badge = planBadge({ tracked: true, progress: prog, projection: null })
-  return { pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length, hoursLeft: left.totalHours, daysLeft: left.days, badge }
+  const badge = planBadge({ tracked: true, progress: prog, projection: null, start })
+  return { start: start.state, startManual: start.manual, pct: prog.timePct, done: prog.per.filter((x) => x.done).length, total: p.goals.length, hoursLeft: left.totalHours, daysLeft: left.days, badge }
 }
 // Time and gp for each card, from the plan's own start, skipping methods the player cannot use (as the plan page does).
 const overviewSummaries = computed(() => {

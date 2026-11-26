@@ -8280,3 +8280,15 @@ html.iron-mode .gp-figure { display: none !important; }
 .ws-tabs button[data-tip] { position: relative; }
 /* A name with only a Hardcore Worlds character: the one pill, not a switch. */
 .ws-tabs.is-single button { cursor: help; }
+
+/* A plan that has not started, or is paused: a neutral badge (it is neither on schedule nor behind), and the line that says so. */
+.pp-badge.is-idle, .dash-badge.is-idle { border-color: var(--border-strong); color: var(--muted); background: rgba(255, 255, 255, 0.04); }
+.pp-start { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin: 14px 0 0; padding: 8px 0 8px 14px; border-left: 3px solid var(--border-strong); color: var(--text); font-size: 0.9rem; line-height: 1.45; }
+.pp-start p { margin: 0; max-width: 62ch; }
+.pp-start-actions { display: inline-flex; align-items: center; gap: 14px; flex: none; }
+.pp-start .btn { padding: 6px 16px; font-size: 0.85rem; }
+.pp-start b { color: var(--gold-bright); }
+
+/* Plan cards: the progress label stays on one line and the badge and percentage sit beside it. */
+.po-prog-top .po-prog-label { white-space: nowrap; }
+.po-prog-top { align-items: center; gap: 6px; }

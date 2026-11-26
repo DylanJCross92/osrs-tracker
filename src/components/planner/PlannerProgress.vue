@@ -64,7 +64,7 @@
       </div>
       <p class="pp-meta">
         <span>{{ progress.completedGoals }} of {{ progress.goalCount }} goal{{ progress.goalCount === 1 ? '' : 's' }} complete</span>
-        <span v-if="baselineAt">Started {{ fmtDate(baselineAt) }}</span>
+        <span v-if="baselineAt">{{ start?.state === 'not-started' ? `Made ${fmtDate(baselineAt)}` : `Started ${fmtDate(start?.startedAt || baselineAt)}` }}</span>
         <span v-if="updatedAt">Stats updated {{ formatRelative(updatedAt) }}</span>
       </p>
     </div>
@@ -74,9 +74,21 @@
       <span v-for="s in todayView.skills.slice(0, 4)" :key="s.skill" class="pp-chip"><img :src="skillIconSrc(s.skill)" :alt="s.skill" width="14" height="14" />+{{ formatXp(s.gained) }}</span>
       <span v-if="todayView.skills.length > 4" class="pp-more">and {{ todayView.skills.length - 4 }} more</span>
     </p>
+    <!-- A plan that has not started, or is paused, says so and how to change it -->
+    <div v-if="!readonly && start && start.state === 'not-started' && !view.complete" class="pp-start" role="status">
+      <p><b>Not started.</b> It starts by itself when you gain XP in {{ skillText }}.</p>
+      <span v-if="canStart" class="pp-start-actions">
+        <button v-if="start.manual" class="btn-text" type="button" @click="$emit('start', 'auto')">Start automatically</button>
+        <button class="btn btn-ghost" type="button" @click="$emit('start', 'now')">Start now</button>
+      </span>
+    </div>
+    <div v-else-if="!readonly && start && start.state === 'paused' && !view.complete" class="pp-start" role="status">
+      <p><b>Paused.</b> No XP in {{ skillText }} since {{ start.lastGainAt ? shortDate(start.lastGainAt, true) : shortDate(start.startedAt, true) }}. It carries on when you train again, and time off does not count against the schedule.</p>
+    </div>
     <p v-if="!readonly" class="pp-foot">
       Progress is measured from the stats this plan started with.
       <button class="btn-text" type="button" @click="$emit('rebase')">Restart from today's stats</button>
+      <button v-if="canStart && start && start.state !== 'not-started'" class="btn-text" type="button" @click="$emit('start', 'hold')">Mark as not started</button>
     </p>
   </section>
 </template>
@@ -112,9 +124,21 @@ const props = defineProps({
   playerName: { type: String, default: '' },
   // The address that opens this plan (without the player's name), for sharing the chart.
   shareLink: { type: String, default: '' },
+  // Whether the plan has really started (see utils/planStart.js): { state, startedAt, lastGainAt, manual } or null, the skills it trains, and whether it is saved (so a start can be kept).
+  start: { type: Object, default: null },
+  goalSkills: { type: Array, default: () => [] },
+  canStart: { type: Boolean, default: false },
 })
 const sharing = ref(false)
-defineEmits(['rebase', 'focus'])
+defineEmits(['rebase', 'focus', 'start'])
+// "Cooking", "Prayer, Attack or Defence", "any of its 7 skills".
+const skillText = computed(() => {
+  const n = props.goalSkills.length
+  if (n === 0) return 'its skills'
+  if (n === 1) return props.goalSkills[0]
+  if (n <= 3) return `${props.goalSkills.slice(0, -1).join(', ')} or ${props.goalSkills[n - 1]}`
+  return `any of its ${n} skills`
+})
 
 // Each skill is as wide as it takes to train, so the bar reads like the plan's timeline. Very short ones keep a sliver of room.
 const segments = computed(() => {
@@ -204,6 +228,9 @@ const verdict = computed(() => {
 
 // The badge goes by the real pace when there is history to measure it from, and by the plan's own schedule until then.
 const badge = computed(() => {
+  // Not started or paused: neither on pace nor behind it.
+  if (props.start?.state === 'not-started') return { kind: 'idle', text: 'Not started' }
+  if (props.start?.state === 'paused') return { kind: 'idle', text: 'Paused' }
   const pr = props.projection
   if (pr && pr.status !== 'none') {
     if (pr.status === 'on') return { kind: 'on', text: 'On pace' }

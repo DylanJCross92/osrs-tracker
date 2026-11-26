@@ -226,7 +226,7 @@ export function liveGoalFor(goal, trackedXp) {
  * training hours actually done so far with the hours the plan expected to be done by now at the same daily playtime, so
  * changing playtime never makes a plan look ahead or behind on its own.
  */
-export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursPerDay, baselineAt, now = new Date()) {
+export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursPerDay, baselineAt, now = new Date(), activeDays = undefined) {
   const per = goals.map((g, i) => {
     const live = liveGoals[i].currentXp
     const total = Math.max(0, g.targetXp - g.currentXp)
@@ -256,7 +256,9 @@ export function buildProgress(goals, liveGoals, originalPlans, livePlans, hoursP
   const liveHours = sumHours(livePlans)
   const hpd = Number(hoursPerDay) > 0 ? Number(hoursPerDay) : null
   const baseline = baselineAt ? new Date(baselineAt) : null
-  const elapsedDays = baseline && !Number.isNaN(baseline.getTime()) ? Math.max(0, (now - baseline) / 86_400_000) : null
+  // `activeDays` (see utils/planStart.js) replaces the days since the plan was made: null for a plan that has not started (no schedule yet), the
+  // days actually spent training for one that has. Left out, the time since the baseline is used, as before.
+  const elapsedDays = activeDays !== undefined ? activeDays : baseline && !Number.isNaN(baseline.getTime()) ? Math.max(0, (now - baseline) / 86_400_000) : null
   const aheadDays = hpd && elapsedDays != null ? Math.max(0, originalHours - liveHours) / hpd - elapsedDays : null
   return {
     per,
@@ -556,6 +558,9 @@ export function snapshotPlan(state, name, existing = {}) {
     updatedAt: now,
     player: { rsn: state.rsn || '', id: state.playerId ?? null },
     statsAt: state.statsAt || null,
+    // When the person started the plan, or that it is not started yet (otherwise it starts by itself on the first XP gained, see utils/planStart.js).
+    ...((state.startedAt ?? existing.startedAt) ? { startedAt: state.startedAt ?? existing.startedAt } : {}),
+    ...((state.startHold ?? existing.startHold) === true && !(state.startedAt ?? existing.startedAt) ? { startHold: true } : {}),
     globalStrategy: state.globalStrategy,
     gpValue: state.gpValue,
     budget: state.budget || null,
@@ -611,6 +616,20 @@ export function renamePlan(id, name) {
   const p = list.find((x) => x.id === id)
   if (!p) return null
   p.name = String(name || '').trim().slice(0, 60) || p.name
+  p.updatedAt = new Date().toISOString()
+  writeSaved(list)
+  return p
+}
+
+/** Changes some fields of a saved plan (the start of a plan, see utils/planStart.js). A field set to null or '' is removed. Returns the plan, or null if there is none. */
+export function patchPlan(id, patch) {
+  const list = readSaved()
+  const p = list.find((x) => x.id === id)
+  if (!p) return null
+  for (const [key, value] of Object.entries(patch || {})) {
+    if (value === null || value === '' || value === undefined) delete p[key]
+    else p[key] = value
+  }
   p.updatedAt = new Date().toISOString()
   writeSaved(list)
   return p
@@ -690,6 +709,8 @@ export function validatePlan(raw) {
     updatedAt: typeof src.updatedAt === 'string' ? src.updatedAt : new Date().toISOString(),
     player: { rsn: String(src.player?.rsn || '').slice(0, 12), id: src.player?.id ?? null },
     statsAt: typeof src.statsAt === 'string' ? src.statsAt : null,
+    ...(typeof src.startedAt === 'string' && Number.isFinite(Date.parse(src.startedAt)) ? { startedAt: src.startedAt } : {}),
+    ...(src.startHold === true && !src.startedAt ? { startHold: true } : {}),
     globalStrategy: GLOBAL_STRATEGIES.includes(src.globalStrategy) ? src.globalStrategy : AUTO_FAST,
     gpValue: Math.floor(num(src.gpValue, 0, 1_000_000_000, DEFAULT_GP_VALUE)),
     budget: src.budget ? Math.floor(num(src.budget, 0, 100_000_000_000, 0)) || null : null,
