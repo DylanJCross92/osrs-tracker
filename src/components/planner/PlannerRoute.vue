@@ -13,7 +13,7 @@
     <li
       v-for="(seg, k) in segments"
       :key="k"
-      :class="['planner-step', `planner-step-${seg.kind}`, { 'planner-step-gap': !seg.method, 'is-pick': !!skill }]"
+      :class="['planner-step', `planner-step-${seg.kind}`, { 'planner-step-gap': !seg.method, 'is-pick': !!skill, 'is-done': seg.done }]"
       v-bind="skill ? { role: 'button', tabindex: 0, 'aria-haspopup': 'dialog', 'aria-label': `Choose a method for levels ${seg.startLevel} to ${seg.endLevel}`, title: 'Choose a method for these levels' } : {}"
       @click="skill && (editing = k)"
       @keydown.enter.self.prevent="skill && (editing = k)"
@@ -23,7 +23,8 @@
       <span class="planner-step-name">
         <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="20" height="20" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ seg.method ? seg.method.name : 'No catalog method' }}
         <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
-        <em v-if="seg.kind === 'manual'">your pick for these levels</em>
+        <em v-if="seg.done && seg.kind !== 'manual'">already trained</em>
+        <em v-else-if="seg.kind === 'manual'">{{ seg.done ? 'what you picked for these levels' : 'your pick for these levels' }}</em>
         <em v-else-if="seg.kind === 'main'">your chosen method</em>
         <em v-else-if="seg.kind === 'prep'">to unlock it</em>
         <em v-else-if="seg.kind === 'post'">after it caps out</em>

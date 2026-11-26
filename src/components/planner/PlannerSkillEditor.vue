@@ -58,7 +58,29 @@
       <section class="se-field">
         <h4>Route by level</h4>
         <p class="se-hint">Tap a step to choose a different method for those levels.</p>
-        <PlannerRoute :segments="plan.segments" :quests="plan.questList" :skill="goal.skill" @set="setRange" />
+        <div v-if="routeChoices" class="se-choices">
+          <template v-if="routeChoices.trained.length">
+            <p class="se-hint">What did you train levels {{ routeChoices.from }} → {{ routeChoices.upTo }} with? The levels left follow it.</p>
+            <div class="range-tabs se-trained" role="group" aria-label="What you trained with">
+              <button v-for="f in routeChoices.trained" :key="f.id" type="button" :class="{ active: f.on }" :aria-pressed="f.on" @click="$emit('patch', { overrides: f.overrides })">{{ f.label }}</button>
+              <button type="button" :class="{ active: !routeChoices.trained.some((f) => f.on) && !overrideCount }" @click="$emit('patch', { overrides: routeChoices.resetDone })">Planner's pick</button>
+            </div>
+          </template>
+          <template v-if="routeChoices.carryOn || routeChoices.fastest">
+            <p class="se-hint">For the levels left ({{ routeChoices.upTo }} → {{ routeChoices.to }}):</p>
+            <div class="se-next">
+              <button v-for="o in [routeChoices.carryOn, routeChoices.fastest].filter(Boolean)" :key="o.key" type="button" class="se-next-opt" :class="{ on: o.same }" @click="$emit('patch', { overrides: o.overrides })">
+                <b>{{ o.title }}</b>
+                <span>{{ o.names }}</span>
+                <small>{{ o.hours == null ? '' : formatHours(o.hours) }}<template v-if="o.netGp != null"> · {{ formatGp(o.netGp) }}</template><template v-if="o.key === 'fast' && o.savesHours > 0.05"> · saves {{ formatHours(o.savesHours) }}</template><template v-if="o.same"> · what the plan does now</template></small>
+              </button>
+            </div>
+          </template>
+        </div>
+        <PlannerRoute :segments="routeSegments" :quests="plan.questList" :skill="goal.skill" @set="setRange" />
+        <p v-if="doneRoute && doneRoute.netGp != null" class="se-hint se-made">
+          Levels {{ doneStart }} → {{ doneEnd }} already trained: <b :class="doneRoute.netGp >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(doneRoute.netGp) }}</b> made with the methods above. Tap one to say what you really used.
+        </p>
         <p v-if="overrideCount" class="se-hint">
           You chose the method for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels.
           <button class="btn-text" type="button" @click="$emit('patch', { overrides: [] })">Back to recommended</button>
@@ -173,6 +195,7 @@ import {
   profitableMethods,
   formatGp,
   formatNum,
+  formatHours,
 } from '@/utils/planner'
 import { STRATEGY_LABELS, materialsForPlan } from '@/utils/plannerTools'
 
@@ -188,6 +211,10 @@ const props = defineProps({
   count: { type: Number, required: true },
   // The goal as it stands today (start moved up to tracked XP).
   liveGoal: { type: Object, default: null },
+  // The levels already trained, planned from the start up to where the player is now (null when none): they are listed first as done.
+  doneRoute: { type: Object, default: null },
+  // What was trained and the ways to carry on (see routeChoices in PlannerView), or null.
+  routeChoices: { type: Object, default: null },
   // Which tab opens first.
   initialTab: { type: String, default: 'method' },
 })
@@ -237,6 +264,11 @@ function setTargetLevel(level) {
   if (!level) return
   emit('patch', { targetXp: Math.min(xpAtLevel(Math.min(level, MAX_VIRTUAL_LEVEL)), MAX_XP) })
 }
+
+// The route as a whole: what is already trained (marked done), then what is left.
+const routeSegments = computed(() => [...(props.doneRoute?.segments || []).map((seg) => ({ ...seg, done: true })), ...props.plan.segments])
+const doneStart = computed(() => props.doneRoute?.segments?.[0]?.startLevel ?? startLevel.value)
+const doneEnd = computed(() => props.doneRoute?.segments?.at(-1)?.endLevel ?? plannedLevel.value)
 
 // --- Method choices
 const methods = computed(() => {

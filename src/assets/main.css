@@ -4032,6 +4032,21 @@ input[type="checkbox"]:disabled { opacity: 0.5; cursor: default; }
 .planner-step-manual .planner-step-name em { color: #8cc4ea; }
 /* The note under a method name lines up with the name, not with the method's icon (20px + its 7px margin) */
 .planner-step-name .route-ico ~ em { margin-left: 27px; }
+/* Levels already trained: the row stays tappable (to record what was really used) but reads as the past */
+.planner-step.is-done { border-left-color: var(--green, #7cb869); }
+.planner-step.is-done .planner-step-levels, .planner-step.is-done .planner-step-name { opacity: 0.78; }
+.se-made { margin-top: 8px; }
+.se-choices { margin: 0 0 12px; }
+.se-choices .se-hint { margin: 10px 0 6px; }
+.se-trained { flex-wrap: wrap; }
+.se-next { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+.se-next-opt { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--border); color: inherit; font: inherit; cursor: pointer; transition: border-color 0.12s, background 0.12s; }
+.se-next-opt:hover { border-color: var(--gold); background: rgba(217, 175, 82, 0.07); }
+.se-next-opt.on { border-color: var(--gold); }
+.se-next-opt b { font-weight: 500; color: var(--gold-bright); }
+.se-next-opt span { font-size: 0.85rem; }
+.se-next-opt small { color: var(--muted); font-size: 0.76rem; }
+.pp-meta b { font-weight: 500; }
 .planner-step.editing { border-color: var(--gold); }
 .planner-step-edit { list-style: none; margin: -2px 0 2px; padding: 10px 12px 12px; border: 1px solid var(--gold); border-top: 0; border-radius: 0 0 8px 8px; background: var(--panel); }
 .planner-step-edit .planner-hint { margin: 0 0 8px; }

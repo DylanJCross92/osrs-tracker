@@ -65,6 +65,7 @@
       <p class="pp-meta">
         <span>{{ progress.completedGoals }} of {{ progress.goalCount }} goal{{ progress.goalCount === 1 ? '' : 's' }} complete</span>
         <span v-if="baselineAt">{{ start?.state === 'not-started' ? `Made ${fmtDate(baselineAt)}` : `Started ${fmtDate(start?.startedAt || baselineAt)}` }}</span>
+        <span v-if="gpMade != null && !readonly">Made so far <b :class="gpMade >= 0 ? 'planner-gain' : 'planner-cost'">{{ formatGp(gpMade) }}</b></span>
         <span v-if="updatedAt">Stats updated {{ formatRelative(updatedAt) }}</span>
       </p>
     </div>
@@ -98,7 +99,7 @@ import { computed, ref } from 'vue'
 import PlannerPaceChart from '@/components/planner/PlannerPaceChart.vue'
 import SharePaceModal from '@/components/planner/SharePaceModal.vue'
 import ShareIcon from '@/components/ShareIcon.vue'
-import { formatNum } from '@/utils/planner'
+import { formatNum, formatGp } from '@/utils/planner'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 
@@ -128,6 +129,8 @@ const props = defineProps({
   start: { type: Object, default: null },
   goalSkills: { type: Array, default: () => [] },
   canStart: { type: Boolean, default: false },
+  // What the levels gained since the plan started made, in gp (null when unknown).
+  gpMade: { type: Number, default: null },
 })
 const sharing = ref(false)
 defineEmits(['rebase', 'focus', 'start'])

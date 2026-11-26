@@ -110,6 +110,52 @@ function finishSegment(seg, kind) {
   }
 }
 
+// --- Staying with one way of training -------------------------------------------------------------------------------------------------
+// Courses and routes that are really one way of training (every rooftop, the Sepulchre floors), so a player who trained one can be offered
+// the others for the levels that follow. Methods outside a family are only ever "the same method".
+const FAMILIES = [
+  { id: 'rooftop', label: 'Rooftop courses', test: (m) => m.skill === 'Agility' && (/rooftop/i.test(m.name) || /^Gnome Stronghold/i.test(m.name)) },
+  { id: 'sepulchre', label: 'Hallowed Sepulchre', test: (m) => m.skill === 'Agility' && /sepulchre/i.test(m.name) },
+  { id: 'pyramid', label: 'Agility Pyramid', test: (m) => m.skill === 'Agility' && /pyramid/i.test(m.name) },
+]
+/** The family a method belongs to ({ id, label }), or null. */
+export function methodFamily(method) {
+  if (!method) return null
+  const f = FAMILIES.find((x) => x.test(method))
+  return f ? { id: f.id, label: f.label } : null
+}
+/** The families that have a method in a skill. */
+export function familiesFor(skill) {
+  return FAMILIES.filter((f) => methodsForSkill(skill).some((m) => f.test(m))).map(({ id, label }) => ({ id, label }))
+}
+
+/**
+ * The manual choices that train [fromXp, toXp) one way: with a family's methods (`family`, the best of them at each level), with one
+ * method (`methodId`, where it covers the levels), or with the fastest method at each level (neither). Levels the way does not cover are
+ * left out, so the planner fills them as it would. Returns [{ fromLevel, toLevel, methodId }].
+ */
+export function routeOverrides(goal, fromXp, toXp, { family = null, methodId = null } = {}) {
+  if (!(toXp > fromXp)) return []
+  const ids = family ? FAMILIES.find((f) => f.id === family)?.test : null
+  let allowed = Array.isArray(goal.allowedMethodIds) && goal.allowedMethodIds.length ? new Set(goal.allowedMethodIds) : null
+  if (family || methodId) {
+    const pool = methodsForSkill(goal.skill).filter((m) => (methodId ? m.id === methodId : ids(m)) && (!allowed || allowed.has(m.id)))
+    allowed = new Set(pool.map((m) => m.id))
+  }
+  const blocked = Array.isArray(goal.blockedMethodIds) && goal.blockedMethodIds.length ? new Set(goal.blockedMethodIds) : null
+  return fillRoute(goal.skill, fromXp, toXp, 'fast', goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowed, blocked)
+    .filter((piece) => piece.method)
+    .map((piece) => {
+      // Choices are by level: a piece that ends part of the way through a level reaches up to the next one.
+      const end = levelAtXp(piece.toXp, true)
+      return { fromLevel: levelAtXp(piece.fromXp, true), toLevel: xpAtLevel(end) < piece.toXp ? end + 1 : end, methodId: piece.method.id }
+    })
+}
+/** Lays such choices over a goal's own, replacing whatever was chosen for those levels. */
+export function withRouteOverrides(list, picks) {
+  return picks.reduce((acc, o) => setOverrideRange(acc, o.fromLevel, o.toLevel, o.methodId), list || [])
+}
+
 /**
  * Manual choices for sets of levels: [{ fromLevel, toLevel, methodId }], each meaning "train from fromLevel up to toLevel with
  * this method". They sit on top of whatever route the goal's strategy gives and never overlap each other.

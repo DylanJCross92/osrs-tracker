@@ -147,6 +147,7 @@
       <PlannerProgress
         v-if="progress"
         :progress="progress"
+        :gp-made="gpMade"
         :finish="finishInfo"
         :updated-at="player?.latest?.capturedAt || ''"
         :baseline-at="statsAt || ''"
@@ -179,6 +180,8 @@
               :index="i"
               :count="goals.length"
               :live-goal="liveGoals[i]"
+              :done-route="doneRoutes[i]"
+              :route-choices="routeChoices[i]"
               :initial-tab="editTab"
               @patch="(patch) => patchGoal(i, patch)"
               @pick="(id) => pickRoute(i, id)"
@@ -293,6 +296,11 @@ import {
   encodePlan,
   decodePlan,
   suggestedQuests,
+  methodFamily,
+  familiesFor,
+  routeOverrides,
+  withRouteOverrides,
+  setOverrideRange,
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
 import { freeMethodIds } from '@/utils/membership'
@@ -781,6 +789,79 @@ const scheduleGoals = computed(() => {
 const scheduleOriginal = computed(() =>
   scheduleGoals.value.map((g, i) => (g.currentXp === goals.value[i].currentXp ? originalPlans.value[i] : memo(planCache, goalKey(withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value)), true), () => planGoal(withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value)))))),
 )
+// The levels already trained: each goal planned from its start up to where the player is now, with the same methods chosen for those levels.
+// The skill editor lists them as done, and what they made is shown beside the plan's progress.
+const doneRoutes = computed(() =>
+  goals.value.map((g, i) => {
+    if (!tracking.value) return null
+    const upTo = Math.min(liveGoals.value[i]?.currentXp ?? 0, g.targetXp)
+    if (upTo <= g.currentXp) return null
+    const r = resolvedOriginal.value[i]
+    const part = { ...r, targetXp: upTo }
+    return memo(planCache, goalKey(part, true), () => planGoal(part))
+  }),
+)
+// Staying with one way of training. For a skill with levels already trained: which way those levels were trained (so the player can say, in one tap), and
+// what carrying on the same way, or the fastest way, would be for the levels left. Choices go up as new manual picks for those levels.
+const routeChoices = computed(() =>
+  goals.value.map((g, i) => {
+    const done = doneRoutes.value[i]
+    const live = liveGoals.value[i]
+    const orig = resolvedOriginal.value[i]
+    if (!done || !live || !orig) return null
+    const families = familiesFor(g.skill)
+    const doneSegs = done.segments.filter((x) => x.method)
+    const trainedWith = doneSegs.length && doneSegs.every((x) => methodFamily(x.method)?.id === methodFamily(doneSegs[0].method)?.id) ? methodFamily(doneSegs[0].method)?.id || null : null
+    const lastSeg = doneSegs.at(-1)
+    const liveXp = Math.min(live.currentXp, g.targetXp)
+    const trained = families
+      // Saying how the levels were trained also carries the same way on for the levels left (the fastest way is one tap below).
+      .map((f) => ({
+        id: f.id,
+        label: f.label,
+        overrides: withRouteOverrides(withRouteOverrides(g.overrides, routeOverrides(orig, g.currentXp, liveXp, { family: f.id })), routeOverrides(resolved.value[i], liveXp, g.targetXp, { family: f.id })),
+        on: trainedWith === f.id,
+      }))
+      .filter((f) => f.overrides.length)
+    const levelOf = (xp) => levelAtXp(xp, true)
+    const resetDone = setOverrideRange(g.overrides, levelOf(g.currentXp), Math.max(levelOf(liveXp), levelOf(g.currentXp) + 1), null)
+    // What is left, trained a given way, worked out against the plan as it stands.
+    const names = (plan) => [...new Set(plan.segments.map((x) => x.method?.name).filter(Boolean))].join(', ')
+    const option = (key, title, picks) => {
+      if (!picks.length) return null
+      const overrides = withRouteOverrides(g.overrides, picks)
+      const plan = memo(planCache, goalKey({ ...resolved.value[i], overrides }, true), () => planGoal({ ...resolved.value[i], overrides }))
+      const now = plans.value[i]
+      const same = JSON.stringify(plan.segments.map((x) => [x.method?.id, x.fromXp, x.toXp])) === JSON.stringify(now.segments.map((x) => [x.method?.id, x.fromXp, x.toXp]))
+      return { key, title, overrides, hours: plan.hours, netGp: plan.netGp, names: names(plan), same, savesHours: now.hours != null && plan.hours != null ? now.hours - plan.hours : null }
+    }
+    let carryOn = null
+    if (lastSeg && liveXp < g.targetXp) {
+      const fam = methodFamily(lastSeg.method)
+      carryOn = option('same', fam ? `Keep training ${fam.label.toLowerCase()}` : `Keep using ${lastSeg.method.name}`, routeOverrides(resolved.value[i], liveXp, g.targetXp, fam ? { family: fam.id } : { methodId: lastSeg.method.id }))
+    }
+    const fastest = liveXp < g.targetXp ? option('fast', 'Fastest for the levels left', routeOverrides(resolved.value[i], liveXp, g.targetXp)) : null
+    return { from: levelOf(g.currentXp), upTo: levelOf(liveXp), to: levelOf(g.targetXp), trained, resetDone, anyDone: doneSegs.length > 0, carryOn, fastest }
+  }),
+)
+// What the levels gained since the plan started made (gp), or null when no gp is known for them.
+const gpMade = computed(() => {
+  if (!trackedPlan.value) return null
+  let sum = 0
+  let known = false
+  goals.value.forEach((g, i) => {
+    const from = scheduleGoals.value[i]?.currentXp ?? g.currentXp
+    const upTo = Math.min(liveGoals.value[i]?.currentXp ?? 0, g.targetXp)
+    if (upTo <= from) return
+    const part = { ...resolvedOriginal.value[i], currentXp: from, targetXp: upTo }
+    const plan = memo(planCache, goalKey(part, true), () => planGoal(part))
+    if (plan.netGp != null) {
+      sum += plan.netGp
+      known = true
+    }
+  })
+  return known ? Math.round(sum) : null
+})
 const progress = computed(() => (trackedPlan.value ? buildProgress(scheduleGoals.value, liveGoals.value, scheduleOriginal.value, plans.value, hoursPerDay.value, statsAt.value, new Date(), startInfo.value ? startInfo.value.activeDays : undefined) : null))
 // How fast the player has really been gaining XP in these skills (their tracked daily history) and what that means for the finish date.
 const history = ref({ id: null, rows: [] })
