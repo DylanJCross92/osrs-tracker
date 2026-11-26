@@ -252,11 +252,6 @@ async function buildDiscover() {
   }
 
   const activity = await getActivity(byId)
-  // Level 99s reached in the last 24 hours, across every tracked player (the feed above only holds the newest events).
-  const { rows: nineties } = await pool.query(
-    `SELECT player_id FROM player_milestones WHERE milestone_type = 'skill_level' AND value = 99 AND occurred_at >= now() - interval '24 hours'`,
-  )
-  const nines24 = nineties.filter((r) => byId.has(r.player_id)).length
   const insights = await cached(insightsCache, INSIGHTS_TTL, () => buildInsights({ players, activity, byId }))
 
   // Everyone tracked, by name: the normal characters (the lists here) plus names that only exist on Hardcore Worlds.
@@ -267,7 +262,6 @@ async function buildDiscover() {
     trackedTotal: counted[0].n,
     players: players.map(compact),
     activity,
-    nines24,
     recentlyTracked,
     recent99,
     topWeek: gainsBy('week'),

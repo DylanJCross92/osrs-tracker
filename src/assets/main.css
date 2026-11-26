@@ -1502,7 +1502,7 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-eyebrow { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px 4px 10px; border-radius: 999px; background: rgba(124, 184, 105, 0.1); border: 1px solid rgba(124, 184, 105, 0.35); color: var(--muted); font-size: 0.76rem; letter-spacing: 0.04em; }
 .disc-hero-main h1 { margin: 14px 0 0; font-size: clamp(2rem, 4.5vw, 2.9rem); line-height: 1.08; letter-spacing: -0.02em; }
 .disc-hero .disc-sub { margin: 12px 0 22px; max-width: 520px; font-size: 1.02rem; line-height: 1.55; }
-.disc-stat-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+.disc-stat-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
 .disc-stat-tile { display: flex; align-items: center; gap: 11px; padding: 12px 14px; border-radius: 14px; background: rgba(14, 12, 9, 0.55); border: 1px solid var(--border); min-width: 0; }
 .disc-stat-tile > span:not(.disc-stat-icon) { display: flex; flex-direction: column; min-width: 0; }
 .disc-stat-tile b { font-size: 1.25rem; line-height: 1.15; }
@@ -1526,8 +1526,6 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-spot:hover .disc-spot-cta { filter: brightness(1.08); }
 @media (max-width: 860px) { .disc-hero { padding: 22px 18px; } }
 @media (max-width: 520px) { .disc-stat-tiles { grid-template-columns: 1fr; } }
-.disc-stat-tiles.has-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 520px) { .disc-stat-tiles.has-two { grid-template-columns: 1fr; } }
 .disc-of { font-style: normal; font-weight: 500; color: var(--muted); font-size: 0.85em; }
 
 /* discover header: tiles fit their content cleanly */
