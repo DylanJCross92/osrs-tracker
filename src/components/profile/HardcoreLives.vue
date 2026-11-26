@@ -1,5 +1,5 @@
 <template>
-  <section class="hl" aria-labelledby="hl-h">
+  <section class="hw-lives" aria-labelledby="hl-h">
     <h2 id="hl-h" class="hl-h">Lives</h2>
     <p class="hl-lede">
       <template v-if="character.status === 'left'">This character is no longer on the Hardcore Worlds hiscores, so it has probably moved to the normal worlds.</template>

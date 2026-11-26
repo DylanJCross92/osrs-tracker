@@ -8237,7 +8237,8 @@ html.iron-mode .gp-figure { display: none !important; }
 .ws-tabs button:last-child.on { background: rgba(214, 88, 76, 0.18); color: #f0a49b; }
 .ws-facts { color: var(--muted); font-size: 0.84rem; }
 .ws-facts b { color: var(--text); font-weight: 700; }
-.hl { margin: 14px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
+/* (Not .hl: the planner uses that name for a highlighted skill card.) */
+.hw-lives { margin: 14px 0 0; padding: 14px 0 0; border-top: 1px solid var(--border); }
 .hl-h { margin: 0 0 4px; font-size: 1.05rem; color: var(--gold-bright); }
 .hl-lede { margin: 0 0 10px; color: var(--text); font-size: 0.92rem; max-width: none; }
 .hl-list { margin: 0 0 8px; padding: 0; list-style: none; display: grid; gap: 0; }
@@ -8292,3 +8293,7 @@ html.iron-mode .gp-figure { display: none !important; }
 /* Plan cards: the progress label stays on one line and the badge and percentage sit beside it. */
 .po-prog-top .po-prog-label { white-space: nowrap; }
 .po-prog-top { align-items: center; gap: 6px; }
+
+/* The skill editor's goal: a Level / XP switch, and what each box is worth in the other unit under it. */
+.se-mode { align-self: flex-start; }
+.se-equiv { color: var(--muted); font-size: 0.78rem; font-weight: 500; letter-spacing: 0; text-transform: none; }

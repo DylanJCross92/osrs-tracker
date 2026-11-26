@@ -12,20 +12,28 @@
     <div v-if="tab === 'method'" class="se-panel" role="tabpanel">
       <section class="se-field">
         <h4>Your goal</h4>
-        <p class="se-hint">Where {{ goal.skill }} starts and the level this plan takes it to. The route and times update straight away.</p>
+        <p class="se-hint">Where {{ goal.skill }} starts and where this plan takes it to, as a level or as XP. The route and times update straight away.</p>
         <div v-if="goal.allowedMethodIds?.length" class="planner-notice">
           This skill only uses {{ goal.allowedMethodIds.length }} chosen method{{ goal.allowedMethodIds.length === 1 ? '' : 's' }} (set in the skill calculator).
           <button class="btn-text" type="button" @click="$emit('patch', { allowedMethodIds: null })">Use all methods</button>
         </div>
+        <div class="range-tabs se-mode" role="group" aria-label="Set the goal as">
+          <button type="button" :class="{ active: goalMode === 'level' }" :aria-pressed="goalMode === 'level'" @click="goalMode = 'level'">Level</button>
+          <button type="button" :class="{ active: goalMode === 'xp' }" :aria-pressed="goalMode === 'xp'" @click="goalMode = 'xp'">XP</button>
+        </div>
         <div class="se-levels">
           <label>
-            <span>From level</span>
-            <NumberInput :model-value="startLevel" :min="1" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setStartLevel" />
+            <span>{{ goalMode === 'level' ? 'From level' : 'From XP' }}</span>
+            <NumberInput v-if="goalMode === 'level'" :model-value="startLevel" :min="1" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setStartLevel" />
+            <NumberInput v-else :model-value="goal.currentXp" :min="0" :max="MAX_XP - 1" commit="blur" @update:model-value="setStartXp" />
+            <small class="se-equiv">{{ goalMode === 'level' ? `${formatNum(goal.currentXp)} XP` : `Level ${startLevel}` }}</small>
           </label>
           <span class="se-arrow" aria-hidden="true">→</span>
           <label>
-            <span>Goal level</span>
-            <NumberInput :model-value="endLevel" :min="2" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setTargetLevel" />
+            <span>{{ goalMode === 'level' ? 'Goal level' : 'Goal XP' }}</span>
+            <NumberInput v-if="goalMode === 'level'" :model-value="endLevel" :min="2" :max="MAX_VIRTUAL_LEVEL" commit="blur" @update:model-value="setTargetLevel" />
+            <NumberInput v-else :model-value="goal.targetXp" :min="1" :max="MAX_XP" commit="blur" @update:model-value="setTargetXp" />
+            <small class="se-equiv">{{ goalMode === 'level' ? `${formatNum(goal.targetXp)} XP` : `Level ${endLevel}` }}</small>
           </label>
         </div>
       </section>
@@ -164,6 +172,7 @@ import {
   relevantMethods,
   profitableMethods,
   formatGp,
+  formatNum,
 } from '@/utils/planner'
 import { STRATEGY_LABELS, materialsForPlan } from '@/utils/plannerTools'
 
@@ -206,6 +215,18 @@ const chosenBlocked = computed(() => {
 })
 const blockedInRoute = computed(() => routeMethods.value.filter((a) => a.state === 'blocked' && a.method.id !== method.value?.id))
 const unmetNames = (a) => a.unmet.map((i) => i.req.label).join(', ')
+
+// --- Level or XP: a goal can be set either way. It opens on XP when the goal is not exactly a level (it was set as XP).
+const atLevelStart = (xp) => xpAtLevel(Math.min(levelAtXp(xp, true), MAX_VIRTUAL_LEVEL)) === xp
+const goalMode = ref(atLevelStart(props.goal.targetXp) ? 'level' : 'xp')
+function setStartXp(xp) {
+  if (xp == null || !Number.isFinite(xp)) return
+  emit('patch', { currentXp: Math.min(Math.max(Math.floor(xp), 0), MAX_XP - 1) })
+}
+function setTargetXp(xp) {
+  if (!xp || !Number.isFinite(xp)) return
+  emit('patch', { targetXp: Math.min(Math.max(Math.floor(xp), 1), MAX_XP) })
+}
 
 // --- Levels
 function setStartLevel(level) {
