@@ -13,6 +13,18 @@ describe('planStartInfo', () => {
     expect(info).toMatchObject({ state: 'not-started', startedAt: null, activeDays: null, manual: false })
   })
 
+  it('counts from where the player really stood when the plan began, not from a lower start level typed in', () => {
+    const low = { statsAt: day(0), goals: [{ skill: 'Agility', currentXp: 0, targetXp: 13_034_431 }] }
+    // 6.5M at the start, then a quiet spell, then real gains
+    const quiet = planStartInfo(low, { history: [snap(0, 6_500_000), snap(3, 6_500_000)] }, new Date(day(5)))
+    expect(quiet.state).toBe('not-started') // 6.5M already there is not XP gained
+    const history = [snap(0, 6_500_000), snap(4, 6_500_000), snap(6, 7_000_000)]
+    const info = planStartInfo(low, { history }, new Date(day(8)))
+    expect(info.state).toBe('active')
+    expect(info.startedAt).toBe(day(4))
+    expect(info.baseXp).toEqual({ Agility: 6_500_000 })
+  })
+
   it('starts by itself on the first gain, counting from the snapshot before it', () => {
     const history = [snap(0, 1000), snap(4, 1000), snap(6, 5000)]
     const info = planStartInfo(plan, { history }, new Date(day(8)))

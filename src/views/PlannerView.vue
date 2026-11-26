@@ -772,7 +772,16 @@ const startInfo = computed(() =>
       )
     : null,
 )
-const progress = computed(() => (trackedPlan.value ? buildProgress(goals.value, liveGoals.value, originalPlans.value, plans.value, hoursPerDay.value, statsAt.value, new Date(), startInfo.value ? startInfo.value.activeDays : undefined) : null))
+// The schedule counts from the XP the player had when the plan started, so a start level typed in below where they really were does not
+// show as XP gained since (and a plan that looks years early).
+const scheduleGoals = computed(() => {
+  const base = startInfo.value?.baseXp
+  return base ? goals.value.map((g) => ({ ...g, currentXp: Math.min(Math.max(g.currentXp, base[g.skill] ?? 0), g.targetXp) })) : goals.value
+})
+const scheduleOriginal = computed(() =>
+  scheduleGoals.value.map((g, i) => (g.currentXp === goals.value[i].currentXp ? originalPlans.value[i] : memo(planCache, goalKey(withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value)), true), () => planGoal(withBlocked(resolveGoal(g, globalStrategy.value, gpValue.value)))))),
+)
+const progress = computed(() => (trackedPlan.value ? buildProgress(scheduleGoals.value, liveGoals.value, scheduleOriginal.value, plans.value, hoursPerDay.value, statsAt.value, new Date(), startInfo.value ? startInfo.value.activeDays : undefined) : null))
 // How fast the player has really been gaining XP in these skills (their tracked daily history) and what that means for the finish date.
 const history = ref({ id: null, rows: [] })
 watch(
@@ -796,7 +805,7 @@ const projection = computed(() => {
   const hpd = Number(hoursPerDay.value)
   return projectFinish({
     snapshots: history.value.rows,
-    goals: goals.value,
+    goals: scheduleGoals.value,
     remainingXp: progress.value.remainingXp,
     plannedDays: hpd > 0 ? progress.value.originalHours / hpd : null,
     // The pace is measured from when the plan really started, not from when it was made.
@@ -814,7 +823,7 @@ const series = computed(() => {
   return paceSeries({
     only: focusIdx.value,
     snapshots: history.value.id === player.value?.id ? history.value.rows : [],
-    goals: goals.value,
+    goals: scheduleGoals.value,
     progress: progress.value,
     hoursPerDay: hoursPerDay.value,
     // The pace is measured from when the plan really started, not from when it was made.
@@ -1755,12 +1764,14 @@ function cardProgress(p) {
   const { found, skills, prep } = cardContext(p)
   const baseline = p.statsAt || p.createdAt || p.updatedAt
   if (!skills || !baseline || !p.goals?.length) return null
-  const live = p.goals.map((g) => liveGoalFor(g, skills[g.skill]?.xp))
-  const original = p.goals.map((g) => planGoal(prep(g)))
-  const now = live.map((g) => planGoal(prep(g)))
   // Not started (nothing gained in its skills yet) or paused: no schedule to be behind (see utils/planStart.js).
   const start = planStartInfo({ ...p, statsAt: baseline }, { history: overviewHistory.value[found?.id] || null, latest: found?.latest || { skills } }, new Date())
-  const prog = buildProgress(p.goals, live, original, now, p.hoursPerDay, baseline, new Date(), start.activeDays)
+  // The schedule counts from the XP the player had when the plan started, as on the plan page.
+  const sched = start.baseXp ? p.goals.map((g) => ({ ...g, currentXp: Math.min(Math.max(g.currentXp, start.baseXp[g.skill] ?? 0), g.targetXp) })) : p.goals
+  const live = p.goals.map((g) => liveGoalFor(g, skills[g.skill]?.xp))
+  const original = sched.map((g) => planGoal(prep(g)))
+  const now = live.map((g) => planGoal(prep(g)))
+  const prog = buildProgress(sched, live, original, now, p.hoursPerDay, baseline, new Date(), start.activeDays)
   // What is still to train, worked out the way the plan page does: the card also shows it beside the plan's whole time.
   const left = planTotals(now, p.hoursPerDay)
   // On schedule, ahead or behind, from the same schedule the plan page shows (null once the plan is complete or has no schedule yet).

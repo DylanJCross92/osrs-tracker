@@ -31,7 +31,18 @@ export function planStartInfo(plan, { history = null, latest = null } = {}, now 
   if (plan.startHold === true && manualStart == null) return notStarted(true)
 
   const total = (skills) => goals.reduce((sum, g) => sum + (Number(skills?.[g.skill]?.xp) || 0), 0)
-  const startXp = goals.reduce((sum, g) => sum + (Number(g.currentXp) || 0), 0)
+  const all = (history || [])
+    .map((s) => ({ t: ms(s.capturedAt), skills: s.skills }))
+    .filter((r) => r.t != null)
+    .sort((a, b) => a.t - b.t)
+  // Where each skill really stood: a start level typed in below the player's real level is not a reason to call the plan started (or to count XP
+  // already there as gained since), so the starting XP is the higher of the plan's and the player's at the time the stats were taken.
+  const xpAt = (t) => {
+    const row = [...all].reverse().find((r) => r.t <= t)
+    return Object.fromEntries(goals.map((g) => [g.skill, Math.max(Number(g.currentXp) || 0, Number(row?.skills?.[g.skill]?.xp) || 0)]))
+  }
+  const base = xpAt(baseMs)
+  const startXp = goals.reduce((sum, g) => sum + base[g.skill], 0)
 
   // Every time XP was gained in the plan's skills since it was made, and when the snapshot before the first gain was taken.
   const rows = (history || [])
@@ -69,7 +80,10 @@ export function planStartInfo(plan, { history = null, latest = null } = {}, now 
   }
   const lastGain = gains.filter((t) => t >= startMs).pop() ?? null
   const idle = (nowMs - (lastGain ?? startMs)) / DAY
+  // What each skill stood at when the plan started: the schedule is worked out from there, not from a lower level typed in as the start.
+  const atStart = xpAt(startMs)
   return {
+    baseXp: Object.fromEntries(goals.map((g) => [g.skill, Math.max(base[g.skill], atStart[g.skill])])),
     state: idle > PAUSE_DAYS ? 'paused' : 'active',
     startedAt: new Date(startMs).toISOString(),
     lastGainAt: lastGain != null ? new Date(lastGain).toISOString() : null,
