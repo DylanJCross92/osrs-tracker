@@ -57,9 +57,9 @@
         <CombatBadge :skills="latest?.skills" />
       </div>
       <div class="detail-info">
-        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /><HardcoreTag v-if="isHardcore" class="hw-tag-lg" /></h1>
+        <h1 class="detail-name">{{ player?.displayName || usernameParam }}<PlayerBadge :label="player?.badge" :claimed="!!claim?.claimed" :mine="claim?.mine === 'owner'" /></h1>
         <AccountBadge :build="page.build" :iron-kind="page.ironKind" />
-        <WorldSwitch v-if="hardcore && mainPlayer" :world="world" :character="hardcore" :rank="Number(hardcorePlayer?.latest?.overallRank) || 0" @update:world="setWorld" />
+        <WorldSwitch v-if="hardcore" :switchable="!!mainPlayer" :world="world" :character="hardcore" :rank="Number(hardcorePlayer?.latest?.overallRank) || 0" @update:world="setWorld" />
         <div v-if="followCounts || profile" class="pp-meta">
           <p v-if="followCounts" class="pp-follows" aria-label="Followers and following">
             <span><b>{{ formatCount(followCounts.followers) }}</b> {{ followCounts.followers === 1 ? 'follower' : 'followers' }}</span>
@@ -322,7 +322,6 @@ import CustomizeProfileModal from '@/components/profile/CustomizeProfileModal.vu
 import ProfileFlair from '@/components/profile/ProfileFlair.vue'
 import AccountBadge from '@/components/profile/AccountBadge.vue'
 import WorldSwitch from '@/components/profile/WorldSwitch.vue'
-import HardcoreTag from '@/components/HardcoreTag.vue'
 import HardcoreLives from '@/components/profile/HardcoreLives.vue'
 import ProfileGoalsPublic from '@/components/profile/ProfileGoalsPublic.vue'
 import GoalShareModal from '@/components/profile/GoalShareModal.vue'
