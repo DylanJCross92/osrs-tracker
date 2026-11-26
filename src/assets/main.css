@@ -4030,6 +4030,8 @@ input[type="checkbox"]:disabled { opacity: 0.5; cursor: default; }
 .route-change:hover, .route-change:focus-visible { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); outline: none; }
 .planner-step-manual { border-left-color: #6fb3e0; }
 .planner-step-manual .planner-step-name em { color: #8cc4ea; }
+/* The note under a method name lines up with the name, not with the method's icon (20px + its 7px margin) */
+.planner-step-name .route-ico ~ em { margin-left: 27px; }
 .planner-step.editing { border-color: var(--gold); }
 .planner-step-edit { list-style: none; margin: -2px 0 2px; padding: 10px 12px 12px; border: 1px solid var(--gold); border-top: 0; border-radius: 0 0 8px 8px; background: var(--panel); }
 .planner-step-edit .planner-hint { margin: 0 0 8px; }
