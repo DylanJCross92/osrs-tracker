@@ -1526,6 +1526,9 @@ b, strong, th, h1, h2, h3, h4, h5, h6, dt, optgroup { font-weight: 500; }
 .disc-spot:hover .disc-spot-cta { filter: brightness(1.08); }
 @media (max-width: 860px) { .disc-hero { padding: 22px 18px; } }
 @media (max-width: 520px) { .disc-stat-tiles { grid-template-columns: 1fr; } }
+.disc-stat-tiles.has-two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 520px) { .disc-stat-tiles.has-two { grid-template-columns: 1fr; } }
+.disc-of { font-style: normal; font-weight: 500; color: var(--muted); font-size: 0.85em; }
 
 /* discover header: tiles fit their content cleanly */
 .disc-stat-tiles { gap: 10px; }

@@ -7,18 +7,18 @@
         <h1>Discover <span class="home-accent">players</span></h1>
         <p class="disc-sub">Level-ups, 99s, big XP days and rising stars across every tracked OSRS player, right now.</p>
 
-        <div v-if="players.length" class="disc-stat-tiles">
+        <div v-if="players.length" class="disc-stat-tiles" :class="{ 'has-two': !nines24 }">
           <component :is="isAdmin ? 'button' : 'div'" class="disc-stat-tile" :class="{ 'is-action': isAdmin }" :type="isAdmin ? 'button' : undefined" :aria-label="isAdmin ? 'Show the most recently tracked players' : undefined" @click="isAdmin && (recentOpen = true)">
             <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" /><path d="M16 4.5a3.5 3.5 0 010 7M18 14.5c2.2.7 3.5 2.6 3.5 5.5" /></svg></span>
-            <span><b>{{ (data.trackedTotal ?? players.length).toLocaleString('en-US') }}</b><small>players</small></span>
+            <span><b>{{ activePlayers.count.toLocaleString('en-US') }}<em class="disc-of"> / {{ (data.trackedTotal ?? players.length).toLocaleString('en-US') }}</em></b><small>players active · {{ activePlayers.label }}</small></span>
           </component>
           <button type="button" class="disc-stat-tile is-action" aria-label="Show the XP gained on the site over the last 24 hours, 7 days and 30 days" @click="xpOpen = true; track('discover_xp_total_open')">
             <span class="disc-stat-icon green"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9" /><path d="M15 6h6v6" /></svg></span>
             <span><b class="stat-gain">+{{ formatXp(totalToday || totalWeek) }}</b><small>XP {{ totalToday ? '· 24 hours' : '· 7 days' }}</small></span>
           </button>
-          <div class="disc-stat-tile">
-            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg></span>
-            <span><b>{{ activePlayers.count.toLocaleString('en-US') }}</b><small>Active · {{ activePlayers.label }}</small></span>
+          <div v-if="nines24" class="disc-stat-tile">
+            <span class="disc-stat-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.3 6L12 16.4 6.6 19.4l1.3-6L3.4 9.3l6-.7z" /></svg></span>
+            <span><b>{{ nines24.toLocaleString('en-US') }}</b><small>99s reached · 24 hours</small></span>
           </div>
         </div>
 
@@ -455,6 +455,7 @@ const xpOpen = ref(false)
 const totalToday = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.h24?.xp || 0, 0), 0))
 const totalWeek = computed(() => players.value.reduce((s, p) => s + Math.max(p.gains?.week?.xp || 0, 0), 0))
 // Players who gained XP: in the last 24 hours, or over 7 days on a quiet day (like the XP tile).
+const nines24 = computed(() => data.value.nines24 || 0)
 const activePlayers = computed(() => {
   const day = players.value.filter((p) => p.gains?.h24?.xp > 0).length
   if (day) return { count: day, label: '24 hours' }
