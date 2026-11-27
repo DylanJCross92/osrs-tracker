@@ -132,6 +132,14 @@
           <span>Using <b>{{ template.name }}</b><template v-if="template.rsn"> by {{ template.rsn }}</template>. Every goal now starts from your current stats. Nothing of the original player's progress was copied.</span>
           <button class="btn-text" type="button" @click="template = null">Dismiss</button>
         </div>
+        <!-- Stats that look like a skiller, pure or zerker, on a plan made as a main account: offer the build, so combat and fights are left out -->
+        <div v-if="buildHint" class="ps-template" role="status">
+          <span>Your stats look like a <b>{{ buildHint.label }}</b>. Plan as one {{ buildHint.text }}.</span>
+          <span class="ps-hint-actions">
+            <button class="btn btn-ghost" type="button" @click="acceptBuildHint">Plan as a {{ buildHint.short }}</button>
+            <button class="btn-text" type="button" @click="dismissBuildHint">Not now</button>
+          </span>
+        </div>
         <!-- Once the plan is saved (in this browser) and there is no name prompt to answer: where an account would keep it -->
         <p v-if="!loggedIn && currentPlanId && !(template && templatePending)" class="ps-account" role="status">
           Saved in this browser. <RouterLink :to="{ name: 'signup', query: { next: route.fullPath } }">Create a free account</RouterLink> to keep it on every device and track your progress.
@@ -624,6 +632,41 @@ const detectedBuild = computed(() => {
   for (const name of SKILL_NAMES) if (Number.isFinite(skills[name]?.level)) levels[name] = skills[name].level
   return detectBuild(levels)
 })
+// A plan open for a player whose stats look like a build the plan is not set to: offered once, in the plan itself (the account menu only shows it
+// when opened), and remembered when dismissed so it does not come back for that player.
+const HINT_KEY = 'tickgains-build-hint-dismissed'
+const hintDismissed = ref([])
+try {
+  const raw = JSON.parse(localStorage.getItem(HINT_KEY) || '[]')
+  if (Array.isArray(raw)) hintDismissed.value = raw.filter((x) => typeof x === 'string').slice(-50)
+} catch {
+  /* no storage: the hint can come back, which is harmless */
+}
+const buildHint = computed(() => {
+  const found = detectedBuild.value
+  const p = player.value
+  if (!found || !p || found === build.value || !goals.value.length || template.value) return null
+  const key = `${String(p.username || '').toLowerCase()}:${found}`
+  if (hintDismissed.value.includes(key)) return null
+  const b = buildOf(found)
+  const text = b.noFights ? 'to leave out combat skills and any quest or method that needs a fight' : `so ${String(b.planNote || '').replace(/\.$/, '')} and the quests and methods that would break it are left out`
+  return { key, build: found, label: b.label.toLowerCase().replace(/^any build$/, 'main'), short: b.short.toLowerCase(), text }
+})
+function acceptBuildHint() {
+  if (!buildHint.value) return
+  track('planner_build_hint', { build: buildHint.value.build, action: 'accept' })
+  setBuild(buildHint.value.build)
+}
+function dismissBuildHint() {
+  if (!buildHint.value) return
+  track('planner_build_hint', { build: buildHint.value.build, action: 'dismiss' })
+  hintDismissed.value = [...hintDismissed.value, buildHint.value.key].slice(-50)
+  try {
+    localStorage.setItem(HINT_KEY, JSON.stringify(hintDismissed.value))
+  } catch {
+    /* kept for this visit only */
+  }
+}
 // Tells the person which goals a change took out of the plan (a locked skill cannot be planned).
 function noteDropped(before, after, why) {
   const gone = before.filter((g) => !after.some((a) => a.skill === g.skill)).map((g) => g.skill)

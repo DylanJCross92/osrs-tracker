@@ -12,7 +12,7 @@
           </div>
           <label v-if="silentCount" class="vz-hide">
             <input v-model="hideSilent" type="checkbox" />
-            <span>Hide {{ silentCount }} with no interaction <small>(opened the page, never clicked, scrolled or typed: often a link scanner)</small></span>
+            <span>Hide {{ silentCount }} with no interaction <small>(opened the page, left within seconds without clicking, scrolling or typing: often a link scanner)</small></span>
           </label>
           <p v-if="!list.visitors.length" class="st-empty">Nobody has been followed in this time yet. Visitors appear here from the first visit after this page shipped.</p>
           <p v-else-if="!shown.length" class="st-empty">No visitor matches "{{ filter }}".</p>
@@ -44,7 +44,7 @@
                 </div>
                 <div class="vz-head-side">
                   <span class="vz-kind">{{ journey.kind === 'account' ? 'Signed-in account' : journey.kind === 'anon' ? 'Several people, not told apart' : 'Not signed in' }}</span>
-                  <span v-if="journey.silent" class="vz-kind vz-silent" title="The page was opened but nothing a person does (a click, a scroll, a key) was seen. Often a link scanner or a very quick bounce.">No interaction</span>
+                  <span v-if="journey.silent" class="vz-kind vz-silent" title="The page was opened and left within seconds, and nothing a person does (a click, a scroll, a key) was seen. Often a link scanner or a very quick bounce.">No interaction</span>
                   <button v-if="journey.kind === 'visitor'" class="btn-text vz-delete" type="button" @click="asking = true">Delete visitor</button>
                 </div>
               </div>

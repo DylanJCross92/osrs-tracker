@@ -92,6 +92,9 @@ describe('visitors that never interacted', () => {
     expect(silentVisitor({ interacted: true, first: '2026-11-21T00:00:00Z', shipAt, kind: 'visitor' })).toBe(false)
     expect(silentVisitor({ interacted: false, first: '2026-11-19T00:00:00Z', shipAt, kind: 'visitor' })).toBe(false) // before it shipped
     expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', shipAt: null, kind: 'visitor' })).toBe(false)
+    // one that stayed open for half a minute is someone reading, not a scanner passing through
+    expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', last: '2026-11-21T00:00:29Z', shipAt, kind: 'visitor' })).toBe(false)
+    expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', last: '2026-11-21T00:00:02Z', shipAt, kind: 'visitor' })).toBe(true)
     expect(silentVisitor({ interacted: false, first: '2026-11-21T00:00:00Z', shipAt, kind: 'account' })).toBe(false)
   })
 })

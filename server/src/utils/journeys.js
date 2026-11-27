@@ -7,13 +7,19 @@ export const SESSION_GAP_MINUTES = 30
 /** The event a browser sends once, when something a person does (a click, a key, a scroll) happens on a page. It is not a step of the journey. */
 export const INTERACTION_EVENT = 'page_interacted'
 
+/** A visit that stayed open this long is not a scanner passing through (they read the page and go), whatever else it did. */
+export const STAYED_MS = 20_000
+
 /**
  * Whether a visitor looks like something that only opened the link: no interaction recorded although the site was already recording it
- * when they came (`shipAt`, the first interaction ever seen). Accounts signed in, so they are people. Unknown (null) before that.
+ * when they came (`shipAt`, the first interaction ever seen), and gone within seconds. Accounts signed in, so they are people. A visit that
+ * stayed open for STAYED_MS or more is left alone (someone reading without touching anything, or the page timers that fire later in it).
+ * Not called silent before the site recorded interactions (null shipAt).
  */
-export function silentVisitor({ interacted, first, shipAt, kind }) {
+export function silentVisitor({ interacted, first, last, shipAt, kind }) {
   if (kind !== 'visitor' || interacted || !shipAt || !first) return false
-  return new Date(first).getTime() >= new Date(shipAt).getTime()
+  if (new Date(first).getTime() < new Date(shipAt).getTime()) return false
+  return !(last && new Date(last).getTime() - new Date(first).getTime() >= STAYED_MS)
 }
 
 /** 'a:12' (an account) or 'v:<32 hex>' (a browser) -> { kind, id }, or null. */

@@ -104,7 +104,7 @@ export async function visitors(days) {
         pages: r.pages,
         first: new Date(r.first).toISOString(),
         last: new Date(r.last).toISOString(),
-        silent: silentVisitor({ interacted: r.interacted, first: r.first, shipAt, kind: r.account_id ? 'account' : 'visitor' }),
+        silent: silentVisitor({ interacted: r.interacted, first: r.first, last: r.last, shipAt, kind: r.account_id ? 'account' : 'visitor' }),
       }
     })].sort((a, b) => new Date(b.last) - new Date(a.last)),
   }
@@ -171,7 +171,7 @@ export async function journeyOf(key, days) {
     players: a?.players || '',
     days,
     ...journey,
-    silent: silentVisitor({ interacted: journey.interacted, first: journey.first, shipAt: await interactionShipped(), kind: person.kind }),
+    silent: silentVisitor({ interacted: journey.interacted, first: journey.first, last: journey.last, shipAt: await interactionShipped(), kind: person.kind }),
   }
 }
 

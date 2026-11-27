@@ -3501,6 +3501,7 @@ input[type='number']::-webkit-inner-spin-button, input[type='number']::-webkit-o
 .shared-plan .plan-tiles { margin-bottom: 14px; }
 .ps-template { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: rgba(217, 175, 82, 0.1); border: 1px solid var(--border-strong); font-size: 0.9rem; }
 .ps-template b { color: var(--gold-bright); }
+.ps-hint-actions { display: inline-flex; align-items: center; gap: 10px; }
 
 /* saved plans: the row loads the plan, the actions are icons */
 .saved-list li[role='button'] { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
