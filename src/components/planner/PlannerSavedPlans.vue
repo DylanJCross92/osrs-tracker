@@ -5,7 +5,7 @@
         <button class="sp-switch" :class="{ open }" type="button" aria-haspopup="true" :aria-expanded="open" title="Your saved plans" @click="open = !open">
           <svg class="sp-switch-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg>
           <span class="sp-name" :class="{ unsaved: !currentId }">{{ currentId ? currentName : hasGoals ? 'Unsaved plan' : 'Saved plans' }}</span>
-          <i v-if="dirty" class="sp-dirty" title="You have changes that are not saved yet. Press Update plan to save them." aria-label="Unsaved changes" />
+          <i v-if="dirty" class="sp-dirty" title="You have changes that are not saved yet. Press Save changes to keep them." aria-label="Unsaved changes" />
           <span class="sp-count" aria-label="saved plans">{{ visiblePlans.length }}</span>
           <svg class="sp-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
         </button>
@@ -74,8 +74,8 @@
       <button v-if="hasGoals && saveState !== 'clean'" class="sp-save" :class="`is-${saveState}`" type="button" :disabled="!hasGoals || saveState === 'clean'" :aria-disabled="saveState === 'blocked'" :title="saveTitle" @click="onSaveClick">
         <svg v-if="saveState === 'blocked'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 018 0v3" /></svg>
         <svg v-else-if="saveState === 'clean'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
-        <svg v-else-if="saveState === 'dirty'" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14" /></svg>
-        <svg v-else viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z" /><path d="M8 4v5h7V4M8 20v-6h8v6" /></svg>
+        <svg v-else-if="saveState === 'dirty'" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M8 12.3l2.8 2.8L16.2 9.5" /></svg>
+        <svg v-else viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12a1 1 0 011 1v17l-7-4.5L5 21V4a1 1 0 011-1z" /><path d="M12 7.5v5M9.5 10h5" /></svg>
         <span>{{ saveLabel }}</span>
       </button>
       <button v-if="dirty && currentId" class="sp-revert" :class="{ confirm: confirmRevert }" type="button" :title="confirmRevert ? 'Press again to discard your changes' : 'Go back to the last saved version'" @click="onRevert" @blur="confirmRevert = false">
@@ -149,7 +149,7 @@ const saveState = computed(() => {
   const base = !props.currentId ? 'new' : props.dirty ? 'dirty' : 'clean'
   return !props.canSave && base !== 'clean' ? 'blocked' : base
 })
-const saveLabel = computed(() => ({ new: 'Save plan', dirty: 'Update plan', clean: 'Saved', blocked: 'Not saved' })[saveState.value])
+const saveLabel = computed(() => ({ new: 'Save plan', dirty: 'Save changes', clean: 'Saved', blocked: 'Not saved' })[saveState.value])
 const saveTitle = computed(
   () =>
     ({

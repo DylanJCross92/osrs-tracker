@@ -94,6 +94,6 @@ export function withCompleted(steps, goals, originalPlans, liveXp) {
 
 /** Where a goal stands: 'done' (target reached), 'active' (tracked progress made) or 'todo'. `per` is that goal's entry from buildProgress, if any. */
 export function goalStatus(plan, per) {
-  if (per?.done || plan?.remainingXp === 0) return 'done'
+  if (per?.done || (plan?.remainingXp === 0 && !plan?.questList?.length)) return 'done'
   return per && per.gained > 0 ? 'active' : 'todo'
 }

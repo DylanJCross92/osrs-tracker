@@ -53,7 +53,7 @@
               </span>
               <span class="sp-goal-method">{{ methodText(g, shown[i]) }}</span>
               <span class="sp-goal-nums">
-                <span><small>Time</small>{{ shown[i].remainingXp === 0 ? 'Done' : formatHours(shown[i].hours) }}</span>
+                <span><small>Time</small>{{ shown[i].remainingXp === 0 && !shown[i].questList?.length ? 'Done' : formatHours(shown[i].hours) }}</span>
                 <span><small>Net GP</small><b :class="gpClass(shown[i].netGp)">{{ shown[i].netGp == null ? '-' : formatGp(shown[i].netGp) }}</b></span>
                 <span v-if="timeline.entries[i]?.endDate"><small>Done by</small>{{ fmtDate(timeline.entries[i].endDate) }}</span>
               </span>

@@ -95,13 +95,6 @@
       <PlannerHero :name="currentPlanName || 'My training plan'" :back-to="{ name: 'planner' }" :player="player" :strategy-label="strategyName" :hours-per-day="hoursPerDay" :goal-count="goals.length" :tailored="tailoredText" @settings="openSettings()">
         <template #actions><PlannerSavedPlans v-bind="savedPlansProps" hide-switcher v-on="savedPlansOn" /></template>
         <template #summary><PlannerFinishLine v-if="!progress" :timeline="timeline" :hours-per-day="hoursPerDay" @see-route="scrollToPath" @see-skill="goToSkill" /></template>
-        <div v-if="scratch && !currentPlanId && goals.length" class="callout callout-unsaved" role="status">
-          <div class="callout-text">
-            <b>This plan is not saved yet</b>
-            <span>It is only here to look at. Press Save plan to keep it in your plans and start tracking your progress, or leave and it is gone.</span>
-          </div>
-          <button class="btn btn-primary callout-btn" type="button" @click="saveCurrent(currentPlanName)">Save plan</button>
-        </div>
         <!-- A plan that does not know who it is for yet: say what adding a name gives you, with one clear button -->
         <div v-if="template && templatePending" class="callout callout-name" role="status">
           <div class="callout-text">
@@ -177,7 +170,7 @@
 
       <PlannerNext :items="nextItems" :hours-per-day="hoursPerDay" />
 
-      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder" :has-player="!!player?.latest" :player-label="player?.displayName || ''">
+      <div id="plan-path"><PlannerPath :goals="goals" :plans="plans" :entries="timeline.entries" :progress="progress" :strategy-label="strategyName" :plan-id="currentPlanId" :highlight="pathOpen" :edit-skill="editSkill" @remove="removeSkillFromMenu" @edit="(skill) => openSkillEditor(skill)" @cancel="cancelSkillEditor" @patch="patchGoalBySkill" @add="openAdd()" @reorder="reorderTo" @reorder-all="applyOrder" :has-player="!!player?.latest" :player-label="player?.displayName || ''">
           <template #editor="{ goal: g, index: i }">
             <PlannerSkillEditor
               :goal="g"
@@ -190,6 +183,8 @@
               :live-goal="liveGoals[i]"
               :done-route="doneRoutes[i]"
               :route-choices="routeChoices[i]"
+              :saved="!!currentPlanId"
+              :hiscore-xp="player?.latest ? playerXp(g.skill) : null"
               :initial-tab="editTab"
               @patch="(patch) => patchGoal(i, patch)"
               @pick="(id) => pickRoute(i, id)"
@@ -292,6 +287,8 @@ import {
   planTotals,
   compareStrategies,
   levelAtXp,
+  xpAtLevel,
+  MAX_XP,
   AUTO_FAST,
   AUTO_CHEAP,
   AUTO_BALANCED,
@@ -308,7 +305,7 @@ import {
   familiesFor,
   routeOverrides,
   withRouteOverrides,
-  setOverrideRange,
+  cleanOverrides,
 } from '@/utils/planner'
 import { goalsCode } from '@/utils/goalsCode'
 import { freeMethodIds } from '@/utils/membership'
@@ -316,7 +313,7 @@ import AccountMenu from '@/components/planner/AccountMenu.vue'
 import { useAccountSetupSeen } from '@/composables/useAccountSetupSeen'
 import { useProfileSettings } from '@/composables/useProfileSettings'
 import { plannerAccountContext } from '@/composables/plannerAccountContext'
-import { applyRules, detectBuild, questFitsBuild } from '@/utils/builds'
+import { applyRules, detectBuild, isLocked, questFitsBuild, skillCap, startLevel } from '@/utils/builds'
 import { buildOf, cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
 import { buildPref, ironKindPref, ironPref, membersPref, setIronMode, useAccountType, worldPref } from '@/composables/useAccountType'
 import { ironStrategy } from '@/utils/ironman'
@@ -655,7 +652,7 @@ const buildHint = computed(() => {
 function acceptBuildHint() {
   if (!buildHint.value) return
   track('planner_build_hint', { build: buildHint.value.build, action: 'accept' })
-  setBuild(buildHint.value.build)
+  setBuild(buildHint.value.build, { remember: false })
 }
 function dismissBuildHint() {
   if (!buildHint.value) return
@@ -722,11 +719,14 @@ function setWorld(value) {
   goals.value = applyAccountRules(goals.value, prev)
   track('planner_world', { world: world.value })
 }
-function setBuild(value) {
+// `remember: false` applies the build to this plan only: it is not kept as the default for every new plan in this browser (the suggestion made from a
+// player's stats uses it, so trying a build for one player does not turn the planner into that build for everyone looked up after).
+function setBuild(value, { remember = true } = {}) {
   const prev = accountRules()
   const before = goals.value
   build.value = cleanBuild(value)
-  rememberAccount({ build: build.value })
+  const name = player.value?.displayName
+  if (remember || (name && profileEntry(name))) rememberAccount({ build: build.value })
   goals.value = applyAccountRules(goals.value, prev)
   noteDropped(before, goals.value, `${buildOf(build.value).short} does not train ${before.length === 1 ? 'it' : 'them'}`)
   track('planner_build', { build: build.value })
@@ -854,20 +854,23 @@ const routeChoices = computed(() =>
     if (!done || !live || !orig) return null
     const families = familiesFor(g.skill)
     const doneSegs = done.segments.filter((x) => x.method)
-    const trainedWith = doneSegs.length && doneSegs.every((x) => methodFamily(x.method)?.id === methodFamily(doneSegs[0].method)?.id) ? methodFamily(doneSegs[0].method)?.id || null : null
-    const lastSeg = doneSegs.at(-1)
     const liveXp = Math.min(live.currentXp, g.targetXp)
-    const trained = families
-      // Saying how the levels were trained also carries the same way on for the levels left (the fastest way is one tap below).
-      .map((f) => ({
-        id: f.id,
-        label: f.label,
-        overrides: withRouteOverrides(withRouteOverrides(g.overrides, routeOverrides(orig, g.currentXp, liveXp, { family: f.id })), routeOverrides(resolved.value[i], liveXp, g.targetXp, { family: f.id })),
-        on: trainedWith === f.id,
-      }))
-      .filter((f) => f.overrides.length)
+    // The way carried on is the one used before the level the player is part-way through (a choice for that level also covers the XP already gained in it).
+    const lastSeg = [...doneSegs].reverse().find((x) => x.fromXp < xpAtLevel(levelAtXp(liveXp, true))) || doneSegs.at(-1)
+    // Saying how the levels were trained replaces every choice made so far (so the route is one way, not a mix of old picks and new ones) and also carries
+    // the same way on for the levels left (the fastest way is one tap below). Levels the way does not cover are left to the planner.
     const levelOf = (xp) => levelAtXp(xp, true)
-    const resetDone = setOverrideRange(g.overrides, levelOf(g.currentXp), Math.max(levelOf(liveXp), levelOf(g.currentXp) + 1), null)
+    // The chips are about the levels already trained, so they are compared on those levels only (what is chosen for the levels left does not unselect them).
+    const doneLevel = levelOf(liveXp)
+    const clip = (list) => cleanOverrides(list).filter((o) => o.fromLevel < doneLevel).map((o) => ({ ...o, toLevel: Math.min(o.toLevel, doneLevel) }))
+    const sameDone = (a, b) => JSON.stringify(clip(a)) === JSON.stringify(clip(b))
+    const trained = families
+      .map((f) => {
+        const donePicks = withRouteOverrides([], routeOverrides(orig, g.currentXp, liveXp, { family: f.id }))
+        const overrides = withRouteOverrides(donePicks, routeOverrides(resolved.value[i], liveXp, g.targetXp, { family: f.id }))
+        return { id: f.id, label: f.label, overrides, on: donePicks.length > 0 && sameDone(donePicks, g.overrides) }
+      })
+      .filter((f) => f.overrides.length)
     // What is left, trained a given way, worked out against the plan as it stands.
     const names = (plan) => [...new Set(plan.segments.map((x) => x.method?.name).filter(Boolean))].join(', ')
     const option = (key, title, picks) => {
@@ -884,7 +887,7 @@ const routeChoices = computed(() =>
       carryOn = option('same', fam ? `Keep training ${fam.label.toLowerCase()}` : `Keep using ${lastSeg.method.name}`, routeOverrides(resolved.value[i], liveXp, g.targetXp, fam ? { family: fam.id } : { methodId: lastSeg.method.id }))
     }
     const fastest = liveXp < g.targetXp ? option('fast', 'Fastest for the levels left', routeOverrides(resolved.value[i], liveXp, g.targetXp)) : null
-    return { from: levelOf(g.currentXp), upTo: levelOf(liveXp), to: levelOf(g.targetXp), trained, resetDone, anyDone: doneSegs.length > 0, carryOn, fastest }
+    return { from: levelOf(g.currentXp), upTo: levelOf(liveXp), to: levelOf(g.targetXp), trained, plannersPick: clip(g.overrides).length === 0, anyDone: doneSegs.length > 0, carryOn, fastest }
   }),
 )
 // What the levels gained since the plan started made (gp), or null when no gp is known for them.
@@ -1470,7 +1473,8 @@ async function revertPlan() {
 function keepCurrentPlanBefore(name) {
   if (!goals.value.length) return
   const saved = savedPlans.value.find((p) => p.id === currentPlanId.value)
-  if (saved && !dirty.value) return
+  // Only a saved plan with changes is kept (its changes would be lost); a plan the person never saved is not saved for them.
+  if (!saved || !dirty.value) return
   // A plan for someone else's profile is never saved, so there is nothing to keep it in.
   if (!canSavePlan.value) return
   const kept = savePlan(snapshotPlan(currentSnapshotState(), `Plan before using "${name}"`.slice(0, 60)))
@@ -1508,7 +1512,10 @@ function useRecommended(rec, { save = true } = {}) {
   if (save) afterCreate(rec.title)
   else {
     scratch.value = true
-    if (route.name !== 'plannerNew') router.replace({ name: 'plannerNew' })
+    if (route.name !== 'plannerNew') {
+      draftJustMade = true
+      router.replace({ name: 'plannerNew' })
+    }
     // The plan opens at the top, where the "not saved" notice and the Save plan button are.
     window.scrollTo({ top: 0 })
   }
@@ -1698,11 +1705,18 @@ function goNew() {
 }
 // A plan that was just made from the start screen: saved (where saving is allowed) so it has an address of its own. A plan that
 // cannot be saved (someone else's profile) stays on /planner/new, where it can still be shared.
+// A plan made from the start page is a draft: it opens at /planner/new (carrying itself in the address) and is only kept in Saved plans when the person
+// presses Save plan.
 function afterCreate(name) {
   if (!currentPlanName.value) currentPlanName.value = name.slice(0, 60)
-  if (canSavePlan.value) saveCurrent(name, true)
-  else if (route.name !== 'plannerNew') router.replace({ name: 'plannerNew' })
+  if (route.name !== 'plannerNew') {
+    draftJustMade = true
+    router.replace({ name: 'plannerNew' })
+  }
 }
+// Set just before a plan made from the start page moves to /planner/new, so that arrival keeps it. Arriving there some other way with a plan left
+// in memory (the New plan link on Your plans) starts a blank one instead.
+let draftJustMade = false
 function openPlan(stored) {
   router.push(planLocation(stored.id))
 }
@@ -1787,10 +1801,44 @@ async function startFromPlan(rec, { save = true } = {}) {
   }
   useRecommended(plan, { save })
 }
+// "Or build your own": a skill tile makes a plan for that skill and opens the plan page with its editor, the same page the ready-made plans open on. There is no
+// separate form first: the goal (from where the player is now to 99, or the build's limit) starts at a sensible value, and the editor changes it, with the route
+// updating as it is changed. More skills are added from the plan page.
 async function startCustom(skill) {
   markSetupSeen()
   await loadTyped()
-  openAdd(skill)
+  const rules = accountRules()
+  if (!SKILL_NAMES.includes(skill) || isLocked(rules, skill)) return openAdd(skill)
+  const cur = Math.max(Math.floor(playerXp(skill) ?? xpAtLevel(startLevel(skill))), 0)
+  const cap = skillCap(rules, skill)
+  const curLevel = levelAtXp(cur, true)
+  const target = Math.min(xpAtLevel(curLevel < cap ? cap : Math.min(curLevel + 1, 126)), MAX_XP)
+  if (target <= cur) return openAdd(skill)
+  const name = player.value ? `${player.value.displayName}'s ${skill} plan` : `${skill} plan`
+  keepCurrentPlanBefore(name)
+  unsavedShareId.value = ''
+  tab.value = 'overview'
+  goalFilter.value = 'all'
+  const base = { skill, currentXp: cur, targetXp: target, methodId: GLOBAL_STRATEGY, customXpPerHour: 0, quests: [], overrides: [] }
+  goals.value = applyAccountRules([withSuggestedQuests(base)])
+  statsAt.value = player.value?.latest ? player.value.latest.capturedAt : null
+  currentPlanId.value = ''
+  currentPlanName.value = name.slice(0, 60)
+  template.value = null
+  smartProfile.value = null
+  keepSmart.value = false
+  templatePending.value = false
+  expanded.value = new Set([skill])
+  // The editor opens on the skill.
+  editSkillLocal.value = skill
+  editTab.value = 'method'
+  track('planner_custom_started', { skill, hasPlayer: !!player.value?.latest })
+  afterCreate(name)
+  // The watcher that clears the editor when a plan has no goals has just run, so open it again.
+  await nextTick()
+  editSkillLocal.value = skill
+  // The page opens on the skill being set up (the plan above it is one scroll up).
+  setTimeout(() => document.getElementById(`path-${skill.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250)
 }
 const startRef = ref(null)
 function scrollToStart() {
@@ -2007,8 +2055,11 @@ async function applyNewRoute(first) {
     username.value = q.u
     return loadPlayer()
   }
-  // A saved plan left open in memory is not "new": start blank.
-  if (currentPlanId.value) startNew()
+  // A saved plan left open in memory is not "new": start blank. Neither is a draft that was never saved, when the New plan link brings the person here:
+  // a draft just made keeps its place, and going back to its own address (which carries it) restores it.
+  const keepDraft = draftJustMade
+  draftJustMade = false
+  if (currentPlanId.value || (goals.value.length && !keepDraft && !first)) startNew()
   else if (!goals.value.length && first) await restoreScratchFromStorage()
   if (!goals.value.length) await prefillOwnProfile()
 }

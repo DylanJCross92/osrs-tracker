@@ -39,15 +39,21 @@
               <small v-if="entries[i] && !entries[i].done">by {{ fmtShort(entries[i].endDate) }}</small>
             </template>
           </span>
-          <div class="path-menu" :class="{ open: menuFor === g.skill }">
-            <button class="po-dots" type="button" aria-haspopup="menu" :aria-expanded="menuFor === g.skill" :aria-label="`Options for ${g.skill}`" @click.stop="toggleMenu(g.skill)">
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.9" /><circle cx="12" cy="12" r="1.9" /><circle cx="12" cy="19" r="1.9" /></svg>
+          <!-- Edit is the main action; the arrow beside it opens the rest (share, delete) -->
+          <div class="path-menu path-split" :class="{ open: menuFor === g.skill }">
+            <!-- While this skill is being edited the same button cancels (the editor's own Save keeps the changes) -->
+            <button v-if="editSkill !== g.skill" class="path-edit" type="button" :aria-label="`Edit ${g.skill}: levels, training methods and quests`" title="Change the levels, training methods and quests" @click.stop="editFromMenu(g.skill)">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
+              Edit
+            </button>
+            <button v-else class="path-edit is-cancel" type="button" :aria-label="`Cancel editing ${g.skill}`" title="Close the editor and undo what you changed" @click.stop="emit('cancel')">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              Cancel
+            </button>
+            <button class="path-edit-more" type="button" aria-haspopup="menu" :aria-expanded="menuFor === g.skill" :aria-label="`More options for ${g.skill}`" @click.stop="toggleMenu(g.skill)">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
             </button>
             <div v-if="menuFor === g.skill" class="po-menu-list" role="menu" :aria-label="`Options for ${g.skill}`" @click.stop>
-              <button v-if="editSkill !== g.skill" class="po-item" role="menuitem" type="button" @click="editFromMenu(g.skill)">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4" /></svg>
-                Edit
-              </button>
               <button v-if="canShare(i)" class="po-item" role="menuitem" type="button" @click="shareFromMenu(i)">
                 <ShareIcon name="share" />
                 Share
@@ -71,7 +77,8 @@
         <!-- Being edited: the editor takes the place of the route (the route is inside it, and changes as you edit) -->
         <slot v-if="editSkill === g.skill" name="editor" :goal="g" :index="i" />
         <template v-else-if="!isDone(i)">
-          <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" />
+          <PlannerRoute :segments="plans[i].segments" :quests="plans[i].questList" :skill="g.skill" @set="(r) => emit('patch', g.skill, { overrides: setOverrideRange(g.overrides, r.fromLevel, r.toLevel, r.methodId) })" />
+          <p class="path-tap">Tap a step to change its training method, or Edit to change the levels.</p>
           <PlannerPathDetails :plan="plans[i]" :goal="g" @patch="(patch) => emit('patch', g.skill, patch)" />
         </template>
       </li>
@@ -105,7 +112,7 @@ import SmartOrderModal from '@/components/planner/SmartOrderModal.vue'
 import { smartOrder } from '@/utils/smartOrder'
 import { track } from '@/utils/analytics'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours, levelAtXp } from '@/utils/planner'
+import { formatHours, levelAtXp, setOverrideRange } from '@/utils/planner'
 
 // A read-only view of the plan: each skill in training order as a card with its route, nothing to type into.
 const props = defineProps({
@@ -124,7 +131,7 @@ const props = defineProps({
   hasPlayer: { type: Boolean, default: true },
   playerLabel: { type: String, default: '' },
 })
-const emit = defineEmits(['edit', 'add', 'reorder', 'remove', 'patch', 'reorder-all'])
+const emit = defineEmits(['edit', 'cancel', 'add', 'reorder', 'remove', 'patch', 'reorder-all'])
 
 // --- The suggested order (utils/smartOrder.js): a window with the reasons, and a button to use it --------------------------------------
 const suggestionOpen = ref(false)
@@ -143,7 +150,8 @@ function applySuggestion(order) {
   emit('reorder-all', order)
 }
 
-const isDone = (i) => props.plans[i]?.remainingXp === 0 || !!props.progress?.per?.[i]?.done
+// Done when nothing is left to train. A goal whose XP all comes from quests still has those quests to do, so it is not done yet.
+const isDone = (i) => (props.plans[i]?.remainingXp === 0 && !props.plans[i]?.questList?.length) || !!props.progress?.per?.[i]?.done
 // The first skill with something left to train.
 const nextIndex = computed(() => props.goals.findIndex((_, i) => !isDone(i)))
 const fmtShort = (d) => (d ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '')

@@ -10,6 +10,18 @@ export const KINDS = { new: 'New', improved: 'Improved', fixed: 'Fixed' }
 
 export const RELEASE_NOTES = [
   {
+    date: '2026-11-26',
+    items: [
+      { kind: 'improved', text: 'Or build your own in the planner now opens the same plan page as the ready-made plans, with the skill\'s editor open, instead of a separate window. In the Smart Planner, Show my plan takes you to that page too.' },
+      { kind: 'new', text: 'In a plan you can say how you trained the levels already passed (rooftops, the Sepulchre, the pyramid) and the levels left carry on the same way, with the fastest way one tap away. The plan also shows what the levels you have trained made.' },
+      { kind: 'new', text: 'A plan for a player whose stats look like a skiller, pure or zerker offers to plan as that build.' },
+      { kind: 'improved', text: 'Discover shows how many players were active in the last 24 hours, and Recent achievements lists only ones TickGains saw happen, in two columns.' },
+      { kind: 'improved', text: 'Editing a skill in a plan is laid out as steps: set your goal (with quick goals), choose your training style, see the route it makes with the time, cost and XP, and optimise it with quest shortcuts, requirements and a comparison that open in place. Cancel changes and Save goal stay in view.' },
+      { kind: 'improved', text: 'Each skill in the training path has an Edit button (Cancel while editing) with a menu for share and delete, and its steps can be tapped to change their method.' },
+      { kind: 'improved', text: 'A new plan is a draft until you press Save plan: starting one from the planner no longer saves it for you. The Save plan and Save changes button is larger and stands out, and the not-saved banner is gone.' },
+    ],
+  },
+  {
     date: '2026-11-25',
     items: [
       { kind: 'new', text: 'In a plan you can now set a skill\'s start and goal as a level or as XP: a Level / XP switch sits above them when you edit a skill, and each box shows what it is worth in the other unit.' },

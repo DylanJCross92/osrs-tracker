@@ -150,7 +150,7 @@
       <button v-if="step > 0" class="btn btn-ghost" type="button" @click="go(step - 1)">Back</button>
       <span class="spw-grow" />
       <a v-if="current === 'plan'" class="spl-alt" href="#ps-start" @click.prevent="$emit('ready-made')">or pick a ready-made plan</a>
-      <button v-if="current !== 'plan'" class="btn btn-primary" type="button" :disabled="current === 'who' && !hasPlayer" @click="go(step + 1)">{{ current === 'time' ? 'Show my plan' : 'Continue' }}</button>
+      <button v-if="current !== 'plan'" class="btn btn-primary" type="button" :disabled="current === 'who' && !hasPlayer" @click="current === 'time' ? showPlan() : go(step + 1)">{{ current === 'time' ? 'Show my plan' : 'Continue' }}</button>
       <button v-else class="btn btn-primary" type="button" :disabled="thinking || shown.empty" @click="start">Start this plan</button>
     </footer>
   </div>
@@ -282,6 +282,14 @@ function set(patch, question) {
   const now = Date.now()
   if (now - (lastAnswer.get(question) || 0) > 1500) track('smart_planner_answer', { question })
   lastAnswer.set(question, now)
+}
+// "Show my plan" goes straight to the plan page (the same one the ready-made plans open on). Only when the answers leave nothing to plan does the last step open,
+// to say so.
+function showPlan() {
+  if (live.value.empty) return go(step.value + 1)
+  track('smart_planner_plan_viewed', { goal: profile.value.goal, goals: live.value.totals.goals })
+  shown.value = live.value
+  start()
 }
 function start() {
   track('smart_planner_start', { goal: profile.value.goal, members: profile.value.members, experience: profile.value.experience, iron: profile.value.iron, hasPlayer: props.hasPlayer, goals: shown.value.totals.goals })

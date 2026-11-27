@@ -21,36 +21,26 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
-async function toThePlan(w) {
+async function showMyPlan(w) {
   const next = async () => {
     await w.findAll('button').find((b) => /^(Continue|Show my plan)$/.test(b.text().trim())).trigger('click')
     await nextTick()
   }
   await next() // who -> goal
   await next() // goal -> time
-  await next() // time -> plan
+  await next() // Show my plan: straight to the plan page
   await vi.advanceTimersByTimeAsync(1000)
 }
 
 describe('Smart Planner events', () => {
-  it('logs the finished plan being seen once, however many times it is worked out again while open', async () => {
+  it('Show my plan hands the answers on once and logs the plan as seen once, without opening a plan step here', async () => {
     const w = mount(SmartPlannerBody, { props: { skills, hasPlayer: true, playerLabel: 'Test' }, global: { stubs } })
-    await toThePlan(w)
+    await showMyPlan(w)
     expect(count('smart_planner_plan_viewed')).toBe(1)
-    // the player's stats refreshing (a new object with the same levels) works the plan out again; it is the same view
-    await w.setProps({ skills: JSON.parse(JSON.stringify(skills)) })
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(count('smart_planner_plan_viewed')).toBe(1)
-  })
-
-  it('logs it again when the plan step is left and reached again', async () => {
-    const w = mount(SmartPlannerBody, { props: { skills, hasPlayer: true, playerLabel: 'Test' }, global: { stubs } })
-    await toThePlan(w)
-    await w.findAll('button').find((b) => /^Back$/.test(b.text().trim())).trigger('click')
-    await nextTick()
-    await w.findAll('button').find((b) => /^Show my plan$/.test(b.text().trim())).trigger('click')
-    await vi.advanceTimersByTimeAsync(1000)
-    expect(count('smart_planner_plan_viewed')).toBe(2)
+    expect(count('smart_planner_start')).toBe(1)
+    expect(w.emitted('start')).toHaveLength(1)
+    // the plan itself is the planner's own page now, so no "Start this plan" step is shown
+    expect(w.findAll('button').some((b) => /Start this plan/.test(b.text()))).toBe(false)
   })
 
   it('counts a quick run of changes to the same answer once', async () => {
