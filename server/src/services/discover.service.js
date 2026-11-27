@@ -5,6 +5,7 @@ import { buildInsights } from './discoverInsights.service.js'
 import { recordTopGainer, getTopGainerStats } from './topGainers.service.js'
 import { combatLevelFromSkills } from '../utils/combat.js'
 import { pickTopGainer } from '../utils/topGainers.js'
+import { activityEvents } from '../utils/activityEvents.js'
 import { MAX_TOTAL_LEVEL } from './milestones.service.js'
 import { COUNTED_PLAYER } from './stats.service.js'
 
@@ -57,39 +58,34 @@ function compact(p) {
 }
 
 const ACTIVITY_WINDOW_DAYS = 7
+// How far back before the window a player's last snapshot is looked for (the longest gap that still counts).
+const LOOKBACK_DAYS = 14
 
 /**
  * Newest-first feed of what just happened across all players: level-ups and
  * 99s (from consecutive snapshots), big XP gains, and XP / total-level
- * milestones. Only consecutive snapshots a few hours apart count, so a gap in
- * old data is never reported as something that "just" happened.
+ * milestones. A snapshot is only saved when something changed, so snapshots can be
+ * days apart for someone who trains now and then; see utils/activityEvents.js for how
+ * long a gap still counts.
  */
 async function getActivity(byId) {
+  // Each player's newest snapshot from before the window comes first, as what the first newer one is compared with (a player who trains rarely
+  // or updates by hand can have days between snapshots).
   const snaps = await pool.query(
-    `SELECT player_id, captured_at, overall_xp, overall_level, skills
+    `SELECT player_id, captured_at, overall_xp, overall_level, skills FROM (
+       SELECT DISTINCT ON (player_id) player_id, captured_at, overall_xp, overall_level, skills
+       FROM snapshots
+       WHERE captured_at < now() - ($1::int * interval '1 day') AND captured_at >= now() - ($2::int * interval '1 day')
+       ORDER BY player_id, captured_at DESC
+     ) base
+     UNION ALL
+     SELECT player_id, captured_at, overall_xp, overall_level, skills
      FROM snapshots
      WHERE captured_at >= now() - ($1::int * interval '1 day')
      ORDER BY player_id ASC, captured_at ASC`,
-    [ACTIVITY_WINDOW_DAYS],
+    [ACTIVITY_WINDOW_DAYS, ACTIVITY_WINDOW_DAYS + LOOKBACK_DAYS],
   )
-  const events = []
-  let prev = null
-  for (const row of snaps.rows) {
-    const p = byId.get(row.player_id)
-    if (!p) continue
-    if (prev && prev.player_id === row.player_id && row.captured_at - prev.captured_at <= 36 * 3_600_000) {
-      const at = row.captured_at
-      for (const [skill, s] of Object.entries(row.skills || {})) {
-        const before = prev.skills?.[skill]?.level
-        if (before != null && s.level > before) {
-          events.push({ id: `lvl:${row.player_id}:${skill}:${s.level}`, kind: s.level >= 99 ? 'max' : 'levelup', playerId: p.id, skill, from: before, to: s.level, at, ...(s.level >= 99 ? { cheer: { type: 'skill_level', value: 99 } } : {}) })
-        }
-      }
-      const gained = Number(row.overall_xp) - Number(prev.overall_xp)
-      if (gained >= 250_000) events.push({ id: `gain:${row.player_id}:${at.getTime()}`, kind: 'gain', playerId: p.id, xp: gained, at })
-    }
-    prev = row
-  }
+  const events = activityEvents(snaps.rows, byId, Date.now() - ACTIVITY_WINDOW_DAYS * 86_400_000)
 
   const ms = await pool.query(
     `SELECT player_id, milestone_type, skill, value, occurred_at

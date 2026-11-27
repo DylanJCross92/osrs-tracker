@@ -495,7 +495,7 @@ export async function refreshPlayer(id) {
     throw err
   }
   const stats = await fetchHiscores(player.username, player.mode)
-  await recordSnapshot(player.id, stats)
+  return recordSnapshot(player.id, stats)
 }
 
 const HARDCORE_PROBE_GAP_MS = 24 * 3_600_000

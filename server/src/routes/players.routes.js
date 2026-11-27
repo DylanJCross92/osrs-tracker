@@ -12,7 +12,8 @@ import {
 import { getHardcoreCharacter } from '../services/hardcore.service.js'
 import { syncAllPlayers } from '../jobs/sync.js'
 import { getProfileAchievements, getCelebrations, addCheer, markCelebrationSeen, visitorHash } from '../services/milestones.service.js'
-import { searchPlayers } from '../services/discover.service.js'
+import { searchPlayers, invalidateDiscoverCache } from '../services/discover.service.js'
+import { invalidateHomeCache } from '../services/home.service.js'
 import { getFollowCounts } from '../services/follows.service.js'
 import { getStreak } from '../services/records.service.js'
 import { rateLimit } from '../utils/rateLimit.js'
@@ -166,7 +167,12 @@ playersRouter.post('/:id/check-wom-history', importLimiter, async (req, res, nex
 // scheduler's next hourly run.
 playersRouter.post('/:id/refresh', rateLimit({ windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
-    await refreshPlayer(req.params.id)
+    const result = await refreshPlayer(req.params.id)
+    // New stats are in the live feed and on the home page straight away, not after the next scheduled sync.
+    if (result?.saved) {
+      invalidateDiscoverCache()
+      invalidateHomeCache()
+    }
     res.json(await listPlayers())
   } catch (err) {
     handleKnownErrors(err, res, next)

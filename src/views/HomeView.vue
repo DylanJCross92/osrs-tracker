@@ -72,8 +72,8 @@
                 <span class="disc-event-text">
                   <b>{{ e.displayName }}</b>
                   <template v-if="e.kind === 'max'"> hit <em class="gold">level 99 {{ e.skill }}</em></template>
-                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em></template>
-                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
+                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em><small v-if="e.days"> since the last update {{ e.days }} days ago</small></template>
+                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em><small v-if="e.days"> since the last update {{ e.days }} days ago</small></template>
                   <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
                 </span>
                 <CheerPill v-if="e.cheer" :player-id="e.playerId" :skill="e.skill || ''" :type="e.cheer.type" :value="e.cheer.value" :count="e.cheer.count || 0" />
@@ -93,8 +93,8 @@
                 <span class="disc-event-text">
                   <b>{{ e.displayName }}</b>
                   <template v-if="e.kind === 'max'"> hit <em class="gold">level 99 {{ e.skill }}</em></template>
-                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em></template>
-                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em></template>
+                  <template v-else-if="e.kind === 'levelup'"> reached <em>{{ e.skill }} level {{ e.to }}</em><small v-if="e.days"> since the last update {{ e.days }} days ago</small></template>
+                  <template v-else-if="e.kind === 'gain'"> gained <em class="stat-gain">+{{ formatXp(e.xp) }} XP</em><small v-if="e.days"> since the last update {{ e.days }} days ago</small></template>
                   <template v-else> unlocked <em class="gold">{{ e.title }}</em></template>
                 </span>
                 <CheerPill v-if="e.cheer" inert :player-id="e.playerId" :skill="e.skill || ''" :type="e.cheer.type" :value="e.cheer.value" :count="e.cheer.count || 0" />
