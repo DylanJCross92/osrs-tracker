@@ -8520,3 +8520,11 @@ body:has(.gsb) .se-foot { bottom: 44px; }
   .doc { padding-left: 12px; }
   .doc-actions .btn-primary { flex: 1 1 auto; }
 }
+
+/* Admin Player plans: a plan's name opens it read-only, with a note on the plan page saying so */
+.ap-plan-top .ap-view { text-decoration: none; }
+.ap-plan-top .ap-view:hover b { color: var(--gold-bright); text-decoration: underline; }
+.sp-admin { margin: 0 0 12px; padding: 8px 0; border-bottom: 1px solid var(--gold); color: var(--gold-bright); font-size: 0.88rem; }
+
+/* A method whose xp an hour rises with level: the rates by level, under its name in the method list */
+.mpick-steps { display: block; margin-top: 2px; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }

@@ -12,13 +12,17 @@
 // Shape: { id, skill, name, description, minLevel, maxLevel|null,
 //          xpPerHour, gpPerHour|null, intensity, requirements }
 import { gpPerHourFor } from '@/utils/methodPricing'
+import { averageRate } from '@/utils/methodRates'
 
 // intensity: 'AFK' | 'Low' | 'Medium' | 'High'
 // A method only contributes xp between xpForLevel(minLevel) and
 // xpForLevel(maxLevel + 1), see planner.js's planGoal().
 
-const m = (skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false) => {
+// `rates` (optional, last): [[fromLevel, xpPerHour], ...] when the rate climbs with level. Then the figure given as xpPerHour is
+// replaced by the average over the method's levels, and the planner works hours out tier by tier (see utils/methodRates.js).
+const m = (skill, id, name, minLevel, xpPerHourGiven, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false, rates = null) => {
   const fullId = `${skill.toLowerCase()}-${id}`
+  const xpPerHour = rates ? averageRate(rates, minLevel, maxLevel) : xpPerHourGiven
   return {
     id: fullId,
     skill,
@@ -27,6 +31,7 @@ const m = (skill, id, name, minLevel, xpPerHour, gpPerHour, intensity, descripti
     minLevel,
     maxLevel,
     xpPerHour,
+    ...(rates ? { rates } : {}),
     // The figure typed in above is the saved one. A method with a recipe in data/methodEconomy.js is worked out from live Grand Exchange
     // prices instead whenever there are prices, so everything that reads gpPerHour (the planner, calculators and guides) follows them.
     get gpPerHour() {
@@ -211,16 +216,16 @@ export const TRAINING_METHODS = [
   m('Hunter', 'ruby-harvest', 'Ruby harvest butterflies', 15, 20000, null, 'Medium', 'Catch butterflies and trap birds at Piscatoris.', '', 20),
   m('Hunter', 'red-crabs', 'Red crabs (Pandemonium)', 21, 31000, null, 'Medium', 'Two-trap crab hunting.', 'Partial Pandemonium, 10 Construction', 38),
   m('Hunter', 'jerboas', 'Embertailed jerboas', 39, 50000, null, 'Medium', 'Three-trap jerboas at Locus Oasis.', 'Partial Eagles\' Peak', 42),
-  m('Hunter', 'falconry', 'Falconry (spotted / dark kebbits)', 43, 70000, 0, 'Medium', 'Catch kebbits with a falcon.', 'Falconer\'s Guild', 68),
+  m('Hunter', 'falconry', 'Falconry (spotted / dark kebbits)', 43, 70000, 0, 'Medium', 'Catch kebbits with a falcon: spotted kebbits from 43 (the wiki says 60K to 70K), dark kebbits from 57 (75K to 80K).', 'Falconer\'s Guild', 68, false, [[43, 65000], [57, 78000]]),
   m('Hunter', 'birdhouses', 'Bird house trapping', 9, 60000, null, 'Low', 'Effective rate from bird house runs; the real run is short and needs timers.', 'Bone Voyage, digsite pendant'),
   m('Hunter', 'salamanders', 'Orange salamanders', 47, 52000, 0, 'Medium', 'Net-trap orange salamanders.', '', 59),
   m('Hunter', 'razorbacks', 'Razor-backed kebbits', 49, 100000, null, 'Medium', 'Noose-wand kebbits at Piscatoris.', 'Ring of pursuit', 72),
-  m('Hunter', 'rumours', 'Hunters\' Rumours', 72, 190000, null, 'Low', 'Guild contracts at 72+. Xp rises from 160K at 72 to 250K at 99.', 'Hunter Guild access'),
+  m('Hunter', 'rumours', 'Hunters\' Rumours', 72, 190000, null, 'Low', 'Guild contracts at 72+. Xp rises with level: 160K at 72, 195K at 91 and 250K at 99.', 'Hunter Guild access', null, false, [[72, 160000], [91, 195000], [99, 250000]]),
   m('Hunter', 'red-salamanders', 'Red salamanders', 60, 85000, 0, 'Medium', 'Net-trap red salamanders.', '', 66),
-  m('Hunter', 'black-salamanders', 'Black salamanders', 67, 105000, 0, 'Medium', 'Faster net-trapping in the Wilderness.', 'Wilderness access', 79),
+  m('Hunter', 'black-salamanders', 'Black salamanders', 67, 105000, 0, 'Medium', 'Faster net-trapping in the Wilderness. The wiki gives 90K to 115K at 67, 100K to 125K at 73 and up to 140K at 79.', 'Wilderness access', 79, false, [[67, 100000], [73, 112000], [79, 140000]]),
   m('Hunter', 'red-chins', 'Red chinchompas', 63, 125000, 600000, 'Medium', 'Box-trap red chinchompas.', 'Hunter level 63', 72),
-  m('Hunter', 'carnivorous-chins', 'Carnivorous chinchompas', 63, 110000, 650000, 'Medium', 'Varlamore chinchompas. Tick manipulation raises xp considerably.', 'Partial Eagles\' Peak, Varlamore access'),
-  m('Hunter', 'black-chins', 'Black chinchompas', 73, 190000, 1200000, 'Medium', 'Box-trap black chinchompas in the Wilderness.', 'Wilderness access', null, true),
+  m('Hunter', 'carnivorous-chins', 'Carnivorous chinchompas', 63, 110000, 650000, 'Medium', 'Varlamore chinchompas, with tick manipulation: 85K at 63 rising to 220K at 99 (the wiki). Without it about 61K at 63 and 155K at 99.', 'Partial Eagles\' Peak, Varlamore access', null, false, [[63, 85000], [70, 100000], [80, 163000], [90, 193000], [99, 220000]]),
+  m('Hunter', 'black-chins', 'Black chinchompas', 73, 190000, 1200000, 'Medium', 'Box-trap black chinchompas in the Wilderness, with tick manipulation. Rates for training alone: 145K at 73 rising to 225K at 99 (the wiki). With a shooting alt it is 157K to 265K.', 'Wilderness access', null, true, [[73, 145000], [75, 151000], [80, 167000], [85, 182000], [90, 197000], [95, 213000], [99, 225000]]),
   m('Hunter', 'maniacal-monkeys', 'Maniacal monkeys', 60, 80000, null, 'Low', 'Low-effort hunting of monkeys.', 'Monkey Madness II'),
   m('Hunter', 'rainbow-crabs', 'Rainbow crabs', 77, 140000, 415000, 'Medium', 'Crab traps with good xp and good profit.', '64 Sailing'),
   m('Hunter', 'herbiboar', 'Herbiboar', 80, 150000, null, 'Low', 'Track the herbiboar for xp plus herbs.', 'Bone Voyage, 31 Herblore'),

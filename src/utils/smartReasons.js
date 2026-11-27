@@ -9,6 +9,7 @@ import { AUTO_CHEAP, AUTO_FAST, AUTO_PROFIT, levelAtXp, planGoal, xpAtLevel, for
 import { resolveGoal } from '@/utils/plannerTools'
 import { formatXp } from '@/utils/osrsSkills'
 import { combatLevel } from '@/utils/combat'
+import { rateAt } from '@/utils/methodRates'
 
 // The reasoning behind the Smart Planner's steps (see utils/smartPlanner.js): the next level that opens something better, which skill to
 // train first to pay for the rest, and which quests are worth their time. Pure; every figure comes from the planner's own methods and quests.
@@ -48,7 +49,8 @@ function usableMethods(skill, profile) {
   return methodsForSkill(skill).filter((m) => (!allowed || allowed.has(m.id)) && !isTrick(m))
 }
 const openAt = (m, level) => m.minLevel <= level && (m.maxLevel == null || level <= m.maxLevel)
-const bestRate = (methods, level, key = 'xpPerHour') => methods.filter((m) => openAt(m, level) && m[key] != null).reduce((best, m) => Math.max(best, m[key]), 0)
+// The best xp an hour among the methods open at a level, each at the rate it has at that level.
+const bestRate = (methods, level, key = 'xpPerHour') => methods.filter((m) => openAt(m, level) && m[key] != null).reduce((best, m) => Math.max(best, key === 'xpPerHour' ? rateAt(m, level) : m[key]), 0)
 
 /** Hours to take a skill from one level to another by the fastest route (null when the catalogue has a gap). */
 export function hoursBetween(state, toLevel, profile) {
@@ -69,7 +71,7 @@ export function unlockFor(state, profile, done = new Set(), levels = {}) {
   const all = usableMethods(state.skill, profile)
   const okAt = (m, lvl) => canUseMethod(m, { ...levels, [state.skill]: lvl }, done)
   const fromRate = bestRate(all.filter((m) => okAt(m, state.level)), state.level)
-  const options = all.filter((m) => m.minLevel > state.level && m.minLevel <= 99 && m.xpPerHour >= Math.max(fromRate, 1) * 1.3 && okAt(m, m.minLevel)).sort((a, b) => a.minLevel - b.minLevel || b.xpPerHour - a.xpPerHour)
+  const options = all.filter((m) => m.minLevel > state.level && m.minLevel <= 99 && rateAt(m, m.minLevel) >= Math.max(fromRate, 1) * 1.3 && okAt(m, m.minLevel)).sort((a, b) => a.minLevel - b.minLevel || rateAt(b, b.minLevel) - rateAt(a, a.minLevel))
   for (const m of options) {
     const toRate = bestRate(all.filter((x) => okAt(x, m.minLevel)), m.minLevel)
     if (toRate < Math.max(fromRate, 1) * 1.3) continue

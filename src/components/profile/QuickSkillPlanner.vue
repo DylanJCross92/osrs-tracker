@@ -52,7 +52,7 @@
             <tbody>
               <tr v-for="r in methodRows" :key="r.method.id">
                 <td>{{ r.method.name }}</td>
-                <td class="num">{{ formatNum(r.method.xpPerHour) }}</td>
+                <td class="num">{{ rateLabel(r.method) }}</td>
                 <td class="num">{{ formatHours(r.plan.hours) }}</td>
                 <td class="num gp-figure" :class="gpClass(r.plan.netGp)">{{ r.plan.netGp == null ? 'No GP data' : formatGp(r.plan.netGp) }}</td>
               </tr>
@@ -74,6 +74,7 @@ import { computed, ref, watch } from 'vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_PROFIT, MAX_XP, compareMethods, encodePlan, formatGp, formatHours, formatNum, levelAtXp, planGoal, xpAtLevel } from '@/utils/planner'
 import { track } from '@/utils/analytics'
+import { rateLabel } from '@/utils/methodRates'
 import { useLivePrices } from '@/composables/useLivePrices'
 
 // The Grand Exchange prices behind every gp figure on this page.

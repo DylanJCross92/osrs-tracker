@@ -79,7 +79,7 @@ export const SKILL_INFO = [
   s('Hunter', 'Gathering', 'XP, hours and profit for Hunter.', 'Time & GP', 'Estimate the hours to your Hunter goal, from early traps to black chinchompas and rainbow crabs.',
     [
       'Hunter covers early traps, falconry, bird houses, salamanders and razor-backed kebbits, then the chinchompa methods and carnivorous chinchompas, rainbow crabs and herbiboar for late levels. Rumours from the Hunter Guild are included at level 72 and above.',
-      'Several routes involve the Wilderness or tick manipulation, noted in each method\'s requirements. Where the wiki gives no hourly gp for a method, it is shown as unpriced rather than guessed.',
+      'Hunter xp rates climb a long way with level (carnivorous chinchompas go from about 85K an hour at level 63 to 220K at 99, black chinchompas from 145K at 73 to 225K at 99, Hunters\' Rumours from 160K to 250K), so those methods show their range and the hours are worked out level by level, using the wiki\'s figures for each level. Several routes involve the Wilderness or tick manipulation, noted in each method\'s requirements. Where the wiki gives no hourly gp for a method, it is shown as unpriced rather than guessed.',
     ]),
   s('Farming', 'Gathering', 'XP, hours and cost for Farming runs.', 'Time & GP', 'Plan a Farming goal with herb runs, tree runs and Tithe Farm.',
     [

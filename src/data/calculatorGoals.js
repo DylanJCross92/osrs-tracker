@@ -15,6 +15,7 @@ import {
   formatGp,
 } from '@/utils/planner'
 import { SKILL_INFO } from '@/data/skillInfo'
+import { rateLabel } from '@/utils/methodRates'
 
 // The goals people actually search for. Each skill gets the ones that make sense for it.
 export const GOAL_RANGES = [
@@ -118,6 +119,8 @@ export function buildGoalContent(info, from, to) {
       minLevel: m.minLevel,
       maxLevel: m.maxLevel ?? null,
       xpPerHour: m.xpPerHour,
+      // A method whose rate rises with level reads as a range ('85K-220K'); xpPerHour stays the average.
+      xpPerHourText: rateLabel(m),
       gpPerHour: m.gpPerHour ?? null,
       gpText: m.gpPerHour == null ? 'No GP data' : m.gpPerHour === 0 ? 'Break-even' : `${formatGp(m.gpPerHour)}/h`,
     }))

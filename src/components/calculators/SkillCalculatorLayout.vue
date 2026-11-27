@@ -244,6 +244,7 @@ import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 import { questsForSkill } from '@/data/quests'
 import { useRequirements } from '@/composables/useRequirements'
 import { SKILL_INFO } from '@/data/skillInfo'
+import { rateLabel } from '@/utils/methodRates'
 import { goalsForSkill } from '@/data/calculatorGoals'
 import {
   MAX_XP,
@@ -488,7 +489,7 @@ function methodLabel(meth, list) {
   const top = profit.length ? profit.reduce((a, b) => (b.gpPerHour > a.gpPerHour ? b : a)) : null
   const tags = [meth.id === fastest.id ? 'fastest here' : '', top && meth.id === top.id ? 'MOST PROFITABLE' : meth.gpPerHour > 0 ? 'Profitable' : ''].filter(Boolean)
   const gp = meth.gpPerHour == null ? 'no gp data' : `${formatGp(meth.gpPerHour)}/h`
-  return `${meth.name} · lvl ${meth.minLevel}+ · ~${formatNum(meth.xpPerHour)} xp/h · ${gp}${tags.length ? ` · ${tags.join(', ')}` : ''}`
+  return `${meth.name} · lvl ${meth.minLevel}+ · ~${rateLabel(meth)} xp/h · ${gp}${tags.length ? ` · ${tags.join(', ')}` : ''}`
 }
 
 // --- Player lookup ---

@@ -9,6 +9,7 @@ import { skillStates, recommendedPlans } from '@/utils/recommendedPlans'
 import { smartOrder } from '@/utils/smartOrder'
 import { SYNERGIES } from '@/data/skillSynergies'
 import { formatXp } from '@/utils/osrsSkills'
+import { rateAt } from '@/utils/methodRates'
 import { canUseMethod, combatLevel, evaluateQuests, fitBudget, fundingFor, levelsOf, unlockFor } from '@/utils/smartReasons'
 import { GOALS, EXPERIENCE, GP_LEVELS, DEFAULT_PROFILE, cleanProfile } from '@/utils/smartProfile'
 
@@ -262,7 +263,7 @@ function intensityPhase(states, profile, done, kind) {
     const cap = reachable(s.skill, coverTo(methods, s.level), profile)
     if (cap <= s.level) continue
     const here = methods.filter((m) => m.minLevel <= s.level && (m.maxLevel == null || s.level <= m.maxLevel))
-    const top = here.reduce((a, m) => (!a || m.xpPerHour > a.xpPerHour ? m : a), null)
+    const top = here.reduce((a, m) => (!a || rateAt(m, s.level) > rateAt(a, s.level) ? m : a), null)
     if (!top) continue
     const allowedMethodIds = methods.map((m) => m.id)
     const goalFor = (to) => ({ ...mk(s, to, profile), allowedMethodIds })
@@ -275,7 +276,7 @@ function intensityPhase(states, profile, done, kind) {
       }
     }
     const feel = top.intensity === 'AFK' ? 'with almost no attention' : top.intensity === 'Low' ? 'with little effort' : 'hands-on'
-    rows.push({ goal: { ...goalFor(pick), why: [`${top.name}: about ${formatXp(top.xpPerHour)} xp an hour, ${feel}.`] }, rate: top.xpPerHour, skill: s.skill })
+    rows.push({ goal: { ...goalFor(pick), why: [`${top.name}: about ${formatXp(rateAt(top, s.level))} xp an hour, ${feel}.`] }, rate: rateAt(top, s.level), skill: s.skill })
   }
   rows.sort((a, b) => b.rate - a.rate || (a.skill < b.skill ? -1 : 1))
   const goals = rows.slice(0, kind === 'hardcore' ? 9 : 8).map((r) => r.goal)

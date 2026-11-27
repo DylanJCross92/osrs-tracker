@@ -6,7 +6,7 @@
         <small v-if="current.sub">{{ current.sub }}</small>
       </span>
       <span v-if="current.method" class="mpick-trigger-stats">
-        <span>{{ formatNum(current.method.xpPerHour) }} xp/h</span>
+        <span>{{ rateText(current.method) }} xp/h</span>
         <span class="gp-figure" :class="gpClass(current.method.gpPerHour)">{{ gpText(current.method.gpPerHour) }}</span>
       </span>
       <span class="mpick-caret" aria-hidden="true">▾</span>
@@ -47,6 +47,7 @@
                 <i v-if="m.id === cheapestId && !(m.gpPerHour > 0)" class="mpick-tag tag-cheap">Cheapest per XP</i>
                 <i v-if="avail(m).state === 'blocked'" class="mpick-tag tag-blocked" :title="`Missing: ${unmetText(avail(m))}`">Missing requirement</i>
               </span>
+              <small v-if="stepsText(m)" class="mpick-steps">XP/hr by level: {{ stepsText(m) }}</small>
               <small v-if="avail(m).items.length" class="mpick-req">
                 Needs
                 <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="i.req.quests?.length"> ({{ i.req.quests.map((x) => x.label).join(' + ') }})</template><template v-if="k < avail(m).items.length - 1">, </template></span>
@@ -55,8 +56,8 @@
             </span>
             <span class="mpick-cell mpick-lvl"><small>Level</small>{{ m.minLevel }}{{ m.maxLevel != null ? `-${m.maxLevel}` : '+' }}</span>
             <span class="mpick-cell mpick-xp">
-              <small>XP/hr</small>{{ formatNum(m.xpPerHour) }}
-              <span class="mpick-bar"><span :style="{ width: `${(m.xpPerHour / maxXp) * 100}%` }" /></span>
+              <small>XP/hr</small>{{ rateText(m) }}
+              <span class="mpick-bar"><span :style="{ width: `${(rateOf(m) / maxXp) * 100}%` }" /></span>
             </span>
             <span class="mpick-cell mpick-gp gp-figure" :class="gpClass(m.gpPerHour)">
               <small>GP/hr</small>{{ gpText(m.gpPerHour) }}
@@ -76,6 +77,7 @@
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import NewTag from '@/components/NewTag.vue'
 import { formatNum, formatGp } from '@/utils/planner'
+import { averageBetween, hasTiers, rateRange, rateRangeBetween, rateSteps, shortRate } from '@/utils/methodRates'
 import { methodAvailability, unmetText } from '@/utils/requirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { plannerAccountContext } from '@/composables/plannerAccountContext'
@@ -98,6 +100,10 @@ const props = defineProps({
   reasonFor: { type: Function, default: null },
   // A short note for a method that can be picked but is not at its best here (for example, one meant for lower levels).
   noteFor: { type: Function, default: null },
+  // The levels these methods are being picked for (reaching `toLevel` from `fromLevel`). A method whose xp rate rises with level then shows
+  // the rates for those levels, and is ranked on their average, instead of the average over all of its levels.
+  fromLevel: { type: Number, default: null },
+  toLevel: { type: Number, default: null },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -130,22 +136,32 @@ function setSort(key) {
   }
 }
 
-const valueOf = (m) => (sortKey.value === 'level' ? m.minLevel : sortKey.value === 'xp' ? m.xpPerHour : m.gpPerHour ?? -Infinity)
+// What a method's xp rate is for ranking: the average over the levels in question when it has tiers, else its one rate.
+const hasLevels = computed(() => props.fromLevel != null && props.toLevel != null && props.toLevel > props.fromLevel)
+const rateOf = (m) => (hasTiers(m) && hasLevels.value ? averageBetween(m, props.fromLevel, props.toLevel) : m.xpPerHour)
+// What is shown: a range for a method whose rate rises with level ('98K-170K'), otherwise the plain figure.
+const rateText = (m) => {
+  if (!hasTiers(m)) return formatNum(m.xpPerHour)
+  const r = hasLevels.value ? rateRangeBetween(m, props.fromLevel, props.toLevel - 1) : rateRange(m)
+  return r.text
+}
+const stepsText = (m) => (hasTiers(m) ? rateSteps(m).map((s) => `${s.level}: ${shortRate(s.rate)}`).join(' · ') : '')
+const valueOf = (m) => (sortKey.value === 'level' ? m.minLevel : sortKey.value === 'xp' ? rateOf(m) : m.gpPerHour ?? -Infinity)
 const sorted = computed(() => {
   const dir = sortDir.value === 'asc' ? 1 : -1
   return [...props.methods].sort((a, b) => Number(!!off(a)) - Number(!!off(b)) || (valueOf(a) - valueOf(b)) * dir || a.minLevel - b.minLevel)
 })
 
-const maxXp = computed(() => Math.max(...usable.value.map((m) => m.xpPerHour), 1))
+const maxXp = computed(() => Math.max(...usable.value.map(rateOf), 1))
 const maxGp = computed(() => Math.max(...usable.value.map((m) => Math.abs(m.gpPerHour ?? 0)), 1))
-const fastestId = computed(() => usable.value.reduce((a, b) => (b.xpPerHour > (a?.xpPerHour ?? 0) ? b : a), null)?.id)
+const fastestId = computed(() => usable.value.reduce((a, b) => (rateOf(b) > (a ? rateOf(a) : 0) ? b : a), null)?.id)
 const topProfitId = computed(() => {
   const p = usable.value.filter((m) => m.gpPerHour != null && m.gpPerHour > 0)
   return p.length ? p.reduce((a, b) => (b.gpPerHour > a.gpPerHour ? b : a)).id : null
 })
 const cheapestId = computed(() => {
   const priced = usable.value.filter((m) => m.gpPerHour != null)
-  return priced.length ? priced.reduce((a, b) => (b.gpPerHour / b.xpPerHour > a.gpPerHour / a.xpPerHour ? b : a)).id : null
+  return priced.length ? priced.reduce((a, b) => (b.gpPerHour / rateOf(b) > a.gpPerHour / rateOf(a) ? b : a)).id : null
 })
 
 const current = computed(() => {

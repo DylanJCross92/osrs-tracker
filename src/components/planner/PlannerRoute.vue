@@ -30,9 +30,9 @@
         <em v-else-if="seg.kind === 'post'">after it caps out</em>
       </span>
       <span class="planner-step-meta">
-        {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h</template>
+        {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h<template v-if="stepRangeText(seg.method, seg.startLevel, seg.endLevel)"> ({{ stepRangeText(seg.method, seg.startLevel, seg.endLevel) }} as you level)</template></template>
       </span>
-      <span class="planner-step-gp gp-figure" :class="gpClass(seg.netGp)"><i v-if="seg.method && seg.method.id && isLive(seg.method.id, seg.method.xpPerHour)" class="live-dot" title="Worked out from live Grand Exchange prices" aria-hidden="true" /><GpTip :method="seg.method && seg.method.gpPerHour !== undefined && seg.method.id ? seg.method : null" :hours="seg.hours">{{ seg.netGp == null ? 'Unpriced' : formatGp(seg.netGp) }}</GpTip></span>
+      <span class="planner-step-gp gp-figure" :class="gpClass(seg.netGp)"><i v-if="seg.method && seg.method.id && isLive(seg.method.id, seg.method.xpPerHour)" class="live-dot" title="Worked out from live Grand Exchange prices" aria-hidden="true" /><GpTip :method="seg.method && seg.method.gpPerHour !== undefined && seg.method.id ? segmentMethod(seg) : null" :hours="seg.hours">{{ seg.netGp == null ? 'Unpriced' : formatGp(seg.netGp) }}</GpTip></span>
       <span class="planner-step-hours">{{ seg.hours == null ? '-' : formatHours(seg.hours) }}</span>
       <span v-if="skill" class="planner-step-chev"><span class="planner-step-change">Change</span><svg v-if="skill" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></span>
     </li>
@@ -58,6 +58,8 @@
         <p v-if="tab === 'all' && partialCount" class="msheet-note">{{ partialCount }} of these only cover some of the levels. Picking one uses it for the levels it covers, and the planner fills the rest.</p>
         <MethodPicker
           :key="tab"
+          :from-level="current.startLevel"
+          :to-level="current.endLevel"
           inline
           :initial-sort="tab === 'best' ? 'xp' : 'level'"
           :model-value="current.method?.id || ''"
@@ -76,6 +78,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import MethodPicker from '@/components/planner/MethodPicker.vue'
 import { routeFlag } from '@/utils/requirements'
+import { averageBetween, segmentMethod, stepRangeText } from '@/utils/methodRates'
 import RouteReqTip from '@/components/planner/RouteReqTip.vue'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { methodsForSkill } from '@/data/trainingMethods'
@@ -112,15 +115,17 @@ const tab = ref('best')
 const all = computed(() => (current.value ? overlapping(current.value.startLevel, current.value.endLevel) : []))
 const covers = (m, from, to) => m.minLevel <= from && (m.maxLevel == null || m.maxLevel >= to - 1)
 const whole = computed(() => (current.value ? all.value.filter((m) => covers(m, current.value.startLevel, current.value.endLevel)) : []))
+// A method's xp an hour across these levels (its tiers averaged over them), so the shortlist ranks what the player would really get.
+const rateHere = (m) => averageBetween(m, current.value.startLevel, current.value.endLevel)
 const best = computed(() => {
   const list = whole.value.length ? whole.value : all.value
   if (!list.length) return []
   const ids = new Set()
   const top = (items, score) => items.length && ids.add(items.reduce((a, b) => (score(b) > score(a) ? b : a)).id)
-  top(list, (m) => m.xpPerHour)
-  top(list.filter((m) => !ids.has(m.id)), (m) => m.xpPerHour) // runner-up on XP
+  top(list, rateHere)
+  top(list.filter((m) => !ids.has(m.id)), rateHere) // runner-up on XP
   top(list.filter((m) => m.gpPerHour != null && m.gpPerHour > 0), (m) => m.gpPerHour)
-  top(list.filter((m) => m.gpPerHour != null), (m) => m.gpPerHour / m.xpPerHour)
+  top(list.filter((m) => m.gpPerHour != null), (m) => m.gpPerHour / rateHere(m))
   // The method the route uses for these levels right now stays in view.
   if (current.value?.method?.id && all.value.some((m) => m.id === current.value.method.id)) ids.add(current.value.method.id)
   return all.value.filter((m) => ids.has(m.id))

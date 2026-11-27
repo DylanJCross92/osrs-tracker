@@ -21,12 +21,12 @@
       <p v-if="step.seg.method?.description" class="prs-desc">{{ step.seg.method.description }}</p>
       <dl class="prs-facts">
         <div><dt>{{ step.done ? 'XP gained' : 'XP to gain' }}</dt><dd>{{ formatNum(step.seg.xp) }}</dd></div>
-        <div v-if="step.seg.xpPerHour"><dt>XP per hour</dt><dd>~{{ formatNum(step.seg.xpPerHour) }}</dd></div>
+        <div v-if="step.seg.xpPerHour"><dt>XP per hour</dt><dd>~{{ formatNum(step.seg.xpPerHour) }}<small v-if="stepRangeText(step.seg.method, step.seg.startLevel, step.seg.endLevel)"> ({{ stepRangeText(step.seg.method, step.seg.startLevel, step.seg.endLevel) }} as you level)</small></dd></div>
         <div><dt>Time</dt><dd>{{ step.seg.hours == null ? '-' : formatHours(step.seg.hours) }}</dd></div>
         <div class="gp-figure">
           <dt>Net GP</dt>
           <dd :class="step.seg.netGp == null ? '' : step.seg.netGp >= 0 ? 'planner-gain' : 'planner-cost'">
-            <GpTip :method="step.seg.method && step.seg.method.gpPerHour !== undefined && step.seg.method.id ? step.seg.method : null" :hours="step.seg.hours">{{ step.seg.netGp == null ? 'Unpriced' : formatGp(step.seg.netGp) }}</GpTip>
+            <GpTip :method="step.seg.method && step.seg.method.gpPerHour !== undefined && step.seg.method.id ? segmentMethod(step.seg) : null" :hours="step.seg.hours">{{ step.seg.netGp == null ? 'Unpriced' : formatGp(step.seg.netGp) }}</GpTip>
           </dd>
         </div>
         <div v-if="step.seg.method?.intensity"><dt>Effort</dt><dd>{{ step.seg.method.intensity }}</dd></div>
@@ -48,6 +48,7 @@
 import { computed, inject } from 'vue'
 import GpTip from '@/components/planner/GpTip.vue'
 import { isLive } from '@/utils/methodPricing'
+import { segmentMethod, stepRangeText } from '@/utils/methodRates'
 import RequirementList from '@/components/planner/RequirementList.vue'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { methodAvailability, routeFlag } from '@/utils/requirements'

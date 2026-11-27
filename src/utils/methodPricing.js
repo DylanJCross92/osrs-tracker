@@ -1,6 +1,7 @@
 import { ECONOMY } from '@/data/methodEconomy'
 import { buyOf, priceOf, priceVersion, sellOf } from '@/utils/priceBook'
 import { afterTax } from '@/utils/geTax'
+import { hasTiers, rateAt } from '@/utils/methodRates'
 
 // A method's gp an hour from live Grand Exchange prices (see data/methodEconomy.js): what it makes sold after tax, minus what it uses up,
 // for every action in an hour, plus any fixed cost per hour. Prices are the middle price, or instant buy and sell (see priceBook.js). null when the method has no recipe or an item has no price,
@@ -52,10 +53,12 @@ const cache = new Map()
 export function gpPerHourFor(id, xpPerHour, saved) {
   if (!ECONOMY[id]) return saved
   const v = priceVersion.value
-  const hit = cache.get(id)
+  // A tiered method has a different rate (so different gp) at each level, so the rate is part of the key.
+  const key = `${id}@${xpPerHour}`
+  const hit = cache.get(key)
   if (hit && hit.v === v) return hit.value ?? saved
   const live = economyFor(id, xpPerHour)
-  cache.set(id, { v, value: live ? live.gpPerHour : null })
+  cache.set(key, { v, value: live ? live.gpPerHour : null })
   return live ? live.gpPerHour : saved
 }
 
@@ -64,3 +67,9 @@ export const isLive = (id, xpPerHour) => !!ECONOMY[id] && economyFor(id, xpPerHo
 
 /** The price details of one item, for tooltips. */
 export const priceInfoOf = (name) => priceOf(name)
+
+/** A method's gp an hour at a level: the same as gpPerHour, except a tiered method is priced at the rate it has at that level. */
+export function gpPerHourAt(method, level) {
+  if (!hasTiers(method)) return method.gpPerHour
+  return gpPerHourFor(method.id, rateAt(method, level), method.savedGpPerHour)
+}

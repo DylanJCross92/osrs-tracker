@@ -2,34 +2,13 @@ import { getMethod, methodsForSkill } from '@/data/trainingMethods'
 import { requirementsFor } from '@/data/methodRequirements'
 import { questId } from '@/utils/questSlug'
 import { cleanBuild, cleanIronKind, cleanWorld } from '@/data/builds'
+import { MAX_VIRTUAL_LEVEL, levelAtXp, xpAtLevel } from '@/utils/xpLevels'
+import { hasTiers, hoursForXp, ratePieces, rateAt } from '@/utils/methodRates'
+import { gpPerHourAt } from '@/utils/methodPricing'
 import { QUESTS, getQuest, questChain, questXpFor, withPrerequisites } from '@/data/quests'
 
 export const MAX_XP = 200_000_000
-export const MAX_VIRTUAL_LEVEL = 126
-
-// Official xp table, built once with integer-only math (level 126 = 188,884,740).
-const XP_TABLE = (() => {
-  const table = [0, 0]
-  let points = 0
-  for (let lvl = 1; lvl < MAX_VIRTUAL_LEVEL; lvl++) {
-    points += Math.floor(lvl + 300 * 2 ** (lvl / 7))
-    table[lvl + 1] = Math.floor(points / 4)
-  }
-  return table
-})()
-
-export function xpAtLevel(level) {
-  const l = Math.min(Math.max(Math.floor(level), 1), MAX_VIRTUAL_LEVEL)
-  return XP_TABLE[l]
-}
-
-/** Level for an xp amount; virtual levels (100-126) when allowVirtual. */
-export function levelAtXp(xp, allowVirtual = false) {
-  const cap = allowVirtual ? MAX_VIRTUAL_LEVEL : 99
-  let level = 1
-  while (level < cap && xp >= XP_TABLE[level + 1]) level++
-  return level
-}
+export { MAX_VIRTUAL_LEVEL, levelAtXp, xpAtLevel }
 
 // Best catalog method usable at a given level (null if none). 'fast' picks the
 // highest xp/hr; 'cheap' picks the lowest cost per xp (net gp / xp, so profit
@@ -41,25 +20,28 @@ function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VAL
   const open = blocked ? candidates.filter((meth) => !blocked.has(meth.id)) : candidates
   const usable = open.length ? open : candidates
   if (!usable.length) return null
-  const byFast = (a, b) => b.xpPerHour - a.xpPerHour
+  // A method's rate and gp an hour are the ones it has at this level (they step up with level for tiered methods).
+  const rate = (meth) => rateAt(meth, level)
+  const gp = (meth) => gpPerHourAt(meth, level)
+  const byFast = (a, b) => rate(b) - rate(a)
   if (mode === 'balanced') {
     // Lowest effective cost per xp, where each hour of your time is worth `valuePerHour` gp:
     // (valuePerHour - gp/hr) / xp/hr. Unpriced methods are skipped when anything is priced.
-    const priced = usable.filter((meth) => meth.gpPerHour != null)
+    const priced = usable.filter((meth) => gp(meth) != null)
     if (priced.length) {
-      const score = (meth) => (valuePerHour - meth.gpPerHour) / meth.xpPerHour
+      const score = (meth) => (valuePerHour - gp(meth)) / rate(meth)
       return priced.sort((a, b) => score(a) - score(b) || byFast(a, b))[0]
     }
   }
   if (mode === 'profit') {
     // Most gp per hour among methods that actually make money; where nothing does, fall back to the cheapest.
-    const profitable = usable.filter((meth) => meth.gpPerHour != null && meth.gpPerHour > 0)
-    if (profitable.length) return profitable.sort((a, b) => b.gpPerHour - a.gpPerHour || byFast(a, b))[0]
+    const profitable = usable.filter((meth) => gp(meth) != null && gp(meth) > 0)
+    if (profitable.length) return profitable.sort((a, b) => gp(b) - gp(a) || byFast(a, b))[0]
     mode = 'cheap'
   }
   if (mode === 'cheap') {
-    const priced = usable.filter((meth) => meth.gpPerHour != null)
-    if (priced.length) return priced.sort((a, b) => b.gpPerHour / b.xpPerHour - a.gpPerHour / a.xpPerHour || byFast(a, b))[0]
+    const priced = usable.filter((meth) => gp(meth) != null)
+    if (priced.length) return priced.sort((a, b) => gp(b) / rate(b) - gp(a) / rate(a) || byFast(a, b))[0]
   }
   return usable.sort(byFast)[0]
 }
@@ -81,6 +63,13 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
       const end = xpAtLevel(meth.maxLevel + 1)
       if (end > fromXp && end < toXp) cuts.add(end)
     }
+    // Where a method's rate steps up, the best method is worked out again.
+    if (hasTiers(meth)) {
+      for (const [from] of meth.rates) {
+        const at = xpAtLevel(from)
+        if (at > fromXp && at < toXp) cuts.add(at)
+      }
+    }
   }
   const points = [...cuts].sort((x, y) => x - y)
   const pieces = []
@@ -95,9 +84,14 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
 
 function finishSegment(seg, kind) {
   const xp = seg.toXp - seg.fromXp
-  const rate = seg.method ? seg.method.xpPerHour : 0
-  const hours = rate ? xp / rate : null
-  const gp = seg.method?.gpPerHour
+  // Hours and gp are worked out piece by piece where a method's rate steps with level; the rate shown is then the average over the segment.
+  const hours = seg.method ? hoursForXp(seg.method, seg.fromXp, seg.toXp) : null
+  const rate = hours ? xp / hours : 0
+  let netGp = null
+  if (hours != null && seg.method.gpPerHour != null) {
+    const pieces = ratePieces(seg.method, seg.fromXp, seg.toXp)
+    netGp = Math.round(pieces.reduce((sum, p) => sum + ((p.toXp - p.fromXp) / p.rate) * (gpPerHourAt(seg.method, levelAtXp(p.fromXp, true)) ?? 0), 0))
+  }
   return {
     ...seg,
     kind,
@@ -106,7 +100,7 @@ function finishSegment(seg, kind) {
     endLevel: levelAtXp(seg.toXp, true),
     xpPerHour: rate,
     hours,
-    netGp: hours != null && gp != null ? Math.round(hours * gp) : null,
+    netGp,
   }
 }
 

@@ -143,7 +143,7 @@
             <label><span>To level</span><NumberInput :model-value="rangeTo" :min="startLevel + 1" :max="endLevel" commit="blur" @update:model-value="(v) => v && (rangeTo = Math.min(Math.max(v, startLevel + 1), endLevel))" /></label>
             <div class="route-range-pick">
               <span>Method</span>
-              <MethodPicker v-if="rangeMethods.length && rangeTo > rangeFrom" inline model-value="" :methods="rangeMethods" :allow-custom="false" @update:model-value="applyRange" />
+              <MethodPicker v-if="rangeMethods.length && rangeTo > rangeFrom" inline :from-level="rangeFrom" :to-level="rangeTo" model-value="" :methods="rangeMethods" :allow-custom="false" @update:model-value="applyRange" />
               <small v-else class="planner-hint">{{ rangeTo > rangeFrom ? 'No single method covers all of those levels. Try a shorter range.' : 'Pick a target level above the start level.' }}</small>
             </div>
           </div>

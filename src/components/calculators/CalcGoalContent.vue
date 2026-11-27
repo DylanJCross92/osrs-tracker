@@ -49,7 +49,7 @@
             <tr v-for="m in content.methods" :key="m.name">
               <td>{{ m.name }}</td>
               <td>{{ m.minLevel }}{{ m.maxLevel != null ? ` to ${m.maxLevel}` : '+' }}</td>
-              <td class="num">{{ formatNum(m.xpPerHour) }}</td>
+              <td class="num">{{ m.xpPerHourText || formatNum(m.xpPerHour) }}</td>
               <td class="num" :class="gpClass(m.gpPerHour)">{{ m.gpText }}</td>
             </tr>
           </tbody>

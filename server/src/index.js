@@ -725,7 +725,7 @@ if (distExists) {
           fast.steps.map((s) => [`${s.from} to ${s.to}`, s.method, s.xp.toLocaleString('en-US'), s.xpPerHour.toLocaleString('en-US'), s.hoursText]),
         )}<h2>${escapeHtml(page.skill)} methods</h2>${table(
           ['Method', 'Levels', 'XP per hour', 'GP per hour'],
-          page.methods.map((m) => [m.name, `${m.minLevel}${m.maxLevel != null ? ` to ${m.maxLevel}` : '+'}`, m.xpPerHour.toLocaleString('en-US'), m.gpText]),
+          page.methods.map((m) => [m.name, `${m.minLevel}${m.maxLevel != null ? ` to ${m.maxLevel}` : '+'}`, (m.xpPerHourText || m.xpPerHour.toLocaleString('en-US')), m.gpText]),
         )}<h2>XP milestones</h2>${table(
           ['Level', 'Total XP', `XP from level ${page.from}`],
           page.milestones.map((m) => [String(m.level), m.totalXp.toLocaleString('en-US'), m.fromStart.toLocaleString('en-US')]),
