@@ -9,6 +9,7 @@
     </section>
 
     <template v-else-if="share">
+      <p v-if="adminRef" class="sp-admin" role="note">Admin view: a player's own plan, read-only. It is not shared publicly, and opening it is not counted.</p>
       <section class="card sp-head">
         <div class="sp-head-main">
           <p class="sp-kicker">
@@ -18,11 +19,11 @@
           <h1>{{ share.name }}</h1>
           <p class="sp-by">
             <template v-if="share.rsn">by <RouterLink :to="{ name: 'playerDetail', params: { username: share.rsn } }">{{ share.rsn }}</RouterLink> · </template>
-            Updated {{ fmtDate(share.updatedAt) }}
+            <template v-if="share.updatedAt">Updated {{ fmtDate(share.updatedAt) }}</template>
           </p>
         </div>
         <div class="sp-head-actions">
-          <button class="btn btn-primary" type="button" @click="useThisPlan">Use this plan</button>
+          <button v-if="!adminRef" class="btn btn-primary" type="button" @click="useThisPlan">Use this plan</button>
           <button class="btn btn-ghost" type="button" @click="copyLink">Copy link</button>
         </div>
       </section>
@@ -105,6 +106,8 @@ const router = useRouter()
 const store = usePlayersStore()
 const { showToast } = useToast()
 
+// Opened from the admin Player plans page: a player's private plan, read-only (route /admin/plans/view/:ref).
+const adminRef = route.params.ref || ''
 const share = ref(null)
 const loading = ref(true)
 const error = ref('')
@@ -113,13 +116,15 @@ setPageMeta({ title: 'Training plan', description: 'A shared Old School RuneScap
 
 onMounted(async () => {
   try {
-    share.value = (await sharedPlansApi.get(route.params.slug)).plan
+    share.value = (adminRef ? await sharedPlansApi.adminGet(adminRef) : await sharedPlansApi.get(route.params.slug)).plan
     setPageMeta({ title: `${share.value.name}${share.value.rsn ? ` by ${share.value.rsn}` : ''}`, description: `A shared Old School RuneScape training plan on TickGains.`, path: route.path, noindex: true })
-    track('shared_plan_viewed', { mode: share.value.mode })
-    recordPlanEvent(route.params.slug, 'view')
+    if (!adminRef) {
+      track('shared_plan_viewed', { mode: share.value.mode })
+      recordPlanEvent(route.params.slug, 'view')
+    }
     if (share.value.mode === 'live' && !store.loaded) await store.loadPlayers().catch(() => {})
   } catch (err) {
-    error.value = err?.status === 404 ? 'That plan is not shared, or the owner has turned sharing off.' : 'Could not load that plan right now. Please try again.'
+    error.value = err?.status === 404 ? (adminRef ? 'That plan no longer exists.' : 'That plan is not shared, or the owner has turned sharing off.') : 'Could not load that plan right now. Please try again.'
   } finally {
     loading.value = false
   }

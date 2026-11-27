@@ -4,7 +4,7 @@ import { APP_TIMEZONE, localDay } from '../utils/dates.js'
 import { SQL_STATS_TODAY, statsDay } from '../utils/statsDay.js'
 import { fillDailyXp } from '../utils/dailyXp.js'
 import { playersByDay } from '../utils/dailyPlayers.js'
-import { groupPlansByPlayer } from '../utils/adminPlans.js'
+import { adminPlanShare, groupPlansByPlayer } from '../utils/adminPlans.js'
 
 const today = () => statsDay()
 
@@ -130,7 +130,7 @@ export async function dailyXp(days = 30) {
 /** Every plan accounts have saved (and the planner left in progress), grouped by player name. For the site owner only. */
 export async function plansByPlayer() {
   const [{ rows }, { rows: visitorRows }] = await Promise.all([
-    pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`),
+    pool.query(`SELECT id, data->'plans' AS plans, data->'planner' AS planner FROM users WHERE data ? 'plans' OR data ? 'planner'`),
     // Visitors who later signed in are left out once their plans are in the account's own data (until then this copy is all there is).
     pool.query(
       `SELECT v.visitor_id AS id, v.plans, v.planner, v.updated_at
@@ -140,6 +140,21 @@ export async function plansByPlayer() {
     ),
   ])
   return groupPlansByPlayer(rows, visitorRows.map((v) => ({ ...v, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null })))
+}
+
+/** One plan from the Player plans page, to look at read-only (ref as given on each plan: 'a<account id>.<plan id>' or 'v<visitor id>.<plan id>'). Null when it is gone. */
+export async function planByRef(ref) {
+  const m = /^([av])([a-f0-9]{1,32})\.([\w-]{1,40})$/.exec(String(ref || ''))
+  if (!m) return null
+  const [, kind, owner, planId] = m
+  if (kind === 'a') {
+    if (!/^\d{1,10}$/.test(owner)) return null
+    const { rows } = await pool.query(`SELECT data->'plans' AS plans, data->'planner' AS planner FROM users WHERE id = $1`, [Number(owner)])
+    return rows[0] ? adminPlanShare(rows[0], planId) : null
+  }
+  const { rows } = await pool.query('SELECT plans, planner, updated_at FROM visitor_data WHERE visitor_id = $1', [owner])
+  const v = rows[0]
+  return v ? adminPlanShare({ plans: v.plans, planner: v.planner, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null }, planId) : null
 }
 
 const MAX_VISITOR_PLANS = 30

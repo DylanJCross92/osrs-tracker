@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { groupPlansByPlayer, playerKey } from '../../server/src/utils/adminPlans.js'
+import { adminPlanShare, groupPlansByPlayer, playerKey } from '../../server/src/utils/adminPlans.js'
 
 const plan = (id, rsn, updatedAt, goals = [{ skill: 'Slayer', currentXp: 100, targetXp: 200, methodId: 'global' }]) => ({ id, name: `Plan ${id}`, player: { rsn }, updatedAt, hoursPerDay: 2, globalStrategy: 'auto-fast', goals })
 const saved = (plans) => ({ plans: { value: plans, updatedAt: '2026-11-01T00:00:00.000Z' } })
@@ -88,5 +88,27 @@ describe('visitors whose plans name no player', () => {
     expect(a.plans.map((p) => p.id)).toEqual(['a1', 'a2'])
     expect(out.players[3].plans.map((p) => p.id)).toEqual(['n'])
     expect(out.totals).toEqual({ players: 1, plans: 5, accounts: 1, visitors: 2 })
+  })
+})
+
+describe('opening a plan', () => {
+  const entry = { id: 7, plans: { value: [plan('a', 'Zezima', '2026-11-02')], updatedAt: '2026-11-01T00:00:00.000Z' }, planner: { value: { rsn: 'Bob', goals: [{ skill: 'Mining', currentXp: 0, targetXp: 1000 }], planId: 'zzz', planName: '' }, updatedAt: '2026-11-05T00:00:00.000Z' } }
+
+  it('gives each plan a reference for its owner, and none without one', () => {
+    const out = groupPlansByPlayer([entry, saved([plan('c', 'Amy', '2026-11-04')])])
+    const refs = out.players.flatMap((p) => p.plans.map((pl) => pl.ref)).sort()
+    expect(refs).toEqual(['a7.a', 'a7.zzz', null])
+  })
+
+  it('shows a saved plan, or the one left open, in the shape of a shared plan', () => {
+    expect(adminPlanShare(entry, 'a')).toMatchObject({ slug: null, name: 'Plan a', rsn: 'Zezima', mode: 'static' })
+    const open = adminPlanShare(entry, 'zzz')
+    expect(open).toMatchObject({ name: 'Unsaved plan', rsn: 'Bob' })
+    expect(open.plan.goals[0]).toMatchObject({ skill: 'Mining', targetXp: 1000 })
+  })
+
+  it('has nothing for a plan that is gone or has no goals', () => {
+    expect(adminPlanShare(entry, 'nope')).toBeNull()
+    expect(adminPlanShare({ plans: [plan('e', 'Bob', '2026-11-01', [])] }, 'e')).toBeNull()
   })
 })

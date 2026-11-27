@@ -33,7 +33,8 @@
         <ul v-show="isOpen(p.key)" class="ap-plans">
           <li v-for="plan in p.plans" :key="plan.source + plan.id" class="ap-plan">
             <div class="ap-plan-top">
-              <b>{{ plan.name }}</b>
+              <RouterLink v-if="plan.ref" class="ap-view" :to="{ name: 'adminPlanView', params: { ref: plan.ref } }"><b>{{ plan.name }}</b></RouterLink>
+              <b v-else>{{ plan.name }}</b>
               <em v-if="plan.source === 'working'" class="ap-tag">Not saved</em>
               <RouterLink v-if="plan.owner" class="ap-visitor" :to="{ name: 'adminStats', query: { tab: 'visitors', v: plan.owner.key } }" :title="`See what ${plan.owner.label} did`">{{ plan.owner.label }}</RouterLink>
               <small>{{ plan.hoursPerDay ? `${plan.hoursPerDay} h/day` : '' }}<template v-if="strategy(plan)"> · {{ strategy(plan) }}</template><template v-if="plan.updatedAt"> · updated {{ ago(plan.updatedAt) }}</template></small>

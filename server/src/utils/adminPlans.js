@@ -1,5 +1,6 @@
 // The planner plans that accounts have saved, gathered by player name for the admin page. Pure (no database), so the grouping
 // is easy to test. Nothing here names the account: the page is about what players plan, not who the account holder is.
+import { SharePlanError, cleanSharedPlan } from './sharedPlans.js'
 
 // "Zezima", "zezima" and "Zezima " are one player; so are names that differ only by space, underscore or hyphen.
 export const playerKey = (name) => String(name || '').trim().toLowerCase().replace(/[ _-]+/g, ' ')
@@ -19,8 +20,10 @@ function goalsOf(list) {
     }))
 }
 
-const planOf = (p, source, updatedAt) => ({
+const planOf = (p, source, updatedAt, owner = '') => ({
   id: text(p.id, 40),
+  // How the admin page opens this plan: 'a<account id>.<plan id>' or 'v<visitor id>.<plan id>' (see adminPlanShare).
+  ref: owner ? `${owner}.${text(p.id, 40)}` : null,
   name: text(p.name, 60) || 'Untitled plan',
   source, // 'saved' (in My plans) or 'working' (the planner as it was left, not saved under a name)
   updatedAt: text(p.updatedAt || updatedAt, 40) || null,
@@ -68,18 +71,19 @@ export function groupPlansByPlayer(accounts, visitors = []) {
     if (!id) continue
     const saved = Array.isArray(v.plans) ? v.plans : []
     const draft = v.planner && Array.isArray(v.planner.goals) ? v.planner : null
-    for (const p of saved) if (p && typeof p === 'object') add(null, p.player?.rsn, planOf(p, 'saved', v.updatedAt), id)
+    for (const p of saved) if (p && typeof p === 'object') add(null, p.player?.rsn, planOf(p, 'saved', v.updatedAt, `v${id}`), id)
     if (draft && draft.goals.length && !saved.some((p) => p && p.id === draft.planId)) {
-      add(null, draft.rsn, planOf({ ...draft, id: draft.planId || 'working', name: draft.planName || 'Unsaved plan' }, 'working', v.updatedAt), id)
+      add(null, draft.rsn, planOf({ ...draft, id: draft.planId || 'working', name: draft.planName || 'Unsaved plan' }, 'working', v.updatedAt, `v${id}`), id)
     }
   }
   accounts.forEach((a, i) => {
     const saved = Array.isArray(a?.plans?.value) ? a.plans.value : Array.isArray(a?.plans) ? a.plans : []
     const draft = a?.planner?.value || (a?.planner && Array.isArray(a.planner.goals) ? a.planner : null)
-    for (const p of saved) if (p && typeof p === 'object') add(i, p.player?.rsn, planOf(p, 'saved', a?.plans?.updatedAt))
+    const owner = Number.isInteger(a?.id) ? `a${a.id}` : ''
+    for (const p of saved) if (p && typeof p === 'object') add(i, p.player?.rsn, planOf(p, 'saved', a?.plans?.updatedAt, owner))
     // The working planner counts too, unless it is just an open copy of a plan that is already saved.
     if (draft && Array.isArray(draft.goals) && draft.goals.length && !saved.some((p) => p && p.id === draft.planId)) {
-      add(i, draft.rsn, planOf({ ...draft, id: draft.planId || 'working', name: draft.planName || 'Unsaved plan' }, 'working', a.planner.updatedAt))
+      add(i, draft.rsn, planOf({ ...draft, id: draft.planId || 'working', name: draft.planName || 'Unsaved plan' }, 'working', a.planner.updatedAt, owner))
     }
   })
   const players = [...groups.values()].map((g) => ({
@@ -93,4 +97,33 @@ export function groupPlansByPlayer(accounts, visitors = []) {
   const rank = (p) => (p.key === '' ? 2 : p.visitor ? 1 : 0)
   players.sort((a, b) => rank(a) - rank(b) || a.key.localeCompare(b.key))
   return { totals: { players: players.filter((p) => p.key && !p.visitor).length, plans: players.reduce((n, p) => n + p.plans.length, 0), accounts: seenAccounts.size, visitors: seenVisitors.size }, players }
+}
+
+/**
+ * One plan of an account or visitor, in the shape the shared-plan page shows (the same as a public share, without a link):
+ * { slug: null, name, rsn, mode: 'static', plan, summary, updatedAt }. `entry` is { plans, planner, updatedAt } as above and
+ * `planId` the plan's id ('working' or the planner's own id for the plan left open and not saved). Returns null when there is none.
+ * Goes through the same cleaning as a public share, so only the plan's own fields come out.
+ */
+export function adminPlanShare(entry, planId) {
+  const saved = Array.isArray(entry?.plans?.value) ? entry.plans.value : Array.isArray(entry?.plans) ? entry.plans : []
+  const draft = entry?.planner?.value || (entry?.planner && Array.isArray(entry.planner.goals) ? entry.planner : null)
+  const hit = saved.find((p) => p && typeof p === 'object' && String(p.id) === planId)
+  const open = !hit && draft && Array.isArray(draft.goals) && (planId === 'working' || String(draft.planId) === planId) ? draft : null
+  const src = hit || open
+  if (!src) return null
+  const updatedAt = text(src.updatedAt || (hit ? entry?.plans?.updatedAt : entry?.planner?.updatedAt) || entry?.updatedAt, 40) || null
+  try {
+    const row = cleanSharedPlan({
+      planId: /^[\w-]{1,40}$/.test(planId) ? planId : 'working',
+      name: hit ? src.name : src.planName || 'Unsaved plan',
+      rsn: hit ? src.player?.rsn : src.rsn,
+      mode: 'static',
+      plan: src,
+    })
+    return { slug: null, name: row.name, rsn: row.rsn, mode: row.mode, plan: row.plan, summary: row.summary, createdAt: updatedAt, updatedAt }
+  } catch (err) {
+    if (err instanceof SharePlanError) return null
+    throw err
+  }
 }

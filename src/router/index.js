@@ -65,6 +65,7 @@ const routes = [
   { path: '/reset-password', name: 'resetPassword', component: () => import('@/views/AuthView.vue'), props: { mode: 'reset' } },
   { path: '/verify-email', name: 'verifyEmail', component: () => import('@/views/AuthView.vue'), props: { mode: 'verify' } },
   { path: '/admin/claims', name: 'adminClaims', component: () => import('@/views/AdminClaimsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admin/plans/view/:ref', name: 'adminPlanView', component: () => import('@/views/SharedPlanView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/plans', name: 'adminPlans', component: () => import('@/views/AdminPlansView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/users', name: 'adminUsers', component: () => import('@/views/AdminUsersView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/admin/stats', name: 'adminStats', component: () => import('@/views/AdminStatsView.vue'), meta: { requiresAuth: true, requiresAdmin: true } },
