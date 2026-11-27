@@ -24,9 +24,11 @@ const safeUrl = (u) => (/^https?:\/\//i.test(String(u)) ? String(u) : '')
  * title: the heading. paragraphs: plain strings, or { text, strong } to bold a part (strong must appear in text).
  * features: [{ title, text, image?: { src, alt } }] shown as a short list with a tick beside each, and an optional picture under the text. button: { label, url }. rows: [{ label, value }] shown as a small table. note: small muted text under the button.
  * unsubscribeUrl: for emails that are not about the account itself, a link in the footer to stop them (unsubscribeLabel words it). preheader: the preview line some inboxes show next to the subject.
+ * replyable: for an email the reader will answer (the owner's feedback emails). It does not declare itself a dark-scheme message, because clients then give a reply the
+ * light text of a dark message, which is unreadable on the white reply box. Everything in it already has its own colours, so it looks the same.
  * Returns { html, text }.
  */
-export function renderEmail({ preheader = '', title, paragraphs = [], features = [], afterFeatures = [], button = null, rows = [], note = '', unsubscribeUrl = '', unsubscribeLabel = 'Unsubscribe from reminder emails' }) {
+export function renderEmail({ preheader = '', title, paragraphs = [], features = [], afterFeatures = [], button = null, rows = [], note = '', unsubscribeUrl = '', unsubscribeLabel = 'Unsubscribe from reminder emails', replyable = false }) {
   const site = SITE()
   const url = button ? safeUrl(button.url) : ''
 
@@ -74,9 +76,7 @@ export function renderEmail({ preheader = '', title, paragraphs = [], features =
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="dark">
-<meta name="supported-color-schemes" content="dark">
-<title>${esc(title)}</title>
+${replyable ? '' : '<meta name="color-scheme" content="dark">\n<meta name="supported-color-schemes" content="dark">\n'}<title>${esc(title)}</title>
 </head>
 <body style="margin:0;padding:0;background:${C.page};" bgcolor="${C.page}">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.page};">${esc(preheader)}</div>

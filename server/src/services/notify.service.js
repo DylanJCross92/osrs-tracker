@@ -164,6 +164,7 @@ export async function notifyFeedback({ id, kind, kindLabel, message, email = nul
     paragraphs: message.split(/\n+/).filter(Boolean),
     rows,
     note: email ? 'Reply to this email to answer them.' : 'They did not leave an address, so there is no one to reply to.',
+    replyable: true,
   })
   try {
     const res = await fetch(API_URL, {
