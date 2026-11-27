@@ -4093,7 +4093,7 @@ button.pc-seg { border: 0; padding: 0; font: inherit; color: inherit; cursor: po
 .claim-avail-title em { display: inline-block; margin-left: 4px; color: var(--muted); font-size: 0.74rem; font-style: normal; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .claim-avail-hint { margin: 2px 0 10px; color: var(--muted); font-size: 0.8rem; line-height: 1.45; max-width: none; }
 .claim-avail-row { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; }
-.claim-avail-row select { grid-column: 1 / -1; }
+.claim-avail-row select:first-child { grid-column: 1 / -1; }
 .claim-avail-field { min-width: 0; }
 .claim-avail-field { height: 38px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--panel); color: var(--text); font: inherit; font-size: 0.9rem; color-scheme: dark; }
 .claim-avail-field:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
@@ -8488,3 +8488,13 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 @media (max-width: 520px) {
   .profile-banner .banner-actions .btn svg:not(:first-child) { display: none; }
 }
+
+/* Claim screen: the owner's usual hours, and the "I'm online now" ping from the first step */
+.claim-hours { margin: 0 0 14px; padding: 2px 0 12px; border-bottom: 1px solid var(--border); }
+.claim-hours-line { display: flex; align-items: baseline; gap: 9px; margin: 0; max-width: none; color: var(--text); font-size: 0.92rem; line-height: 1.45; }
+.claim-hours-line b { color: var(--gold-bright); font-weight: 700; white-space: nowrap; }
+.claim-hours-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); opacity: 0.6; transform: translateY(-1px); }
+.claim-hours-dot.on { background: var(--xp-green); opacity: 1; box-shadow: 0 0 0 4px rgba(124, 184, 105, 0.18); }
+.claim-hours-sub { margin: 3px 0 0 18px; max-width: none; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+.claim-ping-start { margin: 10px 0 0; text-align: center; }
+.claim-ping-start .btn { width: 100%; height: auto; min-height: 44px; padding-block: 8px; white-space: normal; line-height: 1.25; }

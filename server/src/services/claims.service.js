@@ -1,7 +1,6 @@
 import { pool } from '../db.js'
 import { generateClaimCode, normalizeClaimCode } from '../utils/claimCode.js'
 import { parseAvailability, pingWaitMinutes } from '../utils/claimAvailability.js'
-import { discordConfigured } from './discord.service.js'
 import { addNotification } from './inbox.service.js'
 import { mailConfigured } from '../utils/mailer.js'
 import { CLAIM_EMAIL_AFTER_HOURS } from '../utils/claimExpiryEmail.js'
@@ -62,7 +61,7 @@ async function ownerRow(playerId) {
  */
 export async function getClaimState(player, user) {
   const owner = await ownerRow(player.id)
-  const state = { claimed: Boolean(owner), mine: 'none', contact: claimContact(), canPing: discordConfigured() }
+  const state = { claimed: Boolean(owner), mine: 'none', contact: claimContact(), canPing: true }
   if (!user) return state
   if (owner && owner.user_id === user.id) return { ...state, mine: 'owner' }
   if (owner) return { ...state, mine: 'taken' }
@@ -145,7 +144,7 @@ export async function reservePing(user, player) {
     throw new ClaimError(`You already pinged recently. You can ping again in ${wait} minute${wait === 1 ? '' : 's'}.`, 429)
   }
   const claim = rows[0]
-  return { from: claim.online_from, until: claim.online_until, release: () => pool.query(`UPDATE profile_claims SET last_ping_at = NULL WHERE id = $1`, [claim.id]).catch(() => {}) }
+  return { id: claim.id, from: claim.online_from, until: claim.online_until, release: () => pool.query(`UPDATE profile_claims SET last_ping_at = NULL WHERE id = $1`, [claim.id]).catch(() => {}) }
 }
 
 export async function cancelClaim(user, player) {
@@ -253,4 +252,24 @@ export async function remindStaleClaims() {
     if (ok) added++
   }
   return added
+}
+
+/**
+ * "I'm online now": a notice in the app for the site owner's account(s), at the top of their bell. One per claim per cooldown
+ * period, so a repeat ping refreshes nothing. Returns how many accounts were told.
+ */
+export async function notifyOwnersOfPing({ claimId, playerName }) {
+  const { rows } = await pool.query(`SELECT id FROM users WHERE roles && ARRAY['admin', 'owner']::text[]`)
+  const slot = Math.floor(Date.now() / (PING_COOLDOWN_MINUTES * 60_000))
+  let told = 0
+  for (const u of rows) {
+    const ok = await addNotification(u.id, {
+      type: 'claim_ping',
+      text: `${playerName} is online now and waiting to send their claim code`,
+      link: '/admin/claims',
+      dedupeKey: `claim-ping:${claimId}:${slot}`,
+    })
+    if (ok) told++
+  }
+  return told
 }

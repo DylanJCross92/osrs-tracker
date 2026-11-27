@@ -6,10 +6,11 @@ export const claimsApi = {
   // { claimed, mine: 'none' | 'pending' | 'owner' | 'taken', contact, canPing, code?, expiresAt?, onlineFrom?, onlineUntil?, pingWaitMinutes? }
   get: (username) => api.get(`/players/${enc(username)}/claim`),
   // `window` is optional: { onlineFrom, onlineUntil } as ISO strings, when the claimant will be in game.
-  start: (username, window) => api.post(`/players/${enc(username)}/claim`, window || {}),
+  // `ping: true` also tells the owner you are online now.
+  start: (username, window, { ping = false } = {}) => api.post(`/players/${enc(username)}/claim`, { ...(window || {}), ...(ping ? { ping: true } : {}) }),
   // Save (or, with null, clear) the window.
   online: (username, window) => api.post(`/players/${enc(username)}/claim/online`, window || {}),
-  // "I'm in game now": pings the owner on Discord.
+  // "I'm online now": pings the owner in the app and on Discord.
   ping: (username) => api.post(`/players/${enc(username)}/claim/ping`),
   cancel: (username) => api.post(`/players/${enc(username)}/claim/cancel`),
   mine: () => api.get('/claims/mine'),

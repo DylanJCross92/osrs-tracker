@@ -6,9 +6,15 @@
       <select v-model="day" class="claim-avail-field" aria-label="Day">
         <option v-for="o in days" :key="o.value" :value="o.value">{{ o.label }}</option>
       </select>
-      <input v-model="from" class="claim-avail-field" type="time" aria-label="Online from" />
+      <select v-model="from" class="claim-avail-field" aria-label="Online from">
+        <option value="" disabled>From</option>
+        <option v-for="o in timesFor(from)" :key="o.value" :value="o.value">{{ o.label }}</option>
+      </select>
       <span class="claim-avail-to">to</span>
-      <input v-model="to" class="claim-avail-field" type="time" aria-label="Online until" />
+      <select v-model="to" class="claim-avail-field" aria-label="Online until">
+        <option value="" disabled>Until</option>
+        <option v-for="o in timesFor(to)" :key="o.value" :value="o.value">{{ o.label }}</option>
+      </select>
     </div>
     <p v-if="problem" class="claim-avail-problem" role="alert">{{ problem }}</p>
     <div v-if="saveable" class="claim-avail-save">
@@ -21,7 +27,7 @@
 
 <script setup>
 import { computed, ref, watch } from 'vue'
-import { buildWindow, dayOptions, describeWindow, splitWindow } from '@/utils/claimWindow'
+import { buildWindow, dayOptions, describeWindow, splitWindow, timeOptions } from '@/utils/claimWindow'
 
 const props = defineProps({
   contact: { type: String, default: 'the owner' },
@@ -48,6 +54,9 @@ const days = computed(() => {
   }
   return list
 })
+
+// Every half hour, plus a saved time that is between two of those.
+const timesFor = (current) => timeOptions(current)
 
 const built = computed(() => buildWindow(day.value, from.value, to.value))
 const problem = computed(() => (built.value && new Date(built.value.onlineUntil) <= new Date() ? 'That time has already passed. Pick a time still to come.' : ''))

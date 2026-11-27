@@ -31,6 +31,7 @@ const KINDS = {
   claim_approved: { icon: 'shieldCheck', tone: 'green' },
   claim_rejected: { icon: 'shieldX', tone: 'rose' },
   claims_waiting: { icon: 'clock', tone: 'gold', action: 'Review' },
+  claim_ping: { icon: 'clock', tone: 'gold', action: 'Review' },
   claim_reminder: { icon: 'clock', tone: 'gold' },
   claim_code: { icon: 'clock', tone: 'gold', action: 'Finish' },
   clan_request: { icon: 'users', tone: 'blue', action: 'Respond' },

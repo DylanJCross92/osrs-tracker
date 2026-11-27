@@ -6,8 +6,8 @@ import { renderEmail } from '../utils/emailTemplate.js'
 import { notifyClaimStarted } from '../services/notify.service.js'
 import { attachUser, requireRole, requireUser } from './auth.routes.js'
 import { addNotification } from '../services/inbox.service.js'
-import { ClaimError, adminOverview, approveByCode, cancelClaim, claimContact, getClaimState, listMyClaims, lookupByCode, readAvailability, rejectClaim, reservePing, revokeClaim, saveAvailability, startClaim } from '../services/claims.service.js'
-import { discordConfigured, pingMessage, postToDiscord, startedMessage, windowMessage } from '../services/discord.service.js'
+import { ClaimError, adminOverview, approveByCode, cancelClaim, claimContact, getClaimState, listMyClaims, lookupByCode, readAvailability, notifyOwnersOfPing, rejectClaim, reservePing, revokeClaim, saveAvailability, startClaim } from '../services/claims.service.js'
+import { pingMessage, postToDiscord, startedMessage, windowMessage } from '../services/discord.service.js'
 
 export const claimsRouter = Router()
 
@@ -65,6 +65,8 @@ claimsRouter.post(
       notifyClaimStarted({ email: req.user.email, playerName: player.displayName }).catch(() => {})
       postToDiscord(startedMessage({ playerName: player.displayName, from: window?.from, until: window?.until })).catch(() => {})
     }
+    // "Start and tell them I'm online now": a failed ping never undoes the claim, the pending screen still has the ping button.
+    if (req.body?.ping === true) await sendPing(req.user, player).catch(() => {})
     res.status(result.created ? 201 : 200).json(await getClaimState(player, req.user))
   }),
 )
@@ -85,7 +87,21 @@ claimsRouter.post(
   }),
 )
 
-// "I'm in game now": nudges the owner on Discord, at most once every half hour per claim.
+// The ping itself: a notice in the owner's bell and a Discord message, at most once every half hour per claim. It works when either
+// one gets through, so a Discord outage (or no webhook at all) never leaves a claimant unable to say they are here.
+async function sendPing(user, player) {
+  const claim = await reservePing(user, player)
+  const [inApp, discord] = await Promise.all([
+    notifyOwnersOfPing({ claimId: claim.id, playerName: player.displayName }).catch(() => 0),
+    postToDiscord(pingMessage({ playerName: player.displayName, from: claim.from, until: claim.until })),
+  ])
+  if (!inApp && !discord) {
+    await claim.release()
+    throw new ClaimError('The ping could not be sent right now. Please try again in a moment.', 502)
+  }
+}
+
+// "I'm online now": nudges the owner in the app and on Discord.
 claimsRouter.post(
   '/players/:username/claim/ping',
   attachUser,
@@ -94,13 +110,7 @@ claimsRouter.post(
   handle(async (req, res) => {
     const player = await playerOr404(req, res)
     if (!player) return
-    if (!discordConfigured()) throw new ClaimError('Pinging is not set up yet. Send your code in game when you are both online.', 503)
-    const claim = await reservePing(req.user, player)
-    const delivered = await postToDiscord(pingMessage({ playerName: player.displayName, from: claim.from, until: claim.until }))
-    if (!delivered) {
-      await claim.release()
-      throw new ClaimError('The ping could not be sent right now. Please try again in a moment.', 502)
-    }
+    await sendPing(req.user, player)
     res.json(await getClaimState(player, req.user))
   }),
 )

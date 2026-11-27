@@ -50,3 +50,18 @@ export function describeWindow(onlineFrom, onlineUntil) {
   const sameDay = dayKey(a) === dayKey(b)
   return sameDay ? `${date}, ${time(a)} to ${time(b)}` : `${date}, ${time(a)} to ${b.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}, ${time(b)}`
 }
+
+/** Clock times for a dropdown, every half hour: [{ value: 'HH:MM', label: '6:30 PM' }]. A time already chosen that is not on the half hour is kept in its place. */
+export function timeOptions(current = '', step = 30) {
+  const list = []
+  for (let m = 0; m < 24 * 60; m += step) list.push(m)
+  const cur = /^\d{2}:\d{2}$/.test(current) ? Number(current.slice(0, 2)) * 60 + Number(current.slice(3)) : null
+  if (cur !== null && !list.includes(cur)) list.push(cur)
+  return list
+    .sort((a, b) => a - b)
+    .map((m) => {
+      const h = Math.floor(m / 60)
+      const min = m % 60
+      return { value: `${pad(h)}:${pad(min)}`, label: `${h % 12 || 12}:${pad(min)} ${h < 12 ? 'AM' : 'PM'}` }
+    })
+}
