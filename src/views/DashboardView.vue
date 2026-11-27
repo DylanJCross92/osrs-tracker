@@ -208,6 +208,7 @@ import { trackerPick } from '@/utils/trackerPick'
 import { formatRelative } from '@/utils/time'
 import { paceRates, paceSpanDays, weekDaysFrom } from '@/utils/weekDays'
 import { usualByNow } from '@/utils/usualPace'
+import { useHourNow } from '@/composables/useHourNow'
 
 setPageMeta({ title: 'Your dashboard', description: 'Your week, goals and plans on TickGains.', path: '/' })
 
@@ -294,7 +295,8 @@ watch(() => [player.value?.id, player.value?.latest?.capturedAt], loadMine, { im
 
 const tracked = computed(() => trackedSnapshots(player.value, snaps.value))
 const weekDays = computed(() => weekDaysFrom(tracked.value))
-const usual = computed(() => usualByNow(tracked.value))
+const hourNow = useHourNow()
+const usual = computed(() => usualByNow(tracked.value, hourNow.value))
 const monthGain = computed(() => dailyXp(tracked.value, 30).reduce((sum, d) => sum + d.xp, 0))
 const shownGoals = computed(() => dashboardGoals(goals.value, 4))
 const nextItems = computed(() => whatsNext({ latest: player.value?.latest, achievements: profileData.value?.achievements || [], days: weekDays.value, spanDays: paceSpanDays(tracked.value) ?? undefined, pace: paceRates(tracked.value) }))

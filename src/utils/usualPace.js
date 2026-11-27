@@ -2,10 +2,11 @@
 // are measured apart (people play at different times), over the last few weeks of the same kind of day. The day is the site's
 // 6 AM to 6 AM game day (see gameDay.js).
 //
-// A snapshot is only saved when XP changed, so the XP at any moment is the XP of the newest snapshot at or before it. That gives
-// the hourly resolution the sync runs at, with no guessing between snapshots.
+// A snapshot is only saved when XP changed, so the XP at any moment is the XP of the newest snapshot at or before it. The line
+// itself follows the clock, one step per full hour of the game day, so it keeps moving whether or not new XP has been saved.
 import { addGameDays, gameDay, startOfGameDay } from '@/utils/gameDay'
 
+const HOUR = 3_600_000
 const dayType = (key) => {
   const dow = new Date(`${key}T12:00:00Z`).getUTCDay()
   return dow === 0 || dow === 6 ? 'weekend' : 'weekday'
@@ -19,8 +20,8 @@ const median = (list) => {
 /**
  * snapshots: the player's own tracked snapshots (capturedAt, overallXp), any order.
  * Returns { dayType: 'weekday' | 'weekend', expected, fullDay, samples } or null when there are too few comparable days:
- *   expected - the usual XP gained from 6 AM to the same time of day now (up to the newest snapshot, so a stale player is not
- *              shown as behind), the median over past days of the same kind
+ *   expected - the usual XP gained from 6 AM to the start of the current hour of the day, the median over past days of the same
+ *              kind (it steps up each hour, whatever the player's newest snapshot is)
  *   fullDay  - the usual XP for a whole day of that kind
  *   samples  - how many past days it is based on
  */
@@ -46,7 +47,7 @@ export function usualByNow(snapshots, now = Date.now(), { lookbackDays = 42, min
 
   const todayKey = gameDay(now)
   const type = dayType(todayKey)
-  const elapsed = Math.max(Math.min(now, pts[pts.length - 1].t) - startOfGameDay(now), 0)
+  const elapsed = Math.max(Math.floor((now - startOfGameDay(now)) / HOUR), 0) * HOUR
   const byNow = []
   const wholeDay = []
   for (let k = 1; k <= lookbackDays; k++) {

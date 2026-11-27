@@ -60,6 +60,7 @@ import { skillIconSrc, formatXp } from '@/utils/osrsSkills'
 import { highestSkill, mostXpSkill, featuredAchievements } from '@/utils/profile'
 import { trackedSnapshots } from '@/utils/compare'
 import { usualByNow } from '@/utils/usualPace'
+import { useHourNow } from '@/composables/useHourNow'
 
 defineEmits(['view-history', 'day', 'skill', 'records', 'challenge'])
 const props = defineProps({
@@ -73,7 +74,8 @@ const props = defineProps({
 const latest = computed(() => props.snapshots[props.snapshots.length - 1])
 const monthGain = computed(() => props.player.gains?.month?.xp || 0)
 // What is usual for today by this time of day (the faint bar in the week chart), from the snapshots saved since tracking began.
-const usual = computed(() => usualByNow(trackedSnapshots(props.player, props.snapshots)))
+const hourNow = useHourNow()
+const usual = computed(() => usualByNow(trackedSnapshots(props.player, props.snapshots), hourNow.value))
 
 // Personal records, loaded once here and shared with the records section and the streak.
 const records = ref([])

@@ -56,10 +56,16 @@ describe('usualByNow', () => {
     expect(usualByNow([], now)).toBeNull()
   })
 
-  it('measures up to the newest snapshot, so a player who has not refreshed is not shown as behind', () => {
-    // Today's own snapshots stop 3 hours in (9 AM), though it is now 3 PM.
+  it('follows the clock by the hour, not the newest snapshot', () => {
+    // Today's own snapshots stop 3 hours in (9 AM), though it is now 3 PM: the line is still at the 3 PM usual.
     const stale = withToday(history(gameDay(now), weekday, weekend), gameDay(now), 3 * HOUR)
-    expect(usualByNow(stale, now).expected).toBe(30_000)
+    expect(usualByNow(stale, now).expected).toBe(90_000)
+  })
+
+  it('steps up once per full hour, not between hours', () => {
+    const snaps = withToday(history(gameDay(now), weekday, weekend), gameDay(now), 9 * HOUR)
+    expect(usualByNow(snaps, now + 30 * 60_000).expected).toBe(90_000) // 3:30 PM still shows the 3 PM figure
+    expect(usualByNow(snaps, now + HOUR).expected).toBe(100_000) // 4 PM
   })
 
   it('ignores days from before the player was tracked', () => {
