@@ -8322,3 +8322,15 @@ html.iron-mode .gp-figure { display: none !important; }
 .vz-hide input { margin-top: 3px; }
 .vz-hide small { display: block; font-size: 0.74rem; opacity: 0.8; }
 .vz-silent { color: var(--muted); border-style: dashed; }
+
+/* Discover: the button under a list that shows a few more at a time */
+.disc-more { display: flex; justify-content: center; margin-top: 12px; }
+.disc-more-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border-radius: 999px; background: transparent; border: 1px solid var(--border-strong, var(--border)); color: var(--gold-bright); font: inherit; font-size: 0.9rem; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.disc-more-btn small { color: var(--muted); font-size: 0.76rem; }
+.disc-more-btn:hover, .disc-more-btn:focus-visible { border-color: var(--gold); background: rgba(217, 175, 82, 0.08); outline: none; }
+.disc-more-btn svg { flex: none; transition: transform 0.15s; }
+.disc-more-btn svg.up { transform: rotate(180deg); }
+
+/* Discover achievements: two columns when there is room, so each row is no wider than its text needs */
+.disc-achievements .disc-ach-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 8px; }
+.disc-achievements .disc-ach-list a { height: 100%; }

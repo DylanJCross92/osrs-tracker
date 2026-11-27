@@ -85,7 +85,8 @@ export async function recentAchievements(byId) {
     const def = titles.get(`${m.milestone_type}|${m.skill}|${Number(m.value)}`)
     if (!def) continue
     const p = byId.get(m.player_id)
-    const gap = m.occurred_after ? new Date(m.occurred_at) - new Date(m.occurred_after) > 48 * HOUR : false
+    // Only what TickGains saw happen: when the snapshot before it is days old the real moment is only somewhere in that gap, so it is not listed.
+    if (m.occurred_after && new Date(m.occurred_at) - new Date(m.occurred_after) > 48 * HOUR) continue
     out.push({
       ...who(p),
       key: `${m.player_id}:${m.milestone_type}:${m.skill}:${m.value}`,
@@ -95,8 +96,6 @@ export async function recentAchievements(byId) {
       title: def.title,
       description: def.description,
       detectedAt: m.occurred_at,
-      // A wide gap before the detecting snapshot = the real moment is only known to be inside it.
-      after: gap ? m.occurred_after : null,
     })
     if (out.length >= 30) break
   }

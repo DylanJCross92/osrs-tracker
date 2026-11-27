@@ -270,8 +270,18 @@
         </li>
       </ul>
       <p v-else class="empty-hint">No major achievements detected yet, 99s, 100M+ XP and big total-level milestones land here.</p>
-      <button v-if="achievements.length > achShown" class="btn btn-ghost" @click="achShown += 5">View more ({{ achievements.length - achShown }})</button>
-      <p class="profile-note">"Detected" is when TickGains first saw the achievement in a saved snapshot. Where data had a gap, the date is shown as a range.</p>
+      <div v-if="achievements.length > ACH_STEP" class="disc-more">
+        <button v-if="achievements.length > achShown" class="disc-more-btn" type="button" @click="achShown += ACH_STEP">
+          Show {{ Math.min(ACH_STEP, achievements.length - achShown) }} more
+          <small>{{ achievements.length - achShown }} left</small>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+        <button v-else class="disc-more-btn" type="button" @click="achShown = ACH_STEP">
+          Show fewer
+          <svg class="up" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
+        </button>
+      </div>
+      <p class="profile-note">"Detected" is when TickGains first saw the achievement in a saved snapshot. Only achievements TickGains saw happen are listed, not ones already there when a player was first tracked.</p>
     </section>
 
     <!-- Curated rails -->
@@ -577,9 +587,10 @@ function goFirst() {
 const insights = computed(() => data.value.insights || {})
 const shortDate = (d) => new Date(`${d}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 const fullDate = (d) => new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-const achievedWhen = (a) => (a.after ? `between ${fullDate(a.after)} and ${fullDate(a.detectedAt)}` : `detected ${fullDate(a.detectedAt)}`)
+const achievedWhen = (a) => `detected ${fullDate(a.detectedAt)}`
 const achievements = computed(() => insights.value.achievements || [])
-const achShown = ref(5)
+const ACH_STEP = 6
+const achShown = ref(ACH_STEP)
 
 // Don't repeat the weekly spotlight player in neighbouring sections when there are alternatives.
 const spotId = computed(() => insights.value.spotlight?.id)
