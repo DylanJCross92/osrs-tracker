@@ -11,6 +11,18 @@ const auto = planGoal(base)
 const usedAt30 = new Set(auto.segments.filter((s) => s.startLevel < 40 && s.endLevel > 30).map((s) => s.method?.id))
 const pick = methodsForSkill(skill).find((m) => m.minLevel <= 30 && (m.maxLevel == null || m.maxLevel >= 39) && !usedAt30.has(m.id))
 
+describe('a hand-picked range next to the same method', () => {
+  it('joins the planner own step for that method into one row', () => {
+    // Pick, by hand, the very method the route already uses for part of these levels: the two touching pieces are one step.
+    const first = auto.segments.find((x) => x.method?.id && x.endLevel - x.startLevel >= 4)
+    const mid = first.startLevel + 2
+    const plan = planGoal({ ...base, overrides: [{ fromLevel: mid, toLevel: first.endLevel, methodId: first.method.id }] })
+    const rows = plan.segments.filter((x) => x.method?.id === first.method.id && x.startLevel >= first.startLevel && x.endLevel <= first.endLevel)
+    expect(rows).toHaveLength(1)
+    expect([rows[0].startLevel, rows[0].endLevel]).toEqual([first.startLevel, first.endLevel])
+  })
+})
+
 describe('manual methods for sets of levels', () => {
   it('has a method to test with', () => {
     expect(pick).toBeTruthy()

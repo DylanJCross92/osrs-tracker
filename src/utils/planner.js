@@ -203,8 +203,11 @@ function applyOverrides(segments, overrides, startXp, targetXp) {
   const out = []
   const push = (piece) => {
     const last = out[out.length - 1]
-    if (last && last.toXp === piece.fromXp && last.kind === piece.kind && last.method === piece.method) last.toXp = piece.toXp
-    else out.push(piece)
+    // Neighbouring pieces with the same method are one step, even when one was picked by hand and the other by the planner.
+    if (last && last.toXp === piece.fromXp && last.method === piece.method && (last.kind === piece.kind || last.kind === 'manual' || piece.kind === 'manual')) {
+      last.toXp = piece.toXp
+      if (piece.kind === 'manual') last.kind = 'manual'
+    } else out.push(piece)
   }
   for (const seg of segments) {
     const cuts = new Set([seg.fromXp, seg.toXp])

@@ -1,5 +1,66 @@
 <template>
-  <ol v-if="segments.length || questList.length" class="planner-route">
+  <!-- A route that can be edited reads as a timeline of levels: each stop is the level a method starts at, the line between two stops can take a new method -->
+  <ol v-if="skill && (segments.length || questList.length)" class="rtl" aria-label="Training route by level">
+    <li v-if="questList.length" class="rtl-stop">
+      <span class="rtl-dot" aria-hidden="true" />
+      <div class="rtl-level"><b>Quests</b><small>done first</small></div>
+      <div class="rtl-card rtl-quest" :title="questTitle">
+        <span class="rtl-main">
+          <span class="rtl-name">{{ questList.length === 1 ? questList[0].name : `${questList.length} quests first` }}</span>
+          <small class="rtl-meta">{{ questList.length === 1 ? 'it skips the early levels' : questNames }} · {{ formatNum(questXp) }} xp</small>
+        </span>
+        <span class="rtl-nums"><span class="planner-step-gp">Free</span><span class="planner-step-hours">{{ formatQuestTime(questMinutes) }}</span></span>
+      </div>
+    </li>
+    <template v-for="(seg, k) in segments" :key="k">
+      <li v-if="k > 0 || questList.length" class="rtl-add">
+        <button type="button" class="rtl-add-btn" :aria-label="`Add a method at level ${seg.startLevel}`" aria-haspopup="dialog" @click="openAt(k)">
+          <i aria-hidden="true" /><span>Add a method at level {{ seg.startLevel }}</span>
+        </button>
+      </li>
+      <li class="rtl-stop" :class="{ 'is-done': seg.done }">
+        <span class="rtl-dot" aria-hidden="true" />
+        <div class="rtl-level"><b>Level {{ seg.startLevel }}</b><small>{{ seg.endLevel - seg.startLevel }} {{ seg.endLevel - seg.startLevel === 1 ? 'level' : 'levels' }}</small></div>
+        <div
+          :class="['rtl-card', 'is-pick', `planner-step-${seg.kind}`, { 'planner-step-gap': !seg.method, 'is-done': seg.done }]"
+          role="button"
+          tabindex="0"
+          aria-haspopup="dialog"
+          :aria-label="`Choose a method for levels ${seg.startLevel} to ${seg.endLevel}`"
+          title="Choose a method for these levels"
+          @click="editing = k"
+          @keydown.enter.self.prevent="editing = k"
+          @keydown.space.self.prevent="editing = k"
+        >
+          <span class="rtl-main">
+            <span class="rtl-name">
+              <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="22" height="22" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ seg.method ? seg.method.name : 'No catalog method' }}
+              <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
+              <em v-if="tagOf(seg)">{{ tagOf(seg) }}</em>
+            </span>
+            <small class="rtl-meta">
+              {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h<template v-if="stepRangeText(seg.method, seg.startLevel, seg.endLevel)"> ({{ stepRangeText(seg.method, seg.startLevel, seg.endLevel) }} as you level)</template></template>
+            </small>
+          </span>
+          <span class="rtl-nums">
+            <span class="planner-step-gp gp-figure" :class="gpClass(seg.netGp)"><i v-if="seg.method && seg.method.id && isLive(seg.method.id, seg.method.xpPerHour)" class="live-dot" title="Worked out from live Grand Exchange prices" aria-hidden="true" /><GpTip :method="seg.method && seg.method.gpPerHour !== undefined && seg.method.id ? segmentMethod(seg) : null" :hours="seg.hours">{{ seg.netGp == null ? 'Unpriced' : formatGp(seg.netGp) }}</GpTip></span>
+            <span class="planner-step-hours">{{ seg.hours == null ? '-' : formatHours(seg.hours) }}</span>
+          </span>
+          <span class="planner-step-chev"><span class="planner-step-change">Change</span><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></span>
+        </div>
+      </li>
+    </template>
+    <li v-if="segments.length" class="rtl-add">
+      <button type="button" class="rtl-add-btn" :aria-label="`Add a method before level ${segments[segments.length - 1].endLevel}`" aria-haspopup="dialog" @click="openAt(segments.length)">
+        <i aria-hidden="true" /><span>Add a method before level {{ segments[segments.length - 1].endLevel }}</span>
+      </button>
+    </li>
+    <li v-if="segments.length" class="rtl-stop rtl-end">
+      <span class="rtl-dot" aria-hidden="true" />
+      <div class="rtl-level"><b>Level {{ segments[segments.length - 1].endLevel }}</b><small>goal</small></div>
+    </li>
+  </ol>
+  <ol v-else-if="segments.length || questList.length" class="planner-route">
     <li v-if="questList.length" class="planner-step planner-step-quest" :title="questTitle">
       <span class="planner-step-levels">Quests</span>
       <span class="planner-step-name">
@@ -36,18 +97,18 @@
       <span class="planner-step-hours">{{ seg.hours == null ? '-' : formatHours(seg.hours) }}</span>
       <span v-if="skill" class="planner-step-chev"><span class="planner-step-change">Change</span><svg v-if="skill" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></span>
     </li>
-    <li v-if="skill && segments.length" class="planner-route-range">
-      <button type="button" class="btn-text" aria-haspopup="dialog" @click="openRange">Set one method for a range of levels</button>
-      <span>for example, Red chinchompas from 63 to 99</span>
-    </li>
   </ol>
+  <p v-if="skill && segments.length" class="planner-route-range">
+    <button type="button" class="btn-text" aria-haspopup="dialog" @click="openRange">Set one method for a range of levels</button>
+    <span>for example, Red chinchompas from 63 to 99</span>
+  </p>
 
   <!-- The choices open over the page, so nothing underneath moves -->
   <Teleport to="body">
     <div v-if="skill && current" class="modal-overlay msheet-overlay" @click.self="close">
       <div class="modal-card msheet" role="dialog" aria-modal="true" aria-labelledby="msheet-h">
         <div class="share-modal-header">
-          <h2 id="msheet-h">{{ current.kind === 'custom' ? 'Choose a method for a range of levels' : `Method for levels ${current.startLevel} to ${current.endLevel}` }}</h2>
+          <h2 id="msheet-h">{{ current.kind === 'custom' ? 'Add a method' : `Method for levels ${current.startLevel} to ${current.endLevel}` }}</h2>
           <button ref="closeBtn" class="btn-text" type="button" aria-label="Close" @click="close">✕</button>
         </div>
         <div class="msheet-tabs pm-tabs" role="tablist" aria-label="Which methods to show">
@@ -118,7 +179,7 @@ const formatQuestTime = (min) => (min >= 60 ? formatHours(min / 60) : `~${min} m
 
 const editing = ref(-1)
 // Opened from the link under the steps instead of from one step: the whole route, a range the player then narrows down.
-const custom = ref(false)
+const custom = ref(null)
 // The levels the pick will be used for. It starts as the step's levels, and the player can widen or move it (even across several steps).
 const bounds = computed(() => ({ start: props.segments[0]?.startLevel ?? 1, end: props.segments[props.segments.length - 1]?.endLevel ?? 99 }))
 // The method picked in the list, waiting for its levels to be confirmed, and the levels chosen for it.
@@ -128,7 +189,7 @@ const rangeFrom = ref(1)
 // Nothing to change: the step's own method with the step's own levels.
 const unchanged = computed(() => !!picked.value && current.value?.kind !== 'custom' && picked.value.id === current.value?.method?.id && rangeFrom.value === current.value.startLevel && rangeTo.value === current.value.endLevel)
 const rangeTo = ref(99)
-const current = computed(() => (editing.value >= 0 ? props.segments[editing.value] : custom.value ? { kind: 'custom', startLevel: bounds.value.start, endLevel: bounds.value.end, method: null } : null))
+const current = computed(() => (editing.value >= 0 ? props.segments[editing.value] : custom.value ? { kind: 'custom', startLevel: custom.value.start, endLevel: custom.value.end, method: null } : null))
 // The first level is the lowest the method can be started at (or where the route starts, if that is later); the last is up to the route's end.
 const fromOptions = computed(() => {
   const lo = Math.max(bounds.value.start, picked.value?.minLevel ?? 1)
@@ -150,14 +211,27 @@ function fixRange(edited) {
   setRange(from, to)
 }
 const openRange = () => {
-  custom.value = true
+  custom.value = { start: bounds.value.start, end: bounds.value.end }
   editing.value = -1
+}
+// The "+" on the line before step k: a new method starting at the level that step starts at. On the line after the last step (k is the
+// number of steps) it opens on the last step's levels, to be narrowed down (say 75 to 90) with the level dropdowns.
+const openAt = (k) => {
+  const seg = props.segments[Math.min(k, props.segments.length - 1)]
+  custom.value = { start: seg.startLevel, end: seg.endLevel }
+  editing.value = -1
+}
+// A short note under a step's method name saying why the route uses it.
+const tagOf = (seg) => {
+  if (seg.done && seg.kind !== 'manual') return 'already trained'
+  if (seg.kind === 'manual') return seg.done ? 'what you picked for these levels' : 'your pick for these levels'
+  return { main: 'your chosen method', prep: 'to unlock it', post: 'after it caps out' }[seg.kind] || ''
 }
 const iconOf = (m) => methodIconSrc(m)
 const closeBtn = ref(null)
 const close = () => {
   editing.value = -1
-  custom.value = false
+  custom.value = null
   pickedId.value = null
 }
 
@@ -198,7 +272,7 @@ const onKey = (e) => {
   }
 }
 watch(
-  () => editing.value >= 0 || custom.value,
+  () => editing.value >= 0 || !!custom.value,
   (open) => {
     if (open) {
       // A step that already has a method opens with it selected, and the levels it covers filled in, so they can be changed straight away.
