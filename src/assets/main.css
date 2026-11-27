@@ -5652,7 +5652,7 @@ b.path-name { font-size: 1.12rem; }
 .se-tab.on { border-bottom-color: var(--gold-bright); color: var(--gold-bright); font-weight: 700; }
 .se-tab i { padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); color: var(--muted); font-size: 0.7rem; font-style: normal; font-weight: 600; }
 .se-tab i.is-bad { background: rgba(217, 105, 90, 0.16); color: #e58a7c; }
-.se-foot { position: sticky; bottom: 0; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 4px -4px 0; padding: 12px 4px; border-top: 1px solid var(--border); background: var(--panel, #221e17); }
+.se-foot { position: sticky; bottom: 0; z-index: 4; display: flex; justify-content: center; align-items: center; gap: 22px; margin: 4px -4px 0; padding: 12px 4px; border-top: 1px solid var(--border); background: var(--panel, #221e17); }
 .se-panel { display: flex; flex-direction: column; gap: 20px; }
 .se-field { display: flex; flex-direction: column; gap: 8px; }
 .se-field h4 { margin: 0; font-size: 1rem; color: var(--gold-bright); }
@@ -8421,7 +8421,7 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .se-acc-row.open .se-acc-chev { transform: rotate(180deg); }
 .se-acc-body { padding: 4px 14px 16px; }
 .se-remove { align-self: flex-start; margin-top: 8px; }
-.se-cancel { padding: 8px 4px; background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer; }
+.se-cancel { padding: 10px 16px; background: none; border: 0; color: var(--muted); font: inherit; cursor: pointer; }
 .se-cancel:hover { color: var(--text); text-decoration: underline; }
 
 /* Set your goal: the heading and the Level / XP switch on one line, compact boxes, and the quick goals with the reset beside them */
@@ -8450,6 +8450,5 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .se-goal-tools { justify-content: flex-start; gap: 8px 22px; padding-top: 2px; }
 @media (max-width: 520px) { .se-gain { margin: 0; } }
 
-/* The Feedback button floats at the bottom right; the editor's Save button stays clear of it (beside it on wide screens, above it on narrow ones) */
-@media (min-width: 700px) { .se-foot { padding-right: 184px; } }
+/* Cancel and Save are centred, which keeps them clear of the Feedback button at the right on wide screens; on narrow ones the bar sits above it */
 @media (max-width: 699px) { .se-foot { bottom: 76px; } body:has(.gsb) .se-foot { bottom: 120px; } }
