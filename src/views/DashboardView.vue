@@ -53,6 +53,9 @@
         </div>
       </header>
 
+      <!-- Claims still waiting for their code, with the code and a ping -->
+      <DashOpenClaims />
+
       <!-- A player nobody owns yet: what claiming gives, and the way to do it -->
       <ClaimTeaser v-if="!profiles.length && current" :username="current.username" :display-name="current.displayName" variant="card" />
 
@@ -170,6 +173,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import DashClans from '@/components/dashboard/DashClans.vue'
+import DashOpenClaims from '@/components/dashboard/DashOpenClaims.vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
 import TrackerLink from '@/components/planner/TrackerLink.vue'
 import ClaimTeaser from '@/components/dashboard/ClaimTeaser.vue'

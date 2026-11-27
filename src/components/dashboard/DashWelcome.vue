@@ -9,11 +9,7 @@
     <div class="dash-grid">
       <div class="dash-main">
         <!-- A claim already started: the next step is the code, so say so first. -->
-        <section v-if="pending" class="card dw-pending" aria-labelledby="dw-pending-h">
-          <h2 id="dw-pending-h">Finish claiming {{ pending.player.displayName }}</h2>
-          <p>You started a claim. Send your code in game to finish it, then this page becomes your dashboard.</p>
-          <button class="btn btn-primary" type="button" :disabled="busy" @click="openClaim(pending.player)">Show my code</button>
-        </section>
+        <DashOpenClaims />
 
         <section class="card dw-steps" aria-labelledby="dw-steps-h">
           <h2 id="dw-steps-h">{{ pending ? 'Claiming a different player?' : 'Get set up in three steps' }}</h2>
@@ -69,6 +65,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import FollowingStrip from '@/components/home/FollowingStrip.vue'
+import DashOpenClaims from '@/components/dashboard/DashOpenClaims.vue'
 import DashWatchlist from '@/components/dashboard/DashWatchlist.vue'
 import NavSearch from '@/components/NavSearch.vue'
 import ClaimProfileModal from '@/components/profile/ClaimProfileModal.vue'

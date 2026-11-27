@@ -65,3 +65,21 @@ export function timeOptions(current = '', step = 30) {
       return { value: `${pad(h)}:${pad(min)}`, label: `${h % 12 || 12}:${pad(min)} ${h < 12 ? 'AM' : 'PM'}` }
     })
 }
+
+export const PING_COOLDOWN_MINUTES = 30
+
+/** Whole minutes until another "I'm online now" ping is allowed (0 when it is). Matches the server's half-hour wait. */
+export function pingWaitLeft(lastPingAt, now = new Date(), cooldown = PING_COOLDOWN_MINUTES) {
+  if (!lastPingAt) return 0
+  const left = new Date(lastPingAt).getTime() + cooldown * 60_000 - now.getTime()
+  return left > 0 ? Math.ceil(left / 60_000) : 0
+}
+
+/** "3 days" / "1 day" / "later today" until a claim closes. */
+export function closesIn(expiresAt, now = new Date()) {
+  const hours = (new Date(expiresAt).getTime() - now.getTime()) / 3_600_000
+  if (!(hours > 0)) return 'now'
+  if (hours < 24) return 'in under a day'
+  const d = Math.floor(hours / 24)
+  return `in ${d} day${d === 1 ? '' : 's'}`
+}

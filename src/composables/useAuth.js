@@ -22,6 +22,8 @@ const profiles = ref([])
 const profilesReady = ref(false)
 // Claims this account has started and not finished yet (a code is waiting to be sent in game): [{ player, expiresAt }].
 const pendingClaims = ref([])
+// Who to message in game to finish a claim.
+const claimContact = ref('')
 // Things that need this account's attention (see the avatar's red badge): { items, total }.
 const notifications = ref({ items: [], unread: 0, total: 0 })
 
@@ -85,6 +87,7 @@ export async function refreshProfiles() {
     const res = await claimsApi.mine()
     profiles.value = res.claims.filter((c) => c.status === 'verified').map((c) => c.player)
     pendingClaims.value = res.claims.filter((c) => c.status === 'pending' && !c.expired)
+    claimContact.value = res.contact || claimContact.value
     // An account that owns a profile is that profile: a name saved earlier (or by the "I am" button) cannot stay as "you".
     const mine = meForProfiles(profiles.value, me.value)
     if (mine && mine !== me.value) setMe(mine)
@@ -229,5 +232,5 @@ export const authReady = () => initAuth()
 
 export function useAuth() {
   const isAdmin = computed(() => !!user.value?.roles?.some((r) => r === 'admin' || r === 'owner'))
-  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles, pendingClaims, profilesReady, notifications }
+  return { user, ready, loggedIn: computed(() => !!user.value), isAdmin, syncState, profiles, pendingClaims, claimContact, profilesReady, notifications }
 }

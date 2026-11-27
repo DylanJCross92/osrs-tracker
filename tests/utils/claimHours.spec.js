@@ -38,3 +38,19 @@ describe('timeOptions', () => {
     expect(t.find((o) => o.value === '18:05').label).toBe('6:05 PM')
   })
 })
+
+import { closesIn, pingWaitLeft } from '@/utils/claimWindow'
+describe('open claim reminder helpers', () => {
+  const now = new Date('2026-11-27T12:00:00Z')
+  it('counts the minutes until another ping is allowed', () => {
+    expect(pingWaitLeft(null, now)).toBe(0)
+    expect(pingWaitLeft('2026-11-27T11:45:00Z', now)).toBe(15)
+    expect(pingWaitLeft('2026-11-27T11:00:00Z', now)).toBe(0)
+  })
+  it('says when a claim closes', () => {
+    expect(closesIn('2026-12-10T12:00:00Z', now)).toBe('in 13 days')
+    expect(closesIn('2026-11-28T12:00:00Z', now)).toBe('in 1 day')
+    expect(closesIn('2026-11-27T20:00:00Z', now)).toBe('in under a day')
+    expect(closesIn('2026-11-27T11:00:00Z', now)).toBe('now')
+  })
+})

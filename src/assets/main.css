@@ -8498,3 +8498,25 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .claim-hours-sub { margin: 3px 0 0 18px; max-width: none; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
 .claim-ping-start { margin: 10px 0 0; text-align: center; }
 .claim-ping-start .btn { width: 100%; height: auto; min-height: 44px; padding-block: 8px; white-space: normal; line-height: 1.25; }
+
+/* Dashboard: claims that are still waiting for their code, kept flat (a gold rule, rows split by hairlines) */
+.doc { margin: 0 0 18px; padding: 4px 0 6px 16px; border-left: 3px solid var(--gold); }
+.doc-title { margin: 0 0 4px; color: var(--gold-bright); font-size: 1.02rem; }
+.doc-list { margin: 0; padding: 0; list-style: none; }
+.doc-row { display: flex; flex-direction: column; gap: 10px; padding: 12px 0; border-top: 1px solid var(--border); }
+.doc-row:first-child { border-top: 0; }
+.doc-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.doc-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; }
+.doc-name { color: var(--text); font-weight: 700; font-size: 1.02rem; text-decoration: none; overflow-wrap: anywhere; }
+.doc-name:hover { color: var(--gold-bright); text-decoration: underline; }
+.doc-meta { color: var(--muted); font-size: 0.84rem; line-height: 1.4; }
+.doc-send { margin: 0; max-width: none; color: var(--muted); font-size: 0.95rem; line-height: 1.7; }
+.doc-send b { color: var(--text); font-weight: 600; }
+.doc-code { display: inline-block; margin: 0 2px; padding: 1px 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg); color: var(--gold-bright); font-size: 1.2rem; font-weight: 800; letter-spacing: 0.18em; vertical-align: baseline; user-select: all; }
+.doc-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.doc-actions .btn { min-height: 40px; padding-block: 0; }
+.doc-more { color: var(--muted); text-decoration: underline; font-size: 0.86rem; }
+@media (max-width: 520px) {
+  .doc { padding-left: 12px; }
+  .doc-actions .btn-primary { flex: 1 1 auto; }
+}
