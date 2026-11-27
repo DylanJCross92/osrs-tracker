@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hasTiers, averageBetween, averageRate, hoursForXp, rateAt, rateLabel, rateRange, rateRangeBetween, ratePieces, rateSteps, segmentMethod, shortRate, stepRangeText } from '@/utils/methodRates'
+import { hasTiers, averageBetween, averageRate, hoursForXp, rateAt, rateLabel, rateRange, rateRangeBetween, ratePieces, rateSteps, ladderSteps, segmentMethod, shortRate, stepRangeText } from '@/utils/methodRates'
 import { AUTO_FAST, planGoal, xpAtLevel } from '@/utils/planner'
 import { TRAINING_METHODS, getMethod } from '@/data/trainingMethods'
 import { gpPerHourAt } from '@/utils/methodPricing'
@@ -137,3 +137,15 @@ describe('route stability with stepped rates', () => {
     })
   })
 })
+
+describe('ladderSteps', () => {
+  const many = { minLevel: 1, maxLevel: null, xpPerHour: 1, rates: Array.from({ length: 14 }, (_, i) => [1 + i * 7, 1000 * (i + 1)]) }
+  it('keeps a short list whole, and thins a long one to the first, the last and an even spread', () => {
+    expect(ladderSteps({ minLevel: 70, maxLevel: null, xpPerHour: 1, rates: [[70, 100], [80, 200]] })).toHaveLength(2)
+    const picked = ladderSteps(many)
+    expect(picked).toHaveLength(6)
+    expect(picked[0].level).toBe(1)
+    expect(picked[picked.length - 1].level).toBe(92)
+  })
+})
+

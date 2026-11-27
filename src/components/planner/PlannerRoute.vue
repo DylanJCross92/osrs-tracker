@@ -36,6 +36,10 @@
       <span class="planner-step-hours">{{ seg.hours == null ? '-' : formatHours(seg.hours) }}</span>
       <span v-if="skill" class="planner-step-chev"><span class="planner-step-change">Change</span><svg v-if="skill" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></span>
     </li>
+    <li v-if="skill && segments.length" class="planner-route-range">
+      <button type="button" class="btn-text" aria-haspopup="dialog" @click="openRange">Set one method for a range of levels</button>
+      <span>for example, Red chinchompas from 63 to 99</span>
+    </li>
   </ol>
 
   <!-- The choices open over the page, so nothing underneath moves -->
@@ -43,31 +47,41 @@
     <div v-if="skill && current" class="modal-overlay msheet-overlay" @click.self="close">
       <div class="modal-card msheet" role="dialog" aria-modal="true" aria-labelledby="msheet-h">
         <div class="share-modal-header">
-          <h2 id="msheet-h">Method for levels {{ current.startLevel }} to {{ current.endLevel }}</h2>
+          <h2 id="msheet-h">{{ current.kind === 'custom' ? 'Choose a method for a range of levels' : `Method for levels ${current.startLevel} to ${current.endLevel}` }}</h2>
           <button ref="closeBtn" class="btn-text" type="button" aria-label="Close" @click="close">✕</button>
         </div>
         <div class="msheet-tabs pm-tabs" role="tablist" aria-label="Which methods to show">
           <button type="button" role="tab" :aria-selected="tab === 'best'" :class="{ active: tab === 'best' }" @click="tab = 'best'">Recommended<small>the best options for these levels</small></button>
-          <button type="button" role="tab" :aria-selected="tab === 'all'" :class="{ active: tab === 'all' }" @click="tab = 'all'">All training methods<small>{{ catalogue.length }} you can use in these levels</small></button>
+          <button type="button" role="tab" :aria-selected="tab === 'all'" :class="{ active: tab === 'all' }" @click="tab = 'all'">All training methods<small>{{ catalogue.length }} you can use in this route</small></button>
         </div>
         <p v-if="current.kind === 'manual'" class="msheet-reset">
           You picked <b>{{ current.method?.name }}</b> for these levels.
-          <button class="btn-text" type="button" @click="choose(current, '__recommended')">Let the planner pick instead</button>
+          <button class="btn-text" type="button" @click="apply(null)">Let the planner pick instead</button>
         </p>
         <p v-if="tab === 'best' && !best.length" class="msheet-note">No method in the catalog covers these levels. Open All training methods to see what exists for {{ skill }}.</p>
-        <p v-if="tab === 'all' && partialCount" class="msheet-note">{{ partialCount }} of these only cover some of the levels. Picking one uses it for the levels it covers, and the planner fills the rest.</p>
+        <p v-if="tab === 'all'" class="msheet-note">Pick a method, then choose which levels to use it for. Anywhere it does not reach, the planner fills in the rest.</p>
         <MethodPicker
           :key="tab"
           :from-level="current.startLevel"
           :to-level="current.endLevel"
           inline
           :initial-sort="tab === 'best' ? 'xp' : 'level'"
-          :model-value="current.method?.id || ''"
+          :model-value="pickedId || current.method?.id || ''"
           :methods="shown"
           :note-for="noteFor"
           :allow-custom="false"
-          @update:model-value="(id) => choose(current, id)"
+          @update:model-value="(id) => select(current, id)"
         />
+        <!-- A method is picked first; then the levels it is used for are chosen here and confirmed with one button -->
+        <div v-if="picked" class="msheet-apply" role="group" aria-label="Levels to use it for">
+          <div class="msheet-apply-line">
+            <span>Use <b>{{ picked.name }}</b> for levels from</span>
+            <select v-model.number="rangeFrom" aria-label="From level" @change="fixRange('from')"><option v-for="l in fromOptions" :key="l" :value="l">{{ l }}</option></select>
+            <span>to</span>
+            <select v-model.number="rangeTo" aria-label="To level" @change="fixRange('to')"><option v-for="l in toOptions" :key="l" :value="l">{{ l }}</option></select>
+          </div>
+          <button type="button" class="btn btn-primary" @click="apply()">{{ unchanged ? 'Keep it' : `Use ${picked.name} for levels ${rangeFrom} to ${rangeTo}` }}</button>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -103,10 +117,49 @@ const questTitle = computed(() => questList.value.map((x) => `${x.name}: +${form
 const formatQuestTime = (min) => (min >= 60 ? formatHours(min / 60) : `~${min} min`)
 
 const editing = ref(-1)
-const current = computed(() => props.segments[editing.value] || null)
+// Opened from the link under the steps instead of from one step: the whole route, a range the player then narrows down.
+const custom = ref(false)
+// The levels the pick will be used for. It starts as the step's levels, and the player can widen or move it (even across several steps).
+const bounds = computed(() => ({ start: props.segments[0]?.startLevel ?? 1, end: props.segments[props.segments.length - 1]?.endLevel ?? 99 }))
+// The method picked in the list, waiting for its levels to be confirmed, and the levels chosen for it.
+const pickedId = ref(null)
+const picked = computed(() => (pickedId.value ? methodsForSkill(props.skill).find((m) => m.id === pickedId.value) || null : null))
+const rangeFrom = ref(1)
+// Nothing to change: the step's own method with the step's own levels.
+const unchanged = computed(() => !!picked.value && current.value?.kind !== 'custom' && picked.value.id === current.value?.method?.id && rangeFrom.value === current.value.startLevel && rangeTo.value === current.value.endLevel)
+const rangeTo = ref(99)
+const current = computed(() => (editing.value >= 0 ? props.segments[editing.value] : custom.value ? { kind: 'custom', startLevel: bounds.value.start, endLevel: bounds.value.end, method: null } : null))
+// The first level is the lowest the method can be started at (or where the route starts, if that is later); the last is up to the route's end.
+const fromOptions = computed(() => {
+  const lo = Math.max(bounds.value.start, picked.value?.minLevel ?? 1)
+  const hi = Math.max(bounds.value.end - 1, lo)
+  return Array.from({ length: hi - lo + 1 }, (_, i) => lo + i)
+})
+const toOptions = computed(() => Array.from({ length: Math.max(bounds.value.end - rangeFrom.value, 1) }, (_, i) => rangeFrom.value + 1 + i))
+function setRange(from, to) {
+  rangeFrom.value = from
+  rangeTo.value = to
+}
+// Keeps the two levels inside the options and in order (at least one level apart).
+function fixRange(edited) {
+  const lo = fromOptions.value[0]
+  const end = bounds.value.end
+  let from = Math.min(Math.max(Math.round(Number(rangeFrom.value)) || lo, lo), Math.max(end - 1, lo))
+  let to = Math.min(Math.max(Math.round(Number(rangeTo.value)) || end, from + 1), end)
+  if (edited === 'to' && to <= from) from = Math.max(to - 1, lo)
+  setRange(from, to)
+}
+const openRange = () => {
+  custom.value = true
+  editing.value = -1
+}
 const iconOf = (m) => methodIconSrc(m)
 const closeBtn = ref(null)
-const close = () => (editing.value = -1)
+const close = () => {
+  editing.value = -1
+  custom.value = false
+  pickedId.value = null
+}
 
 // Two views of the choices for a step: the few best options, or every method that works for all of those levels.
 const tab = ref('best')
@@ -130,10 +183,9 @@ const best = computed(() => {
   if (current.value?.method?.id && all.value.some((m) => m.id === current.value.method.id)) ids.add(current.value.method.id)
   return all.value.filter((m) => ids.has(m.id))
 })
-const partialCount = computed(() => all.value.length - whole.value.length)
-// Every method of the skill that is unlocked by the end of these levels: ones meant for lower levels, ones that cover the whole stretch,
-// and ones that unlock partway through. Methods that need a level this stretch never reaches are left out.
-const catalogue = computed(() => (current.value ? methodsForSkill(props.skill).filter((m) => m.minLevel < current.value.endLevel) : []))
+// Every method of the skill that can be started before the route ends: ones meant for lower levels, ones that cover this step, and ones that
+// unlock later (picking one asks which levels to use it for, so it can be set for a range that starts above this step).
+const catalogue = computed(() => (current.value ? methodsForSkill(props.skill).filter((m) => m.minLevel < bounds.value.end) : []))
 // Meant for lower levels: still something you can do, but the planner would not pick it here.
 const pastBest = (m, cur) => m.maxLevel != null && m.maxLevel + 1 <= cur.startLevel
 const noteFor = (m) => (current.value && pastBest(m, current.value) ? `Best up to level ${m.maxLevel}` : '')
@@ -146,9 +198,13 @@ const onKey = (e) => {
   }
 }
 watch(
-  () => editing.value >= 0,
+  () => editing.value >= 0 || custom.value,
   (open) => {
     if (open) {
+      // A step that already has a method opens with it selected, and the levels it covers filled in, so they can be changed straight away.
+      const own = current.value.method?.id
+      pickedId.value = own && methodsForSkill(props.skill).some((m) => m.id === own) ? own : null
+      setRange(current.value.startLevel, current.value.endLevel)
       // Start on the best options, unless the pick already made is not one of them.
       const picked = current.value?.kind === 'manual' ? current.value.method?.id : null
       tab.value = (picked && !best.value.some((m) => m.id === picked)) || !best.value.length ? 'all' : 'best'
@@ -161,16 +217,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey, true))
 
 // Methods that work for every level from `from` up to (but not including) `to`.
 const overlapping = (from, to) => methodsForSkill(props.skill).filter((m) => m.minLevel < to && (m.maxLevel == null || m.maxLevel + 1 > from))
-function choose(seg, id) {
-  // Picking what the route already uses (and was not picked by hand) changes nothing.
-  if (id !== '__recommended' && seg.kind !== 'manual' && id === seg.method?.id) return close()
-  const m = id === '__recommended' ? null : methodsForSkill(props.skill).find((x) => x.id === id)
-  // A method that only covers part of the levels is set for the levels it covers; the planner keeps filling the rest.
-  // (One meant for lower levels, picked on purpose, is used for the whole step.)
-  const past = m && m.maxLevel != null && m.maxLevel + 1 <= seg.startLevel
-  const fromLevel = m ? Math.max(seg.startLevel, m.minLevel) : seg.startLevel
-  const toLevel = m && m.maxLevel != null && !past ? Math.min(seg.endLevel, m.maxLevel + 1) : seg.endLevel
-  emit('set', { fromLevel, toLevel, methodId: m ? m.id : null })
+// Picking a method in the list does not change the plan yet: it asks for the levels first (starting with the step's own levels,
+// moved to where the method can be started), and "Use ..." confirms. "Let the planner pick" has no levels to ask for, so it applies at once.
+function select(seg, id) {
+  if (id === '__recommended') return apply(null)
+  const m = methodsForSkill(props.skill).find((x) => x.id === id)
+  if (!m) return
+  pickedId.value = id
+  const lo = Math.max(bounds.value.start, m.minLevel)
+  const from = Math.min(Math.max(seg.startLevel, m.minLevel), Math.max(bounds.value.end - 1, lo))
+  setRange(from, seg.endLevel > from ? seg.endLevel : bounds.value.end)
+  nextTick(() => document.querySelector('.msheet-apply')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+}
+function apply(methodId = pickedId.value) {
+  const seg = current.value
+  if (methodId) {
+    const same = rangeFrom.value === seg.startLevel && rangeTo.value === seg.endLevel
+    // The step already uses it (and it was not picked by hand): nothing to change.
+    if (seg.kind !== 'custom' && same && methodId === seg.method?.id) return close()
+    emit('set', { fromLevel: rangeFrom.value, toLevel: rangeTo.value, methodId })
+  } else emit('set', { fromLevel: seg.startLevel, toLevel: seg.endLevel, methodId: null })
   close()
 }
 

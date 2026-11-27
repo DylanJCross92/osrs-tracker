@@ -57,6 +57,15 @@ export function rateSteps(method) {
   return steps.filter((s, i) => i === steps.length - 1 || steps[i + 1].level > s.level)
 }
 
+/** The steps worth showing as a short ladder: all of them when there are few, else the first, the last and an even spread between (at most `max`). */
+export function ladderSteps(method, max = 6) {
+  const steps = rateSteps(method)
+  if (steps.length <= max) return steps
+  const picked = new Set()
+  for (let i = 0; i < max; i++) picked.add(Math.round((i * (steps.length - 1)) / (max - 1)))
+  return steps.filter((_, i) => picked.has(i))
+}
+
 /** How a method's xp an hour reads where there is room for one figure: '85K-220K' for a tiered method, '125,000' otherwise. */
 export function rateLabel(method) {
   return hasTiers(method) ? rateRange(method).text : Number(method.xpPerHour).toLocaleString('en-US')

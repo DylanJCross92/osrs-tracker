@@ -47,11 +47,6 @@
                 <i v-if="m.id === cheapestId && !(m.gpPerHour > 0)" class="mpick-tag tag-cheap">Cheapest per XP</i>
                 <i v-if="avail(m).state === 'blocked'" class="mpick-tag tag-blocked" :title="`Missing: ${unmetText(avail(m))}`">Missing requirement</i>
               </span>
-              <small v-if="stepsText(m)" class="mpick-steps">XP/hr by level: {{ stepsText(m) }}</small>
-              <small v-if="avail(m).items.length" class="mpick-req">
-                Needs
-                <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="i.req.quests?.length"> ({{ i.req.quests.map((x) => x.label).join(' + ') }})</template><template v-if="k < avail(m).items.length - 1">, </template></span>
-              </small>
             </span>
             </span>
             <span class="mpick-cell mpick-lvl"><small>Level</small>{{ m.minLevel }}{{ m.maxLevel != null ? `-${m.maxLevel}` : '+' }}</span>
@@ -64,6 +59,18 @@
               <span v-if="m.gpPerHour != null" class="mpick-bar" :class="m.gpPerHour >= 0 ? 'pos' : 'neg'"><span :style="{ width: `${(Math.abs(m.gpPerHour) / maxGp) * 100}%` }" /></span>
             </span>
             <span class="mpick-cell mpick-int"><small>Effort</small>{{ m.intensity }}</span>
+            <span v-if="ladder(m).length || avail(m).items.length" class="mpick-foot" :class="{ 'has-ico': anyIcon }">
+              <span v-if="ladder(m).length" class="mpick-ladder" role="group" aria-label="XP per hour by level">
+                <span class="mpick-ladder-h">XP/hr as you level</span>
+                <span class="mpick-ladder-rungs">
+                  <span v-for="s in ladder(m)" :key="s.level" class="mpick-rung"><small>Lv {{ s.level }}</small><b>{{ shortRate(s.rate) }}</b></span>
+                </span>
+              </span>
+              <small v-if="avail(m).items.length" class="mpick-req">
+                <span class="mpick-ladder-h">Needs</span>
+                <span v-for="(i, k) in avail(m).items" :key="i.req.id" class="mpick-req-item" :class="`is-${i.status}`">{{ i.req.label }}<template v-if="i.req.quests?.length"> ({{ i.req.quests.map((x) => x.label).join(' + ') }})</template><template v-if="k < avail(m).items.length - 1">, </template></span>
+              </small>
+            </span>
           </button>
         </li>
       </ul>
@@ -77,7 +84,7 @@
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import NewTag from '@/components/NewTag.vue'
 import { formatNum, formatGp } from '@/utils/planner'
-import { averageBetween, hasTiers, rateRange, rateRangeBetween, rateSteps, shortRate } from '@/utils/methodRates'
+import { averageBetween, hasTiers, rateRange, rateRangeBetween, ladderSteps, shortRate } from '@/utils/methodRates'
 import { methodAvailability, unmetText } from '@/utils/requirements'
 import { plannerRequirementContext } from '@/composables/plannerRequirementContext'
 import { plannerAccountContext } from '@/composables/plannerAccountContext'
@@ -145,7 +152,7 @@ const rateText = (m) => {
   const r = hasLevels.value ? rateRangeBetween(m, props.fromLevel, props.toLevel - 1) : rateRange(m)
   return r.text
 }
-const stepsText = (m) => (hasTiers(m) ? rateSteps(m).map((s) => `${s.level}: ${shortRate(s.rate)}`).join(' · ') : '')
+const ladder = (m) => (hasTiers(m) ? ladderSteps(m) : [])
 const valueOf = (m) => (sortKey.value === 'level' ? m.minLevel : sortKey.value === 'xp' ? rateOf(m) : m.gpPerHour ?? -Infinity)
 const sorted = computed(() => {
   const dir = sortDir.value === 'asc' ? 1 : -1
