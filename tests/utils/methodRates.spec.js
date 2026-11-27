@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { averageBetween, averageRate, hoursForXp, rateAt, rateLabel, rateRange, rateRangeBetween, ratePieces, rateSteps, segmentMethod, shortRate, stepRangeText } from '@/utils/methodRates'
+import { hasTiers, averageBetween, averageRate, hoursForXp, rateAt, rateLabel, rateRange, rateRangeBetween, ratePieces, rateSteps, segmentMethod, shortRate, stepRangeText } from '@/utils/methodRates'
 import { AUTO_FAST, planGoal, xpAtLevel } from '@/utils/planner'
-import { getMethod } from '@/data/trainingMethods'
+import { TRAINING_METHODS, getMethod } from '@/data/trainingMethods'
+import { gpPerHourAt } from '@/utils/methodPricing'
 
 // A method that is 100K an hour from level 70 and 200K from level 80, open until 89.
 const tiered = { id: 'test-tiered', skill: 'Hunter', minLevel: 70, maxLevel: 89, xpPerHour: 150_000, rates: [[70, 100_000], [80, 200_000]] }
@@ -90,5 +91,49 @@ describe('a tiered method in a plan', () => {
       expect(m.xpPerHour).toBeLessThanOrEqual(Math.max(...rates))
       expect(m.rates.every((r, i) => i === 0 || r[0] > m.rates[i - 1][0])).toBe(true)
     }
+  })
+})
+
+describe('every tiered method in the catalog', () => {
+  const all = TRAINING_METHODS.filter((m) => hasTiers(m))
+  it('has ascending levels, positive rates, and an average inside its own range', () => {
+    expect(all.length).toBeGreaterThan(40)
+    for (const m of all) {
+      expect(m.rates.every(([l, r], i) => Number.isInteger(l) && l >= 1 && l <= 99 && r > 0 && (i === 0 || l > m.rates[i - 1][0])), m.id).toBe(true)
+      const inside = rateSteps(m).map((s) => s.rate)
+      const rates = inside.length ? inside : [m.xpPerHour]
+      expect(m.xpPerHour, m.id).toBeGreaterThanOrEqual(Math.min(...rates))
+      expect(m.xpPerHour, m.id).toBeLessThanOrEqual(Math.max(...rates))
+    }
+  })
+  it('never makes a plan incomplete or empty for a skill that was complete before', () => {
+    for (const skill of ['Fishing', 'Woodcutting', 'Mining', 'Thieving', 'Cooking', 'Runecraft', 'Hunter', 'Firemaking']) {
+      const plan = planGoal({ skill, currentXp: 0, targetXp: xpAtLevel(99), methodId: AUTO_FAST, quests: [] })
+      expect(plan.hours, skill).toBeGreaterThan(5)
+      expect(plan.hours, skill).toBeLessThan(2000)
+    }
+  })
+})
+
+describe('gp at a level', () => {
+  it('follows the rate for a typed-in figure, so a faster level makes proportionally more or costs more', () => {
+    const m = { id: 'test-x', minLevel: 1, maxLevel: null, xpPerHour: 100_000, savedGpPerHour: 200_000, rates: [[1, 50_000], [50, 150_000]] }
+    expect(gpPerHourAt(m, 10)).toBe(100_000)
+    expect(gpPerHourAt(m, 60)).toBe(300_000)
+    expect(gpPerHourAt({ ...m, savedGpPerHour: null }, 60)).toBeNull()
+    expect(gpPerHourAt({ ...m, savedGpPerHour: 0 }, 60)).toBe(0)
+  })
+})
+
+describe('route stability with stepped rates', () => {
+  it('does not swap between two methods that are within 5% of each other every few levels', () => {
+    const plan = planGoal({ skill: 'Fishing', currentXp: 0, targetXp: xpAtLevel(99), methodId: AUTO_FAST, quests: [] })
+    const ids = plan.segments.map((s) => s.method?.id)
+    // no method comes back after it has been left
+    const seen = new Set()
+    ids.forEach((id, i) => {
+      if (i > 0 && ids[i - 1] !== id) expect(seen.has(id), `${id} came back`).toBe(false)
+      seen.add(id)
+    })
   })
 })

@@ -74,8 +74,16 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
   const points = [...cuts].sort((x, y) => x - y)
   const pieces = []
   for (let i = 0; i < points.length - 1; i++) {
-    const method = bestMethodAt(skill, levelAtXp(points[i], true), mode, valuePerHour, allowed, blocked)
+    const level = levelAtXp(points[i], true)
+    let method = bestMethodAt(skill, level, mode, valuePerHour, allowed, blocked)
     const last = pieces[pieces.length - 1]
+    // Rates that step with level can put two methods within a hair of each other, so the route would swap back and forth every few levels.
+    // Keep the method already in use while it is still open and within 5% of the best one.
+    if (mode === 'fast' && last?.method && method && last.method !== method && (hasTiers(last.method) || hasTiers(method))) {
+      const prev = last.method
+      const open = prev.minLevel <= level && (prev.maxLevel == null || level <= prev.maxLevel) && (!allowed || allowed.has(prev.id)) && !blocked?.has(prev.id)
+      if (open && rateAt(prev, level) >= rateAt(method, level) * 0.95) method = prev
+    }
     if (last && last.method === method) last.toXp = points[i + 1]
     else pieces.push({ method, fromXp: points[i], toXp: points[i + 1] })
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AUTO_FAST, planGoal, xpAtLevel } from '@/utils/planner'
 import { TRAINING_METHODS } from '@/data/trainingMethods'
+import { hoursForXp } from '@/utils/methodRates'
 import { requirementsFor } from '@/data/methodRequirements'
 import { methodIconSrc } from '@/data/methodIcons'
 
@@ -32,7 +33,8 @@ describe('Daeyalt essence at Ourania', () => {
     const manual = plan.segments.filter((s) => s.kind === 'manual')
     expect(manual).toHaveLength(1)
     expect(manual[0].method.id).toBe(method.id)
-    expect(manual[0].hours).toBeCloseTo((xpAtLevel(70) - xpAtLevel(60)) / method.xpPerHour)
+    // its rate rises with level, so the hours are worked out level by level
+    expect(manual[0].hours).toBeCloseTo(hoursForXp(method, xpAtLevel(60), xpAtLevel(70)))
     expect(plan.segments.reduce((t, s) => t + s.xp, 0)).toBe(xpAtLevel(80) - xpAtLevel(60))
   })
 })
