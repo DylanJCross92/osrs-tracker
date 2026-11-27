@@ -138,26 +138,34 @@ const INSIGHTS_TTL = 10 * 60_000
 let liveCache = { value: null, at: 0, promise: null }
 let insightsCache = { value: null, at: 0, promise: null }
 
-export function invalidateDiscoverCache() {
-  liveCache.at = 0
-  hardcoreCache.at = 0
-  insightsCache.at = 0
+/**
+ * Drops the cached pieces so the next request builds them again from the newest data (and is not served the old copy while that happens).
+ * `insights: false` keeps the heavy history insights, which do not need to follow every single new snapshot.
+ */
+export function invalidateDiscoverCache({ insights = true } = {}) {
+  for (const c of insights ? [liveCache, hardcoreCache, insightsCache] : [liveCache, hardcoreCache]) {
+    c.at = 0
+    c.epoch = (c.epoch || 0) + 1
+  }
 }
 
+// A copy that is merely old (past its time) is served at once while a new one is built in the background. One that was invalidated
+// (at is 0) is not: the request waits for the fresh build, so new activity shows up on the very next poll. A build that started before an
+// invalidation is not kept as fresh.
 async function cached(cache, ttl, build) {
   if (cache.value && Date.now() - cache.at < ttl) return cache.value
   if (cache.promise) return cache.value && cache.at ? cache.value : cache.promise
+  const started = cache.epoch || 0
   cache.promise = build()
     .then((v) => {
       cache.value = v
-      cache.at = Date.now()
+      cache.at = started === (cache.epoch || 0) ? Date.now() : 0
       return v
     })
     .finally(() => {
       cache.promise = null
     })
-  // Serve the stale copy immediately while it refreshes in the background.
-  return cache.value || cache.promise
+  return cache.value && cache.at ? cache.value : cache.promise
 }
 
 export function getDiscover() {

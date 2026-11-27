@@ -225,6 +225,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePlayersStore } from '@/stores/players'
 import { useToast } from '@/composables/useToast'
+import { useLivePoll } from '@/composables/useLivePoll'
 import { formatXp, skillIconSrc } from '@/utils/osrsSkills'
 import { formatRelative } from '@/utils/time'
 import { ApiError } from '@/api/client'
@@ -264,7 +265,6 @@ const error = ref(false)
 const now = ref(Date.now())
 const newLive = ref(new Set())
 let seenLive = null
-let pollTimer = null
 let tickTimer = null
 async function loadHome(initial = false) {
   try {
@@ -287,14 +287,11 @@ onMounted(() => {
   // and cover the page before anyone has looked at it.
   if (!window.matchMedia?.('(pointer: coarse)').matches) searchInput.value?.focus({ preventScroll: true })
   loadHome(true)
-  // Poll while the tab is visible so the ticker keeps moving as people level up.
-  pollTimer = setInterval(() => !document.hidden && loadHome(), 45_000)
   tickTimer = setInterval(() => (now.value = Date.now()), 30_000)
 })
-onBeforeUnmount(() => {
-  clearInterval(pollTimer)
-  clearInterval(tickTimer)
-})
+// The ticker keeps moving as people level up: refreshed every 30 seconds while the tab is in view, and when it comes back into view.
+useLivePoll(() => loadHome(), 30_000)
+onBeforeUnmount(() => clearInterval(tickTimer))
 const liveEvents = computed(() => (home.value?.activity || []).slice(0, 10))
 const agoText = (iso) => {
   void now.value

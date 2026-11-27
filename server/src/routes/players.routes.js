@@ -170,7 +170,7 @@ playersRouter.post('/:id/refresh', rateLimit({ windowMs: 60_000, max: 20 }), asy
     const result = await refreshPlayer(req.params.id)
     // New stats are in the live feed and on the home page straight away, not after the next scheduled sync.
     if (result?.saved) {
-      invalidateDiscoverCache()
+      invalidateDiscoverCache({ insights: false })
       invalidateHomeCache()
     }
     res.json(await listPlayers())

@@ -8603,3 +8603,21 @@ body:has(.gsb) .se-foot { bottom: 44px; }
   .rtl-nums { margin-left: 0; }
   .rtl-add-btn { left: 24px; }
 }
+
+/* Level 99s in the live feed: a slow gold sheen passes over the row now and then, the skill icon breathes a soft glow, and the words shine
+   a little. Quiet on purpose; off for people who ask for less motion. */
+.kind-max a {
+  background: linear-gradient(100deg, rgba(240, 201, 118, 0.1) 0%, rgba(240, 201, 118, 0.1) 38%, rgba(255, 233, 170, 0.42) 50%, rgba(240, 201, 118, 0.1) 62%, rgba(240, 201, 118, 0.1) 100%), var(--bg);
+  background-size: 300% 100%, 100% 100%;
+  background-position: 160% 0, 0 0;
+  animation: maxSheen 7s ease-in-out infinite;
+}
+.kind-max .disc-event-icon { animation: maxGlow 3.6s ease-in-out infinite; }
+.kind-max .disc-event-text em.gold { background: linear-gradient(100deg, var(--gold-bright) 40%, #fff3c4 50%, var(--gold-bright) 60%) 160% 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: maxText 7s ease-in-out infinite; }
+@keyframes maxSheen { 0%, 55% { background-position: 160% 0, 0 0; } 100% { background-position: -60% 0, 0 0; } }
+@keyframes maxText { 0%, 55% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+@keyframes maxGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(240, 201, 118, 0); } 50% { box-shadow: 0 0 12px 2px rgba(240, 201, 118, 0.55); } }
+@media (prefers-reduced-motion: reduce) {
+  .kind-max a, .kind-max .disc-event-icon, .kind-max .disc-event-text em.gold { animation: none; }
+  .kind-max .disc-event-text em.gold { -webkit-text-fill-color: var(--gold-bright); background: none; }
+}

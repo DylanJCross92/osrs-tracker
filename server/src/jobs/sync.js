@@ -85,6 +85,16 @@ export async function selectDuePlayers() {
  * if the previous sweep is still going (in this process, or in another
  * instance holding the advisory lock) this returns immediately.
  */
+// A sweep can take a while. New snapshots go into the live feed and the home page as they come in (at most every 20 seconds), not only when
+// the whole sweep has finished.
+let lastFeedTouch = 0
+function touchFeed() {
+  if (Date.now() - lastFeedTouch < 20_000) return
+  lastFeedTouch = Date.now()
+  invalidateDiscoverCache({ insights: false })
+  invalidateHomeCache()
+}
+
 export async function syncAllPlayers() {
   if (running) {
     console.log('[sync] previous run still in progress, skipping')
@@ -113,6 +123,7 @@ export async function syncAllPlayers() {
         const stats = await fetchHiscores(player.username, player.mode)
         const result = await recordSnapshot(player.id, stats)
         result.saved ? summary.saved++ : summary.unchanged++
+        if (result.saved) touchFeed()
         outages = 0
         // Owners of a claimed profile get their Hardcore Worlds character found without anyone having to open the page (at most one look a day).
         if (player.mode === 'main' && player.claimed) await ensureHardcoreRow(player.id).catch((err) => console.error(`[sync] hardcore lookup for "${player.username}": ${err.message}`))

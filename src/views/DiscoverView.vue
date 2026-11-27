@@ -336,6 +336,7 @@ import CombatBadge from '@/components/CombatBadge.vue'
 import PlayerAvatar from '@/components/PlayerAvatar.vue'
 import OverallLevel from '@/components/OverallLevel.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useLivePoll } from '@/composables/useLivePoll'
 import { useRouter } from 'vue-router'
 import PlayerBadge from '@/components/PlayerBadge.vue'
 import PlayerSuggestRow from '@/components/PlayerSuggestRow.vue'
@@ -378,11 +379,10 @@ const events = computed(() => {
 })
 const profileTo = (username) => ({ name: 'playerDetail', params: { username } })
 
-// --- live refresh: refetch every minute and keep relative times ticking ---
+// --- live refresh: refetch every 30 seconds and keep relative times ticking ---
 const now = ref(Date.now())
 const newIds = ref(new Set())
 let seenIds = null
-let refreshTimer = null
 let tickTimer = null
 async function load(initial = false) {
   try {
@@ -400,13 +400,11 @@ async function load(initial = false) {
 }
 onMounted(() => {
   load(true)
-  refreshTimer = setInterval(load, 60_000)
   tickTimer = setInterval(() => (now.value = Date.now()), 30_000)
 })
-onBeforeUnmount(() => {
-  clearInterval(refreshTimer)
-  clearInterval(tickTimer)
-})
+// Live activity: refreshed every 30 seconds while the tab is in view, and when it comes back into view.
+useLivePoll(() => load(), 30_000)
+onBeforeUnmount(() => clearInterval(tickTimer))
 const ago = (iso) => {
   void now.value // re-evaluate as time passes
   return iso ? formatRelative(iso) : ''

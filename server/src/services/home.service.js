@@ -10,6 +10,7 @@ let cache = { value: null, at: 0, promise: null }
 
 export function invalidateHomeCache() {
   cache.at = 0
+  cache.epoch = (cache.epoch || 0) + 1
 }
 
 const positive = (n) => (Number.isFinite(n) && n > 0 ? n : 0)
@@ -138,15 +139,17 @@ async function build() {
 
 export function getHome() {
   if (cache.value && Date.now() - cache.at < TTL) return Promise.resolve(cache.value)
-  if (cache.promise) return cache.value ? Promise.resolve(cache.value) : cache.promise
+  // An old copy is served at once while a new one is built; one that was invalidated (at is 0) is not, so new activity shows on the next poll.
+  if (cache.promise) return cache.value && cache.at ? Promise.resolve(cache.value) : cache.promise
+  const started = cache.epoch || 0
   cache.promise = build()
     .then((v) => {
       cache.value = v
-      cache.at = Date.now()
+      cache.at = started === (cache.epoch || 0) ? Date.now() : 0
       return v
     })
     .finally(() => {
       cache.promise = null
     })
-  return cache.value ? Promise.resolve(cache.value) : cache.promise
+  return cache.value && cache.at ? Promise.resolve(cache.value) : cache.promise
 }
