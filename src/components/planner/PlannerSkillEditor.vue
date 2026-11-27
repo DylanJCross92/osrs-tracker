@@ -71,6 +71,11 @@
           </span>
         </button>
       </div>
+      <p v-if="overrideCount" class="se-hint se-style-note">
+        Your own picks for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels stay as you chose them, so the style only changes the other levels.
+        <button class="btn-text" type="button" @click="$emit('patch', { overrides: [] })">Use the style everywhere</button>
+      </p>
+      <p v-else-if="stylesAgree" class="se-hint se-style-note">Every style gives the same route for these levels, because the best method is the same whichever way it is picked.</p>
     </section>
 
     <!-- 3. What that comes to, step by step -->
@@ -384,6 +389,14 @@ const strategyChips = computed(() => [
 const isSpecific = computed(() => !isAuto(props.goal.methodId) && props.goal.methodId !== GLOBAL_STRATEGY)
 // The tools for choosing methods by hand (one method for all levels, a range of levels) are kept out of the way until asked for.
 const customOpen = ref(isSpecific.value)
+
+// When every way of picking gives the same route, choosing a style changes nothing, and the page says so.
+const stylesAgree = computed(() => {
+  const c = props.compare || {}
+  const plans = [c.fast, c.cheap, c.balanced].filter(Boolean)
+  if (plans.length < 3 || !(props.plan.remainingXp > 0)) return false
+  return plans.every((p) => p.hours === plans[0].hours && p.netGp === plans[0].netGp)
+})
 
 // --- Optimize your route: one row for each thing that can make the plan better, opened to do it in place
 const questCount = computed(() => questsForSkill(props.goal.skill).length)
