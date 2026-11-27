@@ -8449,3 +8449,7 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .se-gain small { letter-spacing: 0; text-transform: none; font-size: 0.86rem; }
 .se-goal-tools { justify-content: flex-start; gap: 8px 22px; padding-top: 2px; }
 @media (max-width: 520px) { .se-gain { margin: 0; } }
+
+/* The Feedback button floats at the bottom right; the editor's Save button stays clear of it (beside it on wide screens, above it on narrow ones) */
+@media (min-width: 700px) { .se-foot { padding-right: 184px; } }
+@media (max-width: 699px) { .se-foot { bottom: 76px; } body:has(.gsb) .se-foot { bottom: 120px; } }
