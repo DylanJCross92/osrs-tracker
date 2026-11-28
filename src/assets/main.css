@@ -8548,8 +8548,8 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .msheet-apply-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--muted); font-size: 0.92rem; line-height: 1.2; }
 .msheet-apply-line b { color: var(--text); }
 .msheet-apply-line select { min-width: 4.4em; padding: 6px 10px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 8px; font: inherit; font-weight: 600; }
-.msheet-apply .btn { flex: none; }
-@media (max-width: 640px) { .msheet-apply { margin: 12px -14px -14px; padding: 12px 14px; bottom: -14px; } .msheet-apply .btn { width: 100%; margin-left: 0; } }
+.msheet-apply .btn { flex: none; margin-left: auto; white-space: nowrap; }
+@media (max-width: 640px) { .msheet-apply { margin: 12px -14px -14px; padding: 12px 14px; bottom: -14px; } .msheet-apply-line { flex: 1 1 100%; } }
 
 /* An editable route as a timeline of levels (same look as What's next): a stop per method, the line between two stops takes a new method */
 .rtl { position: relative; margin: 14px 0 0; padding: 0; list-style: none; }

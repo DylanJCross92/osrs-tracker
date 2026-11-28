@@ -141,7 +141,7 @@
             <span>to</span>
             <select v-model.number="rangeTo" aria-label="To level" @change="fixRange('to')"><option v-for="l in toOptions" :key="l" :value="l">{{ l }}</option></select>
           </div>
-          <button type="button" class="btn btn-primary" @click="apply()">{{ unchanged ? 'Keep it' : `Use ${picked.name} for levels ${rangeFrom} to ${rangeTo}` }}</button>
+          <button type="button" class="btn btn-primary" @click="apply()">{{ unchanged ? 'Keep it' : 'Use it' }}</button>
         </div>
       </div>
     </div>
