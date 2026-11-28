@@ -213,6 +213,8 @@
         </PlannerPath></div>
     </template>
 
+    <!-- Leaving the planner with a plan that is not saved: the site's own window, not the browser's -->
+    <ConfirmDelete :open="!!leaveTo" title="Leave without saving?" :name="currentPlanName || 'This plan'" :text="currentPlanId ? 'has changes that are not saved. If you leave now they will be lost.' : 'has not been saved yet. If you leave now you will lose it.'" cancel-label="Keep editing" confirm-label="Leave without saving" @cancel="leaveTo = null" @confirm="confirmLeave" />
     <ConfirmDelete :open="!!skillToDelete" title="Delete this skill?" :name="skillToDelete" :text="currentPlanId ? 'will be removed from this plan, with its route and quest choices. The plan saves right away, so this cannot be undone.' : 'will be removed from this plan, with its route and quest choices.'" cancel-label="Keep skill" confirm-label="Delete skill" @cancel="skillToDelete = ''" @confirm="confirmRemoveSkill" />
     <PlannerPlanSettings v-if="showSettings" :name="currentPlanName" :strategy="globalStrategy" :strategies="STRATEGY_OPTIONS" :hours-per-day="hoursPerDay" :min-hours="MIN_HOURS" :max-hours="MAX_HOURS" :members="members" :iron="iron" :iron-kind="ironKind" :world="world" :build="build" :detected="detectedBuild" :goal-skills="goals.map((g) => g.skill)" :profile="profileOption" @save="saveSettings" @close="closeSettings">
       <template #player>
@@ -240,7 +242,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import PlannerSkillEditor from '@/components/planner/PlannerSkillEditor.vue'
 import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
@@ -1040,6 +1042,27 @@ function openSkillEditor(skill, tab = 'method') {
   if (mode.value === 'plan' && currentPlanId.value) router.replace(planLocation(currentPlanId.value, { edit: true, skill }))
   else editSkillLocal.value = skill
   nextTick(() => document.getElementById(`path-${skill.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+}
+// A plan that is not saved (one that was never saved, or a saved one with changes not updated yet) is not left by accident: going to any other
+// page asks first. Moving around inside the same plan (its skills, its editor, its own address after saving) never asks. Only plans that can be
+// saved are asked about, and the browser's own leave dialog is not used.
+const leaveTo = ref(null)
+let leaveOk = false
+// Only while the plan is on screen: once someone has left it for the list of plans (and said so), the draft left in memory is not asked about again.
+const hasUnsaved = computed(() => showPlan.value && canSavePlan.value && (currentPlanId.value ? dirty.value : true))
+onBeforeRouteLeave((to) => {
+  if (leaveOk || !hasUnsaved.value) return true
+  const samePlan = !!currentPlanId.value && typeof to.name === 'string' && to.name.startsWith('planner') && to.name !== 'planner' && to.name !== 'plannerNew' && to.params.id === currentPlanId.value
+  if (samePlan) return true
+  leaveTo.value = to
+  return false
+})
+function confirmLeave() {
+  const to = leaveTo.value
+  leaveTo.value = null
+  if (!to) return
+  leaveOk = true
+  router.push(to).finally(() => (leaveOk = false))
 }
 // What was changed is saved (where saving is allowed) when the editor closes.
 function saveIfChanged() {
