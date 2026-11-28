@@ -108,7 +108,7 @@ export function buildGoalContent(info, from, to) {
 
   const profit = profitableMethods(skill, from, to)
   const routes = [routeRow('fast', 'Fastest', plans.fast), routeRow('cheap', 'Cheapest', plans.cheap), routeRow('balanced', 'Balanced', plans.balanced)]
-  if (profit.length && complete(plans.profit)) routes.push(routeRow('profit', 'Best gp per hour', plans.profit))
+  if (profit.length && complete(plans.profit)) routes.push(routeRow('profit', 'Most profitable', plans.profit))
 
   const methods = relevantMethods(skill, from, to)
     .slice()

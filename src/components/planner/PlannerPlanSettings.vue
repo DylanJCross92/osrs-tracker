@@ -104,7 +104,7 @@ const draftBuild = ref(props.build)
 const detectedBuild = computed(() => props.detected)
 // The skills in the plan that the chosen build never trains: they come out of the plan when the settings are saved.
 const droppedByBuild = computed(() => props.goalSkills.filter((skill) => lockedSkills({ build: draftBuild.value, members: draftMembers.value }).includes(skill)))
-const STRATEGY_LOOK = { 'auto-fast': { icon: '/icons/ui/fastest.png' }, 'auto-cheap': { icon: '/icons/ui/cheapest.png' }, 'auto-balanced': { svg: 'balance' } }
+const STRATEGY_LOOK = { 'auto-fast': { icon: '/icons/ui/fastest.png' }, 'auto-cheap': { icon: '/icons/ui/cheapest.png' }, 'auto-balanced': { svg: 'balance' }, 'auto-afk': { svg: 'afk' } }
 const strategyChoices = computed(() => props.strategies.map((s) => ({ value: s.value, label: s.label, hint: s.hint, ...(STRATEGY_LOOK[s.value] || {}) })))
 // Choosing ironman also moves a strategy that assumes buying (fastest, profit) to cheapest, the way an ironman plays.
 function setIron(on) {

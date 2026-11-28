@@ -9,7 +9,7 @@ const MAX_XP = 200_000_000
 const ID_RE = /^[\w-]{1,40}$/
 const METHOD_RE = /^[a-z0-9-]{1,70}$/
 const NAME_RE = /^[A-Za-z0-9 _-]{1,12}$/
-const STRATEGIES = ['auto-fast', 'auto-cheap', 'auto-balanced']
+const STRATEGIES = ['auto-fast', 'auto-cheap', 'auto-balanced', 'auto-afk']
 // No look-alikes (0/o, 1/l/i), so a link read out loud or typed from a screenshot survives.
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz23456789'
 

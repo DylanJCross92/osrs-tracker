@@ -24,6 +24,13 @@ function bestMethodAt(skill, level, mode = 'fast', valuePerHour = DEFAULT_GP_VAL
   const rate = (meth) => rateAt(meth, level)
   const gp = (meth) => gpPerHourAt(meth, level)
   const byFast = (a, b) => rate(b) - rate(a)
+  if (mode === 'afk') {
+    // The least effort that is on offer at this level: AFK and low-effort methods first (the fastest of them), and only when there are none
+    // at this level, medium effort, then high. Time is the tie-break, so the route is as quick as the effort allows.
+    const effort = (meth) => (meth.intensity === 'AFK' || meth.intensity === 'Low' ? 0 : meth.intensity === 'Medium' ? 1 : 2)
+    const least = Math.min(...usable.map(effort))
+    return usable.filter((meth) => effort(meth) === least).sort(byFast)[0]
+  }
   if (mode === 'balanced') {
     // Lowest effective cost per xp, where each hour of your time is worth `valuePerHour` gp:
     // (valuePerHour - gp/hr) / xp/hr. Unpriced methods are skipped when anything is priced.
@@ -229,10 +236,12 @@ export const AUTO_FAST = 'auto-fast'
 export const AUTO_CHEAP = 'auto-cheap'
 export const AUTO_PROFIT = 'auto-profit'
 export const AUTO_BALANCED = 'auto-balanced'
+// Low effort: the methods you can do while doing something else (AFK, or little clicking), the fastest of those at each level.
+export const AUTO_AFK = 'auto-afk'
 export const GLOBAL_STRATEGY = 'global'
 export const DEFAULT_GP_VALUE = 2_000_000
-export const isAuto = (id) => id === AUTO_FAST || id === AUTO_CHEAP || id === AUTO_PROFIT || id === AUTO_BALANCED
-export const GLOBAL_STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED]
+export const isAuto = (id) => id === AUTO_FAST || id === AUTO_CHEAP || id === AUTO_PROFIT || id === AUTO_BALANCED || id === AUTO_AFK
+export const GLOBAL_STRATEGIES = [AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_AFK]
 
 /**
  * Plans one skill goal as a route of milestones. goal: { skill, currentXp,
@@ -271,7 +280,7 @@ export function planGoal(goal) {
 
   let segments = []
   if (auto) {
-    const mode = auto === AUTO_CHEAP ? 'cheap' : auto === AUTO_PROFIT ? 'profit' : auto === AUTO_BALANCED ? 'balanced' : 'fast'
+    const mode = auto === AUTO_CHEAP ? 'cheap' : auto === AUTO_PROFIT ? 'profit' : auto === AUTO_BALANCED ? 'balanced' : auto === AUTO_AFK ? 'afk' : 'fast'
     segments = fillRoute(goal.skill, startXp, targetXp, mode, goal.gpValuePerHour ?? DEFAULT_GP_VALUE, allowedSet, blockedSet).map((x) => ({ ...x, kind: 'auto' }))
   } else if (!chosen) {
     const rate = Math.floor(goal.customXpPerHour || 0)
@@ -320,6 +329,7 @@ export function compareStrategies(goal) {
     cheap: planGoal({ ...goal, methodId: AUTO_CHEAP }),
     profit: planGoal({ ...goal, methodId: AUTO_PROFIT }),
     balanced: planGoal({ ...goal, methodId: AUTO_BALANCED }),
+    afk: planGoal({ ...goal, methodId: AUTO_AFK }),
   }
 }
 

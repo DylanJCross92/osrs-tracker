@@ -62,7 +62,7 @@
 import { computed, ref } from 'vue'
 import { track } from '@/utils/analytics'
 import GpTip from '@/components/planner/GpTip.vue'
-import { AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_PROFIT, compareMethods, profitableMethods, levelAtXp, formatHours, formatGp } from '@/utils/planner'
+import { AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_AFK, AUTO_PROFIT, compareMethods, profitableMethods, levelAtXp, formatHours, formatGp } from '@/utils/planner'
 
 const props = defineProps({
   goal: { type: Object, required: true },
@@ -103,8 +103,9 @@ const rows = computed(() => {
     { id: AUTO_FAST, label: 'Fastest', plan: props.plans.fast },
     { id: AUTO_CHEAP, label: 'Cheapest', plan: props.plans.cheap },
     { id: AUTO_BALANCED, label: 'Balanced', plan: props.plans.balanced },
+    { id: AUTO_AFK, label: 'Low effort', plan: props.plans.afk },
   ]
-  if (profitable.value.length) list.push({ id: AUTO_PROFIT, label: 'Best gp per hour', plan: props.plans.profit })
+  if (profitable.value.length) list.push({ id: AUTO_PROFIT, label: 'Most profitable', plan: props.plans.profit })
   // A hand-picked method or custom rate gets its own row so it can be weighed against the strategies.
   if (!list.some((r) => r.id === props.selectedId)) list.push({ id: props.selectedId, label: props.plan.method ? props.plan.method.name : 'Custom rate', plan: props.plan })
   return list.map((r) => ({ ...r, diff: diffOf(r.plan) }))

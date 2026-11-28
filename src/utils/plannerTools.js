@@ -17,6 +17,7 @@ import {
   AUTO_CHEAP,
   AUTO_PROFIT,
   AUTO_BALANCED,
+  AUTO_AFK,
   GLOBAL_STRATEGY,
   GLOBAL_STRATEGIES,
   DEFAULT_GP_VALUE,
@@ -33,7 +34,8 @@ export const STRATEGY_LABELS = {
   [AUTO_FAST]: 'Fastest',
   [AUTO_CHEAP]: 'Cheapest',
   [AUTO_BALANCED]: 'Balanced',
-  [AUTO_PROFIT]: 'Best gp per hour',
+  [AUTO_AFK]: 'Low effort',
+  [AUTO_PROFIT]: 'Most profitable',
 }
 
 /** A goal with "follow the global strategy" swapped for the real strategy, ready for planGoal. */

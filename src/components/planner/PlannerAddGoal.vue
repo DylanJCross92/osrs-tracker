@@ -95,7 +95,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import NumberInput from '@/components/NumberInput.vue'
 import PlannerRoute from '@/components/planner/PlannerRoute.vue'
 import { SKILL_NAMES, skillIconSrc } from '@/utils/osrsSkills'
-import { MAX_XP, xpAtLevel, levelAtXp, planGoal, suggestedQuests, setOverrideRange, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, GLOBAL_STRATEGIES, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
+import { MAX_XP, xpAtLevel, levelAtXp, planGoal, suggestedQuests, setOverrideRange, AUTO_FAST, AUTO_CHEAP, AUTO_BALANCED, AUTO_AFK, GLOBAL_STRATEGIES, GLOBAL_STRATEGY, formatNum, formatHours, formatGp } from '@/utils/planner'
 import { STRATEGY_LABELS, resolveGoal } from '@/utils/plannerTools'
 
 const props = defineProps({
@@ -123,6 +123,7 @@ const STRATEGY_HINTS = {
   [AUTO_FAST]: 'Minimises training time, whatever it costs.',
   [AUTO_CHEAP]: 'Minimises net gp spent, even if it is slower.',
   [AUTO_BALANCED]: 'A middle ground between speed and cost.',
+  [AUTO_AFK]: 'Less focused play.',
 }
 
 const draftMembers = ref(props.members)

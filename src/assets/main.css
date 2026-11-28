@@ -8394,7 +8394,10 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .se-opt { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; padding: 14px 14px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
 .se-opt:hover { border-color: var(--border-strong, var(--gold)); }
 .se-opt.on { border-color: var(--gold); background: rgba(217, 175, 82, 0.1); }
+.se-opt-top { display: flex; align-items: center; gap: 8px; max-width: calc(100% - 30px); }
 .se-opt-ico { flex: none; display: inline-flex; color: var(--gold-bright); }
+.se-opt-plan { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border-strong, var(--border)); color: var(--muted); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+.se-opt.on .se-opt-plan { color: var(--gold-bright); border-color: var(--gold); }
 .se-opt-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
 .se-opt-text b { font-weight: 600; font-size: 1rem; }
 .se-opt-text small { color: var(--muted); font-size: 0.84rem; line-height: 1.35; }
@@ -8577,6 +8580,11 @@ body:has(.gsb) .se-foot { bottom: 44px; }
 .rtl-name .route-ico { flex: none; width: 22px; height: 22px; object-fit: contain; image-rendering: pixelated; }
 .rtl-name em { color: var(--muted); font-style: normal; font-weight: 400; font-size: 0.75rem; }
 .rtl-card.planner-step-manual .rtl-name em { color: #8cc4ea; }
+/* the small badge by a step's method name: why the route uses it */
+.rtl-badge, .planner-step-name em.rtl-badge { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border-strong, var(--border)); background: transparent; color: var(--muted); font-size: 0.62rem; font-weight: 700; font-style: normal; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.5; white-space: nowrap; }
+.rtl-badge.is-manual { color: #8cc4ea; border-color: rgba(111, 179, 224, 0.55); }
+.rtl-badge.is-main { color: var(--gold-bright); border-color: var(--gold); }
+.rtl-badge.is-done { color: var(--green, #7cb869); border-color: rgba(124, 184, 105, 0.5); }
 .rtl-meta { color: var(--muted); font-size: 0.8rem; line-height: 1.35; }
 .rtl-nums { display: flex; align-items: baseline; gap: 16px; margin-left: auto; white-space: nowrap; }
 .rtl-nums .planner-step-hours { min-width: 4.4em; }

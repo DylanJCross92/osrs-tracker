@@ -295,6 +295,7 @@ import {
   AUTO_FAST,
   AUTO_CHEAP,
   AUTO_BALANCED,
+  AUTO_AFK,
   GLOBAL_STRATEGY,
   GLOBAL_STRATEGIES,
   DEFAULT_GP_VALUE,
@@ -367,6 +368,7 @@ const STRATEGY_HINTS = {
   [AUTO_FAST]: 'Minimises training time, whatever it costs.',
   [AUTO_CHEAP]: 'Minimises net gp spent, even if it is slower.',
   [AUTO_BALANCED]: 'A middle ground between speed and cost: not the slowest route, not the most expensive.',
+  [AUTO_AFK]: 'Less focused play.',
 }
 
 // --- Player -----------------------------------------------------------------

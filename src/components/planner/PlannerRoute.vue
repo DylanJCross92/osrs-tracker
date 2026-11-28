@@ -36,7 +36,7 @@
             <span class="rtl-name">
               <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="22" height="22" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ seg.method ? seg.method.name : 'No catalog method' }}
               <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
-              <em v-if="tagOf(seg)">{{ tagOf(seg) }}</em>
+              <em v-if="badgeOf(seg)" class="rtl-badge" :class="`is-${badgeOf(seg).kind}`" :title="badgeOf(seg).title">{{ badgeOf(seg).text }}</em>
             </span>
             <small class="rtl-meta">
               {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h<template v-if="stepRangeText(seg.method, seg.startLevel, seg.endLevel)"> ({{ stepRangeText(seg.method, seg.startLevel, seg.endLevel) }} as you level)</template></template>
@@ -84,11 +84,7 @@
       <span class="planner-step-name">
         <img v-if="iconOf(seg.method)" class="route-ico" :src="iconOf(seg.method)" alt="" width="20" height="20" loading="lazy" /><span v-else class="route-ico" aria-hidden="true" />{{ seg.method ? seg.method.name : 'No catalog method' }}
         <RouteReqTip v-if="flag(seg)" :flag="flag(seg)" />
-        <em v-if="seg.done && seg.kind !== 'manual'">already trained</em>
-        <em v-else-if="seg.kind === 'manual'">{{ seg.done ? 'what you picked for these levels' : 'your pick for these levels' }}</em>
-        <em v-else-if="seg.kind === 'main'">your chosen method</em>
-        <em v-else-if="seg.kind === 'prep'">to unlock it</em>
-        <em v-else-if="seg.kind === 'post'">after it caps out</em>
+        <em v-if="badgeOf(seg)" class="rtl-badge" :class="`is-${badgeOf(seg).kind}`" :title="badgeOf(seg).title">{{ badgeOf(seg).text }}</em>
       </span>
       <span class="planner-step-meta">
         {{ formatNum(seg.xp) }} xp<template v-if="seg.xpPerHour"> · ~{{ formatNum(seg.xpPerHour) }} xp/h<template v-if="stepRangeText(seg.method, seg.startLevel, seg.endLevel)"> ({{ stepRangeText(seg.method, seg.startLevel, seg.endLevel) }} as you level)</template></template>
@@ -221,11 +217,11 @@ const openAt = (k) => {
   custom.value = { start: seg.startLevel, end: seg.endLevel }
   editing.value = -1
 }
-// A short note under a step's method name saying why the route uses it.
-const tagOf = (seg) => {
-  if (seg.done && seg.kind !== 'manual') return 'already trained'
-  if (seg.kind === 'manual') return seg.done ? 'what you picked for these levels' : 'your pick for these levels'
-  return { main: 'your chosen method', prep: 'to unlock it', post: 'after it caps out' }[seg.kind] || ''
+// A small badge by a step's method name saying why the route uses it (the longer wording is its tooltip).
+const badgeOf = (seg) => {
+  if (seg.done && seg.kind !== 'manual') return { kind: 'done', text: 'Done', title: 'Already trained' }
+  if (seg.kind === 'manual') return seg.done ? { kind: 'manual', text: 'Your pick', title: 'What you picked for these levels' } : { kind: 'manual', text: 'Your pick', title: 'You picked this method for these levels' }
+  return { main: { kind: 'main', text: 'Chosen', title: 'The method you chose' }, prep: { kind: 'prep', text: 'To unlock', title: 'Trained to unlock the method you chose' }, post: { kind: 'post', text: 'After cap', title: 'Used after the method you chose caps out' } }[seg.kind] || null
 }
 const iconOf = (m) => methodIconSrc(m)
 const closeBtn = ref(null)

@@ -56,23 +56,29 @@
     <section class="se-sec" aria-labelledby="se-h-style">
       <h4 id="se-h-style"><i>2.</i> Choose your training style</h4>
       <div class="se-opts" role="radiogroup" aria-label="Training style" :style="{ '--n': strategyChips.length }">
-        <button v-for="c in strategyChips" :key="c.value" type="button" role="radio" class="se-opt" :class="{ on: goal.methodId === c.value }" :aria-checked="goal.methodId === c.value" @click="$emit('patch', { methodId: c.value })">
+        <button v-for="c in strategyChips" :key="c.value" type="button" role="radio" class="se-opt" :class="{ on: isOn(c) }" :aria-checked="isOn(c)" @click="$emit('patch', { methodId: c.value === globalStrategy ? GLOBAL_STRATEGY : c.value, overrides: [] })">
+          <span class="se-opt-top">
           <span class="se-opt-ico" aria-hidden="true">
-            <svg v-if="c.icon === 'plan'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></svg>
-            <svg v-else-if="c.icon === 'fast'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z" /></svg>
+            <svg v-if="c.icon === 'fast'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L5 13h6l-1 8 8-10h-6l1-8z" /></svg>
             <svg v-else-if="c.icon === 'cheap'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="5.5" /><path d="M9 6.5v5M15.5 11.5A5.5 5.5 0 1118 18a5.5 5.5 0 01-5-3" /></svg>
             <svg v-else-if="c.icon === 'balanced'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M7 20h10M5 8h14" /><path d="M5 8l-3 7a3 3 0 006 0L5 8zM19 8l-3 7a3 3 0 006 0l-3-7z" /></svg>
+            <svg v-else-if="c.icon === 'afk'" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9h11v5a4 4 0 01-4 4H9a4 4 0 01-4-4V9zM16 11h1.5a2 2 0 010 4H16M8 4v2M12 4v2" /></svg>
             <svg v-else viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l6-6 4 4 6-8M15 7h5v5" /></svg>
+          </span>
+          <span v-if="c.value === globalStrategy" class="se-opt-plan" title="This is the plan's strategy: the skill follows it unless you pick another" aria-label="The plan's strategy">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" /><circle cx="15" cy="7" r="2" /><circle cx="9" cy="17" r="2" /></svg>
+            Plan
+          </span>
           </span>
           <span class="se-opt-text"><b>{{ c.label }}</b><small>{{ c.hint }}</small></span>
           <span class="se-opt-mark" aria-hidden="true">
-            <svg v-if="goal.methodId === c.value" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" /><path d="M8 12.3l2.8 2.8L16.2 9.5" /></svg>
+            <svg v-if="isOn(c)" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" /><path d="M8 12.3l2.8 2.8L16.2 9.5" /></svg>
             <i v-else />
           </span>
         </button>
       </div>
       <p v-if="overrideCount" class="se-hint se-style-note">
-        Your own picks for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels stay as you chose them, so the style only changes the other levels.
+        Your own picks for {{ overrideCount }} set{{ overrideCount === 1 ? '' : 's' }} of levels are kept until you choose a style, which puts the best methods for it back everywhere.
         <button class="btn-text" type="button" @click="$emit('patch', { overrides: [] })">Use the style everywhere</button>
       </p>
       <p v-else-if="stylesAgree" class="se-hint se-style-note">Every style gives the same route for these levels, because the best method is the same whichever way it is picked.</p>
@@ -239,6 +245,7 @@ import {
   AUTO_FAST,
   AUTO_CHEAP,
   AUTO_BALANCED,
+  AUTO_AFK,
   AUTO_PROFIT,
   GLOBAL_STRATEGY,
   isAuto,
@@ -292,7 +299,6 @@ const method = computed(() => (isAuto(resolvedId.value) || resolvedId.value === 
 const startLevel = computed(() => levelAtXp(props.goal.currentXp, true))
 const endLevel = computed(() => levelAtXp(props.goal.targetXp, true))
 const plannedLevel = computed(() => levelAtXp(planned.value.currentXp, true))
-const globalLabel = computed(() => (STRATEGY_LABELS[props.globalStrategy] || 'Fastest').toLowerCase())
 
 // --- Requirements of every method the route uses, plus the one picked by hand
 const { routeMethods, routeState } = useRouteRequirements(computed(() => props.plan), method)
@@ -349,7 +355,8 @@ const methodRoutes = computed(() => [
   { value: AUTO_FAST, label: 'Fastest route' },
   { value: AUTO_CHEAP, label: 'Cheapest route' },
   { value: AUTO_BALANCED, label: 'Balanced route' },
-  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Best gp per hour route' }] : []),
+  { value: AUTO_AFK, label: 'Low effort route' },
+  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Most profitable route' }] : []),
 ])
 
 // --- Methods chosen by hand for some levels: from the route rows, or from a range typed below them
@@ -380,17 +387,20 @@ const hasMaterials = computed(() => materialsForPlan(props.plan).rows.length > 0
 // --- The plan for this skill: quick goals, how the planner picks, and the ways to make it better
 const goalChips = computed(() => [50, 60, 70, 80, 90, 99].filter((l) => l > startLevel.value && l !== endLevel.value))
 const strategyChips = computed(() => [
-  { value: GLOBAL_STRATEGY, label: 'Use plan strategy', hint: `Currently ${globalLabel.value}`, icon: 'plan' },
   { value: AUTO_FAST, label: 'Fastest', hint: 'Reach your goal sooner', icon: 'fast' },
   { value: AUTO_CHEAP, label: 'Cheapest', hint: 'Spend as little gp as possible', icon: 'cheap' },
   { value: AUTO_BALANCED, label: 'Balanced', hint: 'Balance time and cost', icon: 'balanced' },
-  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Best gp per hour', hint: 'Earn the most gp while you train', icon: 'profit' }] : []),
+  { value: AUTO_AFK, label: 'Low effort', hint: 'Less focused play', icon: 'afk' },
+  ...(profitable.value.length ? [{ value: AUTO_PROFIT, label: 'Most profitable', hint: 'Earn the most gp while you train', icon: 'profit' }] : []),
 ])
 const isSpecific = computed(() => !isAuto(props.goal.methodId) && props.goal.methodId !== GLOBAL_STRATEGY)
 // The tools for choosing methods by hand (one method for all levels, a range of levels) are kept out of the way until asked for.
 const customOpen = ref(isSpecific.value)
 
 // When every way of picking gives the same route, choosing a style changes nothing, and the page says so.
+// A style card is on when it is the goal's own pick, or when the goal follows the plan and it is the plan's strategy.
+const isOn = (c) => props.goal.methodId === c.value || (props.goal.methodId === GLOBAL_STRATEGY && c.value === props.globalStrategy)
+
 const stylesAgree = computed(() => {
   const c = props.compare || {}
   const plans = [c.fast, c.cheap, c.balanced].filter(Boolean)
