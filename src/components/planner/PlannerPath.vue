@@ -101,7 +101,7 @@
       :segments="plans[sharing].segments"
       :hours="plans[sharing].hours"
       :net-gp="plans[sharing].netGp"
-      :label="`${strategyLabel} route`"
+      :label="`${strategyOf(goals[sharing])} route`"
       @close="sharing = -1"
     />
     <SmartOrderModal v-if="suggestion" :suggestion="suggestion" :goals="goals" :has-player="hasPlayer" :player-label="playerLabel" @close="suggestionOpen = false" @apply="applySuggestion">
@@ -120,7 +120,8 @@ import SmartOrderModal from '@/components/planner/SmartOrderModal.vue'
 import { smartOrder } from '@/utils/smartOrder'
 import { track } from '@/utils/analytics'
 import { skillIconSrc } from '@/utils/osrsSkills'
-import { formatHours, levelAtXp, setOverrideRange } from '@/utils/planner'
+import { formatHours, isAuto, levelAtXp, setOverrideRange } from '@/utils/planner'
+import { STRATEGY_LABELS } from '@/utils/plannerTools'
 
 // A read-only view of the plan: each skill in training order as a card with its route, nothing to type into.
 const props = defineProps({
@@ -167,6 +168,9 @@ const pctText = (v) => {
   const p = v * 100
   return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
 }
+
+// The strategy a skill's route is made with: its own when it has picked one (Low effort for this skill), else the plan's.
+const strategyOf = (goal) => (goal && isAuto(goal.methodId) && STRATEGY_LABELS[goal.methodId]) || props.strategyLabel
 
 // --- The menu on each card: Edit, Train earlier / later, Share and Delete from plan ------------------------------------------------------------------
 // The skill whose menu is open, closed by a click anywhere else or Escape.
