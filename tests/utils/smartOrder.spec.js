@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
 import { xpAtLevel } from '@/utils/planner'
+import { getMethod } from '@/data/trainingMethods'
 
 // A goal from level `from` to level `to`, and the planner's result for it (hours, and gp earned or spent in total).
 const goal = (skill, from, to, hours, gph = 0) => ({
@@ -8,6 +9,20 @@ const goal = (skill, from, to, hours, gph = 0) => ({
   p: { hours, netGp: gph * hours, remainingXp: xpAtLevel(to) - xpAtLevel(from) },
 })
 const run = (...list) => smartOrder(list.map((x) => x.g), list.map((x) => x.p))
+
+describe('the suggested training order, when a method needs a level in another skill', () => {
+  const ironwood = getMethod('woodcutting-ironwood')
+  const withRoute = (x) => ({ ...x, p: { ...x.p, segments: [{ method: ironwood }] } })
+  it('trains Sailing first when the Woodcutting route uses ironwood (72 Sailing) and Sailing is planned to 72', () => {
+    const r = run(withRoute(goal('Woodcutting', 80, 90, 10)), goal('Sailing', 1, 72, 100))
+    expect(r.order).toEqual(['Sailing', 'Woodcutting'])
+    expect(r.reasons.Sailing[0]).toContain('needs 72 Sailing')
+  })
+  it('does not force it when the player already has the level, or the plan stops short of it', () => {
+    expect(run(withRoute(goal('Woodcutting', 80, 90, 10)), goal('Sailing', 72, 80, 100)).reasons.Sailing.join(' ')).not.toContain('needs 72')
+    expect(run(withRoute(goal('Woodcutting', 80, 90, 10)), goal('Sailing', 1, 60, 100)).reasons.Sailing.join(' ')).not.toContain('needs 72')
+  })
+})
 
 describe('the suggested training order', () => {
   it('trains Fishing before Cooking when Cooking can use the fish, and says why', () => {

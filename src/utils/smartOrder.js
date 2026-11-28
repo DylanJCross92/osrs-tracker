@@ -1,6 +1,7 @@
 import { SYNERGIES } from '@/data/skillSynergies'
 import { levelAtXp, planGoal } from '@/utils/planner'
 import { resolveGoal } from '@/utils/plannerTools'
+import { requirementsFor } from '@/data/methodRequirements'
 
 // A suggested training order for the skills in a plan, tailored to the player: which skills to train first because they help others
 // (see data/skillSynergies.js), which earn the gp that pays for the expensive ones, and which are quick to finish. The planner works out each
@@ -9,6 +10,7 @@ import { resolveGoal } from '@/utils/plannerTools'
 const FUND_MIN_COST = 1_000_000 // the plan has to cost at least this for gp to shape the order
 const EARNER_GPH = 50_000 // gp an hour from which a skill counts as earning
 const SPENDER_GPH = -150_000 // gp an hour at which a skill counts as an expense
+const NEEDS_WEIGHT = 10 // a method that needs a level another skill in the plan trains: that skill goes first, ahead of every other consideration
 const QUICK_WEIGHT = 0.6 // how much a short skill moves up (a tie-break next to the synergies)
 
 const joinNames = (list) => (list.length <= 2 ? list.join(' and ') : `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`)
@@ -38,6 +40,20 @@ export function smartOrder(goals, plans) {
     const b = by.get(e.to)
     return a && b && b.to >= e.toMin && a.from < e.fromEnough && (!e.fromTargetMin || a.to >= e.fromTargetMin)
   })
+
+  // A method in a skill's route that needs a level in another skill of this plan (ironwood trees need 72 Sailing): the plan trains that
+  // skill first, as far as the level, or the route cannot be followed in this order.
+  for (const x of open) {
+    const seen = new Set()
+    for (const seg of plans[x.index]?.segments || []) {
+      for (const req of seg.method?.id ? requirementsFor(seg.method) : []) {
+        const dep = req.kind === 'skill' && req.skill !== x.skill ? by.get(req.skill) : null
+        if (!dep || dep.from >= req.level || dep.to < req.level || seen.has(`${req.skill}${req.level}`)) continue
+        seen.add(`${req.skill}${req.level}`)
+        edges.push({ from: dep.skill, to: x.skill, w: NEEDS_WEIGHT, why: `${seg.method.name} needs ${req.level} ${req.skill}` })
+      }
+    }
+  }
 
   // gp only shapes the order when the plan has real costs to fund.
   const totalCost = open.reduce((sum, x) => sum + (x.gph != null && x.gph < 0 ? -x.gph * x.hours : 0), 0)

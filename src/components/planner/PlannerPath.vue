@@ -9,7 +9,7 @@
         </button>
       </div>
       <p v-if="dragging" class="path-reorder-hint" role="status">Drop <b>{{ dragging }}</b> where it should be trained.</p>
-      <p v-else>Your skills in the order the plan trains them, with every step.<template v-if="goals.length > 1">{{ fits ? ' Ordered to suit your levels.' : '' }}{{ ' ' }}Drag a skill to change the order.</template></p>
+      <p v-else>Your skills in the order the plan trains them, with every step.<template v-if="goals.length > 1">{{ fits ? ' Ordered to suit your levels.' : '' }}{{ ' ' }}Drag a skill, or use the arrow beside its Edit button (Train earlier / Train later), to change the order.</template></p>
     </header>
 
     <ol class="path-list" :class="{ reordering: !!dragging }">
@@ -54,6 +54,14 @@
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6" /></svg>
             </button>
             <div v-if="menuFor === g.skill" class="po-menu-list" role="menu" :aria-label="`Options for ${g.skill}`" @click.stop>
+              <button v-if="i > 0" class="po-item" role="menuitem" type="button" @click="moveFromMenu(i, i - 1)">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" /></svg>
+                Train earlier
+              </button>
+              <button v-if="i < goals.length - 1" class="po-item" role="menuitem" type="button" @click="moveFromMenu(i, i + 1)">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                Train later
+              </button>
               <button v-if="canShare(i)" class="po-item" role="menuitem" type="button" @click="shareFromMenu(i)">
                 <ShareIcon name="share" />
                 Share
@@ -160,7 +168,7 @@ const pctText = (v) => {
   return `${p > 0 && p < 10 ? p.toFixed(1) : Math.floor(p)}%`
 }
 
-// --- The three-dot menu on each card: Edit, Share and Delete from plan ------------------------------------------------------------------
+// --- The menu on each card: Edit, Train earlier / later, Share and Delete from plan ------------------------------------------------------------------
 // The skill whose menu is open, closed by a click anywhere else or Escape.
 const menuFor = ref('')
 const sharing = ref(-1)
@@ -169,6 +177,11 @@ const canShare = (i) => !isDone(i) && !!props.plans[i]?.segments?.length
 function editFromMenu(skill) {
   menuFor.value = ''
   emit('edit', skill)
+}
+// One place up or down the training order, for when dragging is awkward (a touch screen, a long plan) or not obvious.
+function moveFromMenu(from, to) {
+  menuFor.value = ''
+  emit('reorder', from, to)
 }
 function removeFromMenu(i) {
   menuFor.value = ''
