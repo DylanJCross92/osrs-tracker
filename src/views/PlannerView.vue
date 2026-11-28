@@ -246,6 +246,7 @@ import PlannerNext from '@/components/planner/PlannerNext.vue'
 import PlannerPlanSettings from '@/components/planner/PlannerPlanSettings.vue'
 import ConfirmDelete from '@/components/ConfirmDelete.vue'
 import { smartOrder, smartOrderGoals } from '@/utils/smartOrder'
+import { requirementsFor } from '@/data/methodRequirements'
 import { GOALS, planFromProfile } from '@/utils/smartPlanner'
 import { describeProfile } from '@/utils/smartProfile'
 import { planBadge } from '@/utils/dashboard'
@@ -1057,7 +1058,7 @@ watch(editSkill, (skill, before) => {
   if (!skill) editSnapshot = null
   else if (skill !== before) {
     const g = goals.value.find((x) => x.skill === skill)
-    editSnapshot = g ? { skill, goal: JSON.parse(JSON.stringify(g)) } : null
+    editSnapshot = g ? { skill, goal: JSON.parse(JSON.stringify(g)), all: JSON.parse(JSON.stringify(goals.value)) } : null
   }
 }, { immediate: true })
 function cancelSkillEditor() {
@@ -1067,6 +1068,10 @@ function cancelSkillEditor() {
     const g = goals.value[i]
     for (const key of Object.keys(g)) if (!(key in editSnapshot.goal)) delete g[key]
     Object.assign(g, JSON.parse(JSON.stringify(editSnapshot.goal)))
+    // A skill added (or raised) because a method needed it goes back too.
+    const rest = (list) => JSON.stringify(list.filter((x) => x.skill !== skill))
+    const order = (list) => list.map((x) => x.skill).join()
+    if (rest(goals.value) !== rest(editSnapshot.all) || order(goals.value) !== order(editSnapshot.all)) goals.value = JSON.parse(JSON.stringify(editSnapshot.all))
   }
   if (mode.value === 'plan' && currentPlanId.value) router.replace(planLocation(currentPlanId.value, { skill }))
   else editSkillLocal.value = ''
@@ -1200,6 +1205,7 @@ function addGoal(goal) {
   const orderOpts = smartOpts()
   const wasSmart = !first && !smartOrderGoals(goals.value, orderOpts).changed
   goals.value.push(...applyAccountRules([goal]))
+  addPrerequisites(goal.skill)
   if (wasSmart) goals.value = smartOrderGoals(goals.value, orderOpts).goals
   expanded.value = new Set([goal.skill])
   showAdd.value = false
@@ -1267,10 +1273,54 @@ function patchGoalBySkill(skill, patch) {
 function patchGoal(i, patch) {
   Object.assign(goals.value[i], patch)
   if (patch.methodId) track('planner_method_changed', { skill: goals.value[i].skill, method: patch.methodId })
+  if (patch.methodId || patch.overrides) addPrerequisites(goals.value[i].skill)
 }
 function pickRoute(i, id) {
   goals.value[i].methodId = id === globalStrategy.value ? GLOBAL_STRATEGY : id
   track('planner_route_picked', { skill: goals.value[i].skill, method: id })
+  addPrerequisites(goals.value[i].skill)
+}
+// A method picked by hand that needs a level the player does not have in another skill (lead rocks need 67 Sailing): that skill is
+// added to the plan up to the level (or raised to it, when it is already there), and put before the skill that needs it. Only the
+// methods the person chose are looked at: the planner's own picks already allow for the levels the plan trains. Needs the player's
+// levels, since without them there is no knowing what is missing.
+function addPrerequisites(skill) {
+  const levels = reqCtx.value.levels
+  const i = goals.value.findIndex((g) => g.skill === skill)
+  if (!levels || i < 0) return
+  const needs = new Map() // skill -> { level, method }
+  for (const seg of plans.value[i]?.segments || []) {
+    if (seg.kind !== 'manual' && seg.kind !== 'main') continue
+    for (const req of seg.method?.id ? requirementsFor(seg.method) : []) {
+      if (req.kind !== 'skill' || req.skill === skill || !SKILL_NAMES.includes(req.skill)) continue
+      if ((levels[req.skill] ?? 1) >= req.level) continue
+      if (!needs.has(req.skill) || needs.get(req.skill).level < req.level) needs.set(req.skill, { level: req.level, method: seg.method.name })
+    }
+  }
+  const said = []
+  for (const [dep, { level, method }] of needs) {
+    const have = goals.value.find((g) => g.skill === dep)
+    if (have && levelAtXp(have.targetXp, true) >= level) {
+      // Already planned that far: it only needs to come first.
+      if (goals.value.indexOf(have) < goals.value.findIndex((g) => g.skill === skill)) continue
+    } else if (have) {
+      have.targetXp = xpAtLevel(level)
+    } else {
+      const at = Math.min(Math.max(Math.floor(playerXp(dep) ?? 0), 0), xpAtLevel(level))
+      const goal = { skill: dep, currentXp: at, targetXp: xpAtLevel(level), methodId: GLOBAL_STRATEGY, customXpPerHour: 0, quests: [] }
+      goals.value.push(...applyAccountRules([withSuggestedQuests(goal)]))
+      if (player.value && !statsAt.value) statsAt.value = player.value.latest.capturedAt
+      track('planner_prerequisite_added', { skill: dep, for: skill })
+    }
+    // Before the skill that needs it.
+    const list = [...goals.value]
+    const [moved] = list.splice(list.findIndex((g) => g.skill === dep), 1)
+    list.splice(list.findIndex((g) => g.skill === skill), 0, moved)
+    goals.value = list
+    keepSmart.value = false
+    said.push(`${dep} to ${level} (${method} needs it)`)
+  }
+  if (said.length) showToast(`Added ${said.join(' and ')} before ${skill}.`)
 }
 function setGlobalStrategy(s) {
   globalStrategy.value = s
