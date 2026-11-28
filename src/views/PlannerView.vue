@@ -1386,7 +1386,7 @@ const dirty = computed(() => {
 })
 // Plans can only be saved for your own profile: the one you have claimed. A plan for any other profile can still be shared,
 // it just is not kept in Saved plans. A plan for no profile at all (goals entered by hand) can always be saved.
-const { loggedIn, profiles, profilesReady } = useAuth()
+const { loggedIn, isAdmin, profiles, profilesReady } = useAuth()
 const ownsLoadedProfile = computed(() => !!player.value && profiles.value.some((p) => sameName(p.username, player.value.username)))
 // While the account's profiles are still being read, a signed-in person is not turned away.
 const canSavePlan = computed(() => !player.value || ownsLoadedProfile.value || (loggedIn.value && !profilesReady.value))
@@ -2071,6 +2071,15 @@ async function syncSkillFromRoute() {
   await nextTick()
   document.getElementById(`path-${skill.toLowerCase()}`)?.scrollIntoView({ behavior: 'smooth', block: isEditSkillRoute.value ? 'start' : 'center' })
 }
+async function openAsAdmin(id) {
+  try {
+    const { ref } = await sharedPlansApi.adminFind(id)
+    await router.replace({ name: 'adminPlanView', params: { ref } })
+    return true
+  } catch {
+    return false
+  }
+}
 async function applyPlanRoute() {
   const id = routeId.value
   if (currentPlanId.value === id && goals.value.length) {
@@ -2085,6 +2094,8 @@ async function applyPlanRoute() {
     stored = savedPlans.value.find((p) => p.id === id)
   }
   if (!stored) {
+    // The site owner can open someone else's plan from its address: it opens read-only, as from the Player plans page.
+    if (isAdmin.value && (await openAsAdmin(id))) return
     planMissing.value = true
     return
   }

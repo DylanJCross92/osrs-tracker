@@ -157,6 +157,31 @@ export async function planByRef(ref) {
   return v ? adminPlanShare({ plans: v.plans, planner: v.planner, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null }, planId) : null
 }
 
+/**
+ * The admin ref ('a<account id>.<plan id>' or 'v<visitor id>.<plan id>') of whichever account or visitor holds a plan with this id, or null.
+ * Lets a /planner/<plan id> address that was copied from someone else's browser open for the site owner.
+ */
+export async function refForPlanId(planId) {
+  const id = String(planId || '')
+  if (!/^[\w-]{1,40}$/.test(id)) return null
+  // `_` is a wildcard in LIKE, so a hit is only a candidate: adminPlanShare below checks the real id.
+  const like = `%${id}%`
+  const { rows } = await pool.query(
+    `SELECT id, data->'plans' AS plans, data->'planner' AS planner FROM users WHERE (data->'plans')::text LIKE $1 OR (data->'planner')::text LIKE $1 LIMIT 20`,
+    [like],
+  )
+  for (const r of rows) if (adminPlanShare(r, id)) return `a${r.id}.${id}`
+  const { rows: vrows } = await pool.query(
+    `SELECT visitor_id AS id, plans, planner, updated_at FROM visitor_data WHERE plans::text LIKE $1 OR planner::text LIKE $1 LIMIT 20`,
+    [like],
+  )
+  for (const v of vrows) {
+    const entry = { plans: v.plans, planner: v.planner, updatedAt: v.updated_at ? new Date(v.updated_at).toISOString() : null }
+    if (adminPlanShare(entry, id)) return `v${v.id}.${id}`
+  }
+  return null
+}
+
 const MAX_VISITOR_PLANS = 30
 const MAX_VISITOR_JSON = 150_000
 

@@ -11,6 +11,8 @@ export const sharedPlansApi = {
   get: (slug) => api.get(`/plans/public/${slug}`),
   // Site owner / admins only: any plan from the Player plans page (ref on each plan), same shape as a public plan.
   adminGet: (ref) => api.get(`/admin/plans/view/${encodeURIComponent(ref)}`),
+  // Site owner / admins only: the ref of whoever holds a plan with this id, for a /planner/<id> address that is not the viewer's own.
+  adminFind: (planId) => api.get(`/admin/plans/find/${encodeURIComponent(planId)}`),
   // Count a view or a use of a public plan (no account needed, nothing about who is sent).
   event: (slug, type) => api.post(`/plans/public/${slug}/event`, { type }),
   cardUrl: (slug, version) => `${BASE_URL}/plans/public/${slug}/card.png${version ? `?v=${version}` : ''}`,

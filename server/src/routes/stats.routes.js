@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { rateLimit } from '../utils/rateLimit.js'
 import { cleanShare, cleanVisit } from '../utils/shareStats.js'
-import { dailyPlayers, dailyXp, planByRef, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview, trafficOverview } from '../services/stats.service.js'
+import { dailyPlayers, dailyXp, planByRef, refForPlanId, plansByPlayer, recentPlayers, recordShare, recordVisit, saveVisitorPlans, shareOverview, trafficOverview } from '../services/stats.service.js'
 import { askedNotToTrack, cleanEvents, cleanVisitorId, isCrawler } from '../utils/events.js'
 import { activeAccounts, dailyActive, deleteVisitor, eventDetail, eventsOverview, journeyOf, recordEvents, visitors } from '../services/events.service.js'
 import { siteOverview } from '../services/siteOverview.service.js'
@@ -285,6 +285,18 @@ statsRouter.get('/admin/plans/view/:ref', ...adminOnly, async (req, res, next) =
     const plan = await planByRef(req.params.ref)
     if (!plan) return res.status(404).json({ error: 'That plan no longer exists.' })
     res.json({ plan })
+  } catch (err) {
+    next(err)
+  }
+})
+
+// For the site owner: which account or visitor holds the plan with this id (a /planner/<id> address copied from their browser).
+statsRouter.get('/admin/plans/find/:planId', ...adminOnly, async (req, res, next) => {
+  try {
+    res.set('Cache-Control', 'no-store')
+    const ref = await refForPlanId(req.params.planId)
+    if (!ref) return res.status(404).json({ error: 'No account or visitor has a plan with that address.' })
+    res.json({ ref })
   } catch (err) {
     next(err)
   }
