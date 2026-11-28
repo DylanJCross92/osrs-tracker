@@ -6,6 +6,18 @@ import { levelAtXp, xpAtLevel } from '@/utils/xpLevels'
 
 export const hasTiers = (method) => Array.isArray(method?.rates) && method.rates.length > 0
 
+// A method can also carry `gpRates: [[fromLevel, gpPerHour], ...]` when its profit climbs with level on its own, faster than its xp does
+// (Motherlode Mine finds rarer ore as you level). The same kind of step table; without it gp follows the xp rate.
+export const hasGpTiers = (method) => Array.isArray(method?.gpRates) && method.gpRates.length > 0
+
+/** The gp an hour in force at a level from the method's gpRates, or null when it has none. */
+export function gpRateAt(method, level) {
+  if (!hasGpTiers(method)) return null
+  let gp = method.gpRates[0][1]
+  for (const [from, v] of method.gpRates) if (level >= from) gp = v
+  return gp
+}
+
 /** The rate in force at a level: the last tier that has started, or the first tier's rate before any has. */
 export function rateAt(method, level) {
   if (!hasTiers(method)) return method.xpPerHour
@@ -22,7 +34,8 @@ export function ratePieces(method, fromXp, toXp) {
   if (!(toXp > fromXp)) return []
   if (!hasTiers(method)) return [{ fromXp, toXp, rate: method.xpPerHour }]
   const cuts = new Set([fromXp, toXp])
-  for (const [from] of method.rates) {
+  // Cut where the xp rate steps, and where the gp rate steps (the xp rate stays the same across that cut).
+  for (const [from] of [...method.rates, ...(method.gpRates || [])]) {
     const at = xpAtLevel(from)
     if (at > fromXp && at < toXp) cuts.add(at)
   }
@@ -46,6 +59,21 @@ export function averageRate(rates, minLevel, maxLevel) {
   if (!(to > from)) return rates[0][1]
   const hours = ratePieces({ xpPerHour: rates[0][1], rates }, from, to).reduce((sum, p) => sum + (p.toXp - p.fromXp) / p.rate, 0)
   return Math.round((to - from) / hours)
+}
+
+/** The average gp an hour over a method's own levels, from its two step tables: the gp earned divided by the hours it takes. */
+export function averageGpRate(rates, gpRates, minLevel, maxLevel) {
+  const from = xpAtLevel(minLevel)
+  const to = endXpOf(minLevel, maxLevel)
+  const m = { xpPerHour: rates[0][1], rates, gpRates }
+  let hours = 0
+  let gp = 0
+  for (const p of ratePieces(m, from, to)) {
+    const h = (p.toXp - p.fromXp) / p.rate
+    hours += h
+    gp += h * gpRateAt(m, levelAtXp(p.fromXp, true))
+  }
+  return hours > 0 ? Math.round(gp / hours) : gpRates[0][1]
 }
 
 /** The tiers that fall inside the method's own levels: [{ level, rate }]. */

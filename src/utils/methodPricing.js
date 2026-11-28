@@ -1,7 +1,7 @@
 import { ECONOMY } from '@/data/methodEconomy'
 import { buyOf, priceOf, priceVersion, sellOf } from '@/utils/priceBook'
 import { afterTax } from '@/utils/geTax'
-import { hasTiers, rateAt } from '@/utils/methodRates'
+import { gpRateAt, hasTiers, rateAt } from '@/utils/methodRates'
 
 // A method's gp an hour from live Grand Exchange prices (see data/methodEconomy.js): what it makes sold after tax, minus what it uses up,
 // for every action in an hour, plus any fixed cost per hour. Prices are the middle price, or instant buy and sell (see priceBook.js). null when the method has no recipe or an item has no price,
@@ -81,6 +81,9 @@ export const priceInfoOf = (name) => priceOf(name)
  */
 export function gpPerHourAt(method, level) {
   if (!hasTiers(method)) return method.gpPerHour
+  // A method with its own gp by level (data/trainingMethods.js `gpRates`) uses that, not the xp rate.
+  const own = gpRateAt(method, level)
+  if (own != null) return own
   const rate = rateAt(method, level)
   const live = ECONOMY[method.id] ? liveGp(method.id, rate) : null
   if (live != null) return live

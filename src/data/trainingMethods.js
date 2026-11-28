@@ -14,15 +14,16 @@
 // Shape: { id, skill, name, description, minLevel, maxLevel|null,
 //          xpPerHour, gpPerHour|null, intensity, requirements }
 import { gpPerHourFor } from '@/utils/methodPricing'
-import { averageRate } from '@/utils/methodRates'
+import { averageGpRate, averageRate } from '@/utils/methodRates'
 
 // intensity: 'AFK' | 'Low' | 'Medium' | 'High'
 // A method only contributes xp between xpForLevel(minLevel) and
 // xpForLevel(maxLevel + 1), see planner.js's planGoal().
 
-// `rates` (optional, last): [[fromLevel, xpPerHour], ...] when the rate climbs with level. Then the figure given as xpPerHour is
+// `gpRates` (optional, after rates): [[fromLevel, gpPerHour], ...] when the profit climbs with level on its own (see utils/methodRates.js); gpPerHour is then the average.
+// `rates` (optional): [[fromLevel, xpPerHour], ...] when the rate climbs with level. Then the figure given as xpPerHour is
 // replaced by the average over the method's levels, and the planner works hours out tier by tier (see utils/methodRates.js).
-const m = (skill, id, name, minLevel, xpPerHourGiven, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false, rates = null) => {
+const m = (skill, id, name, minLevel, xpPerHourGiven, gpPerHour, intensity, description, requirements = '', maxLevel = null, fastest = false, rates = null, gpRates = null) => {
   const fullId = `${skill.toLowerCase()}-${id}`
   const xpPerHour = rates ? averageRate(rates, minLevel, maxLevel) : xpPerHourGiven
   return {
@@ -34,12 +35,13 @@ const m = (skill, id, name, minLevel, xpPerHourGiven, gpPerHour, intensity, desc
     maxLevel,
     xpPerHour,
     ...(rates ? { rates } : {}),
+    ...(rates && gpRates ? { gpRates } : {}),
     // The figure typed in above is the saved one. A method with a recipe in data/methodEconomy.js is worked out from live Grand Exchange
     // prices instead whenever there are prices, so everything that reads gpPerHour (the planner, calculators and guides) follows them.
     get gpPerHour() {
       return gpPerHourFor(fullId, xpPerHour, gpPerHour)
     },
-    savedGpPerHour: gpPerHour,
+    savedGpPerHour: rates && gpRates ? averageGpRate(rates, gpRates, minLevel, maxLevel) : gpPerHour,
     intensity,
     requirements,
     fastest,
@@ -197,7 +199,7 @@ export const TRAINING_METHODS = [
   // --- Mining ---
   m('Mining', 'early', 'Copper & tin', 1, 14000, 0, 'High', 'Power-mine copper and tin.', '', 14),
   m('Mining', 'iron', 'Power-mining iron', 15, 45000, 0, 'High', 'Mine iron ore and drop it for fast low-level xp.', '', 59),
-  m('Mining', 'motherlode', 'Motherlode Mine', 30, 55000, 20000, 'Low', 'Pay-dirt mining with gold nuggets as a side income.'),
+  m('Mining', 'motherlode', 'Motherlode Mine', 30, 55000, 20000, 'Low', 'Pay-dirt mining. Xp and profit both rise with level, because rarer ore turns up: about 13K xp and 31K gp an hour at 31, 45K and 49K at 61, and 64K and 242K at 99. Rates by level are from the wiki\u2019s money making guide (after tax): 550 pay-dirt an hour, the prospector outfit, a dragon or crystal pickaxe and every mine upgrade. Gold nuggets are counted at what they save on soft clay.', '', null, false, [[30, 13106], [41, 26000], [61, 45000], [70, 48000], [85, 55000], [99, 64000]], [[30, 30871], [41, 36858], [61, 49491], [70, 73262], [85, 192958], [99, 242320]]),
   m('Mining', 'gems', 'Gem rocks', 40, 55000, 220000, 'High', 'Mine gem rocks and sell the gems.', 'Medium Karamja Diary', null, false, [[40, 40000], [50, 46000], [60, 52000], [70, 58000], [80, 66000], [90, 70000], [99, 75000]]),
   m('Mining', 'calcified', 'Calcified rocks', 41, 35000, null, 'Low', 'Cam Torum rocks that give blessed bone shards for Prayer. Rates are without tick manipulation (an estimate on the wiki).', 'Started Perilous Moons', null, false, [[50, 23500], [60, 27000], [70, 34000], [80, 39000], [90, 44000], [99, 49000]]),
   m('Mining', 'blast', 'Blast Mine', 43, 80000, 0, 'Medium', 'Fast Mining xp that scales with level, plus gear points.'),

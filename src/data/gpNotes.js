@@ -41,7 +41,7 @@ const SPECIFIC = {
   'hitpoints-barrage': 'Same runes as Ice Barrage (blood, death and water on every cast), so this is very expensive. Hitpoints xp comes along with the Magic xp.',
   'magic-enchant-bolts': 'Runes and bolts are consumed and enchanted bolts sell for only a little more.',
   'mining-iron': 'Ore is dropped as you go, so nothing is sold and nothing is spent.',
-  'mining-motherlode': 'Gold nuggets and ore sell for a small profit.',
+  'mining-motherlode': 'Ore sells for a profit that grows with your level (runite and adamantite turn up more), and gold nuggets are counted at what they save on soft clay.',
   'mining-blast': 'Dynamite costs about as much as the ore and gems you get back.',
   'mining-granite-3t': 'The granite is dropped as you mine to keep the 3-tick rhythm, so nothing is sold. The small cost of herbs and swamp tar is ignored, so it is treated as break-even.',
   'mining-amethyst': 'Amethyst sells for a high price and needs no supplies.',

@@ -72,7 +72,7 @@ function fillRoute(skill, fromXp, toXp, mode = 'fast', valuePerHour = DEFAULT_GP
     }
     // Where a method's rate steps up, the best method is worked out again.
     if (hasTiers(meth)) {
-      for (const [from] of meth.rates) {
+      for (const [from] of [...meth.rates, ...(meth.gpRates || [])]) {
         const at = xpAtLevel(from)
         if (at > fromXp && at < toXp) cuts.add(at)
       }
